@@ -32,6 +32,8 @@ const BALL_COLORS = {
   15: '#854d0e'
 };
 
+const CUT_AUTO_MIN_DEG = 10;
+
 function esc(s) {
   return String(s)
     .replace(/&/g, '&amp;')
@@ -65,6 +67,184 @@ function resolvePocket(target) {
   return key ? POCKETS[key] : null;
 }
 
+function ballXY(b) {
+  return {
+    id: b.id != null ? b.id : b[0],
+    x: b.x != null ? b.x : b[1],
+    y: b.y != null ? b.y : b[2]
+  };
+}
+
+function isCueBall(id) {
+  return id === 'cue' || id === 0 || id === '0';
+}
+
+function findCueAndOb(balls) {
+  let cue = null;
+  let ob = null;
+  for (const raw of balls) {
+    const b = ballXY(raw);
+    if (isCueBall(b.id)) {
+      if (!cue) cue = b;
+    } else if (!ob) {
+      ob = b;
+    }
+  }
+  return { cue, ob };
+}
+
+/**
+ * Ghost-ball center for a cut: cue arrives here so OB travels toward pocket.
+ * ghost = OB − normalize(pocket − OB) × (2 × ballR)
+ * @param {{x:number,y:number}} ob
+ * @param {{x:number,y:number}} pocket
+ * @param {number} ballR
+ * @returns {{x:number,y:number, dirX:number, dirY:number}}
+ */
+export function computeGhostBall(ob, pocket, ballR) {
+  const dx = pocket.x - ob.x;
+  const dy = pocket.y - ob.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const dirX = dx / len;
+  const dirY = dy / len;
+  return {
+    x: ob.x - dirX * 2 * ballR,
+    y: ob.y - dirY * 2 * ballR,
+    dirX,
+    dirY
+  };
+}
+
+/** Angle in degrees between two 2D vectors. */
+export function angleBetweenDeg(ax, ay, bx, by) {
+  const la = Math.hypot(ax, ay) || 1;
+  const lb = Math.hypot(bx, by) || 1;
+  const dot = (ax / la) * (bx / lb) + (ay / la) * (by / lb);
+  const c = Math.max(-1, Math.min(1, dot));
+  return (Math.acos(c) * 180) / Math.PI;
+}
+
+/**
+ * Map cut angle (cue→ghost vs OB→pocket) to thickness label.
+ */
+export function cutThicknessFromAngle(deg) {
+  if (deg < 8) return 'FULL';
+  if (deg < 22) return '¾ BALL';
+  if (deg < 38) return 'HALF-BALL';
+  if (deg < 55) return '¼ BALL';
+  return 'THIN';
+}
+
+/**
+ * Resolve display label from fraction / override / angle.
+ * @param {number|string|null|undefined} fraction
+ * @param {string|null|undefined} override
+ * @param {number} cutDeg
+ */
+export function resolveCutLabel(fraction, override, cutDeg) {
+  if (override && String(override).trim()) return String(override).trim().toUpperCase();
+  if (fraction != null && fraction !== '') {
+    const f = Number(fraction);
+    if (!Number.isNaN(f)) {
+      if (f >= 0.9) return 'FULL';
+      if (f >= 0.7) return '¾ BALL';
+      if (f >= 0.4) return 'HALF-BALL';
+      if (f >= 0.2) return '¼ BALL';
+      return 'THIN';
+    }
+    const s = String(fraction).toUpperCase();
+    if (s) return s;
+  }
+  return cutThicknessFromAngle(cutDeg);
+}
+
+/**
+ * Decide whether to show ghost overlay for a diagram spec.
+ */
+export function shouldShowGhostBall(spec, cue, ob, pocket, ghost, ballR) {
+  if (spec.showGhostBall === false || spec.ghostBall === false) return false;
+  if (spec.ghostBall === true || spec.showGhostBall === true) return true;
+  if (spec.ghostBall && typeof spec.ghostBall === 'object') return true;
+  if (!cue || !ob || !pocket || !ghost) return false;
+  const cutDeg = angleBetweenDeg(
+    ghost.x - cue.x,
+    ghost.y - cue.y,
+    pocket.x - ob.x,
+    pocket.y - ob.y
+  );
+  return cutDeg >= CUT_AUTO_MIN_DEG;
+}
+
+function clamp(v, lo, hi) {
+  return Math.max(lo, Math.min(hi, v));
+}
+
+function pathLooksLikeAimThroughOb(path, cue, ob, pocket) {
+  const pts = path.points || path;
+  if (!pts || pts.length < 2 || !cue || !ob) return false;
+  const near = (a, b, tol = 4) => Math.hypot(a.x - b.x, a.y - b.y) < tol;
+  const coords = pts.map((pt) => ({
+    x: pt.x != null ? pt.x : pt[0],
+    y: pt.y != null ? pt.y : pt[1]
+  }));
+  const hitsCue = coords.some((p) => near(p, cue));
+  const hitsOb = coords.some((p) => near(p, ob));
+  const hitsPocket =
+    pocket &&
+    coords.some((p) => near(p, { x: pocket.x, y: pocket.y }, 6));
+  // Typical aimPath: cue → OB → pocket (3 pts) — skip to avoid duplicate with ghost overlay
+  if (coords.length >= 3 && hitsCue && hitsOb && hitsPocket) return true;
+  if (coords.length === 2 && hitsCue && hitsOb) return true;
+  if (coords.length === 2 && hitsOb && hitsPocket) return true;
+  return false;
+}
+
+function renderGhostOverlay({ cue, ob, pocket, ghost, ballR, label, compact }) {
+  let svg = '';
+  const gx = ghost.x;
+  const gy = ghost.y;
+
+  // Optional overlap lens between ghost and OB (teaching hint)
+  const midX = (gx + ob.x) / 2;
+  const midY = (gy + ob.y) / 2;
+  const overlapR = ballR * 0.55;
+  svg += `<circle cx="${midX}" cy="${midY}" r="${overlapR}" fill="#55e5ff22" stroke="none"/>`;
+
+  // Ghost ball: translucent dashed circle
+  svg += `<circle class="ghost-ball" cx="${gx}" cy="${gy}" r="${ballR}" fill="#ffffff28" stroke="#a8f0ff" stroke-width="0.45" stroke-dasharray="1.1 0.7" opacity="0.95"/>`;
+  // Second ring
+  svg += `<circle class="ghost-ball-ring" cx="${gx}" cy="${gy}" r="${ballR * 0.55}" fill="none" stroke="#55e5ff" stroke-width="0.28" opacity="0.75"/>`;
+  // Crosshair
+  const ch = ballR * 0.35;
+  svg += `<line x1="${gx - ch}" y1="${gy}" x2="${gx + ch}" y2="${gy}" stroke="#cff9ff" stroke-width="0.28" opacity="0.85"/>`;
+  svg += `<line x1="${gx}" y1="${gy - ch}" x2="${gx}" y2="${gy + ch}" stroke="#cff9ff" stroke-width="0.28" opacity="0.85"/>`;
+
+  // Aim line: cue → ghost (gold), with arrow
+  svg += `<line class="ghost-aim" x1="${cue.x}" y1="${cue.y}" x2="${gx}" y2="${gy}" stroke="#ffc75b" stroke-width="0.65" marker-end="url(#ghostAimArrow)" opacity="0.95"/>`;
+
+  // Object path: OB → pocket (dashed cyan) — drawn here so it sits under balls with ghost aim
+  svg += `<line class="ghost-ob-path" x1="${ob.x}" y1="${ob.y}" x2="${pocket.x}" y2="${pocket.y}" stroke="#65e9ff" stroke-width="0.5" stroke-dasharray="1.4 1" opacity="0.85" marker-end="url(#arrowHead)"/>`;
+
+  // Label
+  if (!compact || label) {
+    const awayX = gx - ob.x;
+    const awayY = gy - ob.y;
+    const alen = Math.hypot(awayX, awayY) || 1;
+    let lx = gx + (awayX / alen) * (ballR + 3.2);
+    let ly = gy + (awayY / alen) * (ballR + 2.4);
+    lx = clamp(lx, 8, 92);
+    ly = clamp(ly, 6, 46);
+    const thickness = label || 'CUT';
+    const line1 = 'GHOST';
+    const line2 = thickness;
+    const fs = compact ? 1.9 : 2.15;
+    svg += `<text class="ghost-label" x="${lx}" y="${ly}" text-anchor="middle" fill="#e8fbff" font-size="${fs}" font-weight="800" font-family="system-ui,sans-serif" stroke="#062a32" stroke-width="0.35" paint-order="stroke">${esc(line1)}</text>`;
+    svg += `<text class="ghost-label" x="${lx}" y="${ly + (compact ? 2.2 : 2.5)}" text-anchor="middle" fill="#ffc75b" font-size="${fs * 0.92}" font-weight="700" font-family="system-ui,sans-serif" stroke="#062a32" stroke-width="0.3" paint-order="stroke">${esc(line2)}</text>`;
+  }
+
+  return svg;
+}
+
 /**
  * @param {object} spec - diagram from drill data
  * @param {object} [options]
@@ -83,6 +263,35 @@ export function renderTableDiagram(spec = {}, options = {}) {
   const compact = !!options.compact;
   const ballR = compact ? 2.2 : 2.8;
   const pocket = resolvePocket(spec.targetPocket || spec.target);
+  const { cue, ob } = findCueAndOb(balls);
+
+  let ghost = null;
+  let cutDeg = 0;
+  let cutLabel = null;
+  let showGhost = false;
+
+  if (cue && ob && pocket) {
+    ghost = computeGhostBall(ob, pocket, ballR);
+    cutDeg = angleBetweenDeg(
+      ghost.x - cue.x,
+      ghost.y - cue.y,
+      pocket.x - ob.x,
+      pocket.y - ob.y
+    );
+    const gb = spec.ghostBall;
+    const overrideLabel =
+      (gb && typeof gb === 'object' && gb.label) ||
+      spec.cutLabel ||
+      null;
+    const fraction =
+      (gb && typeof gb === 'object' && gb.cutFraction != null
+        ? gb.cutFraction
+        : null) ??
+      spec.cutFraction ??
+      null;
+    cutLabel = resolveCutLabel(fraction, overrideLabel, cutDeg);
+    showGhost = shouldShowGhostBall(spec, cue, ob, pocket, ghost, ballR);
+  }
 
   let svg = `<svg class="${esc(className)}" viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pool table drill diagram" preserveAspectRatio="xMidYMid meet">`;
 
@@ -98,6 +307,9 @@ export function renderTableDiagram(spec = {}, options = {}) {
     </filter>
     <marker id="arrowHead" markerWidth="4" markerHeight="4" refX="3" refY="2" orient="auto">
       <path d="M0,0 L4,2 L0,4 Z" fill="#55e5ff"/>
+    </marker>
+    <marker id="ghostAimArrow" markerWidth="4.5" markerHeight="4.5" refX="3.2" refY="2.25" orient="auto">
+      <path d="M0,0 L4.5,2.25 L0,4.5 Z" fill="#ffc75b"/>
     </marker>
   </defs>`;
 
@@ -154,8 +366,9 @@ export function renderTableDiagram(spec = {}, options = {}) {
     }
   }
 
-  // Aim / path lines
+  // Aim / path lines (skip duplicates when ghost overlay draws cue→ghost and OB→pocket)
   for (const path of paths) {
+    if (showGhost && pathLooksLikeAimThroughOb(path, cue, ob, pocket)) continue;
     const pts = path.points || path;
     if (!pts || pts.length < 2) continue;
     const d = pts
@@ -179,12 +392,25 @@ export function renderTableDiagram(spec = {}, options = {}) {
     svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#ffc75b" stroke-width="0.6" marker-end="url(#arrowHead)" opacity="0.95"/>`;
   }
 
+  // Ghost ball overlay BEFORE solid balls so cue/OB sit on top
+  if (showGhost && ghost && cue && ob && pocket) {
+    svg += renderGhostOverlay({
+      cue,
+      ob,
+      pocket,
+      ghost,
+      ballR,
+      label: cutLabel,
+      compact
+    });
+  }
+
   // Balls
   for (const b of balls) {
     const id = b.id != null ? b.id : b[0];
     const x = b.x != null ? b.x : b[1];
     const y = b.y != null ? b.y : b[2];
-    const isCue = id === 'cue' || id === 0 || id === '0';
+    const isCue = isCueBall(id);
     const num = isCue ? null : Number(id);
     const fill = isCue ? BALL_COLORS.cue : BALL_COLORS[num] || '#94a3b8';
     const stroke = isCue ? '#94a3b8' : num === 8 ? '#e5e7eb' : '#ffffffaa';
@@ -209,4 +435,4 @@ export function renderTableDiagram(spec = {}, options = {}) {
   return svg;
 }
 
-export { POCKETS, BALL_COLORS };
+export { POCKETS, BALL_COLORS, CUT_AUTO_MIN_DEG };

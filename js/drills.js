@@ -57,6 +57,7 @@ const baseDrills = [
     xp: 80,
     skillEffects: { 'Shot Making': 6 },
     diagram: {
+      showGhostBall: false,
       balls: [{ id: 'cue', x: 22, y: 38 }, { id: 1, x: 50, y: 25 }],
       targetPocket: 'TR',
       paths: [aimPath({ x: 22, y: 38 }, { x: 50, y: 25 }, { x: 97, y: 3 })]
@@ -78,6 +79,7 @@ const baseDrills = [
     xp: 100,
     skillEffects: { 'Shot Making': 5 },
     diagram: {
+      showGhostBall: false,
       balls: [{ id: 'cue', x: 28, y: 25 }, { id: 2, x: 72, y: 25 }],
       targetPocket: 'BR',
       paths: [aimPath({ x: 28, y: 25 }, { x: 72, y: 25 }, { x: 97, y: 47 })]
@@ -118,6 +120,8 @@ const baseDrills = [
     xp: 110,
     skillEffects: { 'Shot Making': 6 },
     diagram: {
+      showGhostBall: true,
+      ghostBall: { label: 'THIN' },
       balls: [{ id: 'cue', x: 55, y: 35 }, { id: 4, x: 30, y: 18 }],
       targetPocket: 'TL',
       paths: [aimPath({ x: 55, y: 35 }, { x: 30, y: 18 }, { x: 3, y: 3 })]
@@ -390,6 +394,8 @@ const baseDrills = [
     xp: 110,
     skillEffects: { 'Cue-Ball Control': 6, 'Position Play': 4 },
     diagram: {
+      showGhostBall: true,
+      ghostBall: { label: 'HALF-BALL' },
       balls: [{ id: 'cue', x: 60, y: 35 }, { id: 2, x: 35, y: 20 }],
       targetPocket: 'TL',
       zone: { x: 48, y: 32, r: 7 },
@@ -598,6 +604,8 @@ const baseDrills = [
     xp: 100,
     skillEffects: { 'Shot Making': 7 },
     diagram: {
+      showGhostBall: true,
+      ghostBall: { label: '¼ BALL' },
       balls: [{ id: 'cue', x: 35, y: 40 }, { id: 5, x: 58, y: 22 }],
       targetPocket: 'TR',
       paths: [aimPath({ x: 35, y: 40 }, { x: 58, y: 22 }, { x: 97, y: 3 })]
@@ -619,6 +627,8 @@ const baseDrills = [
     xp: 110,
     skillEffects: { 'Shot Making': 6 },
     diagram: {
+      showGhostBall: true,
+      ghostBall: { label: 'HALF-BALL' },
       balls: [{ id: 'cue', x: 28, y: 38 }, { id: 6, x: 50, y: 22 }],
       targetPocket: 'TM',
       paths: [aimPath({ x: 28, y: 38 }, { x: 50, y: 22 }, { x: 50, y: 2 })]
@@ -640,6 +650,8 @@ const baseDrills = [
     xp: 140,
     skillEffects: { 'Shot Making': 7 },
     diagram: {
+      showGhostBall: true,
+      ghostBall: { label: 'THIN' },
       balls: [{ id: 'cue', x: 70, y: 40 }, { id: 1, x: 40, y: 16 }],
       targetPocket: 'TL'
     }
@@ -660,6 +672,7 @@ const baseDrills = [
     xp: 120,
     skillEffects: { 'Shot Making': 5 },
     diagram: {
+      showGhostBall: true,
       balls: [{ id: 'cue', x: 40, y: 28 }, { id: 3, x: 75, y: 42 }],
       targetPocket: 'BR'
     }

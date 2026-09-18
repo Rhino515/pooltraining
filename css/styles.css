@@ -49,3 +49,11 @@
   .diagramWrap{border-width:7px}
   .positionBtns{grid-template-columns:1fr!important}
 }
+
+/* Ghost-ball aiming overlay (inline SVG classes) */
+.table-diagram .ghost-label{pointer-events:none}
+.table-diagram .ghost-ball{pointer-events:none}
+@media(max-width:700px){
+  .diagramWrap{overflow:visible}
+  .table-diagram{overflow:visible}
+}

@@ -654,6 +654,7 @@ export const extraDrills = [
     xp: 105,
     skillEffects: { 'Shot Making': 6 },
     diagram: {
+      showGhostBall: true,
       balls: [{ id: 'cue', x: 38, y: 38 }, { id: 5, x: 60, y: 20 }],
       targetPocket: 'TR',
       paths: [aim({ x: 38, y: 38 }, { x: 60, y: 20 }, { x: 97, y: 3 })]
@@ -675,6 +676,8 @@ export const extraDrills = [
     xp: 125,
     skillEffects: { 'Shot Making': 7 },
     diagram: {
+      showGhostBall: true,
+      ghostBall: { label: 'HALF-BALL' },
       balls: [{ id: 'cue', x: 62, y: 36 }, { id: 6, x: 35, y: 18 }],
       targetPocket: 'TL'
     }
@@ -695,6 +698,8 @@ export const extraDrills = [
     xp: 155,
     skillEffects: { 'Shot Making': 8 },
     diagram: {
+      showGhostBall: true,
+      ghostBall: { label: 'THIN' },
       balls: [{ id: 'cue', x: 28, y: 42 }, { id: 1, x: 55, y: 16 }],
       targetPocket: 'TR'
     }
@@ -716,6 +721,7 @@ export const extraDrills = [
     xp: 130,
     skillEffects: { 'Shot Making': 4, 'Cue-Ball Control': 5 },
     diagram: {
+      showGhostBall: true,
       balls: [{ id: 'cue', x: 36, y: 38 }, { id: 2, x: 58, y: 20 }],
       targetPocket: 'TR',
       zone: { x: 58, y: 22, r: 6 }
@@ -738,6 +744,7 @@ export const extraDrills = [
     xp: 130,
     skillEffects: { 'Shot Making': 4, 'Position Play': 5 },
     diagram: {
+      showGhostBall: true,
       balls: [{ id: 'cue', x: 32, y: 38 }, { id: 3, x: 55, y: 20 }],
       targetPocket: 'TR',
       zone: { x: 68, y: 28, r: 7 }
@@ -760,6 +767,7 @@ export const extraDrills = [
     xp: 145,
     skillEffects: { 'Shot Making': 4, 'Cue-Ball Control': 6 },
     diagram: {
+      showGhostBall: true,
       balls: [{ id: 'cue', x: 60, y: 36 }, { id: 4, x: 35, y: 18 }],
       targetPocket: 'TL',
       zone: { x: 48, y: 32, r: 7 }
