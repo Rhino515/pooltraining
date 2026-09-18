@@ -1,14 +1,17 @@
-# Pool IQ prototype
-Open `index.html` to preview, or host the folder with GitHub Pages / Netlify / any static web host.
+# Pool IQ
 
-Included in this first build:
-- Mobile/iPad responsive dark Pool IQ UI
-- Career ranks with locked progression
-- Training missions and skill ratings
-- Drill completion + persistent local progress
-- Ghost ladder progression
-- Table Analyze UI with independent coaching toggles
-- Stats and XP
-- PWA manifest + offline service worker
+Billiards training PWA — visual drills, career progression, Ghost mode.
 
-The Analyze camera button is intentionally a UI prototype. Live iPhone camera ball detection and iPad linking require the next implementation phase.
+**Live:** https://rhino515.github.io/pooltraining/
+
+Open on iPhone Safari → Share → Add to Home Screen for the installable PWA.
+
+Progress saves in the browser (`poolIQStateV3` localStorage).
+
+## Local preview
+
+```bash
+python3 -m http.server 8080
+```
+
+Then open http://127.0.0.1:8080/

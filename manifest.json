@@ -1,1 +1,15 @@
-{"name":"Pool IQ","short_name":"Pool IQ","start_url":"./","display":"standalone","background_color":"#050b12","theme_color":"#07111d","description":"Real-table billiards training, analysis and career progression."}
+{
+  "name": "Pool IQ",
+  "short_name": "Pool IQ",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#050b12",
+  "theme_color": "#07111d",
+  "description": "Real-table billiards training, analysis, and career progression.",
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
