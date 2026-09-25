@@ -6,7 +6,8 @@ Pool IQ is a mobile-first PWA for practising billiards on a real table. You play
 - Boss Battles that gate each Career rank
 - Ghost races
 - A numeric SPEED system you can calibrate to your own stroke
-- A teaching layer on every shot: table diagram, Shot Recipe, cue-ball contact diagram, and a Why This Shot? sheet
+- A teaching layer on every shot: table diagram, Shot Recipe gauges (Aim View, cue-ball tip, SPEED dial), and a Why This Shot? sheet
+- A faint dashed diamond grid on every table diagram, plus a Setup line giving each ball's position in diamonds
 
 All content is original. Pass/fail is only ever computed from the results you record. The app has no self-report "I passed" buttons.
 
@@ -28,7 +29,7 @@ To deploy, copy the folder to any static host (for example GitHub Pages). All as
 | Challenge data model + geometry | `js/games/geometry.js`, `js/games/builders.js` (position, pot, lag, bank, kick, carom, safety, train) |
 | Game content | `js/games/data/*.js` (one file per game plus `bosses.js`), `js/games/registry.js` |
 | Engine (pure) | `js/games/engine.js`: sessions, scoring modes (zone, lives, kick, train, stars, binary, sniper, ladder, calibration, pattern), unlocks, PBs, bosses |
-| Teaching components | `js/games/stageTable.js` (table SVG), `js/games/recipe.js` (Shot Recipe + Why), `js/games/cueBallDiagram.js`, `js/games/coaching.js` (Beginner → Expert) |
+| Teaching components | `js/tableDiagram.js` (shared table SVG + diamond grid), `js/games/stageTable.js` (routes/zones), `js/games/recipe.js` (Shot Recipe gauges, Setup line, Why), `js/games/aimView.js` (Aim View maths + SVG), `js/games/diamonds.js` (diamond readout), `js/games/cueBallDiagram.js`, `js/games/coaching.js` (Beginner → Expert) |
 | SPEED system | `js/games/speed.js`: SPEED 0.5–5.0 (1.0 = one table length of travel), personal calibration, table size and cloth |
 | Screens | `js/ui/play.js` (every game, drill and boss), `js/ui/sheet.js`, `js/dashboard.js`, `js/ghost.js` |
 | Career / skills | `js/career.js` (game levels, Ghost wins, Boss Battles), `js/skills.js` (ratings computed from results) |
@@ -54,6 +55,25 @@ To deploy, copy the folder to any static host (for example GitHub Pages). All as
 | Rail Runner | 6 |
 
 There are also 9 Boss Battles, one per rank from Club Player to Champion.
+
+### Diamond grid and Setup readout
+
+Every table diagram (stages, boss shots, drills, previews) draws thin dashed lines from each diamond sight across the felt: 7 along the long axis and 3 along the short axis, one diamond (12.5 table units) apart. They sit under the zones, paths and balls.
+
+The **Setup** line under the table lists every ball as `first · second`, computed from the ball coordinates and rounded to the nearest ¼ diamond:
+
+- first = diamonds from the **head rail** (the left end of the diagram, 0–8)
+- second = diamonds from the **top rail** (0–4)
+
+So `4 · 2` is the center spot, `2 · 2` the head spot and `6 · 2` the foot spot. Tap the Setup line to see this explanation and the list in words. The same list is at the bottom of the Why sheet.
+
+### Shot Recipe gauges
+
+The recipe card shows three round gauges:
+
+1. **Aim View** shows the object ball as seen from behind the cue ball, with the ghost cue ball overlapping it. θ is the angle between the cue ball's final approach (cue → ghost, or last rail → ghost on a kick) and the ghost → object-ball line. The sideways offset is sin θ × one ball diameter and the fullness is 1 − sin θ. Hitting the right side of the object ball sends it left. The label reads like "Right ½ · 30° cut". The gauge is left out when there is no object ball (lags). Intermediate coaching shows "?" in its place, and Advanced/Expert hide it until the plan is locked.
+2. **Tip** shows a shaded cue ball with the contact dot, labelled e.g. "Draw 1½ tips". Tap it for the full recipe.
+3. **Speed dial** shows the needle on Pool IQ's SPEED 0.5–5.0 scale.
 
 ### Camera-ready hook
 
@@ -152,6 +172,9 @@ It checks:
   - cue-ball and object-ball lines are clear
   - kick blockers really block
 - why-text is unique per stage
+- diamond grid: 10 lines, aligned with the rail sights, drawn under the balls, on every stage, boss shot and the drill template
+- diamond readout: corners, spots, ¼ rounding, every ball on every stage and boss shot
+- Aim View maths: straight-in = Full, 30° = ½, 48.6° = ¼, the correct side, and agreement with the dashed object-ball path and the recipe cut angle on every shot
 - scoring and unlock rules
 - lives and multipliers
 - Ghost undo after the match ends
@@ -184,7 +207,8 @@ It covers:
 - Career ticks
 - Boss pass/fail and promotion
 - skill changes
-- layout at 390×844 and 375×667
+- the diamond grid, Setup readout and Aim View on a stage, a bank stage, a boss shot and the drill template
+- layout at 390×844 and 375×667 (table, gauges, instructions and score buttons fit without scrolling)
 - service worker and offline reload
 
 ## Storage

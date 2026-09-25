@@ -7,7 +7,7 @@
 import * as E from '../games/engine.js';
 import { getGame, getStage, getBoss, stageSpecs } from '../games/registry.js';
 import { renderStageTable, legendHTML } from '../games/stageTable.js';
-import { recipeCardHTML, recipeStripHTML, whyHTML, esc, speedChip } from '../games/recipe.js';
+import { recipeCardHTML, recipeGaugesHTML, whyHTML, esc, speedChip, setupLineHTML, setupSheetHTML, aimRowHTML } from '../games/recipe.js';
 import { cueBallSVG, tipsFromTap } from '../games/cueBallDiagram.js';
 import { coachingLevel, visibility, comparePlan, TECHNIQUES, SPEED_CHOICES, RAIL_CHOICES, COACH_LABEL } from '../games/coaching.js';
 import { contactText, englishText, techniqueName } from '../games/text.js';
@@ -132,13 +132,14 @@ export function createPlayScreen(ctx, key) {
       : isPattern
         ? { allSteps: true, showAim: false, orderBadges: true, pickedOrder: session.plan?.order || [] }
         : { showCuePath: vis.cuePath, showAim: vis.aim, showObPath: vis.obPath, showZones: vis.zones, step: step ?? (ch.steps ? 0 : undefined), orderBadges: !!(shot && ch.steps) };
-    const tableSVG = renderStageTable(ev.mode === 'train' ? stage : isPattern ? stage : ch, ev.mode === 'train' ? { ...tableOpts, step } : tableOpts);
+    const tableSrc = ev.mode === 'train' ? stage : isPattern ? stage : ch;
+    const tableSVG = renderStageTable(tableSrc, ev.mode === 'train' ? { ...tableOpts, step } : tableOpts);
     const goalText = vis.goalOnly ? ch.expertGoal || ch.goal : ch.goal;
     let mid = '';
     if (patternPlanning) mid = patternPlannerHTML(stage);
     else if (planning) mid = plannerHTML(ch, level);
     else {
-      mid = `<div class="recipeRow">${recipeStripHTML(ch, { hideAim: !vis.aim, hideRoute: !vis.cuePath && !vis.obPath })}<button type="button" class="whyBtn" data-action="why-open">WHY THIS SHOT?</button></div>`;
+      mid = `<div class="recipeRow">${recipeGaugesHTML(ch, { hideAim: !vis.aim, hideRoute: !vis.cuePath && !vis.obPath })}<button type="button" class="whyBtn" data-action="why-open">WHY THIS SHOT?</button></div>`;
     }
     const need = boss ? `${shot.shot.mode === 'zone' ? `${shot.shot.need}★` : `${shot.shot.need} of ${shot.shot.attempts}`} to pass this shot` : ev.needText ? `Pass: ${ev.needText}` : '';
     const btns = patternPlanning || planning ? [] : session.bossId ? E.bossButtons(ev) : E.resultButtons(session, stage, ev);
@@ -150,6 +151,7 @@ export function createPlayScreen(ctx, key) {
     root.innerHTML = `<div class="playScreen" data-game="${esc(session.gameId)}" data-stage="${esc(session.stageId)}" data-mode="${ev.mode}" data-coach="${level}">
       ${headerHTML(ev, title, sub)}
       <div class="playTable">${tableSVG}</div>
+      ${setupLineHTML(tableSrc)}
       ${patternPlanning ? '<div class="legend small">Tap the balls in the order you would run them.</div>' : legendHTML(ch)}
       <div class="playBody">
         ${mid}
@@ -243,6 +245,7 @@ export function createPlayScreen(ctx, key) {
     root.innerHTML = `<div class="playScreen" data-game="speed" data-stage="sp-cal" data-mode="calibration">
       ${headerHTML(ev, `${game.name} · Calibration`, `Shot ${Object.keys(ev.done).length + 1}/${stage.speeds.length} · ${speedLabel(target)}`)}
       <div class="playTable">${renderStageTable(ch, {})}</div>
+      ${setupLineHTML(ch)}
       <div class="legend small"><span>Start against the head rail (left). Diamonds counted from the head rail: 0 → 8.</span></div>
       <div class="playBody">
         <div class="calTarget"><span class="speedChip big" data-speed="${formatSpeed(target)}">${speedLabel(target)}</span><p>Target: ${esc(ch.whyExplanation.whySpeed.split('. ')[0])}. It should stop on pass ${ep.leg} at diamond ${ep.diamond}.</p></div>
@@ -305,6 +308,11 @@ export function createPlayScreen(ctx, key) {
     return `<div class="calSummary"><b>Your calibration</b>${CALIBRATION_SPEEDS.map((s) => { const f = personalFactor(cal, s); const last = (cal.results?.[formatSpeed(s)] || []).slice(-1)[0]; return `<div class="calRow"><span>${speedLabel(s)}</span><span>${last ? `${last.actual.toFixed(2)} lengths` : '—'}</span><span class="${Math.abs(f - 1) < 0.06 ? 'green' : 'gold'}">${Math.abs(f - 1) < 0.06 ? 'on target' : f > 1 ? 'runs short' : 'runs long'}</span></div>`; }).join('')}</div>`;
   }
 
+  /** The layout the player sets up at the table (train/pattern: the starting rack, not the current step) */
+  function setupSource(ev, ch) {
+    return ev.mode === 'train' || ev.mode === 'pattern' ? stage : ch;
+  }
+
   // ---------------------------------------------------------------------- actions
   function onAction(action, el, e) {
     const ev = evaluate();
@@ -346,12 +354,19 @@ export function createPlayScreen(ctx, key) {
     }
     if (action === 'recipe-open') {
       const { ch } = shotChallenge(session, stage, ev);
-      openSheet(`${recipeCardHTML(ch, { cal: ctx.getState().speedCal })}<button type="button" class="bigBtn alt" data-action="why-open">WHY THIS SHOT?</button>`, { id: 'recipe' });
+      const v = visibility(coach(ch), ch, session.planLocked);
+      openSheet(`${recipeCardHTML(ch, { cal: ctx.getState().speedCal, hideAim: !v.aim, hideRoute: !v.cuePath && !v.obPath })}<button type="button" class="bigBtn alt" data-action="why-open">WHY THIS SHOT?</button>`, { id: 'recipe' });
       return true;
     }
     if (action === 'why-open') {
       const { ch } = shotChallenge(session, stage, ev);
-      openSheet(`<div class="eyebrow">WHY THIS SHOT?</div><h2 class="sheetTitle">${esc(ch.name || stage?.name || '')}</h2>${whyHTML(ch)}`, { id: 'why' });
+      const v = visibility(coach(ch), ch, session.planLocked);
+      openSheet(`<div class="eyebrow">WHY THIS SHOT?</div><h2 class="sheetTitle">${esc(ch.name || stage?.name || '')}</h2>${v.aim ? aimRowHTML(ch) : ''}${whyHTML(ch)}<h3 class="su-h">Set it up (diamonds)</h3>${setupSheetHTML(setupSource(ev, ch))}`, { id: 'why' });
+      return true;
+    }
+    if (action === 'setup-open') {
+      const { ch } = shotChallenge(session, stage, ev);
+      openSheet(`<div class="eyebrow">SETUP · DIAMOND POSITIONS</div><h2 class="sheetTitle">${esc(ch.name || stage?.name || '')}</h2>${setupSheetHTML(setupSource(ev, ch))}<button type="button" class="bigBtn" data-action="sheet-close">GOT IT</button>`, { id: 'setup' });
       return true;
     }
     if (action === 'coach-info') {

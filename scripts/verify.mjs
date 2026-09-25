@@ -52,6 +52,8 @@ const cbd = await import(js('games/cueBallDiagram.js'));
 const stageTable = await import(js('games/stageTable.js'));
 const recipe = await import(js('games/recipe.js'));
 const text = await import(js('games/text.js'));
+const aimV = await import(js('games/aimView.js'));
+const dia = await import(js('games/diamonds.js'));
 
 // ---------------------------------------------------------------- drill library (may be empty)
 const { drills } = drillsMod;
@@ -192,6 +194,130 @@ assert(fieldDupes.length <= Math.ceil(stageCount * 0.1), `route/aim explanations
   const FMT = { technique: text.techniqueName, contact: text.contactText, english: (h) => text.englishText(h), speed: (v) => speed.speedLabel(v) };
   const cmp = coaching.comparePlan({ technique: coaching.techniqueGroup(lz.technique), vTips: lz.cueContact.vTips, hTips: lz.cueContact.hTips, speed: lz.speed, rails: lz.route?.rails || 0 }, lz, FMT);
   assert(cmp && cmp.rows && cmp.rows.every((r) => r.verdict === 'match'), 'plan identical to the recipe compares as all-match');
+}
+
+// ---------------------------------------------------------------- diamond grid
+{
+  const svg = stageTable.renderStageTable(reg.getStage('landing', 'lz-1'), {});
+  const gx = [...svg.matchAll(/class="grid-x" data-x="([\d.]+)" x1="([\d.]+)" y1="([\d.]+)" x2="([\d.]+)" y2="([\d.]+)"/g)].map((m) => m.slice(1).map(Number));
+  const gy = [...svg.matchAll(/class="grid-y" data-y="([\d.]+)" x1="([\d.]+)" y1="([\d.]+)" x2="([\d.]+)" y2="([\d.]+)"/g)].map((m) => m.slice(1).map(Number));
+  assert(gx.length === 7 && gy.length === 3, `diamond grid: 7 long-axis + 3 short-axis lines (got ${gx.length} + ${gy.length})`);
+  assert(gx.every(([x, x1, , x2]) => x1 === x && x2 === x) && gy.every(([y, , y1, , y2]) => y1 === y && y2 === y), 'grid lines are straight (vertical / horizontal)');
+  const sights = [...svg.matchAll(/class="diamond-sight" cx="([\d.]+)" cy="([\d.]+)"/g)].map((m) => [+m[1], +m[2]]);
+  assert(sights.length === 18, `18 diamond sights on the rails (got ${sights.length})`);
+  const onRail = (x, y) => sights.some(([a, b]) => Math.abs(a - x) < 1e-9 && Math.abs(b - y) < 1e-9);
+  const xProblems = gx.map(([x]) => x).filter((x) => (x === 50 ? !(table.POCKETS.TM.x === 50 && table.POCKETS.BM.x === 50) : !(onRail(x, 2.4) && onRail(x, 47.6))));
+  assert(xProblems.length === 0, `every long-axis line runs from a top-rail sight to the matching bottom-rail sight (centre line through the side pockets)${xProblems.length ? ' — bad: ' + xProblems : ''}`);
+  const yProblems = gy.map(([y]) => y).filter((y) => !(onRail(2.4, y) && onRail(97.6, y)));
+  assert(yProblems.length === 0, 'every short-axis line runs from a head-rail sight to the matching foot-rail sight');
+  assert(gx.every(([x], i) => Math.abs(x - (i + 1) * G.DIAMOND) < 1e-9) && gy.every(([y], i) => Math.abs(y - (i + 1) * G.DIAMOND) < 1e-9), 'grid spacing = one diamond (12.5 units) = geometry.DIAMOND');
+  assert(JSON.stringify(dia.GRID_X) === JSON.stringify(gx.map((g) => g[0])) && JSON.stringify(dia.GRID_Y) === JSON.stringify(gy.map((g) => g[0])), 'readout grid (diamonds.js) matches the drawn grid');
+  const iGrid = svg.indexOf('class="diamond-grid"');
+  const firstOver = Math.min(...['zone-ring', 'cue-path', 'ob-path', 'class="ball '].map((k) => svg.indexOf(k)).filter((i) => i >= 0));
+  assert(iGrid > 0 && iGrid < firstOver, 'grid is drawn under zones, paths and balls');
+  assert(/class="diamond-grid"[^>]*stroke-dasharray="[\d.]+ [\d.]+"[^>]*opacity="0\.[0-3]\d*"/.test(svg), 'grid is dashed and faint (opacity < 0.4)');
+  assert(svg.includes('HEAD') && /x1="25" y1="3.5" x2="25" y2="46.5" stroke="#55e5ff"/.test(svg), 'head string mark kept on top of the grid');
+  const probs = [];
+  for (const g of reg.GAMES) { if (g.special === 'ghost') continue; for (const st of reg.getStages(g.id)) if (st.kind !== 'ladder' && st.kind !== 'calibration' && (stageTable.renderStageTable(st, {}).match(/class="grid-[xy]"/g) || []).length !== 10) probs.push(st.id); }
+  for (const b of reg.getBosses()) for (const sh of b.shots) if ((stageTable.renderStageTable(sh.challenge, {}).match(/class="grid-[xy]"/g) || []).length !== 10) probs.push(`${b.id}/${sh.title}`);
+  const tmpl = drillsMod.normalizeDrill({ id: 'tmpl-grid', name: 'T', category: 'Stop Shots', difficulty: 2, kind: 'position', ob: [1, 60, 25], pocket: 'TR', cut: [30, 1, 24], k: 0, travel: 0, scoring: { mode: 'zone', attempts: 10, pass: { stars: 15, pockets: 8 } }, skillEffects: { 'Cue-Ball Control': 1 } });
+  if ((stageTable.renderStageTable(tmpl, { className: 'table-diagram mini' }).match(/class="grid-[xy]"/g) || []).length !== 10) probs.push('drill template');
+  assertAll('every stage, boss shot and the drill template renders the 10-line diamond grid', probs);
+}
+
+// ---------------------------------------------------------------- diamond readout
+{
+  const td = (x, y) => dia.toDiamonds({ x, y });
+  const eq = (a, h, t) => a.fromHead === h && a.fromTop === t;
+  assert(eq(td(0, 0), 0, 0) && eq(td(100, 0), 8, 0) && eq(td(0, 50), 0, 4) && eq(td(100, 50), 8, 4), 'readout: table corners = 0·0, 8·0, 0·4, 8·4');
+  assert(eq(td(50, 25), 4, 2) && eq(td(25, 25), 2, 2) && eq(td(75, 25), 6, 2), 'readout: center spot 4·2, head spot 2·2, foot spot 6·2');
+  assert(eq(td(31.25, 9.375), 2.5, 0.75) && eq(td(1.5, 48.5), 0, 4) && eq(td(1.6, 3.2), 0.25, 0.25) && eq(td(-5, 60), 0, 4), 'readout: rounds to the nearest ¼ diamond and clamps to the table');
+  assert(eq(td(table.POCKETS.TL.x, table.POCKETS.TL.y), 0.25, 0.25) && eq(td(table.POCKETS.BM.x, table.POCKETS.BM.y), 4, 3.75), 'readout: pocket centres (TL ¼·¼, bottom side 4·3¾ — drawn just inside the rail)');
+  assert(dia.fmtDiamond(2.75) === '2¾' && dia.fmtDiamond(0.5) === '½' && dia.fmtDiamond(0) === '0' && dia.fmtDiamond(4) === '4' && dia.fmtDiamond(3.25) === '3¼' && dia.fmtDiamond(1.1) === '1', 'readout formatting (2¾, ½, 0, 4, 3¼)');
+  assert(dia.shortPos(dia.toDiamonds({ x: 50, y: 25 })) === '4 · 2' && /4 diamonds from the head rail, 2 from the top rail/.test(dia.wordsPos(dia.toDiamonds({ x: 50, y: 25 }))), 'readout text: "4 · 2" and plain words');
+  assert(/head rail/.test(dia.CONVENTION_TEXT) && /top rail/.test(dia.CONVENTION_TEXT) && /¼/.test(dia.CONVENTION_TEXT), 'convention explained in plain words');
+  const probs = [];
+  const checkSetup = (ch, label) => {
+    const sb = dia.setupBalls(ch);
+    const want = (ch.cueBallPosition ? 1 : 0) + (ch.ballPositions || []).length;
+    if (sb.length < want) probs.push(`${label}: ${sb.length}/${want} balls`);
+    if (ch.cueBallPosition && sb[0]?.id !== 'cue') probs.push(`${label}: cue not first`);
+    for (const b of sb) if (Math.abs(b.fromHead - b.x / 12.5) > 0.125 + 1e-9 || Math.abs(b.fromTop - b.y / 12.5) > 0.125 + 1e-9) probs.push(`${label}: ball ${b.id} readout off`);
+    const html = recipe.setupLineHTML(ch);
+    if (sb.length && (html.match(/class="su-ball"/g) || []).length !== sb.length) probs.push(`${label}: setup line shows ${(html.match(/class="su-ball"/g) || []).length}/${sb.length}`);
+  };
+  for (const g of reg.GAMES) { if (g.special === 'ghost') continue; for (const st of reg.getStages(g.id)) if (st.ballPositions || st.cueBallPosition) checkSetup(st, st.id); }
+  for (const b of reg.getBosses()) for (const sh of b.shots) checkSetup(sh.challenge, `${b.id}/${sh.title}`);
+  assertAll('setup readout derived from ball coordinates for every stage and boss shot (±⅛ diamond, all balls, cue first)', probs);
+}
+
+// ---------------------------------------------------------------- aim view
+{
+  const R = G.R;
+  const shot = (thetaDeg, sign) => {
+    // OB at (60,25) going +x; approach direction rotated by sign·θ (y-down coords)
+    const ob = { x: 60, y: 25 };
+    const ghost = { x: 60 - 2 * R, y: 25 };
+    const t = (sign * thetaDeg * Math.PI) / 180;
+    const from = { x: ghost.x - Math.cos(t) * 30, y: ghost.y - Math.sin(t) * 30 };
+    return aimV.aimFromPoints(from, ghost, ob, R);
+  };
+  const s0 = shot(0, 1);
+  assert(s0.theta < 1e-6 && Math.abs(s0.fullness - 1) < 1e-9 && s0.offset < 1e-9 && aimV.fullnessWord(s0.fullness) === 'Full' && s0.side === 'center', 'aim: straight-in = Full, zero offset');
+  const s30 = shot(30, 1);
+  assert(Math.abs(s30.theta - 30) < 1e-6 && Math.abs(s30.fullness - 0.5) < 1e-9 && Math.abs(s30.offset - R) < 1e-9 && aimV.fullnessWord(s30.fullness) === '½', 'aim: 30° cut = ½ ball, offset = sin30° × diameter = one radius');
+  const q = (Math.asin(0.75) * 180) / Math.PI;
+  const s48 = shot(q, 1);
+  assert(Math.abs(q - 48.59) < 0.01 && Math.abs(s48.fullness - 0.25) < 1e-9 && aimV.fullnessWord(s48.fullness) === '¼' && Math.abs(s48.offset - 1.5 * R) < 1e-9, 'aim: 48.6° cut = ¼ ball (offset ¾ diameter)');
+  assert(aimV.fullnessWord(1 - Math.sin((14.5 * Math.PI) / 180)) === '¾' && aimV.fullnessWord(1 - Math.sin((70 * Math.PI) / 180)) === 'Thin', 'aim: 14.5° = ¾, 70° = Thin');
+  // approach heading down-right (y-down) while the OB leaves straight right → OB goes to the viewer's LEFT → hit the RIGHT side
+  assert(s30.side === 'right' && shot(30, -1).side === 'left', 'aim: side correct (OB goes left of the aim line ⇒ hit its right side, and the mirror case)');
+  assert(Math.abs(Math.abs(s30.lateral) - s30.offset) < 1e-9, 'aim: seen offset equals the ghost–OB sideways distance');
+  // every real shot: aim view agrees with the dashed object-ball path, the recipe cut angle and the cut side
+  const probs = [];
+  let n = 0;
+  let hidden = 0;
+  const checkShot = (ch, label) => {
+    const info = aimV.aimViewInfo(ch);
+    const hasOB = !!(ch.ghost || ch.steps?.[0]?.ghost);
+    if (!info) { if (hasOB && ch.kind !== 'train') probs.push(`${label}: no aim view despite a ghost spot`); else hidden++; return; }
+    n++;
+    const obp = ch.ghost ? ch.objectBallPath : ch.steps?.[0]?.objectBallPath;
+    if (obp?.length >= 2 && G.dist(obp[0], info.ob) < 0.3) {
+      const o = G.norm(G.sub(obp[1], obp[0]));
+      const ang = G.angleBetween(o, info.n);
+      if (ang > 2) probs.push(`${label}: aim-view OB direction differs from the dashed OB path by ${ang.toFixed(1)}°`);
+      if (info.theta >= 1) {
+        const cross = info.d.x * o.y - info.d.y * o.x; // >0: OB leaves to the viewer's right
+        const expect = cross > 0 ? 'left' : 'right';
+        if (info.side !== expect) probs.push(`${label}: side ${info.side}, OB path says ${expect}`);
+      }
+    }
+    const aim = ch.ghost ? ch.aim : ch.steps?.[0]?.aim;
+    if (!info.afterRail && aim && aim.fraction != null && typeof aim.cutDeg === 'number' && Math.abs(aim.cutDeg - info.theta) > 1.5) probs.push(`${label}: cut ${info.theta.toFixed(1)}° vs recipe ${aim.cutDeg}°`);
+    if (Math.abs(info.offset - Math.sin((info.theta * Math.PI) / 180) * 2 * R) > 1e-9 || Math.abs(info.fullness - (1 - Math.sin((info.theta * Math.PI) / 180))) > 1e-9) probs.push(`${label}: offset/fullness formula`);
+  };
+  for (const g of reg.GAMES) {
+    if (g.special === 'ghost') continue;
+    for (const st of reg.getStages(g.id)) {
+      checkShot(st, st.id);
+      if (st.steps) st.steps.forEach((sp, i) => checkShot({ ...st, ...sp, id: `${st.id}-s${i + 1}`, kind: 'position', steps: undefined, targetBall: sp.ball }, `${st.id} step ${i + 1}`));
+    }
+  }
+  for (const b of reg.getBosses()) for (const sh of b.shots) checkShot(sh.challenge, `${b.id}/${sh.title}`);
+  assertAll(`aim view matches the OB path direction, recipe cut angle and cut side on ${n} shots (${hidden} without an object-ball aim hidden)`, probs);
+  const lag = reg.getStages('speed').find((s) => s.kind === 'lag') || reg.getBosses().flatMap((b) => b.shots).find((s) => s.challenge.kind === 'lag')?.challenge;
+  assert(lag && aimV.aimViewInfo(lag) === null && (recipe.recipeGaugesHTML(lag).match(/class="gauge /g) || []).length === 2, 'no object ball (lag) → aim view hidden, 2 gauges');
+  const lz = reg.getStage('landing', 'lz-1');
+  const gh = recipe.recipeGaugesHTML(lz);
+  assert((gh.match(/class="gauge /g) || []).length === 3 && /class="aim-view[^"]*"[^>]*data-cut="30" data-side="right"/.test(gh) && gh.includes('Right ½') && gh.includes('cb-dot') && gh.includes('Speed 1.0'), 'gauge card: Aim View (Right ½, 30°) · tip · speed dial');
+  const hid = recipe.recipeGaugesHTML(lz, { hideAim: true });
+  assert(!/data-cut=/.test(hid) && hid.includes('Your aim'), 'coaching hides the aim value (no numbers leak)');
+  assert(recipe.speedAngle(0.5) === -135 && recipe.speedAngle(5) === 135 && Math.abs(recipe.speedAngle(2.75)) < 1e-9, 'speed dial needle maps SPEED 0.5–5.0 onto −135°…+135°');
+  assert(recipe.tipLabel(0, 0) === 'Center' && recipe.tipLabel(1, 0) === 'Top 1 tip' && recipe.tipLabel(-1.5, 0) === 'Draw 1½ tips' && recipe.tipLabel(-0.5, -1) === 'Low Left' && recipe.tipLabel(0, 0.5) === 'Right ½ tip', 'tip labels (Center, Top 1 tip, Draw 1½ tips, Low Left)');
+  const m = recipe.tipGaugeSVG({ vTips: -1, hTips: 0.5 }).match(/class="cb-dot"[^>]*cx="([\d.]+)" cy="([\d.]+)"/);
+  assert(m && Math.abs(+m[1] - (50 + 0.5 * cbd.TIP_UNIT)) < 0.01 && Math.abs(+m[2] - (50 + cbd.TIP_UNIT)) < 0.01, 'tip gauge dot sits at the recipe tips (1 low, ½ right)');
+  assert(recipe.recipeCardHTML(lz).includes('aimRow') && !recipe.recipeCardHTML(lz, { hideAim: true }).includes('aimRow'), 'recipe sheet shows the Aim View unless coaching hides aim');
 }
 
 // ---------------------------------------------------------------- engine: sessions, unlocks, lives, multiplier

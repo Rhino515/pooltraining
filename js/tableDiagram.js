@@ -34,6 +34,25 @@ const BALL_COLORS = {
 
 const CUT_AUTO_MIN_DEG = 10;
 
+/** Diamond sights (table units). One diamond = 12.5; long rails have 3 per half (the side pocket replaces the middle one). */
+export const DIAMOND_SIGHTS = [
+  [12.5, 2.4], [25, 2.4], [37.5, 2.4], [62.5, 2.4], [75, 2.4], [87.5, 2.4],
+  [12.5, 47.6], [25, 47.6], [37.5, 47.6], [62.5, 47.6], [75, 47.6], [87.5, 47.6],
+  [2.4, 12.5], [2.4, 25], [2.4, 37.5],
+  [97.6, 12.5], [97.6, 25], [97.6, 37.5]
+];
+/** Faint dashed grid from every diamond sight across the playing surface: 7 long-axis + 3 short-axis lines */
+export const GRID_LINES_X = [12.5, 25, 37.5, 50, 62.5, 75, 87.5];
+export const GRID_LINES_Y = [12.5, 25, 37.5];
+
+/** SVG for the diamond grid (drawn right on the felt, under zones, paths and balls) */
+export function diamondGridSVG() {
+  let g = '<g class="diamond-grid" data-lines="' + (GRID_LINES_X.length + GRID_LINES_Y.length) + '" stroke="#cdeefa" stroke-width="0.16" stroke-dasharray="1.2 1.2" opacity="0.26" fill="none" pointer-events="none">';
+  for (const x of GRID_LINES_X) g += `<line class="grid-x" data-x="${x}" x1="${x}" y1="3.5" x2="${x}" y2="46.5"/>`;
+  for (const y of GRID_LINES_Y) g += `<line class="grid-y" data-y="${y}" x1="3.5" y1="${y}" x2="96.5" y2="${y}"/>`;
+  return g + '</g>';
+}
+
 function esc(s) {
   return String(s)
     .replace(/&/g, '&amp;')
@@ -327,6 +346,9 @@ export function renderTableDiagram(spec = {}, options = {}) {
   // Inner cushion line hint
   svg += `<rect x="3.4" y="3.4" width="93.2" height="43.2" rx="1" ry="1" fill="none" stroke="#1a6a72" stroke-width="0.25" opacity="0.5"/>`;
 
+  // Diamond grid (under everything that follows)
+  if (spec.grid !== false) svg += diamondGridSVG();
+
   // Head string
   if (headString) {
     svg += `<line x1="25" y1="3.5" x2="25" y2="46.5" stroke="#55e5ff" stroke-width="0.25" stroke-dasharray="1.2 1.2" opacity="0.45"/>`;
@@ -336,14 +358,8 @@ export function renderTableDiagram(spec = {}, options = {}) {
   }
 
   // Diamond marks (simple)
-  const diamonds = [
-    [12.5, 2.4], [25, 2.4], [37.5, 2.4], [62.5, 2.4], [75, 2.4], [87.5, 2.4],
-    [12.5, 47.6], [25, 47.6], [37.5, 47.6], [62.5, 47.6], [75, 47.6], [87.5, 47.6],
-    [2.4, 12.5], [2.4, 25], [2.4, 37.5],
-    [97.6, 12.5], [97.6, 25], [97.6, 37.5]
-  ];
-  for (const [dx, dy] of diamonds) {
-    svg += `<circle cx="${dx}" cy="${dy}" r="0.45" fill="#c9e6f0" opacity="0.55"/>`;
+  for (const [dx, dy] of DIAMOND_SIGHTS) {
+    svg += `<circle class="diamond-sight" cx="${dx}" cy="${dy}" r="0.45" fill="#c9e6f0" opacity="0.55"/>`;
   }
 
   // Pockets

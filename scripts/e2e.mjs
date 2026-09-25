@@ -131,9 +131,76 @@ check((await page.$$('.gameCard[data-game]')).length === 14, '14 arcade game car
 await shot('01-arcade-hub');
 await go('#play/landing/lz-1');
 for (const cls of ['obj-ball', 'cue-ball', 'zone-ring', 'cue-path', 'ob-path']) check(await exists(`.playTable svg .${cls}`), `landing table SVG has .${cls}`);
-const chip = await text('.recipeRow .speedChip, .speedChip');
-check(/^SPEED \d\.\d$/.test(chip.trim()), `SPEED chip shown ("${chip.trim()}")`);
+const chip = await text('.recipeRow .gauge-speed b');
+check(/^Speed \d\.\d$/.test(chip.trim()) && (await exists('.recipeRow .gauge-speed .speed-dial .sd-needle')), `SPEED dial shown ("${chip.trim()}")`);
 await shot('02-landing-zone');
+/** Diamond grid, setup readout and aim view on the current play screen */
+async function gridReport() {
+  return page.evaluate(() => {
+    const svg = document.querySelector('.playTable svg');
+    const gx = [...svg.querySelectorAll('.diamond-grid .grid-x')].map((l) => +l.getAttribute('x1'));
+    const gy = [...svg.querySelectorAll('.diamond-grid .grid-y')].map((l) => +l.getAttribute('y1'));
+    const sights = [...svg.querySelectorAll('.diamond-sight')].map((c) => [+c.getAttribute('cx'), +c.getAttribute('cy')]);
+    const has = (x, y) => sights.some(([a, b]) => Math.abs(a - x) < 1e-6 && Math.abs(b - y) < 1e-6);
+    const aligned = gx.every((x) => x === 50 || (has(x, 2.4) && has(x, 47.6))) && gy.every((y) => has(2.4, y) && has(97.6, y));
+    const grid = svg.querySelector('.diamond-grid');
+    const firstBall = svg.querySelector('g.ball');
+    const under = !!grid && !!firstBall && !!(grid.compareDocumentPosition(firstBall) & Node.DOCUMENT_POSITION_FOLLOWING);
+    const su = document.querySelector('.setupLine');
+    const bar = document.querySelector('.resultBar')?.getBoundingClientRect();
+    const sr = su?.getBoundingClientRect();
+    const goal = document.querySelector('.goalLine')?.getBoundingClientRect();
+    const av = document.querySelector('.gaugeCard .gauge-aim .aim-view');
+    const ar = document.querySelector('.gaugeCard')?.getBoundingClientRect();
+    return {
+      gx: gx.length, gy: gy.length, aligned, under, op: +getComputedStyle(grid).opacity,
+      balls: svg.querySelectorAll('g.ball').length, setup: su ? su.querySelectorAll('.su-ball').length : 0,
+      setupVisible: !!sr && sr.height > 10 && sr.bottom <= (bar ? bar.top : innerHeight),
+      setupText: su?.innerText || '',
+      aimCut: av?.dataset.cut ?? null, aimSide: av?.dataset.side ?? null, aimLabel: document.querySelector('.gauge-aim b')?.innerText || '',
+      gaugesVisible: !!ar && ar.bottom <= (bar ? bar.top : innerHeight),
+      goalVisible: !!goal && goal.bottom <= (bar ? bar.top : innerHeight),
+      noScroll: document.documentElement.scrollHeight <= innerHeight + 1
+    };
+  });
+}
+{
+  const g = await gridReport();
+  check(g.gx === 7 && g.gy === 3 && g.aligned, `stage: diamond grid 7 + 3 lines aligned with the rail diamonds (${g.gx}+${g.gy})`);
+  check(g.under && g.op > 0 && g.op < 0.4, `stage: grid faint (opacity ${g.op}) and under the balls`);
+  check(g.setup === g.balls && g.setup >= 2 && g.setupVisible && /2 · 1¾/.test(g.setupText), `stage: setup readout shows every ball in diamonds ("${g.setupText.replace(/\s+/g, ' ')}")`);
+  check(g.aimCut === '30' && g.aimSide === 'right' && /Right ½/.test(g.aimLabel) && g.gaugesVisible, `stage: Aim View on the 30° cut ("${g.aimLabel}", ${g.aimCut}°, ${g.aimSide})`);
+  check(g.goalVisible && g.noScroll, '390×844: table, gauges, instructions and score buttons fit without scrolling');
+  if (SHOTS) {
+    const el = await page.$('.recipeRow');
+    await el.screenshot({ path: path.join(SHOTS, '02b-gauge-panel-closeup.png') });
+    const t = await page.$('.playTable');
+    await t.screenshot({ path: path.join(SHOTS, '02c-grid-closeup.png') });
+  }
+  await tap('.setupLine');
+  await page.waitForSelector('#sheet .setupSheet', { timeout: 3000 });
+  const conv = await text('#sheet .setupSheet');
+  check(/head rail/.test(conv) && /top rail/.test(conv) && /4 · 2 is the center spot/.test(conv) && (await page.$$('#sheet .su-row')).length === g.balls, 'setup sheet explains the diamond convention and lists every ball');
+  await shot('02d-setup-sheet');
+  await tap('#sheet [data-action="sheet-close"]');
+}
+// drill template renders with grid + setup + aim view (library ships empty, so build the README template in-page)
+{
+  const d = await page.evaluate(async () => {
+    const { normalizeDrill } = await import('./js/drills.js');
+    const { renderStageTable } = await import('./js/games/stageTable.js');
+    const rc = await import('./js/games/recipe.js');
+    const t = normalizeDrill({ id: 'e2e-tmpl', name: 'Template', category: 'Stop Shots', difficulty: 2, kind: 'position', ob: [1, 60, 25], pocket: 'TR', cut: [30, 1, 24], k: 0, travel: 0, scoring: { mode: 'zone', attempts: 10, pass: { stars: 15, pockets: 8 } }, skillEffects: { 'Cue-Ball Control': 1 } });
+    const div = document.createElement('div');
+    div.id = 'e2eTmpl';
+    div.innerHTML = renderStageTable(t, { className: 'table-diagram mini' }) + rc.setupLineHTML(t) + rc.recipeGaugesHTML(t);
+    document.body.appendChild(div);
+    const r = { grid: div.querySelectorAll('.diamond-grid line').length, setup: div.querySelectorAll('.su-ball').length, aim: div.querySelector('.aim-view')?.dataset.cut, gauges: div.querySelectorAll('.gauge').length };
+    div.remove();
+    return r;
+  });
+  check(d.grid === 10 && d.setup === 2 && Math.abs(+d.aim - 30) <= 1 && d.gauges === 3, `drill template: grid (${d.grid} lines), setup (${d.setup} balls), Aim View (${d.aim}°), ${d.gauges} gauges`);
+}
 // layout at 390x844
 const layout = await page.evaluate(() => {
   const bar = document.querySelector('.resultBar').getBoundingClientRect();
@@ -222,6 +289,10 @@ check(/3-Ball|3 ball|W\b|won/i.test(await text('#view')), 'ghost lobby shows his
 await passFirst('landing', 2, '#play/bank/bv-1');
 check(await exists('.playScreen[data-game="bank"]'), 'Bank Vault opens after Landing Zone level 2');
 const lives0 = +(await page.$eval('.hearts', (e) => e.dataset.lives));
+{
+  const g = await gridReport();
+  check(g.gx === 7 && g.gy === 3 && g.aligned && g.setup === g.balls && g.aimCut != null, `bank stage: grid, setup readout and Aim View ("${g.aimLabel}")`);
+}
 await shot('03-bank-vault');
 await record(0, 1);
 const lives1 = +(await page.$eval('.hearts', (e) => e.dataset.lives));
@@ -251,7 +322,7 @@ await go('#settings');
 await tap('[data-action="set-coach"][data-v="advanced"]');
 await go('#play/landing/lz-1');
 check(await exists('.planner[data-planner="1"]'), 'advanced: planner shown');
-check(!(await exists('.recipeRow')), 'advanced: recipe hidden before locking');
+check(!(await exists('.recipeRow')) && !(await exists('.aim-view[data-cut]')), 'advanced: recipe and Aim View hidden before locking');
 const lockDisabled = await page.$eval('.lockBtn', (e) => e.disabled);
 check(lockDisabled, 'advanced: LOCK disabled until the plan is complete');
 await tap('[data-action="plan-tech"]');
@@ -269,6 +340,7 @@ check((await page.$$('#sheet .cmpRow[data-verdict]')).length === 5, 'advanced: l
 await shot('10-advanced-reveal');
 await tap('#sheet [data-action="sheet-close"]');
 check(await exists('.recipeRow'), 'advanced: recipe revealed after locking');
+check(await exists('.recipeRow .gauge-aim .aim-view[data-cut]'), 'advanced: Aim View revealed after locking');
 await go('#settings');
 await tap('[data-action="set-coach"][data-v="beginner"]');
 
@@ -297,6 +369,14 @@ const btnTexts = await page.$$eval('#view button, #view a', (els) => els.map((e)
 check(!btnTexts.some((t) => /I PASSED|MARK PASS|PASS TEST|PROMOTE ME/.test(t)), 'boss page has no self-report pass button');
 await go('#bossplay/boss-1');
 check(await exists('.playScreen') && (await exists('.bossTrack')), 'boss battle starts');
+{
+  const g = await gridReport();
+  check(g.gx === 7 && g.gy === 3 && g.aligned && g.under, 'boss shot: diamond grid aligned with the diamonds');
+  check(g.setup === g.balls && g.setupVisible, `boss shot: setup readout visible (${g.setupText.replace(/\s+/g, ' ')})`);
+  check(g.aimCut != null && g.aimLabel.length > 0 && g.gaugesVisible, `boss shot: Aim View rendered ("${g.aimLabel}", ${g.aimCut}°)`);
+  check(g.goalVisible && g.noScroll, 'boss shot: no scrolling needed for the score buttons');
+  await shot('11a-boss-shot-grid');
+}
 await record(1, 1);
 await shot('11-boss-battle');
 await tap('.rbUndo');
@@ -326,6 +406,10 @@ const small = await page.evaluate(() => {
   return { ok: !!bar, bottom: bar?.bottom, vh: innerHeight, minH: Math.min(...btns.map((b) => b.height)), scrollW: document.documentElement.scrollWidth, vw: innerWidth };
 });
 check(small.ok && small.bottom <= small.vh + 1 && small.minH >= 44 && small.scrollW <= small.vw, `375×667: result bar visible, buttons ≥44px, no sideways scroll`);
+{
+  const g = await gridReport();
+  check(g.gx === 7 && g.setupVisible && g.gaugesVisible && g.goalVisible && g.noScroll && g.aimCut != null, '375×667: grid, setup readout, gauges, instructions and score buttons visible without scrolling');
+}
 await shot('15-play-375x667');
 await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
 
@@ -341,19 +425,22 @@ await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile
     s.bosses = s.bosses || {}; for (const b of ${JSON.stringify(bosses)}) s.bosses[b] = { passed: true, tries: 1, history: [] };
     s.activeSession = null; return s;`, '#arcade');
   const bad = [];
+  const noGrid = [];
   let n = 0;
   const errBefore = errors.length;
   for (const g of all) for (const id of g.stages) {
     await go(`#play/${g.id}/${id}`);
     n++;
     if (!(await exists(`.playScreen[data-stage="${id}"] .playTable svg`))) bad.push(`${g.id}/${id}`);
+    else if ((await page.$$('.playTable svg .diamond-grid line')).length !== 10 || !(await exists('.setupLine .su-ball'))) noGrid.push(`${g.id}/${id}`);
   }
   check(bad.length === 0, `all ${n} stages open with a table diagram${bad.length ? ' — missing: ' + bad.join(', ') : ''}`);
+  check(noGrid.length === 0, `all stages show the diamond grid and setup readout${noGrid.length ? ' — missing: ' + noGrid.join(', ') : ''}`);
   await go('#play/bank/endless');
   check(await exists('.playScreen .hearts'), 'Bank Vault Endless opens with lives');
   const badB = [];
-  for (const b of bosses) { await go(`#bossplay/${b}`); if (!(await exists('.playScreen .bossTrack'))) badB.push(b); }
-  check(badB.length === 0, `all ${bosses.length} Boss Battles open${badB.length ? ' — missing: ' + badB.join(', ') : ''}`);
+  for (const b of bosses) { await go(`#bossplay/${b}`); if (!(await exists('.playScreen .bossTrack')) || (await page.$$('.playTable svg .diamond-grid line')).length !== 10) badB.push(b); }
+  check(badB.length === 0, `all ${bosses.length} Boss Battles open with the diamond grid${badB.length ? ' — missing: ' + badB.join(', ') : ''}`);
   await go('#play/pattern/pp-1');
   check(await exists('.planner[data-planner="pattern"]'), 'Pattern Puzzle starts in planning mode');
   await shot('16-pattern-puzzle');
@@ -374,7 +461,7 @@ const swOk = await page.evaluate(async () => {
 });
 check(swOk, 'service worker registered and active');
 const cacheName = await page.evaluate(async () => (await caches.keys()).join(','));
-check(/pool-iq-v4/.test(cacheName), `cache bumped (${cacheName})`);
+check(/pool-iq-v5/.test(cacheName) && !/pool-iq-v4/.test(cacheName), `cache bumped to v5 (${cacheName})`);
 await page.setOfflineMode(true);
 await page.goto(BASE + 'index.html#arcade', { waitUntil: 'domcontentloaded' });
 await sleep(800);

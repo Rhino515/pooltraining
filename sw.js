@@ -1,4 +1,4 @@
-const CACHE = 'pool-iq-v4';
+const CACHE = 'pool-iq-v5';
 const ASSETS = [
   './',
   './index.html',
@@ -12,9 +12,11 @@ const ASSETS = [
   './js/dashboard.js',
   './js/drills.js',
   './js/drillsExtra.js',
+  './js/games/aimView.js',
   './js/games/builders.js',
   './js/games/coaching.js',
   './js/games/cueBallDiagram.js',
+  './js/games/diamonds.js',
   './js/games/data/bankVault.js',
   './js/games/data/bosses.js',
   './js/games/data/caromChallenge.js',
