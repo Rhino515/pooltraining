@@ -10,9 +10,9 @@
  *   fullness = 1 − sin θ (share of the OB covered by the ghost ball)
  *   side: the ghost sits on the viewer's right of the OB → hit the RIGHT side → OB goes LEFT.
  */
-import { BALL_COLORS } from '../tableDiagram.js';
+import { BALL_COLORS, BALL_RADIUS } from '../tableDiagram.js';
 
-export const BALL_R = 2.8; // table units (matches geometry.R)
+export const BALL_R = BALL_RADIUS; // true-scale ball radius in table units (= geometry.R)
 const near = (a, b, tol = 0.25) => a && b && Math.hypot(a.x - b.x, a.y - b.y) < tol;
 
 /** Fraction word for a fullness 0–1 (same thresholds as the recipe's OB-contact label) */
@@ -72,7 +72,7 @@ export function aimViewInfo(ch, ballR = BALL_R) {
   if (Math.hypot(src.ghost.x - from.x, src.ghost.y - from.y) < 0.5) return null;
   const want = src.ball ?? src.targetBall;
   const balls = src.ballPositions || [];
-  const touching = (b) => Math.abs(Math.hypot(b.x - src.ghost.x, b.y - src.ghost.y) - 2 * ballR) < 0.35;
+  const touching = (b) => Math.abs(Math.hypot(b.x - src.ghost.x, b.y - src.ghost.y) - 2 * ballR) < 0.2;
   const ob = balls.find((b) => b.n === want && touching(b)) || balls.find(touching);
   if (!ob) return null;
   const a = aimFromPoints(from, src.ghost, ob, ballR);

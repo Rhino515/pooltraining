@@ -35,7 +35,7 @@ export default {
       shots: [
         bin('Shot Making', 'Thin Cut', { kind: 'pot', ob: [6, 20, 12], pocket: 'TL', cut: [55, 1, 22] }, 3, 2, 'POCKETED'),
         pos('Cue-Ball Control', 'Two-Diamond Draw', { ob: [7, 70, 25], pocket: 'TR', cut: [5, 1, 18], k: -1.2, travel: 24 }, 3, 3),
-        pos('Position Play', 'Two-Rail Route', { ob: [1, 70, 30], pocket: 'BR', cut: [40, -1, 26], k: 0.8, travel: 64 }, 3, 3),
+        pos('Position Play', 'Two-Rail Route', { ob: [1, 66, 30], pocket: 'BR', cut: [40, -1, 26], k: 0.8, travel: 64 }, 3, 3),
         bin('Banks', 'Cross-Corner Bank', { kind: 'bank', ob: [2, 30, 22], pocket: 'TL', rails: ['bottom'], cut: [30, 1, 18] }, 3, 1, 'BANK MADE'),
         bin('Kicks', 'Short-Rail Kick', { kind: 'kick', cue: [58, 36], target: [3, 74, 14], rails: ['right'], blockers: [[5, 66, 25]] }, 3, 2, 'LEGAL HIT'),
         bin('Safeties', 'Rail Freeze', { kind: 'safety', cue: [36, 16], ob: [4, 54, 28], obZone: [66, 43.6], cueZone: [58, 8], k: -0.5, travel: 18 }, 3, 2, 'TOUGH OR LOCKED'),
@@ -57,7 +57,7 @@ export default {
       shots: [
         bin('Shot Making', 'Rail Cut', { kind: 'pot', ob: [2, 30, 43.6], pocket: 'BL', cut: [20, -1, 30] }, 3, 2, 'POCKETED'),
         pos('Cue-Ball Control', 'Stun-Draw', { ob: [3, 58, 30], pocket: 'BR', cut: [30, 1, 22], k: -0.35, travel: 16, technique: 'stun-draw', rings: [7, 4.5, 2.5] }, 3, 4),
-        pos('Position Play', 'Three-Rail Tour', { ob: [4, 20, 36], pocket: 'BL', cut: [40, -1, 26], k: 0.8, travel: 110 }, 3, 4),
+        pos('Position Play', 'Three-Rail Tour', { ob: [4, 20, 36], pocket: 'BL', cut: [40, -1, 26], k: 0.8, travel: 120 }, 3, 4),
         pos('Speed Control', 'Soft Touch', { ob: [5, 74, 16], pocket: 'TR', cut: [20, 1, 20], k: 0.6, travel: 6, rings: [5, 3.5, 2] }, 3, 4),
         bin('Banks', 'Bank + Position', { kind: 'bank', ob: [6, 36, 28], pocket: 'BM', rails: ['top'], cut: [35, 1, 20], k: 0, travel: 20, position: true }, 3, 1, 'BANK + ZONE'),
         bin('Kicks', 'Kick and Safe', { kind: 'kick', cue: [72, 30], target: [7, 30, 14], rails: ['bottom'], blockers: [[1, 51, 22]], safeTravel: 10 }, 3, 1, 'HIT + SAFE'),
@@ -93,7 +93,7 @@ export default {
         pos('Cue-Ball Control', 'Long Draw', { ob: [6, 66, 25], pocket: 'TR', cut: [3, 1, 36], k: -1.4, travel: 30 }, 3, 6),
         pos('Cue-Ball Control', 'Follow Two Rails', { ob: [7, 22, 36], pocket: 'BL', cut: [35, 1, 26], k: 1, travel: 70, rings: [7, 4.5, 2.5] }, 3, 6),
         pos('Position Play', 'Traffic Position', { ob: [8, 62, 16], pocket: 'TR', cut: [25, -1, 26], k: -0.8, travel: 22, blockers: [[1, 48, 36], [2, 70, 34]], rings: [7, 4.5, 2.5] }, 3, 6),
-        pos('Speed Control', 'Around-the-Table Pace', { ob: [3, 70, 36], pocket: 'BR', cut: [45, -1, 24], k: 1, travel: 150, rings: [8, 5, 2.5] }, 3, 5),
+        pos('Speed Control', 'Around-the-Table Pace', { ob: [3, 70, 36], pocket: 'BR', cut: [48, -1, 24], k: 1, travel: 172, rings: [8, 5, 2.5] }, 3, 5),
         bin('Banks', 'Bank + Draw Position', { kind: 'bank', ob: [4, 60, 22], pocket: 'TM', rails: ['bottom'], cut: [30, -1, 16], k: -1, travel: 14, position: true }, 3, 2, 'BANK + ZONE'),
         bin('Kicks', 'Speed Kick-Safe', { kind: 'kick', cue: [26, 20], target: [9, 64, 38], rails: ['top', 'right'], blockers: [[6, 46, 29]], safeTravel: 8, speed: 2 }, 3, 1, 'HIT + SAFE'),
         bin('Safeties', 'Two-Way Contain', { kind: 'safety', cue: [74, 14], ob: [2, 56, 20], obZone: [34, 43.6], cueZone: [58, 8], k: -1, travel: 11, autoBlock: [[8, 0.15]] }, 3, 2, 'TOUGH OR LOCKED'),

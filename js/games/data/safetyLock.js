@@ -14,7 +14,7 @@ export default {
       goalText: 'Send the 1 to the foot end and tuck the cue ball behind the 5.',
       instructions: 'Thick hit on the 1 so it runs up-table; the cue ball drifts down and stops behind the 5 so there is no direct line.',
       criteria: ['Foul, or the 1 is left with an easy pot', 'Playable: a long cut or a bank is still available', 'Tough: only a thin edge of the 1 is visible past the 5', 'Locked: the 5 fully blocks the 1 — opponent must kick'] },
-    { id: 'sl-2', name: 'Long-Distance Safe', difficulty: 4, objective: 'distance', cue: [72, 18], ob: [2, 82, 24], obZone: [91, 30], cueZone: [12, 18], k: 0.2, travel: 110,
+    { id: 'sl-2', name: 'Long-Distance Safe', difficulty: 4, objective: 'distance', cue: [72, 18], ob: [2, 82, 24], obZone: [91, 30], cueZone: [12, 18], k: 0.2, travel: 120,
       goalText: 'Leave the 2 near the foot rail and send the cue ball two rails back to the head end.',
       instructions: 'Distance is a safety too: a thin hit leaves the 2 near the foot rail while the cue ball travels back to the head end.',
       criteria: ['Foul, or the cue ball stops mid-table', 'Playable: cue ball past the side pockets', 'Tough: cue ball behind the head string, 2 on the foot rail', 'Locked: both balls frozen or within a ball of their rails, full table apart'] },

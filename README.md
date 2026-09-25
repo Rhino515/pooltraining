@@ -56,6 +56,12 @@ To deploy, copy the folder to any static host (for example GitHub Pages). All as
 
 There are also 9 Boss Battles, one per rank from Club Player to Champion.
 
+### True-scale table
+
+Table diagrams use a 100 × 50 unit playing surface measured cushion nose to cushion nose (1 unit = 1 inch on a 9-ft table). Balls are drawn at true size: radius 1.125 (a 2.25" ball), so a ball is 2.25% of the length and 4.5% of the width. That makes it easy to see which diamond line a ball sits on. The cushions, wood rails and diamond sights are drawn outside the playing surface (`VIEWBOX` = `-4.6 -4.6 109.2 59.2`). Pockets sit at the cushion corners, and side pockets just behind the long cushions, with holes about two ball diameters wide.
+
+The ball size is one constant, `BALL_RADIUS` in `js/tableDiagram.js`. Geometry (`geometry.R`, cushion lines, ghost-ball offsets, clearance checks) and the Aim View maths all use it, so the clearance rules follow the real ball size, not the drawing size. Each ball also has a larger invisible hit circle for taps. The Aim View gauge is a separate close-up and stays large.
+
 ### Diamond grid and Setup readout
 
 Every table diagram (stages, boss shots, drills, previews) draws thin dashed lines from each diamond sight across the felt: 7 along the long axis and 3 along the short axis, one diamond (12.5 table units) apart. They sit under the zones, paths and balls.
@@ -65,7 +71,7 @@ The **Setup** line under the table lists every ball as `first · second`, comput
 - first = diamonds from the **head rail** (the left end of the diagram, 0–8)
 - second = diamonds from the **top rail** (0–4)
 
-So `4 · 2` is the center spot, `2 · 2` the head spot and `6 · 2` the foot spot. Tap the Setup line to see this explanation and the list in words. The same list is at the bottom of the Why sheet.
+The readout is taken from the ball centre. A ball frozen to a cushion has its centre one radius (1.125 units, about 0.09 diamond) off the nose, so it reads as on that rail (0 or 8, 0 or 4). So `4 · 2` is the center spot, `2 · 2` the head spot and `6 · 2` the foot spot. Tap the Setup line to see this explanation and the list in words. The same list is at the bottom of the Why sheet.
 
 ### Shot Recipe gauges
 
@@ -173,7 +179,8 @@ It checks:
   - kick blockers really block
 - why-text is unique per stage
 - diamond grid: 10 lines, aligned with the rail sights, drawn under the balls, on every stage, boss shot and the drill template
-- diamond readout: corners, spots, ¼ rounding, every ball on every stage and boss shot
+- true-scale balls: every stage, boss shot, the drill template and the Analyze demo draw balls at r = 1.125. Ghost balls are the same size, every ball has a larger hit area, and pockets are to scale
+- diamond readout: corners, spots, ¼ rounding, balls frozen to a rail, every ball on every stage and boss shot
 - Aim View maths: straight-in = Full, 30° = ½, 48.6° = ¼, the correct side, and agreement with the dashed object-ball path and the recipe cut angle on every shot
 - scoring and unlock rules
 - lives and multipliers
@@ -207,6 +214,7 @@ It covers:
 - Career ticks
 - Boss pass/fail and promotion
 - skill changes
+- true-scale balls on screen (2.25% of the playing length), tap area, Aim View size
 - the diamond grid, Setup readout and Aim View on a stage, a bank stage, a boss shot and the drill template
 - layout at 390×844 and 375×667 (table, gauges, instructions and score buttons fit without scrolling)
 - service worker and offline reload

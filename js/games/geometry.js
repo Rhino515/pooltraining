@@ -1,7 +1,8 @@
 /**
  * Pool IQ game geometry — pure functions, no DOM.
  * Table coordinates match tableDiagram.js: x 0–100 (left/head → right/foot), y 0–50 (top → bottom).
- * 1 unit ≈ 1 inch of playing surface on a 9-ft table. Ball radius drawn at R.
+ * 0–100 × 0–50 is the playing surface cushion nose to cushion nose; 1 unit = 1 inch on a 9-ft table (100" × 50").
+ * Balls are true scale: 2¼" diameter → R = 1.125. Ball centres rebound on lines R inside the cushion noses.
  *
  * Physics used (general billiards knowledge, simplified):
  *  - Ghost ball: cue-ball centre at contact sits 2R behind the object ball on the OB→pocket line.
@@ -12,12 +13,15 @@
  *    This gives the familiar curved paths and the ~30° natural-angle deflection for rolling half-ball hits.
  *  - Rails: angle in = angle out (mirror method). Optional running/reverse english widens/narrows the first rebound.
  */
-import { POCKETS } from '../tableDiagram.js';
+import { POCKETS, BALL_RADIUS } from '../tableDiagram.js';
 
-export const R = 2.8;
-export const CUSHION = { minX: 3.4, maxX: 96.6, minY: 3.4, maxY: 46.6 };
-export const BALL_BOUNDS = { minX: 5.0, maxX: 95.0, minY: 5.0, maxY: 45.0 };
-export const TABLE_LENGTH = 90; // path units of cue-ball travel that count as "one table length" for the speed scale
+export const R = BALL_RADIUS; // 1.125 — real ball radius in table inches
+/** Lines the ball CENTRE bounces off (ball touching the cushion nose) */
+export const CUSHION = { minX: R, maxX: 100 - R, minY: R, maxY: 50 - R };
+/** Where a ball centre can legally sit (frozen to a cushion at the extreme) */
+export const BALL_BOUNDS = { minX: R, maxX: 100 - R, minY: R, maxY: 50 - R };
+/** Inches of cue-ball travel that count as "one table length" on the SPEED scale (a speed-scale calibration in inches; unchanged by the true-scale redraw) */
+export const TABLE_LENGTH = 90;
 export const DIAMOND = 12.5;
 export const POCKET_XY = Object.fromEntries(Object.entries(POCKETS).map(([k, p]) => [k, { x: p.x, y: p.y }]));
 

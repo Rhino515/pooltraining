@@ -142,7 +142,12 @@ async function gridReport() {
     const gy = [...svg.querySelectorAll('.diamond-grid .grid-y')].map((l) => +l.getAttribute('y1'));
     const sights = [...svg.querySelectorAll('.diamond-sight')].map((c) => [+c.getAttribute('cx'), +c.getAttribute('cy')]);
     const has = (x, y) => sights.some(([a, b]) => Math.abs(a - x) < 1e-6 && Math.abs(b - y) < 1e-6);
-    const aligned = gx.every((x) => x === 50 || (has(x, 2.4) && has(x, 47.6))) && gy.every((y) => has(2.4, y) && has(97.6, y));
+    const aligned = gx.every((x) => x === 50 || (has(x, -3) && has(x, 53))) && gy.every((y) => has(-3, y) && has(103, y));
+    const felt = svg.querySelector('rect.felt').getBoundingClientRect();
+    const bodies = [...svg.querySelectorAll('.ball-body')];
+    const bw = bodies.map((b) => b.getBoundingClientRect().width / felt.width);
+    const hit = svg.querySelector('.ball-hit')?.getBoundingClientRect();
+    const avR = document.querySelector('.gaugeCard .gauge-aim svg')?.getBoundingClientRect();
     const grid = svg.querySelector('.diamond-grid');
     const firstBall = svg.querySelector('g.ball');
     const under = !!grid && !!firstBall && !!(grid.compareDocumentPosition(firstBall) & Node.DOCUMENT_POSITION_FOLLOWING);
@@ -160,7 +165,9 @@ async function gridReport() {
       aimCut: av?.dataset.cut ?? null, aimSide: av?.dataset.side ?? null, aimLabel: document.querySelector('.gauge-aim b')?.innerText || '',
       gaugesVisible: !!ar && ar.bottom <= (bar ? bar.top : innerHeight),
       goalVisible: !!goal && goal.bottom <= (bar ? bar.top : innerHeight),
-      noScroll: document.documentElement.scrollHeight <= innerHeight + 1
+      noScroll: document.documentElement.scrollHeight <= innerHeight + 1,
+      ballR: [...new Set(bodies.map((b) => +b.getAttribute('r')))], ballFrac: Math.max(...bw.map((w) => Math.abs(w - 0.0225))), ballPx: bodies[0]?.getBoundingClientRect().width || 0,
+      hitPx: hit?.width || 0, feltPx: felt.width, aimViewPx: avR?.width || 0
     };
   });
 }
@@ -168,9 +175,11 @@ async function gridReport() {
   const g = await gridReport();
   check(g.gx === 7 && g.gy === 3 && g.aligned, `stage: diamond grid 7 + 3 lines aligned with the rail diamonds (${g.gx}+${g.gy})`);
   check(g.under && g.op > 0 && g.op < 0.4, `stage: grid faint (opacity ${g.op}) and under the balls`);
-  check(g.setup === g.balls && g.setup >= 2 && g.setupVisible && /2 · 1¾/.test(g.setupText), `stage: setup readout shows every ball in diamonds ("${g.setupText.replace(/\s+/g, ' ')}")`);
+  check(g.setup === g.balls && g.setup >= 2 && g.setupVisible && /2¼ · 1¾/.test(g.setupText), `stage: setup readout shows every ball in diamonds ("${g.setupText.replace(/\s+/g, ' ')}")`);
   check(g.aimCut === '30' && g.aimSide === 'right' && /Right ½/.test(g.aimLabel) && g.gaugesVisible, `stage: Aim View on the 30° cut ("${g.aimLabel}", ${g.aimCut}°, ${g.aimSide})`);
   check(g.goalVisible && g.noScroll, '390×844: table, gauges, instructions and score buttons fit without scrolling');
+  check(g.ballR.length === 1 && g.ballR[0] === 1.125 && g.ballFrac < 0.0015, `stage: balls drawn at true scale (r ${g.ballR}, ${g.ballPx.toFixed(1)}px on a ${g.feltPx.toFixed(0)}px playing surface = ${((g.ballPx / g.feltPx) * 100).toFixed(2)}% of length, want 2.25%)`);
+  check(g.hitPx >= 2.5 * g.ballPx && g.aimViewPx >= 48, `stage: invisible tap area larger than the ball (${g.hitPx.toFixed(0)}px) and Aim View gauge still large (${g.aimViewPx.toFixed(0)}px)`);
   if (SHOTS) {
     const el = await page.$('.recipeRow');
     await el.screenshot({ path: path.join(SHOTS, '02b-gauge-panel-closeup.png') });
@@ -461,7 +470,7 @@ const swOk = await page.evaluate(async () => {
 });
 check(swOk, 'service worker registered and active');
 const cacheName = await page.evaluate(async () => (await caches.keys()).join(','));
-check(/pool-iq-v5/.test(cacheName) && !/pool-iq-v4/.test(cacheName), `cache bumped to v5 (${cacheName})`);
+check(/pool-iq-v6/.test(cacheName) && !/pool-iq-v5/.test(cacheName), `cache bumped to v6 (${cacheName})`);
 await page.setOfflineMode(true);
 await page.goto(BASE + 'index.html#arcade', { waitUntil: 'domcontentloaded' });
 await sleep(800);

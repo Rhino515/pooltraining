@@ -29,7 +29,7 @@ export default {
     { id: 'lz-7', name: 'Two-Rail Shape', difficulty: 6, ob: [7, 80, 12], pocket: 'TR', cut: [35, 1, 30], k: 0.8, travel: 60,
       instructions: 'Cut the 7 into the top-right corner and take the cue ball two rails to the zone.',
       note: { route: 'Two rails give a long runway: the zone sits where the cue ball naturally slows after the second cushion.' } },
-    { id: 'lz-8', name: 'Three-Rail Tour', difficulty: 7, ob: [8, 80, 16], pocket: 'TR', cut: [38, 1, 26], k: 0.7, travel: 120,
+    { id: 'lz-8', name: 'Three-Rail Tour', difficulty: 7, ob: [8, 80, 16], pocket: 'TR', cut: [38, 1, 26], k: 0.7, travel: 140,
       instructions: 'Pocket the 8 in the corner and send the cue ball three rails around the table.',
       note: { speed: 'Three-rail routes forgive small direction errors but punish pace errors — commit to the number.' } },
     { id: 'lz-9', name: 'Traffic Jam', difficulty: 7, ob: [9, 70, 34], pocket: 'BR', cut: [25, 1, 28], k: -1, travel: 20, blockers: [[3, 52, 30], [6, 34, 36]],

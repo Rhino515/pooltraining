@@ -18,7 +18,7 @@ const demoSpec = {
       points: [
         { x: 18, y: 38 },
         { x: 42, y: 28 },
-        { x: 97, y: 3 }
+        { x: 99, y: 1 }
       ]
     }
   ],

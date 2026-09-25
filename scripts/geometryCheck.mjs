@@ -86,7 +86,7 @@ export function geometryProblems(ch, label) {
   for (let i = 0; i < approach.length - 1; i++) {
     for (const b of others) {
       const d = G.distToSegment(b, approach[i], approach[i + 1]);
-      if (d < 2 * R - 0.3) out.push(`${label}: cue ball's approach passes through ball ${b.n} (clearance ${d.toFixed(2)})`);
+      if (d < 2 * R - 0.1) out.push(`${label}: cue ball's approach passes through ball ${b.n} (clearance ${d.toFixed(2)})`);
     }
   }
   // after contact: the cue ball's route must not run through balls (carom target excepted)
@@ -94,7 +94,7 @@ export function geometryProblems(ch, label) {
   const afterOthers = others.filter((b) => b.n !== ch.caromTarget);
   for (let i = 0; i < after.length - 1; i++) for (const b of afterOthers) {
     const d = G.distToSegment(b, after[i], after[i + 1]);
-    if (d < 2 * R - 0.6) out.push(`${label}: cue route after contact runs through ball ${b.n} (clearance ${d.toFixed(2)})`);
+    if (d < 2 * R - 0.25) out.push(`${label}: cue route after contact runs through ball ${b.n} (clearance ${d.toFixed(2)})`);
   }
   // object-ball routes don't run through other balls
   for (const op of obPaths) {
@@ -103,7 +103,7 @@ export function geometryProblems(ch, label) {
     for (let i = 0; i < p.length - 1; i++) for (const b of balls) {
       if (skip.has(b.n)) continue;
       const d = G.distToSegment(b, p[i], p[i + 1]);
-      if (d < 2 * R - 0.3) out.push(`${label}: OB ${op.n} route runs through ball ${b.n} (clearance ${d.toFixed(2)})`);
+      if (d < 2 * R - 0.1) out.push(`${label}: OB ${op.n} route runs through ball ${b.n} (clearance ${d.toFixed(2)})`);
     }
   }
   // kick blockers really block the direct line to the target
