@@ -58,6 +58,40 @@ function railMarkSVG(m) {
   return `<polygon class="rail-mark" data-rail="${m.rail}" points="${f(m.x)},${f(m.y - s)} ${f(m.x + s)},${f(m.y)} ${f(m.x)},${f(m.y + s)} ${f(m.x - s)},${f(m.y)}" fill="${c}" stroke="#062a32" stroke-width="0.25"/>`;
 }
 
+/** Rail + diamond → point on the cushion nose (same convention as the .pooliq schema) */
+export function railDiamondPoint(rail, d) {
+  const v = Number(d) * 12.5;
+  return rail === 'top' ? { x: v, y: 0 } : rail === 'bottom' ? { x: v, y: 50 } : rail === 'left' ? { x: 0, y: v } : { x: 100, y: v };
+}
+const INWARD = { top: [0, 1], bottom: [0, -1], left: [1, 0], right: [-1, 0] };
+const MARK_COLORS = { reference: '#9ff0ff', aim: '#ffc75b', contact: '#f2fdff', target: '#ff8fa3', player: '#ffc75b', answer: '#39d98a' };
+/** Reference / answer pin on a rail: a triangle on the cushion pointing into the table + optional label */
+function railPinSVG(m, cls = 'ref-marker') {
+  const p = railDiamondPoint(m.rail, m.diamond);
+  const [ix, iy] = INWARD[m.rail] || [0, 1];
+  const c = MARK_COLORS[m.kind || 'reference'] || MARK_COLORS.reference;
+  const tip = { x: p.x + ix * 0.2, y: p.y + iy * 0.2 };
+  const b1 = { x: p.x - ix * 1.9 - iy * 1.1, y: p.y - iy * 1.9 - ix * 1.1 };
+  const b2 = { x: p.x - ix * 1.9 + iy * 1.1, y: p.y - iy * 1.9 + ix * 1.1 };
+  let g = `<g class="${cls}" data-rail="${m.rail}" data-diamond="${f(m.diamond)}" data-kind="${m.kind || 'reference'}"><polygon points="${f(tip.x)},${f(tip.y)} ${f(b1.x)},${f(b1.y)} ${f(b2.x)},${f(b2.y)}" fill="${c}" stroke="#062a32" stroke-width="0.25"/>`;
+  if (m.line) g += `<line x1="${f(p.x)}" y1="${f(p.y)}" x2="${f(p.x + ix * 6)}" y2="${f(p.y + iy * 6)}" stroke="${c}" stroke-width="0.3" stroke-dasharray="0.8 0.5"/>`;
+  if (m.label) {
+    const dep = 3.4 + (Number(m.labelShift) || 0); // labelShift: stack a second pin's label further in
+    const lx = Math.max(4, Math.min(96, p.x + ix * dep));
+    const ly = Math.max(2.4, Math.min(48.6, p.y + iy * dep + (iy ? 0.55 : 0.55)));
+    g += `<text x="${f(lx)}" y="${f(ly)}" text-anchor="${m.rail === 'left' ? 'start' : m.rail === 'right' ? 'end' : 'middle'}" font-size="1.7" font-weight="800" fill="${c}" font-family="system-ui,sans-serif" stroke="#062a32" stroke-width="0.35" paint-order="stroke">${escT(m.label)}</text>`;
+  }
+  return `${g}</g>`;
+}
+const escT = (s) => String(s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+/** Diamond numbers along every rail (0–8 long rails, 0–4 short rails) for rail-answer challenges */
+function diamondNumbersSVG() {
+  let s = '<g class="diamond-numbers" font-size="1.6" font-weight="800" fill="#cdeefa" opacity="0.75" font-family="system-ui,sans-serif" text-anchor="middle" pointer-events="none">';
+  for (let d = 1; d < 8; d++) s += `<text x="${d * 12.5}" y="2.6">${d}</text><text x="${d * 12.5}" y="48.6">${d}</text>`;
+  for (let d = 1; d < 4; d++) s += `<text x="2.2" y="${d * 12.5 + 0.55}">${d}</text><text x="97.8" y="${d * 12.5 + 0.55}">${d}</text>`;
+  return `${s}</g>`;
+}
+
 /**
  * @param {object} ch challenge
  * @param {object} opt { showCuePath, showAim, showObPath, showZones, step (train step index), dimOtherZones, highlight }
@@ -114,6 +148,11 @@ export function renderStageTable(ch, opt = {}) {
     if (m.by === 'ob' && !o.showObPath) continue;
     over += railMarkSVG(m);
   }
+  // .pooliq reference markers (diamond / reference points). o.markers: 'all' (default) | 'reference' (hide solution kinds) | 'none'
+  const mk = o.markers || 'all';
+  if (mk !== 'none') for (const m of ch.referenceMarkers || []) if (mk === 'all' || !m.kind || m.kind === 'reference') over += railPinSVG(m);
+  if (o.diamondNumbers) over += diamondNumbersSVG();
+  for (const pin of o.pins || []) over += railPinSVG({ ...pin, line: true }, `answer-pin pin-${pin.kind}`);
   if (o.showAim && ch.contactLabels) {
     for (const l of ch.contactLabels) {
       over += `<g class="contact-label"><circle cx="${f(l.x)}" cy="${f(l.y - 2.9)}" r="1.25" fill="#ffc75b" stroke="#062a32" stroke-width="0.22"/><text x="${f(l.x)}" y="${f(l.y - 2.35)}" text-anchor="middle" font-size="1.6" font-weight="900" fill="#062a32" font-family="system-ui,sans-serif">${l.label}</text></g>`;

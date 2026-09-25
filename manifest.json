@@ -11,12 +11,46 @@
   "orientation": "portrait",
   "background_color": "#050b12",
   "theme_color": "#07111d",
-  "categories": ["sports", "education", "games"],
+  "categories": [
+    "sports",
+    "education",
+    "games"
+  ],
   "prefer_related_applications": false,
   "icons": [
-    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "./icons/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
-    { "src": "./icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "./",
+      "accept": {
+        "application/json": [
+          ".pooliq"
+        ]
+      }
+    }
   ]
 }

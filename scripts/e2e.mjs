@@ -1037,6 +1037,524 @@ await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile
   check(errors.length === errBefore, `data safety: zero console errors (${errors.length - errBefore})`);
 }
 
+// ------------------------------------------------------------------------------------------ My Content: .pooliq import / preview / play test / install
+{
+  const errBefore = errors.length;
+  const EXD = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'examples');
+  const ex = (f) => path.join(EXD, f);
+  const exJSON = (f) => JSON.parse(fs.readFileSync(ex(f), 'utf8'));
+  const tmp = path.join(SHOTS || '/tmp', `pooliq-tmp-${Date.now()}`);
+  fs.mkdirSync(tmp, { recursive: true });
+  const writeTmp = (name, data) => { const p = path.join(tmp, name); fs.writeFileSync(p, typeof data === 'string' ? data : JSON.stringify(data, null, 2)); return p; };
+  const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36';
+  const ready = () => page.waitForFunction(() => document.documentElement.dataset.ready === '1', { timeout: 8000 });
+  const reload = async () => { await page.reload({ waitUntil: 'networkidle0' }); await ready(); await sleep(200); };
+  const shotC = async (name) => { await page.evaluate(() => { document.getElementById('toast')?.classList.remove('show'); }); await shot(name); };
+  const hideSheet = () => page.evaluate(() => document.querySelector('.sheetWrap')?.classList.remove('show'));
+  const hash = () => page.evaluate(() => location.hash);
+  const items = () => page.evaluate(() => JSON.parse(localStorage.getItem('poolIQContentV1') || 'null')?.items || []);
+  const progress = () => page.evaluate(() => JSON.parse(localStorage.getItem('poolIQContentProgressV1') || 'null'));
+  const norm = (o) => JSON.stringify(o, (k, v) => (v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b))) : v));
+  /** every official Pool IQ key (Career/state, ratings, history, Ghost, custom drills, simulator, calibration live in these) — everything except My Content's own keys and the vault's bookkeeping */
+  const OWN = ['poolIQContentV1', 'poolIQContentProgressV1', 'poolIQMetaV1'];
+  const official = () => page.evaluate((own) => { const o = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (/^poolIQ/i.test(k) && !own.includes(k)) o[k] = localStorage.getItem(k); } for (const k of window.PoolIQ.V.DATA_KEYS) if (!own.includes(k)) o[k] = localStorage.getItem(k); return JSON.stringify(Object.keys(o).sort().map((k) => [k, o[k]])); }, OWN);
+  const upload = async (file) => {
+    await go('#home');
+    await go('#content');
+    const inp = await page.$('input[data-content-input]');
+    await inp.uploadFile(file);
+    await page.waitForFunction(() => /#cview\/pending|#cimport|#content$/.test(location.hash) && !/#home/.test(location.hash), { timeout: 5000 }).catch(() => {});
+    await sleep(350);
+  };
+  const svgToScreen = (sel, x, y) => page.evaluate((s, px, py) => { const svg = document.querySelector(s); const pt = svg.createSVGPoint(); pt.x = px; pt.y = py; const q = pt.matrixTransform(svg.getScreenCTM()); return { x: q.x, y: q.y }; }, sel, x, y);
+  const layout = () => page.evaluate(() => {
+    const bar = document.querySelector('.resultBar')?.getBoundingClientRect();
+    const svg = document.querySelector('.playTable svg')?.getBoundingClientRect();
+    const taps = [...document.querySelectorAll('.resultBar button:not(.rbUndo), .phBack, .lockBtn, .resultBtns .bigBtn')].filter((e) => e.offsetParent).map((e) => e.getBoundingClientRect()).map((r) => Math.min(r.height, r.width));
+    return { bar: bar ? Math.round(bar.bottom) : 9e9, sh: document.documentElement.scrollHeight, ih: innerHeight, iw: innerWidth, ow: document.documentElement.scrollWidth, table: svg ? Math.round(svg.width) : 0, minTap: taps.length ? Math.round(Math.min(...taps)) : 0 };
+  });
+  const fits = (l) => l.bar <= l.ih + 1 && l.sh <= l.ih + 2 && l.ow <= l.iw + 1;
+  const lstr = (l) => `bar ${l.bar}, page ${l.sh}/${l.ih}, width ${l.ow}/${l.iw}, table ${l.table}px, min tap ${l.minTap}px`;
+  const recordN = async (n) => { for (let k = 0; k < n; k++) { if (await exists('.resultPanel')) break; await page.$$eval('.resultBar .rb[data-action="record"]', (els) => els[els.length - 1].click()); await sleep(110); } };
+  const recordMiss = async (n) => { for (let k = 0; k < n; k++) { if (await exists('.resultPanel')) break; await page.$$eval('.resultBar .rb[data-action="record"]', (els) => els[0].click()); await sleep(110); } };
+
+  await page.setUserAgent(IPHONE_UA);
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+  await page.evaluate(() => history.replaceState(null, '', '#settings'));
+  await reload();
+  await tap('[data-action="set-coach"][data-v="beginner"]');
+  await go('#drills');
+
+  // ---- entry point + existing data
+  const legacyBefore = await page.evaluate(() => JSON.parse(localStorage.getItem('poolIQCustomDrillsV1') || '{"drills":[]}').drills);
+  const stateBefore = await getState();
+  check(await exists('.myContentBtn[data-href="#content"]'), 'Drills tab has a MY CONTENT button');
+  await tap('.myContentBtn');
+  await sleep(250);
+  check(/#content$/.test(await hash()) && (await page.$$('.cSec[data-section]')).length === 4 && ['drills', 'packs', 'lessons', 'games'].every(Boolean), 'MY CONTENT opens with My Drills / Training Packs / Lessons / Skill Games');
+  const secs = await page.$$eval('.cSec[data-section]', (els) => els.map((e) => e.dataset.section).join(','));
+  check(secs === 'drills,packs,lessons,games', `My Content sections in order (${secs})`);
+  const acc = await page.$eval('input[data-content-input]', (e) => e.accept);
+  check(['.pooliq', '.json', 'application/json', 'application/octet-stream', 'text/plain'].every((a) => acc.split(',').includes(a)), `file input accept list includes .pooliq, .json, application/json, octet-stream, text/plain (iOS Files won't grey out .pooliq): ${acc}`);
+  const ib = await page.$eval('[data-import-btn]', (e) => ({ h: e.getBoundingClientRect().height, t: e.innerText }));
+  check(ib.h >= 44 && /IMPORT CONTENT/.test(ib.t), `big IMPORT CONTENT button (${Math.round(ib.h)}px)`);
+  const customCards = (await page.$$('[data-custom-drill] [data-badge="custom"]')).length;
+  check(legacyBefore.length >= 1 && customCards === legacyBefore.filter((d) => d.custom !== false).length, `existing Create Drill drills (v9 data) still listed in My Drills with a CUSTOM badge (${customCards})`);
+  check(!/coming soon/i.test(await text('#view')), 'My Content has no "Coming Soon" placeholders');
+  const hubL = await layout();
+  check(hubL.ow <= hubL.iw + 1, 'My Content: no sideways scroll at 390×844');
+  await tap('[data-action="c-examples"]');
+  check((await page.$$('#sheet .exRow[data-example]')).length === 7 && (await page.$$('#sheet a[download][href^="./examples/"]')).length === 7 && (await exists('#sheet a[href="./POOLIQ_CONTENT_SCHEMA.md"][rel="noopener"]')), 'Example files sheet: 7 downloadable DEMO files + schema docs link');
+  await hideSheet();
+  const OFF0 = await official();
+
+  // ---- invalid / malicious files → readable error screen, nothing installed
+  const base = exJSON('demo-single-drill.pooliq');
+  const bad = JSON.parse(JSON.stringify(base));
+  bad.shot.speed = 1.7;
+  bad.shot.ballPositions.push({ n: 1, x: 120, y: 10 });
+  bad.scoringRules = { mode: 'success', attempts: 3, pass: { made: 5 } };
+  await upload(writeTmp('bad-values.pooliq', bad));
+  const errTxt = await text('[data-import-error]');
+  check(/#cimport$/.test(await hash()) && /CANNOT IMPORT/.test(await text('[data-import-error] .errHead')) && (await page.$$('[data-import-error] .errList li')).length >= 3, `invalid file → CANNOT IMPORT screen with a readable list (${(await page.$$('[data-import-error] .errList li')).length} problems)`);
+  check(/speed/i.test(errTxt) && /1/.test(errTxt) && /Nothing on this device was changed/.test(errTxt), 'error list names the problems (SPEED, ball, pass) and says nothing changed');
+  await shotC('60-import-error');
+  const evil = JSON.parse(JSON.stringify(base));
+  evil.title = 'Nice drill<script>window.__pwned=1</script>';
+  evil.description = '<img src=x onerror="window.__pwned=2">';
+  evil.attribution.sourceURL = 'javascript:window.__pwned=3';
+  await upload(writeTmp('evil-script.pooliq', evil));
+  const evilOut = await page.evaluate(() => ({ h: location.hash, pwned: window.__pwned, scripts: document.querySelectorAll('#view script, #view img[onerror], #view iframe').length, txt: document.querySelector('[data-import-error]')?.innerText || '' }));
+  check(/#cimport$/.test(evilOut.h) && !evilOut.pwned && evilOut.scripts === 0 && /not allowed|script|unsafe/i.test(evilOut.txt), 'malicious file (<script>, onerror=, javascript: URL) rejected; nothing executed or injected');
+  await upload(writeTmp('evil-proto.pooliq', JSON.stringify(base).replace('"metadata":{', '"metadata":{"__proto__":{"polluted":"yes"},').replace('"shot":{', '"shot":{"constructor":{"prototype":{"polluted2":1}},')));
+  const proto = await page.evaluate(() => ({ h: location.hash, p: ({}).polluted, p2: ({}).polluted2, txt: document.querySelector('[data-import-error]')?.innerText || '' }));
+  check(/#cimport$/.test(proto.h) && proto.p === undefined && proto.p2 === undefined && /__proto__|constructor|not allowed/i.test(proto.txt), 'prototype-pollution keys (__proto__, constructor/prototype) rejected; Object.prototype untouched');
+  await upload(writeTmp('future.pooliq', { ...base, schemaVersion: '3.0' }));
+  check(/CANNOT IMPORT — This file uses Pool IQ schema 3\.0\. Your version supports up to 1\.0\./.test(await text('[data-import-error] .errHead')), 'schema 3.0 → "CANNOT IMPORT — This file uses Pool IQ schema 3.0. Your version supports up to 1.0."');
+  await upload(writeTmp('huge.pooliq', JSON.stringify({ ...base, notes: 'x'.repeat(600 * 1024) })));
+  check(/too large/i.test(await text('[data-import-error] .errHead')), 'oversized file (600 KB) rejected before parsing');
+  await upload(writeTmp('garbage.pooliq', 'this is { not json'));
+  check(/CANNOT IMPORT/.test(await text('[data-import-error] .errHead')) && /JSON/i.test(await text('[data-import-error]')), 'non-JSON file → understandable error');
+  await upload(writeTmp('unknown-type.pooliq', { ...base, contentType: 'macro' }));
+  check(/Unknown contentType "macro"/.test(await text('[data-import-error]')), 'unknown content type rejected ("Unknown contentType … Supported: …")');
+  check((await items()).length === 0 && (await official()) === OFF0, 'after all rejected files: nothing installed, official data unchanged');
+  check(errors.length === errBefore, `import errors: zero console errors (${errors.length - errBefore})`);
+
+  // ---- valid drill → preview (same renderer) → play test (sandbox)
+  await upload(ex('demo-single-drill.pooliq'));
+  const pv = await page.evaluate(() => ({
+    h: location.hash,
+    view: document.querySelector('.contentView')?.dataset.view,
+    imported: !!document.querySelector('[data-badge="imported"]'),
+    demo: /DEMO/.test(document.querySelector('.cvTitle')?.innerText || ''),
+    grid: document.querySelectorAll('.cvTable svg .diamond-grid line').length,
+    balls: document.querySelectorAll('.cvTable svg .obj-ball').length,
+    cue: !!document.querySelector('.cvTable svg .cue-ball'),
+    paths: !!document.querySelector('.cvTable svg .cue-path') && !!document.querySelector('.cvTable svg .ob-path'),
+    zones: document.querySelectorAll('.cvTable svg .zone-ring').length,
+    gauges: document.querySelectorAll('.recipeRow .gaugeCard .gauge').length,
+    setup: document.querySelectorAll('.setupLine .su-ball').length,
+    speed: document.querySelector('[data-fact="speed"]')?.dataset.speed,
+    attempts: document.querySelector('[data-fact="attempts"]')?.innerText || '',
+    pass: document.querySelector('[data-fact="pass"]')?.innerText || '',
+    why: !!document.querySelector('.recipeRow [data-action="why-open"]'),
+    attr: document.querySelector('[data-attribution]')?.innerText || '',
+    acts: [...document.querySelectorAll('[data-preview-actions] .bigBtn')].map((b) => b.innerText.trim()).join('|'),
+    table: Math.round(document.querySelector('.cvTable svg')?.getBoundingClientRect().width || 0)
+  }));
+  check(/#cview\/pending$/.test(pv.h) && pv.view === 'drill' && pv.imported && pv.demo, 'valid drill file → PREVIEW (not installed) with IMPORTED badge and DEMO title');
+  check(pv.grid === 10 && pv.balls >= 1 && pv.cue && pv.paths && pv.zones >= 1 && pv.setup >= 2, `preview uses the normal table renderer: diamond grid, balls, paths, target zone, SETUP readout (${pv.balls} balls, ${pv.zones} rings)`);
+  check(pv.gauges === 3 && pv.speed === '1.5' && /10/.test(pv.attempts) && /\d/.test(pv.pass) && pv.why, `preview shows Shot Recipe (3 gauges), SPEED ${pv.speed}, attempts, pass requirement, Why This Shot?`);
+  check(/Pool IQ \(demo content\)/.test(pv.attr) && /PLAY TEST/.test(pv.acts) && /ADD TO MY CONTENT/.test(pv.acts) && /DISCARD/.test(pv.acts), 'preview shows attribution and PLAY TEST / ADD TO MY CONTENT / DISCARD');
+  check(pv.table >= 360, `preview table diagram is large (${pv.table}px wide)`);
+  check((await items()).length === 0, 'import did NOT install anything yet');
+  await shotC('61-preview-drill');
+  await tap('.recipeRow [data-action="why-open"]');
+  check(/WHY THIS SHOT/i.test(await text('#sheet')), 'Why This Shot? opens from the preview');
+  await hideSheet();
+  await tap('[data-preview-actions] [data-href="#cplay/pending"]');
+  await sleep(300);
+  const pt = await page.evaluate(() => ({ title: document.querySelector('.playHead')?.innerText || '', btns: [...document.querySelectorAll('.resultBar .rb[data-action="record"]')].map((b) => b.innerText.replace(/\s+/g, ' ').trim()), grid: document.querySelectorAll('.playTable svg .diamond-grid line').length, gauges: document.querySelectorAll('.gaugeCard .gauge').length }));
+  check(/PLAY TEST/.test(pt.title) && /Attempt 1 of 10/i.test(pt.title) && pt.btns.some((b) => /SUCCESS/.test(b)) && pt.btns.some((b) => /MISS/.test(b)), `PLAY TEST uses the normal play screen ("${pt.title.replace(/\s+/g, ' ').slice(0, 70)}", ${pt.btns.join(' / ')})`);
+  check(pt.grid === 10 && pt.gauges === 3, 'play test: table grid + Shot Recipe gauges');
+  const ptL = await layout();
+  check(fits(ptL) && ptL.minTap >= 44 && ptL.table >= 350, `play test fits 390×844 without scrolling; tap targets ≥ 44px (${lstr(ptL)})`);
+  await shotC('62-play-test');
+  await recordN(7);
+  await recordMiss(3);
+  const sb = await page.evaluate(() => ({ res: !!document.querySelector('[data-content-result]'), note: document.querySelector('[data-sandbox-note]')?.innerText || '', add: !!document.querySelector('.resultBtns [data-action="c-install"]') }));
+  check(sb.res && /nothing was saved/i.test(sb.note) && sb.add, 'play test result: "PLAY TEST — nothing was saved" + ADD TO MY CONTENT');
+  await shotC('63-play-test-result');
+  const stateAfterPT = await getState();
+  check((await official()) === OFF0 && (await items()).length === 0 && (await progress()) == null, 'PLAY TEST isolation: every official key (Career, XP, ratings, history, Ghost, drills, settings, calibration) byte-for-byte unchanged; nothing installed; no progress saved');
+  check(stateAfterPT.xp === stateBefore.xp && norm(stateAfterPT.games) === norm(stateBefore.games), `play test earned no XP / history (xp ${stateAfterPT.xp})`);
+
+  // ---- install from the result screen; persists across reload
+  await tap('.resultBtns [data-action="c-install"]');
+  await sleep(300);
+  let its = await items();
+  const drillUid = its[0]?.uid;
+  check(its.length === 1 && its[0].id === 'demo-straight-in-stop' && its[0].source === 'imported' && /#cview\//.test(await hash()) && !(await hash()).includes('pending'), 'ADD TO MY CONTENT installs it (own storage key poolIQContentV1) and opens it');
+  await reload();
+  await go('#content');
+  check((await items()).length === 1 && (await exists(`.cSec[data-section="drills"] .cItem[data-content-item="${drillUid}"] [data-badge="imported"]`)), 'installed drill persists across reload; listed in My Drills with IMPORTED badge');
+  check((await official()) === OFF0, 'installing touched no official key');
+
+  // ---- same-id conflict: CANCEL / KEEP BOTH / REPLACE (never silent overwrite), versions shown
+  await upload(ex('demo-single-drill.pooliq'));
+  await tap('[data-preview-actions] [data-action="c-install"]');
+  await page.waitForSelector('#sheet [data-conflict]', { timeout: 4000 });
+  const cv1 = await page.evaluate(() => ({ inst: document.querySelector('[data-installed-version]')?.innerText, inc: document.querySelector('[data-incoming-version]')?.innerText, btns: [...document.querySelectorAll('#sheet [data-action="c-conflict"]')].map((b) => b.dataset.mode).join(',') }));
+  check(cv1.inst === 'v1.0' && cv1.inc === 'v1.0' && cv1.btns === 'replace,keepBoth,cancel', `same id → conflict dialog REPLACE / KEEP BOTH / CANCEL with installed ${cv1.inst} vs incoming ${cv1.inc}`);
+  await tap('#sheet [data-action="c-conflict"][data-mode="cancel"]');
+  check((await items()).length === 1 && norm((await items())[0].doc) === norm(its[0].doc), 'CANCEL: nothing changed');
+  const v12 = { ...exJSON('demo-single-drill.pooliq'), contentVersion: '1.2', title: 'DEMO · Straight-In Stop Shot (v1.2)' };
+  const v12Path = writeTmp('demo-single-drill-v12.pooliq', v12);
+  await upload(v12Path);
+  await tap('[data-preview-actions] [data-action="c-install"]');
+  await page.waitForSelector('#sheet [data-conflict]', { timeout: 4000 });
+  check((await text('[data-installed-version]')) === 'v1.0' && (await text('[data-incoming-version]')) === 'v1.2', 'conflict shows installed v1.0 vs incoming v1.2');
+  await shotC('64-conflict');
+  await tap('#sheet [data-action="c-conflict"][data-mode="keepBoth"]');
+  its = await items();
+  check(its.length === 2 && its.some((i) => i.id === 'demo-straight-in-stop' && i.contentVersion === '1.0') && its.some((i) => i.id !== 'demo-straight-in-stop' && i.contentVersion === '1.2'), `KEEP BOTH: original kept, copy installed with a new id (${its.map((i) => `${i.id}@${i.contentVersion}`).join(', ')})`);
+  await upload(v12Path);
+  await tap('[data-preview-actions] [data-action="c-install"]');
+  await page.waitForSelector('#sheet [data-conflict]', { timeout: 4000 });
+  await tap('#sheet [data-action="c-conflict"][data-mode="replace"]');
+  its = await items();
+  const orig = its.find((i) => i.id === 'demo-straight-in-stop');
+  check(its.length === 2 && orig?.contentVersion === '1.2' && orig.uid === drillUid && /v1\.2/.test(orig.doc.title), 'REPLACE: the installed item is updated to v1.2 in place (same slot), copy untouched');
+
+  // ---- installed drill: plays like normal; personal progress only (never Career)
+  await go(`#cview/${drillUid}`);
+  await tap('[data-item-actions] [data-href^="#cplay/"]');
+  await sleep(300);
+  check(!/PLAY TEST/.test(await text('.playHead')) && (await exists('.resultBar .rb[data-action="record"]')), 'installed drill plays on the normal play screen');
+  await recordN(10);
+  const ir = await page.evaluate(() => document.querySelector('[data-sandbox-note]')?.innerText || '');
+  const pr = await progress();
+  check(/personal progress only/.test(ir) && pr?.[drillUid]?.plays === 1 && pr[drillUid].best > 0, `installed play saved to My Content progress (best ${pr?.[drillUid]?.best}) — "${ir}"`);
+  check((await official()) === OFF0, 'installed (not career-eligible) content never changes Career / XP / history keys');
+
+  // ---- edit imported content in the builder (touch drag, SPEED, instructions, marker) and save
+  await go(`#cview/${drillUid}`);
+  await tap('[data-item-actions] [data-href^="#cedit/"]');
+  await sleep(400);
+  check(await exists('.builderScreen[data-builder="content"] #dbTable svg'), 'EDIT opens the visual builder in content mode');
+  const fonts = await page.$$eval('.builderScreen input, .builderScreen textarea, .builderScreen select', (els) => els.map((e) => parseFloat(getComputedStyle(e).fontSize)));
+  check(fonts.length >= 8 && Math.min(...fonts) >= 16, `builder inputs use font-size ≥ 16px (no iOS zoom): ${fonts.length} inputs, min ${Math.min(...fonts)}px`);
+  const bFields = await page.evaluate(() => ['db-title', 'db-instructions', 'db-why'].every((id) => document.getElementById(id)) && !!document.querySelector('[data-action="db-speed"]') && !!document.querySelector('[data-action="db-tool"][data-v="marker"]') && !!document.querySelector('[data-action="db-tech"]') && !!document.querySelector('[data-action="db-eng"]'));
+  check(bFields, 'builder has title, instructions, Why, SPEED, technique, English and table tools (paths, rails, markers)');
+  const sp0 = await page.$eval('[data-speed]', (e) => e.dataset.speed);
+  await tap('[data-action="db-speed"][data-v="-0.5"]');
+  const sp1 = await page.$eval('#dbPanel [data-speed], .builderScreen b[data-speed]', (e) => e.dataset.speed);
+  check(sp0 === '1.5' && sp1 === '1.0', `SPEED changed ${sp0} → ${sp1}`);
+  await page.$eval('#db-instructions', (e) => { e.value = 'Edited on my phone: stop the cue ball dead.'; e.dispatchEvent(new Event('input', { bubbles: true })); });
+  const b0 = await page.evaluate(() => { const b = window.PoolIQ.screen.builder; const o = b.balls.find((x) => x.n === 1); return { x: o.x, y: o.y }; });
+  const bb = await page.$eval('#dbTable svg g.ball[data-n="1"]', (g) => { const r = g.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+  await page.touchscreen.touchStart(bb.x, bb.y);
+  for (let k = 1; k <= 6; k++) { await page.touchscreen.touchMove(bb.x + k * 8, bb.y + k * 5); await sleep(20); }
+  await page.touchscreen.touchEnd();
+  await sleep(300);
+  const b1 = await page.evaluate(() => { const b = window.PoolIQ.screen.builder; const o = b.balls.find((x) => x.n === 1); return { x: o.x, y: o.y }; });
+  check(Math.abs(b1.x - b0.x) > 2 && Math.abs(b1.y - b0.y) > 1, `touch drag moves the 1-ball (${b0.x},${b0.y} → ${b1.x},${b1.y})`);
+  await tap('[data-action="db-tool"][data-v="marker"]');
+  const mk = await svgToScreen('#dbTable svg', 25, 0.4);
+  await page.touchscreen.tap(mk.x, mk.y);
+  await sleep(250);
+  const markers = await page.evaluate(() => window.PoolIQ.screen.builder.markers || []);
+  check(markers.length === 1 && markers[0].rail === 'top' && Math.abs(markers[0].diamond - 2) < 0.15, `marker tool: tapping the top rail adds a diamond reference point (${markers.map((m) => `${m.rail} ${m.diamond}`).join(', ')})`);
+  await tap('[data-action="db-tool"][data-v="move"]');
+  const bl = await layout();
+  check(bl.ow <= bl.iw + 1 && bl.table >= 350, `builder fits the width with a large table (${lstr(bl)})`);
+  await shotC('65-builder-content');
+  await tap('.dbBar [data-action="db-save"]');
+  await sleep(400);
+  its = await items();
+  const ed = its.find((i) => i.uid === drillUid);
+  check(new RegExp(`#cview/${drillUid}$`).test(await hash()) && ed.edited && ed.doc.shot.speed === 1 && /Edited on my phone/.test(ed.doc.shot.instructions) && ed.doc.shot.referenceMarkers?.length === 1 && Math.abs(ed.doc.shot.ballPositions.find((x) => x.n === 1).x - b1.x) < 0.01, 'SAVE TO MY CONTENT: imported drill updated (SPEED 1.0, instructions, moved ball, marker) and marked edited');
+  check(ed.doc.id === 'demo-straight-in-stop' && ed.doc.contentVersion === '1.2' && ed.doc.attribution?.author === 'Pool IQ (demo content)', 'edit keeps id, version and attribution');
+
+  // ---- export (Web Share with a File) → re-import round trip is lossless
+  await page.evaluate(() => {
+    navigator.canShare = (d) => !!(d && d.files && d.files.length);
+    navigator.share = async (d) => { window.__shared = { name: d.files[0].name, type: d.files[0].type, text: await d.files[0].text() }; };
+  });
+  await tap('[data-item-actions] [data-action="c-export"]');
+  await sleep(400);
+  const shared = await page.evaluate(() => window.__shared);
+  check(shared && /\.pooliq$/.test(shared.name) && JSON.parse(shared.text).format === 'pooliq', `EXPORT uses the share sheet with a .pooliq File (${shared?.name}, ${shared?.type})`);
+  const rtPath = writeTmp(shared?.name || 'rt.pooliq', shared?.text || '{}');
+  await page.evaluate(() => { delete navigator.canShare; delete navigator.share; });
+  await upload(rtPath);
+  const pend = await page.evaluate(() => window.PoolIQ.content.getPending()?.doc);
+  check(/#cview\/pending$/.test(await hash()) && norm(pend) === norm(ed.doc), 'export → re-import round trip is lossless (identical document)');
+  await tap('[data-preview-actions] [data-action="c-discard"]');
+  check((await items()).length === 2 && /#content$/.test(await hash()), 'DISCARD installs nothing');
+  // download fallback when files can't be shared
+  const dl = path.join(tmp, 'dl');
+  fs.mkdirSync(dl, { recursive: true });
+  const cdp = await page.createCDPSession();
+  await cdp.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: dl });
+  await tap(`.cItem[data-content-item="${drillUid}"] [data-action="c-export"]`);
+  let dlf = null;
+  for (let i = 0; i < 30 && !dlf; i++) { await sleep(200); dlf = fs.readdirSync(dl).find((f) => /\.pooliq$/.test(f)); }
+  check(!!dlf && norm(JSON.parse(fs.readFileSync(path.join(dl, dlf), 'utf8'))) === norm(ed.doc), `no Web Share → EXPORT downloads ${dlf || 'NOTHING'} (same document)`);
+
+  // ---- delete with confirmation
+  const copyUid = its.find((i) => i.uid !== drillUid).uid;
+  await go('#content');
+  await tap(`.cItem[data-content-item="${copyUid}"] [data-action="c-del"]`);
+  check(/Delete/.test(await text('#sheet')) && (await exists('#sheet [data-action="c-del-do"]')), 'DELETE asks for confirmation');
+  await tap('#sheet [data-action="sheet-close"]');
+  check((await items()).length === 2, 'cancel keeps it');
+  await tap(`.cItem[data-content-item="${copyUid}"] [data-action="c-del"]`);
+  await tap('#sheet [data-action="c-del-do"]');
+  check((await items()).length === 1 && !(await exists(`.cItem[data-content-item="${copyUid}"]`)), 'confirmed DELETE removes the item');
+  check(errors.length === errBefore, `import / preview / install / edit / export: zero console errors (${errors.length - errBefore})`);
+
+  // ---- training pack: ordered stages, locks, progress %
+  await upload(ex('demo-training-pack.pooliq'));
+  check((await page.$$('.stRow[data-stage-state]')).length === 4 && (await page.$$('.stRow button[data-action="go"]')).length === 4, 'pack preview lists 4 ordered stages; all playable in PLAY TEST');
+  await tap('[data-preview-actions] [data-action="c-install"]');
+  await sleep(300);
+  const packUid = (await items()).find((i) => i.contentType === 'pack')?.uid;
+  const states = () => page.$$eval('.stRow[data-stage-state]', (els) => els.map((e) => e.dataset.stageState).join(','));
+  check((await states()) === 'open,locked,locked,locked' && (await text('.packHead')).includes('0%'), `installed pack: stage 1 open, the rest locked 🔒 (${await states()})`);
+  await shotC('66-pack-locked');
+  await tap('.stRow[data-stage-state="locked"] button');
+  check(/Locked/.test(await text('#toast')) && new RegExp(`#cview/${packUid}$`).test(await hash()), 'tapping a locked stage explains it and stays put');
+  await go(`#cplay/${packUid}/3`);
+  await sleep(300);
+  check(new RegExp(`#cview/${packUid}$`).test(await hash()), 'deep link to a locked stage redirects back to the pack');
+  await tap('.stRow[data-stage-state="open"] button');
+  await sleep(250);
+  check(await exists('.lessonScreen[data-phase="teach"]'), 'stage 1 (lesson) opens in TEACH');
+  await tap('[data-action="cl-next"]');
+  check(await exists('[data-lesson-done]'), 'stage 1 complete');
+  await tap(`.resultBtns [data-href="#cview/${packUid}"]`);
+  await sleep(250);
+  check((await states()) === 'done,open,locked,locked' && (await page.$eval('[data-pack-pct]', (e) => e.dataset.packPct)) === '25', `after stage 1: ✓ done, stage 2 🔓, pack 25% (${await states()})`);
+  await tap('.stRow[data-stage-state="open"] button');
+  await sleep(250);
+  await recordN(5);
+  check(await exists('[data-content-result][data-result="pass"]'), 'stage 2 drill passed');
+  await go(`#cview/${packUid}`);
+  check((await states()) === 'done,done,open,locked' && (await page.$eval('[data-pack-pct]', (e) => e.dataset.packPct)) === '50', `after stage 2: 50%, final challenge still locked until stage 3 (${await states()})`);
+  await reload();
+  check((await states()) === 'done,done,open,locked', 'pack progress persists across reload');
+  await shotC('67-pack-progress');
+
+  // ---- lesson: TEACH → GUIDED → SOLVE (hidden) → LOCK → REVEAL
+  await upload(ex('demo-lesson.pooliq'));
+  check((await page.$$('.stepList li')).length === 5, 'lesson preview lists its 5 steps');
+  await tap('[data-preview-actions] [data-href="#cplay/pending"]');
+  await sleep(250);
+  check(await exists('.lessonScreen[data-phase="teach"] .phaseBar [data-ph="solve"]'), 'lesson opens in TEACH with the TEACH → GUIDED → SOLVE → EXECUTE → TEST bar');
+  await shotC('68-lesson-teach');
+  await tap('[data-action="cl-next"]');
+  check(await exists('.lessonScreen[data-phase="guided"] [data-action="cl-play"]'), 'GUIDED PRACTICE step shows the route and a START button');
+  await tap('[data-action="cl-play"]');
+  await sleep(200);
+  await recordN(3);
+  await tap('.resultBtns [data-action="cl-next"]');
+  await sleep(200);
+  const solveHidden = await page.evaluate(() => ({ solve: !!document.querySelector('.solveScreen[data-phase="solve"]'), cuePath: !!document.querySelector('.playTable svg .cue-path'), lock: document.querySelector('[data-action="cs-lock"]')?.disabled }));
+  check(solveHidden.solve && !solveHidden.cuePath && solveHidden.lock === true, 'SOLVE IT YOURSELF hides the solution; LOCK disabled until answered');
+  const tp = await svgToScreen('.playTable svg', 50, 0.4);
+  await page.touchscreen.tap(tp.x, tp.y);
+  await sleep(200);
+  await tap('[data-action="cs-speed"][data-v="2"]');
+  check(!(await page.$eval('[data-action="cs-lock"]', (b) => b.disabled)), 'answer picked (rail tap + SPEED) → LOCK enabled');
+  await tap('[data-action="cs-lock"]');
+  const lr = await page.evaluate(() => ({ reveal: !!document.querySelector('.solveScreen[data-phase="reveal"] .revealBox'), dia: document.querySelector('.diaReveal')?.dataset.verdict, speedRow: !!document.querySelector('.cmpRow[data-field="speed"]'), path: !!document.querySelector('.playTable svg .cue-path') }));
+  check(lr.reveal && lr.dia === 'pass' && lr.speedRow && lr.path, `LOCK ANSWER reveals the recommended solution: diamond verdict ${lr.dia}, SPEED comparison, route drawn`);
+  await shotC('69-lesson-reveal');
+  await tap('[data-action="cs-next"]');
+  check(await exists('.lessonScreen[data-phase="execute"]'), 'lesson moves on to EXECUTE');
+  check((await official()) === OFF0, 'lesson play test changed no official key');
+
+  // ---- gauntlet: hearts, lives decrement, game over, personal best
+  const gDoc = exJSON('demo-gauntlet.pooliq');
+  await upload(ex('demo-gauntlet.pooliq'));
+  check(/lives/i.test(await text('[data-rules]')) && /❤️/.test(await text('[data-rules]')), 'gauntlet preview shows its rules (lives ❤️, points, bonus, retry)');
+  await tap('[data-preview-actions] [data-action="c-install"]');
+  await sleep(250);
+  const gUid = (await items()).find((i) => i.contentType === 'game')?.uid;
+  await tap('[data-item-actions] [data-href^="#cplay/"]');
+  await sleep(250);
+  const lives = () => page.$eval('.hearts[data-lives]', (e) => Number(e.dataset.lives)).catch(() => null);
+  const score = () => page.$eval('.score[data-score]', (e) => Number(e.dataset.score)).catch(() => null);
+  check((await exists('.gameScreen[data-template="gauntlet"]')) && (await lives()) === gDoc.rules.lives, `gauntlet starts with ${gDoc.rules.lives} hearts`);
+  await tap('[data-action="cg-shot"][data-ok="1"]');
+  check((await score()) === gDoc.rules.pointsPerSuccess && (await page.$eval('.gameScreen', (e) => e.dataset.stageIndex)) === '1', `SUCCESS scores ${gDoc.rules.pointsPerSuccess} and advances to stage 2`);
+  await tap('[data-action="cg-shot"][data-ok="0"]');
+  check((await lives()) === gDoc.rules.lives - 1, `MISS loses a life (${await lives()} left)`);
+  const gl = await layout();
+  check(fits(gl) && gl.minTap >= 44, `gauntlet screen fits 390×844 without scrolling (${lstr(gl)})`);
+  await shotC('70-gauntlet-hearts');
+  await tap('[data-action="cg-shot"][data-ok="0"]');
+  await tap('[data-action="cg-shot"][data-ok="0"]');
+  const go1 = await page.evaluate(() => { const g = (k) => document.querySelector(`[data-${k}]`)?.getAttribute(`data-${k}`); return { over: !!document.querySelector('[data-game-over]'), h1: document.querySelector('.resultPanel h1')?.innerText, score: g('final-score'), stage: g('stage-reached'), succ: g('successes'), miss: g('misses'), longest: g('longest'), pb: g('pb') }; });
+  check(go1.over && go1.h1 === 'GAME OVER' && go1.score === String(gDoc.rules.pointsPerSuccess) && go1.stage === '2' && go1.succ === '1' && go1.miss === '3' && go1.longest === '1' && go1.pb === String(gDoc.rules.pointsPerSuccess), `lives 0 → GAME OVER with Score ${go1.score}, Stage ${go1.stage}, Successes ${go1.succ}, Misses ${go1.miss}, Longest streak ${go1.longest}, PB ${go1.pb}`);
+  await shotC('71-gauntlet-game-over');
+  await tap('.resultBtns [data-action="cg-again"]');
+  check((await lives()) === gDoc.rules.lives && (await score()) === 0, 'PLAY AGAIN resets hearts and score');
+  for (let k = 0; k < 3; k++) await tap('[data-action="cg-shot"][data-ok="1"]');
+  for (let k = 0; k < 3; k++) { if (await exists('[data-game-over]')) break; await tap('[data-action="cg-shot"][data-ok="0"]'); }
+  const pb2 = Number(await page.$eval('[data-pb]', (e) => e.dataset.pb));
+  check(pb2 > gDoc.rules.pointsPerSuccess && /NEW PERSONAL BEST/.test(await text('.resultPanel')), `better run → NEW PERSONAL BEST (${pb2})`);
+  await reload();
+  check((await progress())?.[gUid]?.best === pb2 && (await progress())[gUid].plays === 2, 'gauntlet personal best persists across reload (My Content progress)');
+  check((await official()) === OFF0, 'gauntlet results never touched Career / official keys');
+
+  // ---- diamond answer challenge: tap rail, 0.1 steps, lock, difference + tolerance
+  await upload(ex('demo-diamond-challenge.pooliq'));
+  check(/WHERE SHOULD THE CUE BALL CONTACT THE RAIL/.test(await text('[data-question]')), 'diamond challenge preview shows the question (solution hidden behind a spoiler button)');
+  await tap('[data-preview-actions] [data-href="#cplay/pending"]');
+  await sleep(250);
+  check((await exists('.solveScreen[data-phase="solve"] .playTable.tapRail')) && (await page.$eval('[data-action="cs-lock"]', (b) => b.disabled)), 'diamond challenge: tap-the-rail table, LOCK disabled until a point is picked');
+  const dp = await svgToScreen('.playTable svg', 45, 0.4);
+  await page.touchscreen.tap(dp.x, dp.y);
+  await sleep(200);
+  const pick1 = await page.$eval('[data-rail-pick]', (e) => e.dataset.railPick);
+  await tap('[data-action="cs-step"][data-v="-0.1"]');
+  const pick2 = await page.$eval('[data-rail-pick]', (e) => e.dataset.railPick);
+  check(pick1 === 'top:3.6' && pick2 === 'top:3.5', `tap on the top rail snaps to 0.1 diamond (${pick1}); −0.1 nudges to ${pick2}`);
+  await tap('[data-action="cs-lock"]');
+  const dr = await page.evaluate(() => ({ v: document.querySelector('.diaReveal')?.dataset.verdict, diff: document.querySelector('.diaReveal')?.dataset.diff, your: document.querySelector('[data-your]')?.innerText, rec: document.querySelector('[data-rec]')?.innerText, line: document.querySelector('.diaLine')?.innerText || '' }));
+  check(dr.your === '3.5' && dr.rec === '4.0' && Math.abs(Number(dr.diff) - 0.5) < 1e-9 && dr.v === 'close' && /Your answer: 3\.5 · Recommended: 4\.0 · Difference: 0\.5 diamonds/.test(dr.line), `reveal: YOUR ANSWER ${dr.your} / RECOMMENDED ${dr.rec} / DIFFERENCE ${dr.diff} → ${dr.v} (tolerance pass ±0.2, close ±0.5)`);
+  const dl2 = await layout();
+  check(dl2.bar <= dl2.ih + 1 && dl2.ow <= dl2.iw + 1, `diamond reveal: buttons on screen, no sideways scroll (${lstr(dl2)})`);
+  check(await page.evaluate(() => [...document.querySelectorAll('.diaReveal, .diaLine, .cmpRow')].every((e) => getComputedStyle(e).position === 'static' && e.getBoundingClientRect().top > document.querySelector('.playTable').getBoundingClientRect().bottom - 1)), 'reveal boxes sit below the table (a "close" verdict never floats over it)');
+  await shotC('72-diamond-reveal');
+  await tap('[data-action="cs-again"]');
+  const dp2 = await svgToScreen('.playTable svg', 50, 0.4);
+  await page.touchscreen.tap(dp2.x, dp2.y);
+  await sleep(150);
+  await tap('[data-action="cs-lock"]');
+  check((await page.$eval('.diaReveal', (e) => e.dataset.verdict)) === 'pass', 'TRY AGAIN → exact answer 4.0 → PASS');
+  await tap('[data-action="cs-next"]');
+  await sleep(200);
+  check(/Attempt 1 of 5/.test(await text('.playHead')) && (await exists('.resultBar .rb[data-action="record"]')), 'then SHOOT IT: manual SUCCESS / MISS attempts on the normal play screen');
+  await recordN(5);
+  check(await exists('[data-sandbox-note]'), 'diamond challenge play test finishes with the sandbox note');
+
+  // ---- player-solution challenge: choose technique / tip / SPEED, lock, compare
+  await upload(ex('demo-player-solution.pooliq'));
+  await tap('[data-preview-actions] [data-href="#cplay/pending"]');
+  await sleep(250);
+  await tap('[data-action="cs-tech"][data-v="draw"]');
+  const cb = await page.$eval('#csBall', (s) => { const r = s.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height * 0.3 }; });
+  await page.touchscreen.tap(cb.x, cb.y);
+  await sleep(150);
+  await tap('[data-action="cs-speed"][data-v="2"]');
+  const tipTxt = await text('[data-tip-pick]');
+  check(/above/.test(tipTxt), `tap on the upper cue ball picks a follow tip ("${tipTxt}")`);
+  const psL = await layout();
+  check(fits(psL), `player-solution picker fits 390×844 (${lstr(psL)})`);
+  await shotC('73-solution-pick');
+  await tap('[data-action="cs-lock"]');
+  const cmp = await page.evaluate(() => ({ head: document.querySelector('.cmpHeadRow')?.innerText.replace(/\s+/g, ' '), rows: [...document.querySelectorAll('.cmpRow[data-field]')].map((r) => `${r.dataset.field}:${r.dataset.verdict}`) }));
+  check(/PLAYER CHOICE/.test(cmp.head) && /RECOMMENDED/.test(cmp.head) && cmp.rows.length === 3 && cmp.rows.some((r) => /^technique:/.test(r) && !/:match$/.test(r)) && cmp.rows.some((r) => /^speed:match$/.test(r)), `LOCK MY ANSWER → PLAYER CHOICE vs RECOMMENDED (${cmp.rows.join(', ')})`);
+  check(await page.evaluate(() => [...document.querySelectorAll('.cmpRow')].every((e) => getComputedStyle(e).position === 'static' && e.getBoundingClientRect().top > document.querySelector('.playTable').getBoundingClientRect().bottom - 1)), 'comparison rows (incl. CLOSE verdicts) laid out below the table');
+  await shotC('74-solution-compare');
+  await tap('[data-action="cs-next"]');
+  await sleep(200);
+  check((await exists('.playScreen .resultBar .rb[data-action="record"]')) && /Attempt 1 of 5/.test(await text('.playHead')), 'then the player physically attempts it: manual SUCCESS / MISS');
+  await recordN(5);
+  check(await exists('[data-sandbox-note]') && (await official()) === OFF0, 'player-solution play test: sandbox, official keys unchanged');
+
+  // ---- legacy (v9) Create Drill export still imports; backup includes the new keys
+  const legacyText = await page.evaluate(async () => { const m = await import('./js/customDrills.js'); return m.exportDrills(m.loadCustomDrills()); });
+  const customN0 = (await page.evaluate(() => JSON.parse(localStorage.getItem('poolIQCustomDrillsV1')).drills)).length;
+  await upload(writeTmp('my-drills-v9.json', legacyText));
+  const customN1 = (await page.evaluate(() => JSON.parse(localStorage.getItem('poolIQCustomDrillsV1')).drills)).length;
+  check(/#content$/.test(await hash()) && customN1 === customN0 * 2 && /older Pool IQ format/.test(await text('#toast')), `older Create Drill export (v9 JSON) still imports into My Drills (${customN0} → ${customN1})`);
+  const legacyNow = await page.evaluate(() => JSON.parse(localStorage.getItem('poolIQCustomDrillsV1')).drills);
+  check(legacyBefore.every((d) => norm(legacyNow.find((x) => x.id === d.id)) === norm(d)), 'existing custom drills untouched by the migration/import');
+  const stNow = await getState();
+  check(stNow.xp === stateBefore.xp && norm(stNow.games) === norm(stateBefore.games) && norm(stNow.ghostMatches) === norm(stateBefore.ghostMatches) && norm(stNow.settings) === norm(stateBefore.settings), 'v9 data intact after all content work: Career XP, game history, Ghost history, settings');
+  await go(`#play/drills/${legacyBefore[0].id}`);
+  await sleep(250);
+  check(await exists('.playScreen .playTable svg'), 'old custom drill still plays');
+  const bk = await page.evaluate(() => JSON.parse(window.PoolIQ.backupPayload().text));
+  const nItems = (await items()).length;
+  check(!!bk.keys.poolIQContentV1 && !!bk.keys.poolIQContentProgressV1 && bk.keys.poolIQContentV1.items.length === nItems && bk.summary?.content === nItems, `Back Up file includes My Content + content progress keys; its summary counts ${bk.summary?.content} content items`);
+  const mir = await page.evaluate(async () => { await window.PoolIQ.vault.flush(); const m = await window.PoolIQ.vault.getMirror(); return m && m.keys; });
+  check(mir && mir.poolIQContentV1 === (await page.evaluate(() => localStorage.getItem('poolIQContentV1'))) && mir.poolIQContentProgressV1 === (await page.evaluate(() => localStorage.getItem('poolIQContentProgressV1'))), 'My Content keys are mirrored to IndexedDB');
+  const parsed = await page.evaluate(() => { const b = window.PoolIQ.V.parseBackup(window.PoolIQ.backupPayload().text); return { content: b.summary.content, has: typeof b.keys.poolIQContentV1 === 'string' && typeof b.keys.poolIQContentProgressV1 === 'string' }; });
+  check(parsed.has && parsed.content === nItems, `restore reads the content keys back and its summary shows MY CONTENT ${parsed.content}`);
+  await page.evaluate(() => localStorage.clear());
+  await reload();
+  check((await items()).length === nItems, 'localStorage wiped → My Content restored from the IndexedDB safety copy on reload');
+
+  // ---- progressive coaching still applies to imported drills (Advanced: plan + LOCK before the recipe / Aim View)
+  await go('#settings');
+  await tap('[data-action="set-coach"][data-v="advanced"]');
+  await upload(ex('demo-single-drill.pooliq'));
+  await go('#cplay/pending');
+  await sleep(250);
+  check((await exists('.planner[data-planner="1"]')) && !(await exists('.recipeRow .gauge-aim .aim-view[data-cut]')) && (await page.$eval('.lockBtn', (e) => e.disabled)), 'Advanced coaching: imported drill hides the recipe / Aim View behind the plan + LOCK MY ANSWER');
+  await tap('[data-action="plan-tech"][data-v="stop"]');
+  await tap('[data-action="plan-speed"][data-v="1.5"]');
+  await tap('[data-action="plan-rails"][data-v="0"]');
+  { const box = await (await page.$('.plBall svg')).boundingBox(); await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height * 0.6); await sleep(150); }
+  await tap('.lockBtn:not([disabled])');
+  await page.waitForSelector('#sheet .cmpRow', { timeout: 3000 });
+  check((await page.$$('#sheet .cmpRow[data-verdict]')).length >= 4, 'Advanced: LOCK shows the PLAYER vs Pool IQ comparison for the imported shot');
+  await hideSheet();
+  check((await exists('.recipeRow .gauge-aim .aim-view[data-cut]')) && (await exists('.resultBar .rb[data-action="record"]')), 'Advanced: after locking, Aim View + SUCCESS / MISS appear');
+  await go('#settings');
+  await tap('[data-action="set-coach"][data-v="beginner"]');
+
+  // ---- My Content list screenshot + hub checks
+  await go('#content');
+  const hubCounts = await page.$$eval('.cSec[data-section]', (els) => els.map((e) => `${e.dataset.section}:${e.querySelectorAll('.cItem').length}`).join(','));
+  check(/packs:1/.test(hubCounts) && /games:1/.test(hubCounts) && /drills:\d+/.test(hubCounts), `My Content lists items by section (${hubCounts})`);
+  const hubTap = await page.evaluate(() => Math.min(...[...document.querySelectorAll('.cItem .miniAct, [data-import-btn]')].map((e) => e.getBoundingClientRect().height)));
+  check(hubTap >= 44, `My Content action buttons ≥ 44px tall (${Math.round(hubTap)}px)`);
+  await shotC('75-my-content');
+  await go('#home');
+  await go(`#cedit/${packUid}`);
+  const el = await page.evaluate(() => ({ list: !!document.querySelector('[data-edit-list]'), shots: document.querySelectorAll('.editShot').length, fonts: [...document.querySelectorAll('#view input, #view textarea, #view select')].filter((e) => e.type !== 'file').map((e) => parseFloat(getComputedStyle(e).fontSize)) }));
+  check(el.list && el.shots >= 3 && Math.min(...el.fonts) >= 16, `EDIT on a pack: details form (inputs ≥ 16px) + every shot is editable (${el.shots})`);
+  await page.$eval('#ce-version', (e) => { e.value = '1.1'; });
+  await tap('[data-action="ce-save-meta"]');
+  check((await items()).find((i) => i.uid === packUid)?.contentVersion === '1.1', 'pack details save (version 1.1)');
+
+  // ---- phone sizes: play screens fit without scrolling
+  const screens = [['drill play test', ex('demo-single-drill.pooliq'), '#cplay/pending'], ['gauntlet', ex('demo-gauntlet.pooliq'), '#cplay/pending'], ['diamond challenge', ex('demo-diamond-challenge.pooliq'), '#cplay/pending'], ['lesson', ex('demo-lesson.pooliq'), '#cplay/pending'], ['player solution', ex('demo-player-solution.pooliq'), '#cplay/pending']];
+  for (const [ua, w, h, tag] of [[IPHONE_UA, 375, 667, 'iPhone'], [ANDROID_UA, 412, 915, 'Android'], [ANDROID_UA, 360, 800, 'Android']]) {
+    await page.setUserAgent(ua);
+    await page.setViewport({ width: w, height: h, deviceScaleFactor: w === 412 ? 2.625 : w === 375 ? 2 : 3, isMobile: true, hasTouch: true });
+    await page.evaluate(() => history.replaceState(null, '', '#content'));
+    await reload();
+    const hl = await layout();
+    check(hl.ow <= hl.iw + 1, `${tag} ${w}×${h}: My Content has no sideways scroll`);
+    for (const [name, file, href] of screens) {
+      await upload(file);
+      await go(href);
+      await sleep(250);
+      const l = await layout();
+      check(fits(l) && l.minTap >= 44 && l.table >= w - 40, `${tag} ${w}×${h}: ${name} fits without scrolling, big table + buttons (${lstr(l)})`);
+      if (w === 375 && name === 'gauntlet') await shotC('76-gauntlet-375');
+      if (w === 412 && name === 'diamond challenge') await shotC('77-diamond-android-412');
+    }
+    await upload(ex('demo-single-drill.pooliq'));
+    const pl = await layout();
+    check(pl.ow <= pl.iw + 1, `${tag} ${w}×${h}: preview has no sideways scroll`);
+    if (w === 375) await shotC('78-preview-375');
+  }
+  await page.setUserAgent(IPHONE_UA);
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+  await page.evaluate(() => history.replaceState(null, '', '#content'));
+  await reload();
+  check(errors.length === errBefore, `My Content: zero console errors (${errors.length - errBefore})`);
+  if (errors.length > errBefore) console.log(errors.slice(errBefore).join('\n'));
+}
+
 // ------------------------------------------------------------------------------------------ service worker + offline
 const swOk = await page.evaluate(async () => {
   if (!('serviceWorker' in navigator)) return false;
@@ -1045,7 +1563,7 @@ const swOk = await page.evaluate(async () => {
 });
 check(swOk, 'service worker registered and active');
 const cacheName = await page.evaluate(async () => (await caches.keys()).join(','));
-check(/pool-iq-v9/.test(cacheName) && !/pool-iq-v8/.test(cacheName), `cache bumped to v9 (${cacheName})`);
+check(/pool-iq-v10/.test(cacheName) && !/pool-iq-v9/.test(cacheName), `cache bumped to v10 (${cacheName})`);
 await page.setOfflineMode(true);
 await page.goto(BASE + 'index.html#arcade', { waitUntil: 'domcontentloaded' });
 await sleep(800);

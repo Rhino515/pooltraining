@@ -4,6 +4,9 @@
  * target ball and pocket(s), drop cue-ball landing zones, set tip / SPEED / scoring / texts, and the route is
  * computed by the Shot Simulator physics. Saves a full challenge object (customDrills.js) that plays exactly
  * like every other drill.
+ * v10: also the .pooliq content editor (#cedit/<uid>/<loc>): same builder, content mode — draw routes by hand,
+ * rail contacts, diamond/reference markers, technique / English, answers, attribution, SAVE TO MY CONTENT,
+ * EXPORT .pooliq. Custom drills can be exported as .pooliq too.
  */
 import { renderStageTable, legendHTML } from '../games/stageTable.js';
 import { recipeGaugesHTML, whyHTML, setupLineHTML, esc } from '../games/recipe.js';
@@ -12,7 +15,6 @@ import { contactText } from '../games/text.js';
 import { speedMeaning } from '../games/speed.js';
 import { toDiamonds, fmtDiamond } from '../games/diamonds.js';
 import { BALL_COLORS, POCKETS } from '../tableDiagram.js';
-import { POCKET_NAMES } from '../games/geometry.js';
 import { SKILL_NAMES } from '../storage.js';
 import { CATEGORIES, refreshCustomDrills } from '../drills.js';
 import * as CD from '../customDrills.js';
@@ -21,8 +23,16 @@ import { R } from '../sim/physics.js';
 import { DRAFT_KEY } from './simulator.js';
 import { lsSet, lsRemove } from '../storage.js';
 import { openSheet, closeSheet, toast } from './sheet.js';
+import { builderFromShot, applyExtras, shotFromBuilder, applyRootMeta, scoringFromBuilder, snapPathPoint, emptyManual } from './builderContent.js';
+import { shotToChallenge, docFromChallenge, checkedDoc } from '../content/convert.js';
+import { validatePooliq, serialize, fileNameFor, railPoint, TECHNIQUES, ENGLISH_TYPES, RAIL_IDS, RAIL_DIAMONDS } from '../content/schema.js';
+import { tapToRail, RAIL_WORDS } from '../content/templates.js';
+import { techniqueName } from '../games/text.js';
+import * as S from '../content/store.js';
+import { shareOrDownload } from './share.js';
 
 const f2 = (v) => Math.round(v * 100) / 100;
+const fmtD = (v) => (Math.round(Number(v) * 10) / 10).toFixed(1);
 const clone = (o) => JSON.parse(JSON.stringify(o));
 const posText = (p) => { const d = toDiamonds(p); return `${fmtDiamond(d.fromHead)} · ${fmtDiamond(d.fromTop)}`; };
 const PKEYS = ['TL', 'TM', 'TR', 'BL', 'BM', 'BR'];
@@ -56,9 +66,18 @@ export function builderFromChallenge(ch) {
   };
 }
 
-export function createDrillBuilder(ctx, { editId = null, fromSim = false, existing = null } = {}) {
+const CONTENT_MODES = [{ id: 'success', label: 'Success / Miss' }];
+const MAX_MARKERS = 20;
+const TOOL_NAMES = { move: 'Move balls', cue: 'Cue-ball path', ob: 'Object-ball path', rail: 'Rail contact', marker: 'Diamond marker' };
+
+export function createDrillBuilder(ctx, { editId = null, fromSim = false, existing = null, content = null } = {}) {
   let b;
-  if (existing) b = builderFromChallenge(existing);
+  const cm = content; // { uid, loc, doc, item } — content mode edits one shot inside an installed .pooliq document
+  if (cm) {
+    b = builderFromShot(cm.item.shot, cm.item, cm.doc);
+    if (cm.item.answer) b.answer = clone(cm.item.answer);
+    if (typeof cm.item.question === 'string') b.question = cm.item.question;
+  } else if (existing) b = builderFromChallenge(existing);
   else if (fromSim) {
     let d = null;
     try { d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch { d = null; }
@@ -67,7 +86,11 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
     else if (d) b.scoring = { ...b.scoring, mode: 'zone' };
     delete b.fromSim;
   } else b = CD.defaultBuilder();
-  const ui = { sel: null, snap: true, dirty: false, preview: null, route: null, msgs: { errors: [], warnings: [] }, showErrors: false };
+  if (!b.manual) b.manual = emptyManual();
+  if (!b.markers) b.markers = [];
+  if (!b.attribution) b.attribution = {};
+  const ui = { sel: null, snap: true, dirty: false, preview: null, route: null, msgs: { errors: [], warnings: [] }, showErrors: false, tool: 'move', touched: new Set() };
+  const isRoot = !cm || !cm.loc.length;
   let drag = null;
   let destroyed = false;
 
@@ -94,10 +117,19 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
   function build() {
     ui.route = null;
     const canRoute = b.cue && b.balls.some((o) => o.n === b.targetBall) && b.pockets.length && !L.validateLayout(CD.builderLayout(b).map((x) => ({ ...x, id: x.blocker ? `x${x.id}` : x.id }))).length;
-    if (canRoute) {
+    if (cm) {
+      try {
+        if (canRoute && b.routeMode !== 'manual') ui.route = CD.computeRoute(b);
+        const sr = b.scoring.none ? null : scoringFromBuilder(b.scoring);
+        ui.preview = shotToChallenge(shotFromBuilder(b, ui.route), { id: 'content-edit', title: b.title || 'Untitled', category: b.category, difficulty: b.difficulty, skill: b.skill, ...(sr ? { scoringRules: sr } : {}) });
+      } catch (e) {
+        console.warn('Pool IQ: content preview failed', e);
+        ui.preview = null;
+      }
+    } else if (canRoute) {
       try {
         ui.route = CD.computeRoute(b);
-        ui.preview = CD.buildCustomDrill({ ...b, title: b.title || 'Untitled drill' }, { id: b.id || 'cd-preview', route: ui.route });
+        ui.preview = applyExtras(CD.buildCustomDrill({ ...b, title: b.title || 'Untitled drill' }, { id: b.id || 'cd-preview', route: ui.route }), b);
       } catch (e) {
         console.warn('Pool IQ: drill preview failed', e);
         ui.preview = null;
@@ -112,8 +144,30 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
         cueBallPath: [], objectBallPaths: [], railContacts: []
       };
     }
-    ui.msgs = CD.validateBuilder(b, ui.route);
-    lsSet(WIP_KEY, JSON.stringify({ editId, b }));
+    ui.msgs = cm ? contentMsgs() : CD.validateBuilder(b, ui.route);
+    if (!cm) lsSet(WIP_KEY, JSON.stringify({ editId, b }));
+  }
+  /** Content mode: the edited document (validated by the same strict schema as imports) */
+  function contentDoc() {
+    const doc = clone(cm.doc);
+    let it = doc;
+    for (const k of cm.loc) it = it[k];
+    it.shot = shotFromBuilder(b, b.routeMode !== 'manual' ? ui.route : null);
+    if (isRoot) {
+      applyRootMeta(doc, b);
+      for (const k of ['skill', 'difficulty', 'category']) if (cm.doc[k] === undefined && !ui.touched.has(k)) delete doc[k];
+    } else if (String(b.title || '').trim()) it.title = String(b.title).trim().slice(0, 80);
+    if (!b.scoring.none) it.scoringRules = scoringFromBuilder(b.scoring);
+    else delete it.scoringRules;
+    if (b.answer) it.answer = clone(b.answer);
+    if (typeof b.question === 'string' && b.question.trim()) it.question = b.question.trim();
+    return doc;
+  }
+  function contentMsgs() {
+    if (!b.cue) return { errors: ['Place the cue ball.'], warnings: [] };
+    let v;
+    try { v = validatePooliq(serialize(contentDoc())); } catch (e) { return { errors: [String(e.message || e)], warnings: [] }; }
+    return { errors: v.ok ? [] : v.errors.slice(1), warnings: v.warnings || [] };
   }
   const sizes = () => CD.ZONE_SIZES[b.zoneSize] || CD.ZONE_SIZES.M;
 
@@ -128,6 +182,11 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
     }
     b.zones.forEach((z, i) => { extra += `<circle class="zone-handle" data-zone="${i}" cx="${f2(z.x)}" cy="${f2(z.y)}" r="0.7" fill="#55e5ff" stroke="#062a32" stroke-width="0.2"/>`; });
     if (ui.route?.cueEnd) extra += `<circle class="sim-end" cx="${f2(ui.route.cueEnd.x)}" cy="${f2(ui.route.cueEnd.y)}" r="${R}" fill="none" stroke="#f4fbff" stroke-width="0.22" stroke-dasharray="0.4 0.3" opacity="0.8"/>`;
+    if (ui.tool !== 'move') {
+      const m = b.manual;
+      if (b.routeMode === 'manual') for (const q of m.cuePath) extra += `<circle class="path-dot" cx="${f2(q.x)}" cy="${f2(q.y)}" r="0.55" fill="#f4fbff" opacity="0.85" pointer-events="none"/>`;
+      extra += `<rect class="tool-frame" x="0.3" y="0.3" width="99.4" height="49.4" fill="none" stroke="#ffc75b" stroke-width="0.35" stroke-dasharray="1.2 0.8" pointer-events="none"/>`;
+    }
     const it = selItem();
     if (it) extra += `<circle class="sel-ring" cx="${f2(it.x)}" cy="${f2(it.y)}" r="${ui.sel.type === 'zone' ? 1.6 : R + 0.55}" fill="none" stroke="#ffc75b" stroke-width="0.32"/>`;
     if (ui.snap) {
@@ -166,6 +225,50 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
     else if (r.cueEnd) bits.push(`cue ball stops at ${posText(r.cueEnd)}${b.zones.length && r.zoneMiss != null ? ` — ${r.zoneMiss < 3.5 ? 'inside the 3★ ring' : `${Math.round(r.zoneMiss)}" from the zone`}` : ''}`);
     return `<p class="simStatus" data-made="${r.made ? 1 : 0}">${bits.join(' · ')} <small class="muted">(simulated — an approximation)</small></p>`;
   }
+  function routeSection() {
+    const m = b.manual;
+    const manual = b.routeMode === 'manual';
+    const tools = ['move', 'cue', 'ob', 'rail', 'marker'];
+    const hint = {
+      move: 'Drag balls and zones. Pick a tool to draw on the table.',
+      cue: 'Tap the table to add cue-ball path points — taps near a ball snap to the contact point, near a rail to the rail, near a pocket to the pocket.',
+      ob: `Tap to draw the ${b.targetBall ?? 'object'}-ball path from the ball (to a rail or pocket).`,
+      rail: 'Tap near a rail to mark where the cue ball contacts it.',
+      marker: 'Tap near a rail to drop a diamond / reference marker (snaps to 0.1 diamond).'
+    }[ui.tool];
+    const railLbl = (c) => `${RAIL_WORDS[c.rail] || c.rail} ${fmtD(c.rail === 'top' || c.rail === 'bottom' ? c.x / 12.5 : c.y / 12.5)}`;
+    return section('Route & reference points', `<div class="dbRow"><span class="lbl">Route</span><div class="chips" data-route-mode="${manual ? 'manual' : 'sim'}"><button type="button" class="chip${manual ? '' : ' active'}" data-action="db-rmode" data-v="sim">Simulated (physics)</button><button type="button" class="chip${manual ? ' active' : ''}" data-action="db-rmode" data-v="manual">Drawn by hand</button></div></div>
+      <div class="dbRow"><span class="lbl">Table tool</span><div class="chips toolChips">${tools.map((t) => `<button type="button" class="chip${ui.tool === t ? ' active' : ''}" data-action="db-tool" data-v="${t}">${TOOL_NAMES[t]}</button>`).join('')}</div><small class="muted">${esc(hint)}</small></div>
+      ${manual ? `<p class="muted small" data-manual-summary>Cue path: ${m.cuePath.length} point${m.cuePath.length === 1 ? '' : 's'} · object-ball paths: ${m.obPaths.length} · rail contacts: ${m.rails.length}${m.ghost ? ' · contact ✓' : ''}</p>
+      <div class="chips"><button type="button" class="chip" data-action="db-path-undo" ${m.cuePath.length || m.obPaths.length || m.rails.length ? '' : 'disabled'}>↶ Undo last point</button><button type="button" class="chip" data-action="db-path-clear">Clear drawn route</button></div>
+      ${m.rails.length ? `<div class="markList">${m.rails.map((c, i) => `<span class="markItem">${esc(railLbl(c))} <small>${c.by === 'ob' ? 'object ball' : 'cue ball'}</small><button type="button" class="miniX" data-action="db-rail-del" data-i="${i}" aria-label="Remove rail contact">✕</button></span>`).join('')}</div>` : ''}` : ''}
+      <div class="dbRow"><span class="lbl">Diamond / reference markers</span>${b.markers.length ? `<div class="markList" data-markers="${b.markers.length}">${b.markers.map((k, i) => `<span class="markItem"><b>${esc(k.label || fmtD(k.diamond))}</b> ${esc(RAIL_WORDS[k.rail] || k.rail)} ${fmtD(k.diamond)}<button type="button" class="miniX" data-action="db-marker-del" data-i="${i}" aria-label="Remove marker">✕</button></span>`).join('')}</div>` : '<small class="muted">None — use the Diamond marker tool.</small>'}</div>`, 'dbRoute');
+  }
+  function answerSection() {
+    if (!cm || (!b.answer && typeof b.question !== 'string')) return '';
+    const a = b.answer;
+    const tol = a?.tolerance || {};
+    return section('Question & recommended answer', `${typeof b.question === 'string' ? `<label class="fld"><span>Question</span><input id="db-question" type="text" maxlength="240" value="${esc(b.question)}"/></label>` : ''}
+      ${a ? `<div class="dbRow"><span class="lbl">Answer rail</span><div class="chips">${RAIL_IDS.map((r) => `<button type="button" class="chip${a.rail === r ? ' active' : ''}" data-action="db-ans-rail" data-v="${r}">${esc(RAIL_WORDS[r])}</button>`).join('')}</div></div>
+      <div class="dbGrid2"><label class="fld"><span>Answer diamond (0–${RAIL_DIAMONDS[a.rail]})</span><input id="db-ans-diamond" type="number" step="0.1" min="0" max="${RAIL_DIAMONDS[a.rail]}" value="${a.diamond}" inputmode="decimal"/></label>
+      <label class="fld"><span>Pass ± / close ±</span><span class="dbGrid2 tight"><input id="db-ans-pass" type="number" step="0.1" min="0" max="2" value="${tol.pass ?? ''}" placeholder="0.2" inputmode="decimal"/><input id="db-ans-close" type="number" step="0.1" min="0" max="4" value="${tol.close ?? ''}" placeholder="0.5" inputmode="decimal"/></span></label></div>
+      <label class="fld"><span>Answer explanation</span><textarea id="db-ans-expl" rows="2" maxlength="1500">${esc(a.explanation || '')}</textarea></label>` : ''}`, 'dbAnswer');
+  }
+  function moreDetailsHTML() {
+    const at = b.attribution || {};
+    const why = [['whyContact', 'Why this tip contact'], ['whySpeed', 'Why this SPEED'], ['whySpin', 'Why this spin'], ['whyRoute', 'Why this route'], ['whyAim', 'Why this aim']];
+    return `<label class="fld"><span>Setup instructions <small class="muted">(optional)</small></span><textarea id="db-setupInstructions" rows="2" maxlength="1500">${esc(b.setupInstructions || '')}</textarea></label>
+      <label class="fld"><span>Hints <small class="muted">(one per line)</small></span><textarea id="db-hints" rows="2" maxlength="3000">${esc(b.hints || '')}</textarea></label>
+      ${isRoot ? `<label class="fld"><span>Description <small class="muted">(optional)</small></span><textarea id="db-description" rows="2" maxlength="2000">${esc(b.description || '')}</textarea></label>` : ''}
+      <details class="dbMore"><summary>More “Why this shot?” notes</summary>${why.map(([k, l]) => `<label class="fld"><span>${l}</span><textarea id="db-${k}" rows="2" maxlength="1500">${esc(b[k] || '')}</textarea></label>`).join('')}</details>
+      ${isRoot ? `<details class="dbMore"${at.author || at.sourceName || at.sourceURL || at.notes ? ' open' : ''}><summary>Attribution &amp; version (for sharing)</summary>
+        <label class="fld"><span>Author <small class="muted">(leave blank if unknown)</small></span><input id="db-att-author" type="text" maxlength="80" value="${esc(at.author || '')}"/></label>
+        <label class="fld"><span>Source name</span><input id="db-att-sourceName" type="text" maxlength="120" value="${esc(at.sourceName || '')}"/></label>
+        <label class="fld"><span>Source link (http/https)</span><input id="db-att-sourceURL" type="url" maxlength="500" value="${esc(at.sourceURL || '')}"/></label>
+        <label class="fld"><span>Notes</span><textarea id="db-att-notes" rows="2" maxlength="600">${esc(at.notes || '')}</textarea></label>
+        <label class="fld"><span>Content version</span><input id="db-contentVersion" type="text" maxlength="14" value="${esc(b.contentVersion || '1.0')}" inputmode="decimal"/></label>
+      </details>` : ''}`;
+  }
   function panelHTML() {
     const sc = b.scoring;
     const num = (id, v, min, max, label) => `<label class="numFld"><span>${label}</span><span class="stepper"><button type="button" class="nudge" data-action="db-step" data-k="${id}" data-v="-1" aria-label="Less">−</button><input type="number" id="db-${id}" data-k="${id}" min="${min}" max="${max}" value="${v}" inputmode="numeric"/><button type="button" class="nudge" data-action="db-step" data-k="${id}" data-v="1" aria-label="More">+</button></span></label>`;
@@ -178,24 +281,29 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
       section('2 · Cue-ball zones', `<div class="chips"><button type="button" class="chip" data-action="db-zone-add">+ Add zone</button><button type="button" class="chip" data-action="db-zone-end" ${ui.route?.cueEnd ? '' : 'disabled'}>Zone where the cue ball stops</button>${b.zones.length ? '<button type="button" class="chip" data-action="db-zone-clear">Remove all zones</button>' : ''}</div>
         <div class="dbRow"><span class="lbl">Ring size</span><div class="chips">${Object.keys(CD.ZONE_SIZES).map((k) => `<button type="button" class="chip${b.zoneSize === k ? ' active' : ''}" data-action="db-zsize" data-k="${k}">${k === 'S' ? 'Small' : k === 'M' ? 'Medium' : 'Large'} (3★ ${CD.ZONE_SIZES[k][2]}")</button>`).join('')}</div></div>
         <small class="muted">${b.zones.length ? `${b.zones.length} zone${b.zones.length > 1 ? 's' : ''} — drag the dot in the middle to move one.` : 'No zone: the drill is scored on the pot only (or quality stars).'}</small>`, 'dbZones'),
+      routeSection(),
       section('3 · Shot recipe', `<div class="simTipSpeed"><button type="button" class="simTip" data-action="db-tip" aria-label="Cue-ball tip">${cueBallSVG(b.tip, { size: 'sm', interactive: true, id: 'dbTipBall' })}<small>${esc(contactText(b.tip.vTips, b.tip.hTips))}</small></button>
         <div class="simSpeed"><div class="spRow"><button type="button" class="spBtn" data-action="db-speed" data-v="-0.5" aria-label="Slower">−</button><b data-speed="${b.speed.toFixed(1)}">SPEED ${b.speed.toFixed(1)}</b><button type="button" class="spBtn" data-action="db-speed" data-v="0.5" aria-label="Faster">+</button></div><small>${esc(speedMeaning(b.speed))}</small></div></div>
         <div class="dbRow"><span class="lbl">Aim</span><div class="chips"><button type="button" class="chip" data-action="db-aim" data-v="-0.5">−0.5°</button><button type="button" class="chip" data-action="db-aim" data-v="-0.1">−0.1°</button><span class="aimOff">${b.aimOffset ? `${b.aimOffset > 0 ? '+' : ''}${f2(b.aimOffset)}° from auto` : 'auto (throw-compensated)'}</span><button type="button" class="chip" data-action="db-aim" data-v="0.1">+0.1°</button><button type="button" class="chip" data-action="db-aim" data-v="0.5">+0.5°</button></div></div>
-        <div class="chips"><button type="button" class="chip${b.showRoute !== false ? ' active' : ''}" data-action="db-route">Show cue-ball route: ${b.showRoute !== false ? 'on' : 'off'}</button></div>
-        ${simStatus()}`, 'dbRecipe'),
-      section('4 · Details', `<label class="fld"><span>Title</span><input id="db-title" type="text" maxlength="60" value="${esc(b.title)}" placeholder="e.g. Draw to the side rail"/></label>
-        <div class="dbGrid2"><label class="fld"><span>Category</span><select id="db-category">${CATEGORIES.map((c) => `<option${b.category === c ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select></label>
+        <div class="dbRow"><span class="lbl">Technique</span><div class="chips" data-tech-chips><button type="button" class="chip${!b.technique ? ' active' : ''}" data-action="db-tech" data-v="">Auto</button>${TECHNIQUES.map((t) => `<button type="button" class="chip${b.technique === t ? ' active' : ''}" data-action="db-tech" data-v="${t}">${esc(techniqueName(t))}</button>`).join('')}</div></div>
+        <div class="dbRow"><span class="lbl">English</span><div class="chips" data-eng-chips><button type="button" class="chip${!b.englishType ? ' active' : ''}" data-action="db-eng" data-v="">Auto (from tip)</button>${ENGLISH_TYPES.map((t) => `<button type="button" class="chip${b.englishType === t ? ' active' : ''}" data-action="db-eng" data-v="${t}">${t === 'none' ? 'None' : t[0].toUpperCase() + t.slice(1)}</button>`).join('')}</div></div>
+        ${cm ? '' : `<div class="chips"><button type="button" class="chip${b.showRoute !== false ? ' active' : ''}" data-action="db-route">Show cue-ball route: ${b.showRoute !== false ? 'on' : 'off'}</button></div>`}
+        ${b.routeMode === 'manual' ? '<p class="simStatus muted">Drawn route — the table shows the route you drew (the simulator is not used).</p>' : simStatus()}`, 'dbRecipe'),
+      answerSection(),
+      section('4 · Details', `<label class="fld"><span>Title</span><input id="db-title" type="text" maxlength="${cm ? 80 : 60}" value="${esc(b.title)}" placeholder="e.g. Draw to the side rail"/></label>
+        <div class="dbGrid2"><label class="fld"><span>Category</span>${cm ? `<input id="db-category" type="text" maxlength="40" value="${esc(b.category || '')}"/>` : `<select id="db-category">${CATEGORIES.map((c) => `<option${b.category === c ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select>`}</label>
         <label class="fld"><span>Skill trained</span><select id="db-skill">${SKILL_NAMES.map((c) => `<option${b.skill === c ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select></label></div>
         <div class="dbRow"><span class="lbl">Level</span><div class="chips">${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="chip${Number(b.difficulty) === n ? ' active' : ''}" data-action="db-level" data-v="${n}">Level ${n}</button>`).join('')}</div></div>
         <label class="fld"><span>Instructions <small class="muted">(optional — auto text if blank)</small></span><textarea id="db-instructions" rows="3" maxlength="600">${esc(b.instructions)}</textarea></label>
         <label class="fld"><span>Goal <small class="muted">(optional)</small></span><input id="db-goal" type="text" maxlength="140" value="${esc(b.goal)}"/></label>
-        <label class="fld"><span>Why This Shot? — coach's note <small class="muted">(shown first in the Why sheet)</small></span><textarea id="db-why" rows="3" maxlength="600">${esc(b.why)}</textarea></label>`, 'dbDetails'),
-      section('5 · Scoring', `<div class="chips">${CD.SCORING_MODES.map((m) => `<button type="button" class="chip${sc.mode === m.id ? ' active' : ''}" data-action="db-mode" data-v="${m.id}">${m.label}</button>`).join('')}</div>
-        <div class="dbGrid2">${num('attempts', sc.attempts, 1, 50, 'Attempts')}
-        ${sc.mode === 'binary' ? num('made', sc.made, 1, sc.attempts, 'Made to pass') : num('stars', sc.stars, 1, sc.attempts * 3, 'Stars to pass')}
+        <label class="fld"><span>Why This Shot? — coach's note <small class="muted">(shown first in the Why sheet)</small></span><textarea id="db-why" rows="3" maxlength="600">${esc(b.why)}</textarea></label>
+        ${moreDetailsHTML()}`, 'dbDetails'),
+      section('5 · Scoring', `<div class="chips">${cm ? `<button type="button" class="chip${sc.none ? ' active' : ''}" data-action="db-mode" data-v="none">No scoring</button>` : ''}${(cm ? [...CONTENT_MODES, ...CD.SCORING_MODES] : CD.SCORING_MODES).map((m) => `<button type="button" class="chip${!sc.none && sc.mode === m.id ? ' active' : ''}" data-action="db-mode" data-v="${m.id}">${m.label}</button>`).join('')}</div>
+        ${sc.none ? '<small class="muted">This item is shown/explained only — no attempts are scored.</small>' : `<div class="dbGrid2">${num('attempts', sc.attempts, 1, 50, 'Attempts')}
+        ${sc.mode === 'binary' || sc.mode === 'success' ? num('made', sc.made, 1, sc.attempts, 'Made to pass') : num('stars', sc.stars, 1, sc.attempts * 3, 'Stars to pass')}
         ${sc.mode === 'zone' && sc.requirePocket !== false ? num('pockets', sc.pockets, 0, sc.attempts, 'Pots to pass') : ''}</div>
         ${sc.mode === 'zone' ? `<div class="chips"><button type="button" class="chip${sc.requirePocket !== false ? ' active' : ''}" data-action="db-reqpot">Must pocket the ball: ${sc.requirePocket !== false ? 'yes' : 'no'}</button></div>` : ''}
-        <small class="muted">${sc.mode === 'zone' ? 'Each attempt: missed / pocketed / 1–3★ by where the cue ball stops.' : sc.mode === 'stars' ? 'Each attempt is rated 0–3★ by you.' : 'Each attempt: miss / contact only / made.'}</small>`, 'dbScoring'),
+        <small class="muted">${sc.mode === 'zone' ? 'Each attempt: missed / pocketed / 1–3★ by where the cue ball stops.' : sc.mode === 'stars' ? 'Each attempt is rated 0–3★ by you.' : sc.mode === 'success' ? 'Each attempt: SUCCESS or MISS.' : 'Each attempt: miss / contact only / made.'}</small>`}`, 'dbScoring'),
       msgsHTML()
     ].join('');
   }
@@ -205,19 +313,19 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
     return `<div class="dbMsgs${ui.showErrors && m.errors.length ? ' show' : ''}" id="dbMsgs">${m.errors.map((e) => `<p class="err">• ${esc(e)}</p>`).join('')}${m.warnings.map((w) => `<p class="warn">⚠ ${esc(w)}</p>`).join('')}</div>`;
   }
   function headHTML() {
-    return `<div class="playHead"><button type="button" class="phBack" data-action="db-exit" aria-label="Back">‹</button><div class="phTitle"><small>DRILLS</small><b>${editId ? 'Edit Drill' : 'Create Drill'}</b></div><div class="phStatus"><button type="button" class="hBtn act" data-action="db-preview">Preview</button></div></div>`;
+    return `<div class="playHead"><button type="button" class="phBack" data-action="db-exit" aria-label="Back">‹</button><div class="phTitle"><small>${cm ? 'MY CONTENT' : 'DRILLS'}</small><b>${cm ? `Edit · ${esc(cm.item.title || cm.doc.title)}` : editId ? 'Edit Drill' : 'Create Drill'}</b></div><div class="phStatus"><button type="button" class="hBtn act" data-action="db-preview">Preview</button></div></div>`;
   }
 
   // ------------------------------------------------------------------ render
   function render() {
     if (destroyed) return;
     build();
-    ctx.root.innerHTML = `<div class="playScreen builderScreen" data-builder="${editId ? 'edit' : 'new'}">
+    ctx.root.innerHTML = `<div class="playScreen builderScreen" data-builder="${cm ? 'content' : editId ? 'edit' : 'new'}" data-tool="${ui.tool}">
       ${headHTML()}
       <div class="playTable builderTable" id="dbTable">${tableSVG()}<div class="dragBubble" id="dragBubble"></div></div>
       <div id="dbSetup">${ui.preview.cueBallPosition ? setupLineHTML(ui.preview) : ''}</div>
       <div class="builderBody" id="dbPanel">${panelHTML()}</div>
-      <div class="resultBar n2 dbBar"><button type="button" class="rb alt" data-action="db-preview"><b>PREVIEW</b></button><button type="button" class="rb s3" data-action="db-save"><b>SAVE DRILL</b></button></div>
+      <div class="resultBar n3 dbBar"><button type="button" class="rb alt" data-action="db-preview"><b>PREVIEW</b></button><button type="button" class="rb alt" data-action="db-export"><b>EXPORT</b><small>.pooliq</small></button><button type="button" class="rb s3" data-action="db-save"><b>${cm ? 'SAVE' : 'SAVE DRILL'}</b>${cm ? '<small>to My Content</small>' : ''}</button></div>
     </div>`;
     bindTable();
     bindFields();
@@ -228,6 +336,7 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
     if (!t) return render();
     build();
     t.innerHTML = `${tableSVG()}<div class="dragBubble" id="dragBubble"></div>`;
+    ctx.root.querySelector('.builderScreen')?.setAttribute('data-tool', ui.tool);
     ctx.root.querySelector('#dbSetup').innerHTML = ui.preview.cueBallPosition ? setupLineHTML(ui.preview) : '';
     const scrollY = window.scrollY;
     ctx.root.querySelector('#dbPanel').innerHTML = panelHTML();
@@ -235,20 +344,29 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
     window.scrollTo(0, scrollY);
   }
   function refreshMsgs() {
-    ui.msgs = CD.validateBuilder(b, ui.route);
+    ui.msgs = cm ? contentMsgs() : CD.validateBuilder(b, ui.route);
     const m = ctx.root.querySelector('#dbMsgs');
     if (m) m.outerHTML = msgsHTML();
   }
   function bindFields() {
     const root = ctx.root;
-    const txt = { 'db-title': 'title', 'db-instructions': 'instructions', 'db-goal': 'goal', 'db-why': 'why' };
+    const txt = { 'db-title': 'title', 'db-instructions': 'instructions', 'db-goal': 'goal', 'db-why': 'why', 'db-setupInstructions': 'setupInstructions', 'db-hints': 'hints', 'db-description': 'description', 'db-contentVersion': 'contentVersion', 'db-question': 'question', 'db-whyContact': 'whyContact', 'db-whySpeed': 'whySpeed', 'db-whySpin': 'whySpin', 'db-whyRoute': 'whyRoute', 'db-whyAim': 'whyAim' };
     for (const [id, k] of Object.entries(txt)) {
       const el = root.querySelector(`#${id}`);
-      if (el) el.addEventListener('input', () => { b[k] = el.value; ui.dirty = true; refreshMsgs(); lsSet(WIP_KEY, JSON.stringify({ editId, b })); });
+      if (el) el.addEventListener('input', () => { b[k] = el.value; ui.dirty = true; refreshMsgs(); if (!cm) lsSet(WIP_KEY, JSON.stringify({ editId, b })); });
     }
+    for (const k of ['author', 'sourceName', 'sourceURL', 'notes']) {
+      const el = root.querySelector(`#db-att-${k}`);
+      if (el) el.addEventListener('input', () => { b.attribution = { ...b.attribution, [k]: el.value }; ui.dirty = true; refreshMsgs(); });
+    }
+    const ansNum = (id, fn) => { const el = root.querySelector(`#${id}`); if (el) el.addEventListener('input', () => { fn(el.value); ui.dirty = true; refreshMsgs(); }); };
+    ansNum('db-ans-diamond', (v) => { b.answer.diamond = Math.round(Number(v) * 100) / 100 || 0; });
+    ansNum('db-ans-pass', (v) => { const t = { ...(b.answer.tolerance || {}) }; if (v === '') delete t.pass; else t.pass = Number(v); if (Object.keys(t).length) b.answer.tolerance = t; else delete b.answer.tolerance; });
+    ansNum('db-ans-close', (v) => { const t = { ...(b.answer.tolerance || {}) }; if (v === '') delete t.close; else t.close = Number(v); if (Object.keys(t).length) b.answer.tolerance = t; else delete b.answer.tolerance; });
+    ansNum('db-ans-expl', (v) => { if (v.trim()) b.answer.explanation = v; else delete b.answer.explanation; });
     for (const [id, k] of [['db-category', 'category'], ['db-skill', 'skill']]) {
       const el = root.querySelector(`#${id}`);
-      if (el) el.addEventListener('change', () => { b[k] = el.value; ui.dirty = true; });
+      if (el) el.addEventListener(cm && k === 'category' ? 'input' : 'change', () => { b[k] = el.value; ui.touched.add(k); ui.dirty = true; if (cm) refreshMsgs(); });
     }
     root.querySelectorAll('.numFld input').forEach((el) => {
       el.addEventListener('change', () => { b.scoring[el.dataset.k] = Math.round(Number(el.value) || 0); ui.dirty = true; refresh(); });
@@ -284,11 +402,13 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
       e.preventDefault();
       const p = toTable(e);
       try { t.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+      if (ui.tool !== 'move') { drag = { tool: true, p, sx: e.clientX, sy: e.clientY }; return; }
       const h = hit(p);
       drag = h ? { ...h, from: { x: h.item.x, y: h.item.y }, ox: h.item.x - p.x, oy: h.item.y - p.y, sx: e.clientX, sy: e.clientY, moved: false } : { pocket: pocketAt(p), sx: e.clientX, sy: e.clientY };
     });
     t.addEventListener('pointermove', (e) => {
       if (!drag || !drag.item) return;
+      if (drag.tool) return;
       e.preventDefault();
       if (!drag.moved && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < 5) return;
       drag.moved = true;
@@ -315,6 +435,7 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
       const d = drag;
       drag = null;
       if (!d) return;
+      if (d.tool) { toolTap(d.p); refresh(); return; }
       if (!d.item) {
         if (d.pocket) tablePocket(d.pocket);
         else ui.sel = null;
@@ -325,6 +446,7 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
       if (d.moved && d.to) {
         let q = d.to;
         if (d.sel.type !== 'zone') q = L.freeSpot(allPoints(d.item), q);
+        movePathStarts(d.item, q);
         d.item.x = f2(q.x);
         d.item.y = f2(q.y);
         ui.dirty = true;
@@ -333,6 +455,70 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
     };
     t.addEventListener('pointerup', end);
     t.addEventListener('pointercancel', () => { drag = null; refresh(); });
+  }
+  /** A drawn path that starts at a ball follows that ball when it is moved */
+  function movePathStarts(item, q) {
+    const m = b.manual;
+    const same = (pt) => pt && Math.hypot(pt.x - item.x, pt.y - item.y) < 0.05;
+    if (same(m.cuePath[0])) m.cuePath[0] = { x: f2(q.x), y: f2(q.y) };
+    for (const op of m.obPaths) if (same(op.points[0])) op.points[0] = { x: f2(q.x), y: f2(q.y) };
+  }
+  /** Start a hand-drawn route from the current simulated one (so it can be adjusted) */
+  function toManual() {
+    if (b.routeMode === 'manual') return;
+    b.routeMode = 'manual';
+    const m = b.manual;
+    const pv = ui.preview;
+    if (!m.cuePath.length && pv?.cueBallPath?.length >= 2 && ui.route) {
+      m.cuePath = pv.cueBallPath.map((q) => ({ x: f2(q.x), y: f2(q.y) }));
+      m.contactIndex = pv.contactIndex || 1;
+      m.ghost = pv.ghost ? { x: f2(pv.ghost.x), y: f2(pv.ghost.y) } : null;
+      m.obPaths = (pv.objectBallPaths || []).filter((o) => o.points?.length >= 2).map((o) => ({ n: o.n, points: o.points.map((q) => ({ x: f2(q.x), y: f2(q.y) })) }));
+      m.rails = (pv.railContacts || []).map((c) => ({ x: f2(c.x), y: f2(c.y), rail: c.rail, by: c.by === 'ob' ? 'ob' : 'cue' }));
+    }
+  }
+  function toolTap(p) {
+    const m = b.manual;
+    ui.dirty = true;
+    if (ui.tool === 'marker' || ui.tool === 'rail') {
+      const r = tapToRail(p.x, p.y);
+      if (ui.tool === 'marker') {
+        if (b.markers.length >= MAX_MARKERS) { toast(`Up to ${MAX_MARKERS} markers`); return; }
+        b.markers.push({ rail: r.rail, diamond: r.diamond, label: fmtD(r.diamond), kind: 'reference' });
+        toast(`Marker: ${RAIL_WORDS[r.rail]} ${fmtD(r.diamond)}`);
+      } else {
+        toManual();
+        if (m.rails.length >= 20) { toast('Up to 20 rail contacts'); return; }
+        const q = railPoint(r.rail, r.diamond);
+        m.rails.push({ x: f2(q.x), y: f2(q.y), rail: r.rail, by: 'cue' });
+        toast(`Rail contact: ${RAIL_WORDS[r.rail]} ${fmtD(r.diamond)}`);
+      }
+      return;
+    }
+    if (ui.tool === 'cue') {
+      toManual();
+      if (!b.cue) return;
+      if (!m.cuePath.length) m.cuePath.push({ x: f2(b.cue.x), y: f2(b.cue.y) });
+      if (m.cuePath.length >= 60) { toast('Path is long enough'); return; }
+      const prev = m.cuePath[m.cuePath.length - 1];
+      const sp = snapPathPoint(p, { prev, balls: [...b.balls, ...b.blockers], pockets: true });
+      m.cuePath.push(sp.point);
+      if (sp.contact != null && !m.ghost) { m.ghost = { ...sp.point }; m.contactIndex = m.cuePath.length - 1; }
+      if (sp.rail && m.rails.length < 20) m.rails.push({ x: sp.nose.x, y: sp.nose.y, rail: sp.rail, by: 'cue' });
+      return;
+    }
+    if (ui.tool === 'ob') {
+      const n = b.balls.some((o) => o.n === b.targetBall) ? b.targetBall : b.balls[0]?.n;
+      const ball = b.balls.find((o) => o.n === n);
+      if (!ball) { toast('Add an object ball first'); return; }
+      toManual();
+      let path = m.obPaths.find((o) => o.n === n);
+      if (!path) { path = { n, points: [{ x: f2(ball.x), y: f2(ball.y) }] }; m.obPaths.push(path); }
+      const prev = path.points[path.points.length - 1];
+      const sp = snapPathPoint(p, { prev, balls: [...b.balls, ...b.blockers].filter((o) => o.n !== n), pockets: true });
+      path.points.push(sp.point);
+      if (sp.rail && m.rails.length < 20) m.rails.push({ x: sp.nose.x, y: sp.nose.y, rail: sp.rail, by: 'ob' });
+    }
   }
   /** Table tap: that pocket becomes the (single) target pocket */
   function tablePocket(k) {
@@ -358,9 +544,50 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
       <p class="goal">${esc(ch.goal || '')}</p>${passText ? `<p class="muted small">Pass: ${esc(passText)} · Level ${ch.difficulty || b.difficulty}</p>` : ''}
       ${ch.whyExplanation ? `<h3>Why this shot?</h3>${whyHTML(ch)}` : ''}
       ${m.errors.length ? `<div class="dbMsgs show">${m.errors.map((e) => `<p class="err">• ${esc(e)}</p>`).join('')}</div>` : ''}
-      <button type="button" class="bigBtn" data-action="db-save">SAVE DRILL</button><button type="button" class="bigBtn alt" data-action="sheet-close">KEEP EDITING</button>`, { id: 'dbpreview' });
+      <button type="button" class="bigBtn" data-action="db-save">${cm ? 'SAVE TO MY CONTENT' : 'SAVE DRILL'}</button><button type="button" class="bigBtn alt" data-action="sheet-close">KEEP EDITING</button>`, { id: 'dbpreview' });
+  }
+  function exitHref() {
+    return cm ? (isRoot && (cm.doc.contentType === 'drill' || cm.doc.contentType === 'challenge') ? `#cview/${cm.uid}` : `#cedit/${cm.uid}`) : '#drills';
+  }
+  function showErrors() {
+    ui.showErrors = true;
+    closeSheet();
+    refresh();
+    toast(ui.msgs.errors[0]);
+    ctx.root.querySelector('#dbMsgs')?.scrollIntoView({ block: 'center' });
+  }
+  function saveContent() {
+    build();
+    if (ui.msgs.errors.length) return showErrors();
+    const out = S.updateItemDoc(cm.uid, contentDoc());
+    if (out.error) { toast(out.error); return; }
+    ui.dirty = false;
+    closeSheet();
+    toast(`Saved “${out.item.title}” to My Content`);
+    ctx.go(exitHref());
+  }
+  /** EXPORT .pooliq — content mode exports the whole edited document; Create Drill exports this drill */
+  async function exportFile() {
+    build();
+    if (ui.msgs.errors.length) return showErrors();
+    let doc;
+    try {
+      if (cm) doc = contentDoc();
+      else {
+        const prev = editId ? CD.loadCustomDrills().find((d) => d.id === editId) : null;
+        const ch = applyExtras(CD.buildCustomDrill({ ...b, created: prev?.created }, { id: editId || b.id || null, route: ui.route }), b);
+        doc = docFromChallenge(ch, { description: b.description, attribution: b.attribution, contentVersion: b.contentVersion || '1.0' });
+      }
+      doc = checkedDoc(doc);
+    } catch (e) {
+      toast(String(e.message || e));
+      return;
+    }
+    const res = await shareOrDownload(fileNameFor(doc), serialize(doc), { title: doc.title });
+    if (res !== 'cancelled') toast(res === 'shared' ? 'Shared .pooliq file' : `Downloaded ${fileNameFor(doc)}`);
   }
   function save() {
+    if (cm) return saveContent();
     build();
     const m = ui.msgs;
     if (m.errors.length) {
@@ -372,7 +599,7 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
       return;
     }
     const prev = editId ? CD.loadCustomDrills().find((d) => d.id === editId) : null;
-    const ch = CD.buildCustomDrill({ ...b, created: prev?.created }, { id: editId || null, route: ui.route });
+    const ch = applyExtras(CD.buildCustomDrill({ ...b, created: prev?.created }, { id: editId || null, route: ui.route }), b);
     CD.upsertCustomDrill(ch);
     refreshCustomDrills();
     lsRemove(WIP_KEY); lsRemove(DRAFT_KEY);
@@ -390,6 +617,7 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
     let q = L.clampToTable({ x: it.x + dx * step, y: it.y + dy * step });
     if (ui.snap) q = L.snapPoint(q);
     if (ui.sel.type !== 'zone' && allPoints(it).some((o) => Math.hypot(o.x - q.x, o.y - q.y) < 2 * R - 0.001)) { toast('Blocked by another ball'); return; }
+    if (ui.sel.type !== 'zone') movePathStarts(it, q);
     it.x = f2(q.x);
     it.y = f2(q.y);
     ui.dirty = true;
@@ -404,17 +632,43 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
     switch (a) {
       case 'db-exit':
         if (ui.dirty) {
-          openSheet(`<h2 class="sheetTitle">Leave without saving?</h2><p class="muted">Your changes to this drill will be lost.</p><button type="button" class="bigBtn danger" data-action="db-exit-do">LEAVE</button><button type="button" class="bigBtn alt" data-action="sheet-close">KEEP EDITING</button>`, { id: 'confirm' });
+          openSheet(`<h2 class="sheetTitle">Leave without saving?</h2><p class="muted">Your changes to this ${cm ? 'item' : 'drill'} will be lost.</p><button type="button" class="bigBtn danger" data-action="db-exit-do">LEAVE</button><button type="button" class="bigBtn alt" data-action="sheet-close">KEEP EDITING</button>`, { id: 'confirm' });
           return true;
         }
-        ctx.go('#drills');
+        ctx.go(exitHref());
         return true;
       case 'db-exit-do':
         ui.dirty = false;
-        lsRemove(WIP_KEY);
+        if (!cm) lsRemove(WIP_KEY);
         closeSheet();
-        ctx.go('#drills');
+        ctx.go(exitHref());
         return true;
+      case 'db-export': exportFile(); return true;
+      case 'db-rmode':
+        if (el.dataset.v === 'manual') toManual(); else b.routeMode = 'sim';
+        ui.dirty = true; refresh(); return true;
+      case 'db-tool': ui.tool = el.dataset.v; ui.sel = null; refresh(); return true;
+      case 'db-path-undo': {
+        const m = b.manual;
+        const last = (arr) => arr[arr.length - 1];
+        const lastOb = last(m.obPaths);
+        if (ui.tool === 'ob' && lastOb) { lastOb.points.pop(); if (lastOb.points.length < 2) m.obPaths.pop(); }
+        else if (ui.tool === 'rail' && m.rails.length) m.rails.pop();
+        else if (m.cuePath.length) {
+          const gone = m.cuePath.pop();
+          if (m.ghost && Math.hypot(m.ghost.x - gone.x, m.ghost.y - gone.y) < 0.01) m.ghost = null;
+          if (last(m.rails) && m.rails.length && Math.abs(last(m.rails).x - gone.x) + Math.abs(last(m.rails).y - gone.y) < 2.5) m.rails.pop();
+          if (m.cuePath.length === 1) m.cuePath = [];
+        } else if (lastOb) m.obPaths.pop();
+        else m.rails.pop();
+        ui.dirty = true; refresh(); return true;
+      }
+      case 'db-path-clear': b.manual = emptyManual(); ui.dirty = true; refresh(); return true;
+      case 'db-rail-del': b.manual.rails.splice(Number(el.dataset.i), 1); ui.dirty = true; refresh(); return true;
+      case 'db-marker-del': b.markers.splice(Number(el.dataset.i), 1); ui.dirty = true; refresh(); return true;
+      case 'db-tech': b.technique = el.dataset.v; ui.dirty = true; refresh(); return true;
+      case 'db-eng': b.englishType = el.dataset.v; ui.dirty = true; refresh(); return true;
+      case 'db-ans-rail': if (b.answer) { b.answer.rail = el.dataset.v; b.answer.diamond = Math.min(b.answer.diamond, RAIL_DIAMONDS[el.dataset.v]); } ui.dirty = true; refresh(); return true;
       case 'db-preview': previewSheet(); return true;
       case 'db-save': save(); return true;
       case 'db-ball': {
@@ -497,8 +751,11 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
       case 'db-speed': b.speed = Math.max(0.5, Math.min(5, Math.round((b.speed + Number(el.dataset.v)) * 2) / 2)); ui.dirty = true; refresh(); return true;
       case 'db-aim': b.aimOffset = Math.max(-5, Math.min(5, Math.round(((Number(b.aimOffset) || 0) + Number(el.dataset.v)) * 100) / 100)); ui.dirty = true; refresh(); return true;
       case 'db-route': b.showRoute = b.showRoute === false; ui.dirty = true; refresh(); return true;
-      case 'db-level': b.difficulty = Number(el.dataset.v); ui.dirty = true; refresh(); return true;
-      case 'db-mode': b.scoring = { ...b.scoring, mode: el.dataset.v }; ui.dirty = true; refresh(); return true;
+      case 'db-level': b.difficulty = Number(el.dataset.v); ui.touched.add('difficulty'); ui.dirty = true; refresh(); return true;
+      case 'db-mode':
+        if (el.dataset.v === 'none') b.scoring = { ...b.scoring, none: true };
+        else { b.scoring = { ...b.scoring, mode: el.dataset.v }; delete b.scoring.none; }
+        ui.dirty = true; refresh(); return true;
       case 'db-reqpot': b.scoring = { ...b.scoring, requirePocket: b.scoring.requirePocket === false }; ui.dirty = true; refresh(); return true;
       case 'db-step': {
         const k = el.dataset.k;
@@ -524,6 +781,7 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
     onAction,
     destroy() { destroyed = true; },
     get builder() { return b; },
+    get contentDoc() { return cm ? contentDoc() : null; },
     get isDirty() { return ui.dirty; }
   };
 }

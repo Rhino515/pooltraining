@@ -3,6 +3,7 @@
  * Routes: #home #career #drills #analyze #arcade #profile (#stats alias) #settings
  *         #ghost[/balls/race] #ghostmatch #game/<id> #play/<game>/<stage> #boss/<id> #bossplay/<id>
  *         #sim[/s=<code>|/target] (Shot Simulator) #drillnew[/fromsim] #drilledit/<id> (Create Drill)
+ *         #content (My Content) #cimport (import error) #cview/<ref> #cplay/<ref>[/<stage>] #cedit/<uid>[/<loc>]  (.pooliq content, ui/content.js)
  */
 import { loadState, saveState, resetState, archiveUnknownDrills, onDataWrite, lsSet, idbAdapter } from './storage.js';
 import * as V from './vault.js';
@@ -22,6 +23,8 @@ import { openSheet, closeSheet, toast, clearToast } from './ui/sheet.js';
 import { getGame, getBoss, getStage } from './games/registry.js';
 import { isStageUnlocked, isEndlessUnlocked, isGameUnlocked } from './games/engine.js';
 import { isBossUnlocked } from './career.js';
+import * as C from './ui/content.js';
+import * as CS from './content/store.js';
 
 function derive(s) {
   return syncRank(withSkills(s));
@@ -67,7 +70,7 @@ function parseHash() {
   return { name: name || 'home', args };
 }
 
-const NAV_FOR = { sim: 'sim', drillnew: 'drills', drilledit: 'drills', home: 'home', career: 'career', drills: 'drills', analyze: 'analyze', arcade: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
+const NAV_FOR = { content: 'drills', cimport: 'drills', cview: 'drills', cplay: 'drills', cedit: 'drills', sim: 'sim', drillnew: 'drills', drilledit: 'drills', home: 'home', career: 'career', drills: 'drills', analyze: 'analyze', arcade: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
 
 function setChrome(playing, navName) {
   document.body.classList.toggle('playing', playing);
@@ -115,6 +118,41 @@ function renderRoute() {
       screen.render();
       playing = true;
     }
+  } else if (name === 'content') v.innerHTML = C.contentHubHTML();
+  else if (name === 'cimport') v.innerHTML = C.importErrorHTML();
+  else if (name === 'cview') {
+    screen = C.createContentView(ctx, args[0]);
+    if (screen) screen.render();
+    else {
+      toast(args[0] === 'pending' ? 'Nothing to preview — import a .pooliq file first' : 'That item is no longer in My Content');
+      v.innerHTML = C.contentHubHTML();
+    }
+  } else if (name === 'cplay') {
+    const out = C.createContentPlay(ctx, args[0], args[1]);
+    if (out.error) {
+      toast(out.error);
+      if (out.redirect) { location.replace(out.redirect); return; }
+      v.innerHTML = C.contentHubHTML();
+    } else {
+      screen = out;
+      screen.render();
+      playing = true;
+    }
+  } else if (name === 'cedit') {
+    const it = CS.getItem(args[0]);
+    if (!it) {
+      toast('That item is no longer in My Content');
+      v.innerHTML = C.contentHubHTML();
+    } else {
+      const single = it.doc.contentType === 'drill' || it.doc.contentType === 'challenge';
+      const loc = args[1] ? C.decodeLoc(args[1]) : single ? [] : null;
+      const item = loc ? C.itemAt(it.doc, loc) : null;
+      if (loc && item && item.shot) {
+        screen = createDrillBuilder(ctx, { content: { uid: it.uid, loc, doc: it.doc, item } });
+        screen.render();
+        playing = true;
+      } else v.innerHTML = C.editListHTML(it.uid);
+    }
   } else if (name === 'boss') v.innerHTML = renderBossPage(state, args[0]);
   else if (name === 'game') v.innerHTML = args[0] === 'ghost' ? renderGhostLobby(state, ghostPreset) : renderGameLobby(state, args[0]);
   else if (name === 'career') v.innerHTML = renderCareerPage(state);
@@ -157,7 +195,21 @@ function handleAction(action, el, e) {
     return;
   }
   if (screen && screen.onAction(action, el, e)) return;
+  if (action.startsWith('c-') && C.contentAction(action, el, e, ctx)) return;
   switch (action) {
+    case 'ce-save-meta': {
+      const out = C.saveMetaFromForm(el.dataset.uid);
+      if (out.error) {
+        const m = document.getElementById('ceMsgs');
+        if (m) m.innerHTML = out.error.split('\n').map((x) => `<p class="err">• ${escHTML(x)}</p>`).join('');
+        if (m) m.classList.add('show');
+        toast('Not saved — please fix the details');
+      } else {
+        toast('Details saved');
+        renderRoute();
+      }
+      break;
+    }
     case 'drill-create':
       navigate('#drillnew');
       break;
@@ -489,7 +541,7 @@ async function fillSettings() {
   if (sc) { sc.textContent = `(${snaps.length})`; sc.dataset.snapcount = String(snaps.length); }
 }
 function summaryGridHTML(s) {
-  return `<div class="summaryGrid" data-summary><div class="rankCell"><b>${escHTML(s.rank)}</b><span>RANK · ${s.xp} XP</span></div><div><b>${s.sessions}</b><span>SESSIONS</span></div><div><b>${s.matches}</b><span>GHOST GAMES</span></div><div><b>${s.drills}</b><span>MY DRILLS</span></div><div><b>${s.shots}</b><span>SAVED SHOTS</span></div></div>`;
+  return `<div class="summaryGrid" data-summary><div class="rankCell"><b>${escHTML(s.rank)}</b><span>RANK · ${s.xp} XP</span></div><div><b>${s.sessions}</b><span>SESSIONS</span></div><div><b>${s.matches}</b><span>GHOST GAMES</span></div><div><b>${s.drills}</b><span>MY DRILLS</span></div><div><b>${s.shots}</b><span>SAVED SHOTS</span></div><div><b>${s.content || 0}</b><span>MY CONTENT</span></div></div>`;
 }
 function backupPayload(now = new Date()) {
   const obj = V.buildBackup(localStorage, { now: now.getTime() });
@@ -535,6 +587,13 @@ async function replaceAndReload(keys, reason, flash) {
     toast(`Restore failed: ${err.message || err}`);
   }
 }
+/* IMPORT CONTENT: the <input type=file data-content-input> inside the button label (native iOS / Android file picker) */
+document.addEventListener('change', (e) => {
+  const inp = e.target && e.target.closest ? e.target.closest('[data-content-input]') : null;
+  if (!inp) return;
+  const file = inp.files && inp.files[0];
+  if (file) C.handleContentFile(file, ctx).finally(() => { inp.value = ''; });
+});
 document.addEventListener('change', async (e) => {
   const inp = e.target && e.target.closest ? e.target.closest('[data-restore-input]') : null;
   if (!inp) return;
@@ -573,6 +632,15 @@ async function boot() {
   renderRoute();
   document.documentElement.dataset.ready = '1';
   window.PoolIQ.boot = rec;
+  // Installed PWA opened with a .pooliq file (manifest file_handlers, Chromium) → the same validate → preview flow
+  if ('launchQueue' in window) {
+    try {
+      window.launchQueue.setConsumer(async (params) => {
+        const h = params && params.files && params.files[0];
+        if (h) C.handleContentFile(await h.getFile(), ctx);
+      });
+    } catch { /* ignore */ }
+  }
   let flash = null;
   try { flash = sessionStorage.getItem(FLASH_KEY); sessionStorage.removeItem(FLASH_KEY); } catch { /* ignore */ }
   if (flash) toast(flash);
@@ -588,6 +656,6 @@ window.addEventListener('load', () => {
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
 });
 
-window.PoolIQ = { getState: () => state, drills, getDrillById, allDrills, commit, navigate, rerender, vault, V, backupPayload, installMode, get screen() { return screen; } };
+window.PoolIQ = { getState: () => state, drills, getDrillById, allDrills, commit, navigate, rerender, vault, V, backupPayload, installMode, get screen() { return screen; }, content: { store: CS, getPending: C.getPending, processImport: (text, name) => C.processImport(text, name || 'test.pooliq', ctx) } };
 boot();
 export { drills, getDrillById };

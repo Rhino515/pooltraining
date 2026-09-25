@@ -33,6 +33,8 @@
 import { extraDrills } from './drillsExtra.js';
 import { buildChallenge } from './games/builders.js';
 import { loadCustomDrills } from './customDrills.js';
+import { loadContent } from './content/store.js';
+import { shotToChallenge } from './content/convert.js';
 
 export const CATEGORIES = [
   'Shot Making',
@@ -101,10 +103,29 @@ export function customDrills() {
         console.warn('Pool IQ: skipped invalid custom drill', c && c.id, e);
       }
     }
+    // Installed .pooliq drills that are explicitly careerEligible join the library (history, skills, XP like
+    // custom drills; never rank). Everything else in My Content only earns personal content progress.
+    for (const it of loadContent()) {
+      if (it.contentType !== 'drill' || it.doc?.careerEligible !== true) continue;
+      try {
+        const d = normalizeDrill(contentDrillChallenge(it));
+        d.contentUid = it.uid;
+        d.imported = it.source !== 'custom';
+        customCache.push(d);
+      } catch (e) {
+        console.warn('Pool IQ: skipped invalid content drill', it && it.id, e);
+      }
+    }
   }
   return customCache;
 }
 /** Call after saving / deleting / importing custom drills */
+/** Library id for a career-eligible My Content drill */
+export const contentDrillId = (uid) => `pq-${uid}`;
+export function contentDrillChallenge(it) {
+  const d = it.doc;
+  return shotToChallenge(d.shot, { id: contentDrillId(it.uid), title: d.title, category: d.category || 'Imported', difficulty: d.difficulty, skill: d.skill, scoringRules: d.scoringRules, xp: d.xp, skillEffects: d.skillEffects });
+}
 export function refreshCustomDrills() {
   customCache = null;
 }

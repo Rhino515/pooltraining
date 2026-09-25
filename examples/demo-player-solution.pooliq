@@ -1,0 +1,118 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "challenge",
+  "id": "demo-follow-solution",
+  "contentVersion": "1.0",
+  "title": "DEMO · Choose the Recipe (Follow)",
+  "description": "DEMO file for the Pool IQ .pooliq format — a simple geometric layout made to show how the app works. It is not an established drill or system. Decide technique, tip and SPEED, lock your answer, compare with the recommended recipe from this file, then shoot it.",
+  "category": "Demo",
+  "difficulty": 2,
+  "skill": "Cue-Ball Control",
+  "attribution": {
+    "author": "Pool IQ (demo content)"
+  },
+  "metadata": {
+    "tags": [
+      "demo",
+      "challenge",
+      "solution"
+    ],
+    "created": "2026-09-25",
+    "language": "en",
+    "demo": true,
+    "generator": "Pool IQ examples"
+  },
+  "challengeType": "solution",
+  "question": "HOW WOULD YOU PLAY THIS SHOT?",
+  "ask": [
+    "technique",
+    "tip",
+    "speed"
+  ],
+  "shot": {
+    "kind": "pot",
+    "cueBallPosition": {
+      "x": 54.95,
+      "y": 27.3
+    },
+    "ballPositions": [
+      {
+        "n": 2,
+        "x": 75,
+        "y": 37.5
+      }
+    ],
+    "targetBall": 2,
+    "targetPocket": "BR",
+    "cueBallPath": [
+      {
+        "x": 54.95,
+        "y": 27.3
+      },
+      {
+        "x": 72.99,
+        "y": 36.48
+      },
+      {
+        "x": 81.01,
+        "y": 40.56
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPaths": [
+      {
+        "n": 2,
+        "points": [
+          {
+            "x": 75,
+            "y": 37.5
+          },
+          {
+            "x": 100.45,
+            "y": 50.45
+          }
+        ]
+      }
+    ],
+    "cueContact": {
+      "vTips": 0.5,
+      "hTips": 0
+    },
+    "technique": "follow",
+    "speed": 2,
+    "targetZones": [
+      {
+        "x": 81.01,
+        "y": 40.56,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4.5,
+            "stars": 2
+          },
+          {
+            "r": 6.5,
+            "stars": 1
+          }
+        ]
+      }
+    ],
+    "goal": "Pocket the 2 in the bottom-right corner and follow forward into the zone.",
+    "instructions": "DEMO: straight-in shot to the bottom-right corner. Choose how you would play it, lock your answer, then shoot 5 attempts.",
+    "whyExplanation": {
+      "whyContact": "In this DEMO the recommended contact is half a tip above centre so the cue ball rolls forward after contact.",
+      "whySpeed": "SPEED 2 in this DEMO: enough pace to pocket the ball and roll a short distance forward."
+    }
+  },
+  "scoringRules": {
+    "mode": "success",
+    "attempts": 5,
+    "pass": {
+      "made": 3
+    }
+  }
+}

@@ -260,7 +260,7 @@ export function evaluateSession(session, stage = stageFor(session)) {
     r.passed = r.over && stars >= (pass.stars || 0);
     r.needText = `${pass.stars || 0}★ total`;
     r.progressText = `${stars}★`;
-  } else if (mode === 'binary') {
+  } else if (mode === 'binary' || mode === 'success') {
     let made = 0;
     for (const a of A) {
       if (a.result === 'made') { made++; r.score += 100; }
@@ -405,6 +405,13 @@ export function resultButtons(session, stage, ev = evaluateSession(session, stag
   }
   if (mode === 'stars') {
     return [0, 1, 2, 3].map((s) => ({ label: ['FAILED', '★ PLAYABLE', '★★ TOUGH', '★★★ LOCKED'][s], outcome: { stars: s }, cls: s ? `s${s}` : 'miss' }));
+  }
+  if (mode === 'success') {
+    // .pooliq drills: plain SUCCESS / MISS (evaluated like binary)
+    return [
+      { label: 'MISS', outcome: { result: 'miss' }, cls: 'miss' },
+      { label: 'SUCCESS', outcome: { result: 'made' }, cls: 's3' }
+    ];
   }
   if (mode === 'binary') {
     return [

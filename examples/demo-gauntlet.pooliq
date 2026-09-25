@@ -1,0 +1,315 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "game",
+  "id": "demo-straight-gauntlet",
+  "contentVersion": "1.0",
+  "title": "DEMO · Straight-In Gauntlet",
+  "description": "DEMO file for the Pool IQ .pooliq format — a simple geometric layout made to show how the app works. It is not an established drill or system. GAUNTLET template: 3 lives, five straight-in stages of increasing distance. A make scores and moves on; a miss costs a life and you retry the stage.",
+  "category": "Demo",
+  "difficulty": 3,
+  "skill": "Shot Making",
+  "attribution": {
+    "author": "Pool IQ (demo content)"
+  },
+  "metadata": {
+    "tags": [
+      "demo",
+      "game",
+      "gauntlet"
+    ],
+    "created": "2026-09-25",
+    "language": "en",
+    "demo": true,
+    "generator": "Pool IQ examples"
+  },
+  "template": "gauntlet",
+  "rules": {
+    "lives": 3,
+    "pointsPerSuccess": 100,
+    "streakBonus": {
+      "every": 3,
+      "points": 50
+    },
+    "stageBonus": 500,
+    "retry": "repeat",
+    "order": "listed"
+  },
+  "stages": [
+    {
+      "id": "s1",
+      "title": "DEMO · Short straight-in",
+      "difficulty": 1,
+      "points": 100,
+      "shot": {
+        "kind": "pot",
+        "cueBallPosition": {
+          "x": 50,
+          "y": 15.25
+        },
+        "ballPositions": [
+          {
+            "n": 1,
+            "x": 50,
+            "y": 6.25
+          }
+        ],
+        "targetBall": 1,
+        "targetPocket": "TM",
+        "cueBallPath": [
+          {
+            "x": 50,
+            "y": 15.25
+          },
+          {
+            "x": 50,
+            "y": 8.5
+          }
+        ],
+        "contactIndex": 1,
+        "objectBallPaths": [
+          {
+            "n": 1,
+            "points": [
+              {
+                "x": 50,
+                "y": 6.25
+              },
+              {
+                "x": 50,
+                "y": -1.45
+              }
+            ]
+          }
+        ],
+        "cueContact": {
+          "vTips": 0,
+          "hTips": 0
+        },
+        "technique": "stop",
+        "speed": 1,
+        "goal": "Pocket the 1 (short straight-in)."
+      }
+    },
+    {
+      "id": "s2",
+      "title": "DEMO · Medium straight-in",
+      "difficulty": 2,
+      "points": 150,
+      "shot": {
+        "kind": "pot",
+        "cueBallPosition": {
+          "x": 50,
+          "y": 24.25
+        },
+        "ballPositions": [
+          {
+            "n": 1,
+            "x": 50,
+            "y": 6.25
+          }
+        ],
+        "targetBall": 1,
+        "targetPocket": "TM",
+        "cueBallPath": [
+          {
+            "x": 50,
+            "y": 24.25
+          },
+          {
+            "x": 50,
+            "y": 8.5
+          }
+        ],
+        "contactIndex": 1,
+        "objectBallPaths": [
+          {
+            "n": 1,
+            "points": [
+              {
+                "x": 50,
+                "y": 6.25
+              },
+              {
+                "x": 50,
+                "y": -1.45
+              }
+            ]
+          }
+        ],
+        "cueContact": {
+          "vTips": 0,
+          "hTips": 0
+        },
+        "technique": "stop",
+        "speed": 1.5,
+        "goal": "Pocket the 1 (medium straight-in)."
+      }
+    },
+    {
+      "id": "s3",
+      "title": "DEMO · Long straight-in",
+      "difficulty": 3,
+      "points": 200,
+      "shot": {
+        "kind": "pot",
+        "cueBallPosition": {
+          "x": 50,
+          "y": 36.25
+        },
+        "ballPositions": [
+          {
+            "n": 1,
+            "x": 50,
+            "y": 6.25
+          }
+        ],
+        "targetBall": 1,
+        "targetPocket": "TM",
+        "cueBallPath": [
+          {
+            "x": 50,
+            "y": 36.25
+          },
+          {
+            "x": 50,
+            "y": 8.5
+          }
+        ],
+        "contactIndex": 1,
+        "objectBallPaths": [
+          {
+            "n": 1,
+            "points": [
+              {
+                "x": 50,
+                "y": 6.25
+              },
+              {
+                "x": 50,
+                "y": -1.45
+              }
+            ]
+          }
+        ],
+        "cueContact": {
+          "vTips": 0,
+          "hTips": 0
+        },
+        "technique": "stop",
+        "speed": 2,
+        "goal": "Pocket the 1 (long straight-in)."
+      }
+    },
+    {
+      "id": "s4",
+      "title": "DEMO · Corner, medium",
+      "difficulty": 4,
+      "points": 250,
+      "shot": {
+        "kind": "pot",
+        "cueBallPosition": {
+          "x": 65.3,
+          "y": 17.74
+        },
+        "ballPositions": [
+          {
+            "n": 1,
+            "x": 87.5,
+            "y": 6.25
+          }
+        ],
+        "targetBall": 1,
+        "targetPocket": "TR",
+        "cueBallPath": [
+          {
+            "x": 65.3,
+            "y": 17.74
+          },
+          {
+            "x": 85.5,
+            "y": 7.28
+          }
+        ],
+        "contactIndex": 1,
+        "objectBallPaths": [
+          {
+            "n": 1,
+            "points": [
+              {
+                "x": 87.5,
+                "y": 6.25
+              },
+              {
+                "x": 100.45,
+                "y": -0.45
+              }
+            ]
+          }
+        ],
+        "cueContact": {
+          "vTips": 0,
+          "hTips": 0
+        },
+        "technique": "stop",
+        "speed": 2,
+        "goal": "Pocket the 1 (corner, medium)."
+      }
+    },
+    {
+      "id": "s5",
+      "title": "DEMO · Corner, long",
+      "difficulty": 5,
+      "points": 300,
+      "shot": {
+        "kind": "pot",
+        "cueBallPosition": {
+          "x": 47.53,
+          "y": 26.93
+        },
+        "ballPositions": [
+          {
+            "n": 1,
+            "x": 87.5,
+            "y": 6.25
+          }
+        ],
+        "targetBall": 1,
+        "targetPocket": "TR",
+        "cueBallPath": [
+          {
+            "x": 47.53,
+            "y": 26.93
+          },
+          {
+            "x": 85.5,
+            "y": 7.28
+          }
+        ],
+        "contactIndex": 1,
+        "objectBallPaths": [
+          {
+            "n": 1,
+            "points": [
+              {
+                "x": 87.5,
+                "y": 6.25
+              },
+              {
+                "x": 100.45,
+                "y": -0.45
+              }
+            ]
+          }
+        ],
+        "cueContact": {
+          "vTips": 0,
+          "hTips": 0
+        },
+        "technique": "stop",
+        "speed": 2.5,
+        "goal": "Pocket the 1 (corner, long)."
+      }
+    }
+  ]
+}

@@ -793,7 +793,7 @@ let state = storage.defaultState();
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
   const missing = walk(path.join(root, 'js')).filter((f) => f.endsWith('.js')).map((f) => './' + path.relative(root, f)).filter((f) => !sw.includes(`'${f}'`));
-  assert(/pool-iq-v9/.test(sw), 'service worker cache is pool-iq-v9');
+  assert(/pool-iq-v10/.test(sw), 'service worker cache is pool-iq-v10');
   assertAll('service worker precaches every JS module (incl. simulator + Create Drill)', missing.map((m) => `missing ${m}`));
   const wordN = { one: 1, two: 2, three: 3, four: 4 };
   const probs = [];
@@ -1099,6 +1099,399 @@ let state = storage.defaultState();
     for (const ic of icons) if (!sw2.includes(ic.src)) probs.push(`sw does not precache ${ic.src}`);
     if (!/apple-touch-icon\.png/.test(src('index.html')) || !sw2.includes('./icons/apple-touch-icon.png')) probs.push('apple-touch-icon missing');
     assertAll('manifest complete for Android Chrome install (start_url/scope ./ = /pooltraining/, standalone, colours, 192+512 any + maskable PNGs, precached)', probs);
+  }
+}
+
+
+// ---------------------------------------------------------------- v10: .pooliq content system
+{
+  const fs = await import('fs');
+  const src = (f) => fs.readFileSync(path.join(root, f), 'utf8');
+  const SC = await import(js('content/schema.js'));
+  const CV = await import(js('content/convert.js'));
+  const ST = await import(js('content/store.js'));
+  const TP = await import(js('content/templates.js'));
+  const BC = await import(js('ui/builderContent.js'));
+  const CDm = await import(js('customDrills.js'));
+  const V = await import(js('vault.js'));
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  const deepEq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const exDir = path.join(root, 'examples');
+  const exFiles = fs.readdirSync(exDir).filter((f) => f.endsWith('.pooliq')).sort();
+  const ex = Object.fromEntries(exFiles.map((f) => [f, fs.readFileSync(path.join(exDir, f), 'utf8')]));
+  const V1 = (t) => SC.validatePooliq(t);
+  const errs = (r) => (r.errors || []).join(' | ');
+
+  // examples
+  {
+    const probs = [];
+    const want = ['demo-single-drill.pooliq', 'demo-training-pack.pooliq', 'demo-lesson.pooliq', 'demo-gauntlet.pooliq', 'demo-diamond-challenge.pooliq', 'demo-player-solution.pooliq', 'pooliq-drill-template.pooliq'];
+    for (const f of want) if (!ex[f]) probs.push(`missing ${f}`);
+    for (const [f, t] of Object.entries(ex)) {
+      const r = V1(t);
+      if (!r.ok) probs.push(`${f}: ${errs(r)}`);
+      else {
+        if (r.warnings.length) probs.push(`${f} has warnings: ${r.warnings.join('; ')}`);
+        if (!/DEMO|TEMPLATE/i.test(r.doc.title) || !/DEMO|template/i.test(r.doc.description || '')) probs.push(`${f} is not clearly labeled DEMO/template`);
+      }
+    }
+    assertAll(`all ${exFiles.length} example .pooliq files validate with no errors or warnings and are labeled DEMO`, probs);
+    const types = Object.values(ex).map((t) => JSON.parse(t)).map((d) => d.contentType + (d.challengeType ? `:${d.challengeType}` : '') + (d.template ? `:${d.template}` : ''));
+    assert(['drill', 'pack', 'lesson', 'game:gauntlet', 'challenge:diamond', 'challenge:solution'].every((t) => types.includes(t)), `examples cover drill, pack, lesson, gauntlet, diamond + solution challenges (${types.join(', ')})`);
+    const tpl = JSON.parse(ex['pooliq-drill-template.pooliq']);
+    const missingShot = Object.keys(SC.SHOT_FIELDS).filter((k) => k !== 'objectBallPath' && tpl.shot[k] === undefined);
+    const hdr = ['format', 'schemaVersion', 'contentType', 'id', 'contentVersion', 'title', 'description', 'category', 'difficulty', 'skill', 'attribution', 'careerEligible', 'metadata', 'shot', 'scoringRules', 'xp', 'skillEffects', 'prerequisites'];
+    const missingTop = hdr.filter((k) => tpl[k] === undefined);
+    assert(!missingShot.length && !missingTop.length, `template file demonstrates every drill + shot field (missing: ${[...missingTop, ...missingShot].join(', ') || 'none'})`);
+  }
+  // valid single drill
+  {
+    const r = V1(ex['demo-single-drill.pooliq']);
+    const raw = JSON.parse(ex['demo-single-drill.pooliq']);
+    assert(r.ok && r.doc.id === raw.id && r.doc.shot.speed === 1.5 && r.doc.shot.ballPositions[0].n === 1 && r.doc.scoringRules.pass.made === 7, 'valid single drill imports with its layout, SPEED and scoring intact');
+    const ch = CV.shotToChallenge(r.doc.shot, { id: 'x', title: r.doc.title, scoringRules: r.doc.scoringRules });
+    assert(ch.cueBallPosition.x === 50 && ch.targetPocket === 'TM' && ch.speed === 1.5 && ch.aim && ch.cueContact && ch.scoringRules.attempts === 10, 'imported shot maps to the engine challenge used by the normal renderer / Shot Recipe');
+    const dshort = clone(raw); dshort.shot.cueBallPosition = { dx: 4, dy: 2.8 };
+    const r2 = V1(JSON.stringify(dshort));
+    assert(r2.ok && r2.doc.shot.cueBallPosition.x === 50 && r2.doc.shot.cueBallPosition.y === 35, 'diamond shorthand {dx, dy} converts to canonical table units (1 diamond = 12.5)');
+  }
+  // invalid files
+  {
+    const base = JSON.parse(ex['demo-single-drill.pooliq']);
+    const mut = (fn) => { const d = clone(base); fn(d); return V1(JSON.stringify(d)); };
+    const cases = [
+      ['missing cue ball', (d) => { delete d.shot.cueBallPosition; }, /cueBallPosition: is required/],
+      ['two cue balls', (d) => { d.shot.cueBallPosition = [{ x: 10, y: 10 }, { x: 20, y: 20 }]; }, /exactly one cue ball/],
+      ['cue ball in numbered balls', (d) => { d.shot.ballPositions.push({ n: 0, x: 70, y: 30 }); }, /cue ball goes in cueBallPosition/],
+      ['off table', (d) => { d.shot.ballPositions[0].x = 104; }, /off the table/],
+      ['in the cushion', (d) => { d.shot.cueBallPosition = { x: 0.5, y: 20 }; }, /overlaps the cushion/],
+      ['overlapping balls', (d) => { d.shot.ballPositions.push({ n: 2, x: 50.8, y: 12.5 }); }, /overlap/],
+      ['duplicate numbers', (d) => { d.shot.ballPositions.push({ n: 1, x: 70, y: 30 }); }, /used twice/],
+      ['ball 16', (d) => { d.shot.ballPositions[0].n = 16; }, /1 to 15/],
+      ['SPEED 1.7', (d) => { d.shot.speed = 1.7; }, /not on the Pool IQ SPEED scale/],
+      ['SPEED 6', (d) => { d.shot.speed = 6; }, /SPEED scale/],
+      ['SPEED text', (d) => { d.shot.speed = 'medium'; }, /SPEED number/],
+      ['pass > attempts', (d) => { d.scoringRules.pass.made = 12; }, /between 1 and the number of attempts/],
+      ['attempts 0', (d) => { d.scoringRules.attempts = 0; }, /whole number from 1 to 50/],
+      ['unknown field', (d) => { d.shot.cueBall = { x: 1, y: 1 }; }, /unknown field \(did you mean "cueBallPosition"\?\)/],
+      ['bad tip step', (d) => { d.shot.cueContact.vTips = 0.3; }, /¼-tip steps/],
+      ['zone scoring without zones', (d) => { delete d.shot.targetZones; d.scoringRules = { mode: 'zone', attempts: 5, pass: { stars: 5 } }; }, /needs at least one target zone/],
+      ['bad zone rings', (d) => { d.shot.targetZones[0].rings = [{ r: 2, stars: 3 }, { r: 1, stars: 1 }]; }, /smaller/],
+      ['bad pocket', (d) => { d.shot.targetPocket = 'XX'; }, /must be one of: TL/],
+      ['target ball not on table', (d) => { d.shot.targetBall = 9; }, /not in ballPositions/],
+      ['bad id', (d) => { d.id = 'has spaces!'; }, /must be an id/],
+      ['wrong format', (d) => { d.format = 'other'; }, /not a Pool IQ content file/],
+      ['unknown content type', (d) => { d.contentType = 'video'; }, /Unknown contentType/]
+    ];
+    const probs = [];
+    for (const [name, fn, re] of cases) { const r = mut(fn); if (r.ok || !re.test(errs(r))) probs.push(`${name}: ${r.ok ? 'accepted' : errs(r)}`); }
+    probs.push(...(V1('not json {').ok ? ['bad JSON accepted'] : []), ...(V1('').ok ? ['empty accepted'] : []), ...(V1('[1,2]').ok ? ['array accepted'] : []));
+    assertAll(`invalid files are rejected with readable errors (${cases.length + 3} cases)`, probs);
+    const r = mut((d) => { d.shot.speed = 1.7; d.scoringRules.pass.made = 12; });
+    assert(!r.ok && /^CANNOT IMPORT/.test(r.errors[0]) && r.errors.length >= 3, 'all problems are listed together under a CANNOT IMPORT header');
+  }
+  // malicious / executable content
+  {
+    const base = JSON.parse(ex['demo-single-drill.pooliq']);
+    const mut = (fn) => { const d = clone(base); fn(d); return V1(JSON.stringify(d)); };
+    const cases = [
+      ['<script> in title', (d) => { d.title = 'Nice <script>alert(1)</script>'; }],
+      ['<iframe> in instructions', (d) => { d.shot.instructions = 'x <iframe src=x>'; }],
+      ['img onerror', (d) => { d.description = '<img src=x onerror=alert(1)>'; }],
+      ['event handler text', (d) => { d.attribution.notes = 'hello onclick=steal()'; }],
+      ['javascript: URL', (d) => { d.attribution.sourceURL = 'javascript:alert(1)'; }],
+      ['javascript: in text', (d) => { d.shot.goal = 'go to javascript:void(0)'; }],
+      ['data: URL', (d) => { d.shot.hints = ['data:text/html;base64,PHNjcmlwdD4=']; }],
+      ['HTML entity', (d) => { d.title = '&#60;script&#62;'; }],
+      ['eval', (d) => { d.shot.whyExplanation.whyCustom = 'eval(atob("x"))'; }],
+      ['CSS expression', (d) => { d.category = 'x{background:url(http://e)}'; }],
+      ['ftp URL', (d) => { d.attribution.sourceURL = 'ftp://example.com/x'; }]
+    ];
+    const probs = [];
+    for (const [name, fn] of cases) { const r = mut(fn); if (r.ok) probs.push(`${name} accepted`); }
+    const proto = V1(ex['demo-single-drill.pooliq'].replace('"shot": {', '"__proto__": {"polluted": true}, "shot": {'));
+    if (proto.ok || !/forbidden key "__proto__"/.test(errs(proto))) probs.push(`__proto__: ${errs(proto)}`);
+    const ctor = V1(ex['demo-single-drill.pooliq'].replace('"shot": {', '"shot": {"constructor": {"prototype": {"x": 1}},'));
+    if (ctor.ok || !/forbidden key "constructor"/.test(errs(ctor))) probs.push(`constructor: ${errs(ctor)}`);
+    const proto2 = V1(ex['demo-single-drill.pooliq'].replace('"metadata": {', '"metadata": {"prototype": 1,'));
+    if (proto2.ok) probs.push('prototype key accepted');
+    if ({}.polluted !== undefined || Object.prototype.x !== undefined) probs.push('Object.prototype was polluted');
+    const big = clone(base); big.description = 'a'.repeat(3000); big.shot.hints = Array.from({ length: 10 }, () => 'b'.repeat(290));
+    const huge = JSON.stringify({ ...base, pad: 'x'.repeat(SC.MAX_FILE_BYTES) });
+    const rh = V1(huge);
+    if (rh.ok || !/too large/.test(errs(rh))) probs.push(`oversized file: ${errs(rh)}`);
+    const longStr = mut((d) => { d.shot.instructions = 'y'.repeat(5000); });
+    if (longStr.ok) probs.push('5000-char text accepted');
+    const deep = V1(JSON.stringify({ format: 'pooliq', a: JSON.parse('['.repeat(30) + ']'.repeat(30)) }));
+    if (deep.ok) probs.push('deeply nested accepted');
+    const manyBalls = mut((d) => { d.shot.ballPositions = Array.from({ length: 16 }, (_, i) => ({ n: (i % 15) + 1, x: 5 + i * 5, y: 40 })); });
+    if (manyBalls.ok || !/too many entries/.test(errs(manyBalls))) probs.push(`16 balls: ${errs(manyBalls)}`);
+    assertAll(`malicious / executable content is rejected (${cases.length} script-like strings, __proto__/constructor/prototype keys, oversize, depth, long text, array caps)`, probs);
+    const r = mut((d) => { d.title = '<script>x</script>'; });
+    assert(!r.ok && r.security && /not allowed/.test(r.errors[0]), 'security rejections are flagged and explained ("content that is not allowed")');
+  }
+  // schema version
+  {
+    const d = JSON.parse(ex['demo-single-drill.pooliq']);
+    const r3 = V1(JSON.stringify({ ...d, schemaVersion: '3.0' }));
+    assert(!r3.ok && r3.errors[0] === 'CANNOT IMPORT — This file uses Pool IQ schema 3.0. Your version supports up to 1.0.', 'schema 3.0 → "CANNOT IMPORT — This file uses Pool IQ schema 3.0. Your version supports up to 1.0."');
+    const r11 = V1(JSON.stringify({ ...d, schemaVersion: '1.1' }));
+    const rn = V1(JSON.stringify({ ...d, schemaVersion: 1 }));
+    const rm = V1(JSON.stringify({ ...d, schemaVersion: undefined }));
+    assert(!r11.ok && /schema 1\.1/.test(r11.errors[0]) && rn.ok && rn.doc.schemaVersion === '1.0' && !rm.ok, 'schema 1.1 refused, numeric 1 accepted as 1.0, missing version refused');
+  }
+  // legacy custom-drill export + backup file
+  {
+    const b = { ...CDm.defaultBuilder(), title: 'Old drill', cue: { x: 25, y: 25 }, balls: [{ n: 1, x: 62.5, y: 18.75 }], targetBall: 1, pockets: ['TR'] };
+    const ch = CDm.buildCustomDrill(b, { id: 'cd-legacy1', route: null });
+    const exp = CDm.exportDrills([ch]);
+    const r = V1(exp);
+    assert(r.ok && r.legacy === 'drills' && CDm.parseDrillImport(exp, []).drills.length === 1, 'old Create Drill JSON exports are still accepted (legacy format → My Drills)');
+    const doc = CV.checkedDoc(CV.docFromChallenge(ch, { title: ch.name }));
+    const back = CV.shotToChallenge(doc.shot, { id: 'y' });
+    assert(doc.contentType === 'drill' && back.cueBallPosition.x === 25 && back.ballPositions[0].x === 62.5 && back.targetPocket === 'TR', 'a Create Drill drill exports as a valid .pooliq drill (positions preserved)');
+    const bk = V1(JSON.stringify({ format: 'pool-iq-backup', keys: {} }));
+    assert(!bk.ok && /backup file/.test(bk.errors[0]), 'Pool IQ backup files are refused by IMPORT CONTENT with a pointer to Settings → Restore');
+  }
+  // training pack
+  {
+    const r = V1(ex['demo-training-pack.pooliq']);
+    const d = r.doc;
+    let prog = null;
+    const s0 = ST.packStageStates(d, prog);
+    assert(r.ok && d.stages.length === 4 && s0[0] === 'open' && s0.slice(1).every((s) => s === 'locked') && ST.packPercent(d, prog) === 0, `training pack imports with ordered stages, first open and the rest locked (${s0.join(', ')})`);
+    const ids = d.stages.map((s) => s.id);
+    prog = { stages: { [ids[0]]: { passed: true } } };
+    const s1 = ST.packStageStates(d, prog);
+    prog = { stages: { [ids[0]]: { passed: true }, [ids[1]]: { passed: true } } };
+    const s2 = ST.packStageStates(d, prog);
+    assert(s1[0] === 'done' && s1[1] === 'open' && s1[2] === 'locked' && s2[2] === 'open' && s2[3] === 'locked' && ST.packPercent(d, prog) === 50, `stage locking + progress: ${s1.join('/')} → ${s2.join('/')} (50%)`);
+    const bad = clone(JSON.parse(ex['demo-training-pack.pooliq'])); bad.stages[0].requires = ['final'];
+    const rb = V1(JSON.stringify(bad));
+    assert(!rb.ok && /EARLIER stage/.test(errs(rb)), 'pack prerequisites must point at earlier stages');
+    const open = clone(JSON.parse(ex['demo-training-pack.pooliq'])); open.unlockMode = 'open'; for (const s of open.stages) delete s.requires;
+    assert(ST.packStageStates(V1(JSON.stringify(open)).doc, null).every((s) => s === 'open'), 'unlockMode "open" unlocks every stage');
+  }
+  // lesson
+  {
+    const r = V1(ex['demo-lesson.pooliq']);
+    const phases = r.doc.steps.map((s) => s.phase);
+    assert(r.ok && ['teach', 'guided', 'solve', 'execute', 'test'].every((p) => phases.includes(p)), `lesson imports with TEACH → GUIDED → SOLVE → EXECUTE → TEST (${phases.join(' → ')})`);
+    const d = JSON.parse(ex['demo-lesson.pooliq']);
+    const solve = d.steps.findIndex((s) => s.phase === 'solve');
+    const test = d.steps.findIndex((s) => s.phase === 'test');
+    const a = clone(d); delete a.steps[solve].ask;
+    const b = clone(d); delete b.steps[test].scoringRules;
+    const c = clone(d); a.steps[solve].answer && delete c.steps[solve].answer;
+    assert(!V1(JSON.stringify(a)).ok && !V1(JSON.stringify(b)).ok && (!d.steps[solve].answer || !V1(JSON.stringify(c)).ok), 'lesson rules: solve steps need ask (and an answer for rail/diamond), test steps need scoring');
+  }
+  // game templates
+  {
+    const g0 = V1(ex['demo-gauntlet.pooliq']).doc;
+    const miss = { t: 'shot', ok: false };
+    const hit = { t: 'shot', ok: true };
+    let g = TP.replayGame(g0, []);
+    assert(g.lives === 3 && g.pos === 0 && g.score === 0 && !g.over && g0.template === 'gauntlet', 'gauntlet starts with 3 lives at stage 1');
+    g = TP.replayGame(g0, [miss]);
+    const g2 = TP.replayGame(g0, [miss, hit]);
+    assert(g.lives === 2 && g.pos === 0 && !g.over && g2.pos === 1 && g2.score >= 100, `a miss loses a life and retries the stage; a success scores and advances (lives ${g.lives}, stage ${g2.pos + 1}, score ${g2.score})`);
+    g = TP.replayGame(g0, [hit, miss, miss, miss]);
+    const s = TP.gameSummary(g0, g);
+    assert(g.over && !g.won && g.reason === 'lives' && g.lives === 0 && s.successes === 1 && s.misses === 3 && s.stageReached === 2 && s.longestStreak === 1, `lives 0 → GAME OVER with score/stage reached/successes/misses/longest streak (${JSON.stringify(s)})`);
+    const all = TP.replayGame(g0, g0.stages.map(() => hit));
+    const pts = g0.stages.reduce((a, st) => a + (st.points ?? g0.rules.pointsPerSuccess), 0);
+    const bonus = g0.rules.streakBonus ? Math.floor(g0.stages.length / g0.rules.streakBonus.every) * g0.rules.streakBonus.points : 0;
+    assert(all.over && all.won && all.score === pts + bonus + (g0.rules.stageBonus || 0), `clearing every stage wins (GAUNTLET CLEARED) with points + streak bonus + completion bonus (${all.score})`);
+    const nx = clone(g0); nx.rules = { ...nx.rules, retry: 'next' };
+    assert(TP.replayGame(nx, [miss]).pos === 1, 'retry "next" moves on after a miss');
+    const mk = (template, stages, rules = {}) => ({ ...clone(g0), template, rules, stages: stages.map((st, i) => ({ ...clone(g0.stages[0]), points: undefined, id: `t${i}`, ...st })) });
+    const streak = mk('streak', [{}, {}, {}]);
+    const gs = TP.replayGame(streak, [hit, hit, hit, hit, miss]);
+    assert(gs.over && gs.longest === 4 && gs.made === 4, 'STREAK: runs until the first miss (loops stages)');
+    const sa = mk('scoreAttack', [{}, {}], { shots: 4, pointsPerSuccess: 10, passScore: 20 });
+    const gsa = TP.replayGame(sa, [hit, miss, hit, miss]);
+    assert(gsa.over && gsa.score === 20 && gsa.won && gsa.shots === 4, 'SCORE ATTACK: fixed shots, points per success, pass score');
+    const tg = mk('target', [{}], { shots: 2, pointsPerStar: 10 });
+    const gt = TP.replayGame(tg, [{ t: 'shot', stars: 3 }, { t: 'shot', stars: 1 }]);
+    assert(gt.over && gt.score === 40, 'TARGET: stars × points per star');
+    const lv = mk('lives', [{}, {}], { lives: 2 });
+    const gl = TP.replayGame(lv, [hit, miss, hit, miss]);
+    assert(gl.over && gl.lives === 0 && gl.made === 2, 'LIVES: every shot moves on, misses cost lives');
+    const ms = mk('multiStage', [{ scoringRules: { mode: 'success', attempts: 3, pass: { made: 2 } } }, { scoringRules: { mode: 'success', attempts: 2, pass: { made: 1 } } }], { lives: 2 });
+    let gm = TP.replayGame(ms, [hit, miss, hit]);
+    const gm2 = TP.replayGame(ms, [miss, miss, miss, miss]);
+    gm = TP.replayGame(ms, [hit, miss, hit, hit]);
+    assert(gm.over && gm.won && gm2.over && !gm2.won, 'MULTI-STAGE: pass each stage\'s requirement to advance; failing costs a life');
+    const qz = mk('quizExecution', [{ quiz: { question: 'Q?', options: ['A', 'B'], correct: 1 } }], { quizPoints: 50, pointsPerSuccess: 100 });
+    const gq0 = TP.replayGame(qz, []);
+    const gq = TP.replayGame(qz, [{ t: 'quiz', ok: true }, hit]);
+    assert(gq0.phase === 'quiz' && TP.replayGame(qz, [hit]).shots === 0 && gq.over && gq.score === 150, 'QUIZ + EXECUTION: answer first, then shoot (quiz points + shot points)');
+    const probs = [];
+    for (const t of SC.GAME_TEMPLATES) {
+      const d = mk(t, [{ scoringRules: { mode: 'success', attempts: 1, pass: { made: 1 } }, quiz: { question: 'Q?', options: ['A', 'B'], correct: 0 } }]);
+      if (t !== 'quizExecution') delete d.stages[0].quiz;
+      if (t !== 'multiStage') delete d.stages[0].scoringRules;
+      if (t === 'target') d.stages[0].shot.targetZones = [{ x: 50, y: 25, rings: [{ r: 3, stars: 3 }] }];
+      const r = V1(JSON.stringify(d));
+      if (!r.ok) probs.push(`${t}: ${errs(r)}`);
+      let gg = TP.replayGame(r.doc || d, []);
+      for (let i = 0; i < 400 && !gg.over; i++) gg = TP.applyEvent(r.doc || d, gg, gg.phase === 'quiz' ? { t: 'quiz', ok: true } : { t: 'shot', ok: false, stars: 0 });
+      if (!gg.over) probs.push(`${t} never ends on misses`);
+    }
+    const bad = mk('pinball', [{}]);
+    const rb = V1(JSON.stringify(bad));
+    if (rb.ok || !/template: must be one of/.test(errs(rb))) probs.push('unsupported template accepted');
+    assertAll(`all ${SC.GAME_TEMPLATES.length} safe game templates validate and always terminate; unsupported templates are rejected`, probs);
+  }
+  // personal bests + store
+  {
+    store.clear();
+    const d1 = V1(ex['demo-single-drill.pooliq']).doc;
+    const g = V1(ex['demo-gauntlet.pooliq']).doc;
+    const a = ST.installDoc(d1, { source: 'imported' });
+    const gi = ST.installDoc(g, { source: 'imported' });
+    assert(a.item && gi.item && ST.loadContent().length === 2 && JSON.parse(store.get(ST.CONTENT_KEY)).items.length === 2, 'install saves to My Content in its own storage key (poolIQContentV1)');
+    const r1 = ST.recordResult(gi.item.uid, { passed: false, score: 300 });
+    const r2 = ST.recordResult(gi.item.uid, { passed: false, score: 200 });
+    const r3 = ST.recordResult(gi.item.uid, { passed: true, score: 900 });
+    const p = JSON.parse(store.get(ST.PROGRESS_KEY))[gi.item.uid];
+    assert(r1.newBest && !r2.newBest && r3.newBest && p.best === 900 && p.plays === 3 && p.passed, `personal best persists (best ${p?.best}, plays ${p?.plays}) in poolIQContentProgressV1`);
+    const pk = ST.installDoc(V1(ex['demo-training-pack.pooliq']).doc, {});
+    ST.recordResult(pk.item.uid, { stageId: 'intro', passed: true, score: 10 });
+    assert(ST.packStageStates(pk.item.doc, ST.progressFor(pk.item.uid))[1] === 'open', 'pack stage results unlock the next stage');
+    // conflicts
+    const c = ST.installDoc(d1, {});
+    assert(c.conflict && c.conflict.length === 1 && c.conflict[0].uid === a.item.uid, 'same id already installed → conflict (never silently overwritten)');
+    const cancel = ST.installDoc(d1, { mode: 'cancel' });
+    assert(cancel.cancelled && ST.loadContent().length === 3, 'CANCEL changes nothing');
+    const v12 = { ...clone(d1), contentVersion: '1.2', title: 'DEMO v1.2' };
+    const rep = ST.installDoc(v12, { mode: 'replace' });
+    assert(rep.item && rep.item.uid === a.item.uid && ST.getItem(a.item.uid).contentVersion === '1.2' && ST.loadContent().length === 3, 'REPLACE updates the installed item (same uid, version 1.0 → 1.2)');
+    const kb = ST.installDoc(d1, { mode: 'keepBoth' });
+    assert(kb.item && kb.item.id !== d1.id && /copy/.test(kb.item.title) && ST.loadContent().length === 4 && ST.getItem(a.item.uid).contentVersion === '1.2', `KEEP BOTH installs a copy with a new id (${kb.item?.id})`);
+    // edit imported content
+    const ed = clone(ST.getItem(a.item.uid).doc);
+    ed.shot.speed = 1.5 === ed.shot.speed ? 2 : 1.5;
+    ed.shot.ballPositions[0].x = 45;
+    ed.shot.instructions = 'Fixed instructions';
+    const up = ST.updateItemDoc(a.item.uid, ed);
+    const after = ST.getItem(a.item.uid);
+    assert(up.item && after.edited && after.doc.shot.speed === ed.shot.speed && after.doc.shot.ballPositions[0].x === 45 && after.doc.shot.instructions === 'Fixed instructions', 'editing imported content (move a ball, change SPEED, fix instructions) saves and re-validates');
+    const badEd = clone(after.doc); badEd.shot.speed = 1.7;
+    const up2 = ST.updateItemDoc(a.item.uid, badEd);
+    assert(up2.error && ST.getItem(a.item.uid).doc.shot.speed === ed.shot.speed, 'an invalid edit is refused and the saved item is untouched');
+    // delete
+    ST.deleteItem(gi.item.uid);
+    assert(!ST.getItem(gi.item.uid) && !JSON.parse(store.get(ST.PROGRESS_KEY))[gi.item.uid] && ST.loadContent().length === 3, 'delete removes the item and its personal progress');
+    const keysTouched = [...store.keys()].filter((k) => k.startsWith('poolIQ'));
+    assert(keysTouched.every((k) => [ST.CONTENT_KEY, ST.PROGRESS_KEY, 'poolIQMetaV1'].includes(k)), `installing / playing / deleting content only writes its own keys (${keysTouched.join(', ')})`);
+  }
+  // diamond / rail answer
+  {
+    const t1 = TP.tapToRail(40, 0.4);
+    const t2 = TP.tapToRail(99.2, 20.3);
+    const t3 = TP.tapToRail(28.7, 49);
+    assert(t1.rail === 'top' && t1.diamond === 3.2 && t2.rail === 'right' && t2.diamond === 1.6 && t3.rail === 'bottom' && t3.diamond === 2.3, `tapping the table snaps to the nearest rail at 0.1 diamond (${JSON.stringify([t1, t2, t3])})`);
+    const ans = V1(ex['demo-diamond-challenge.pooliq']).doc.answer;
+    const v1 = TP.diamondVerdict({ rail: 'top', diamond: 3.8 }, ans);
+    const v2 = TP.diamondVerdict({ rail: 'top', diamond: 3.6 }, ans);
+    const v3 = TP.diamondVerdict({ rail: 'top', diamond: 2.3 }, ans);
+    const v4 = TP.diamondVerdict({ rail: 'bottom', diamond: 4 }, ans);
+    const v5 = TP.diamondVerdict({ rail: 'top', diamond: 2.3 }, { rail: 'top', diamond: 2.5 });
+    assert(v1.verdict === 'pass' && v1.diff === 0.2 && v2.verdict === 'close' && v3.verdict === 'miss' && v3.diff === 1.7 && v4.verdict === 'miss' && !v4.sameRail && v5.diff === 0.2 && v5.verdict === 'pass', 'diamond verdicts: difference in diamonds with pass / close / miss tolerance (2.3 vs 2.5 → 0.2 PASS; other rail → MISS)');
+    const tight = TP.diamondVerdict({ rail: 'top', diamond: 3.8 }, { ...ans, tolerance: { pass: 0.1, close: 0.3 } });
+    assert(tight.verdict === 'close', 'per-answer tolerance from the file is used');
+  }
+  // player solution
+  {
+    const d = V1(ex['demo-player-solution.pooliq']).doc;
+    const ch = CV.shotToChallenge(d.shot, { id: 'ps' });
+    const fmt = { technique: (t) => t, contact: (v, h) => `${v},${h}`, english: (h) => String(h), speed: (s) => String(s) };
+    const right = { technique: coaching.techniqueGroup(ch.technique), vTips: ch.cueContact.vTips, hTips: ch.cueContact.hTips, speed: ch.speed, rails: ch.route?.rails ?? 0 };
+    const wrong = { technique: right.technique === 'draw' ? 'follow' : 'draw', vTips: -ch.cueContact.vTips - 1, hTips: 0, speed: ch.speed + 2, rails: 0 };
+    const ok = TP.solutionRows(coaching.comparePlan(right, ch, fmt), d.ask, null, d.answer);
+    const bad = TP.solutionRows(coaching.comparePlan(wrong, ch, fmt), d.ask, null, d.answer);
+    const fields = ok.rows.map((r) => r.field);
+    assert(d.challengeType === 'solution' && fields.length === d.ask.length && ok.rows.every((r) => r.verdict === 'match') && bad.rows.some((r) => r.verdict === 'different') && ok.score === ok.max, `player-solution comparison: rows only for what the file asks (${d.ask.join(', ')} → ${fields.join(', ')}), matches vs differences`);
+    const dia = V1(ex['demo-diamond-challenge.pooliq']).doc;
+    const rr = TP.solutionRows({ rows: [] }, ['rail', 'diamond'], { rail: 'top', diamond: 3.9 }, dia.answer);
+    assert(rr.rows.length === 1 && rr.rows[0].field === 'diamond' && rr.rows[0].verdict === 'match', 'rail/diamond answers join the PLAYER CHOICE vs RECOMMENDED table');
+  }
+  // export → import round trip (lossless)
+  {
+    const probs = [];
+    for (const [f, t] of Object.entries(ex)) {
+      const a = V1(t).doc;
+      const out = SC.serialize(a);
+      const b = V1(out);
+      if (!b.ok || !deepEq(a, b.doc)) probs.push(f);
+      if (!SC.fileNameFor(a).endsWith('.pooliq')) probs.push(`${f}: file name`);
+    }
+    assertAll('export → re-import is lossless for every example (serialize → validate → identical document, .pooliq file name)', probs);
+    // builder round trip: untouched shot survives the Create Drill builder unchanged
+    const bprobs = [];
+    for (const f of ['demo-single-drill.pooliq', 'pooliq-drill-template.pooliq', 'demo-diamond-challenge.pooliq', 'demo-player-solution.pooliq']) {
+      const d = V1(ex[f]).doc;
+      const b = BC.builderFromShot(d.shot, d, d);
+      const shot2 = BC.shotFromBuilder(b, null);
+      const d2 = { ...clone(d), shot: shot2 };
+      const r = V1(JSON.stringify(d2));
+      if (!r.ok) { bprobs.push(`${f}: ${errs(r)}`); continue; }
+      const A = JSON.stringify(Object.fromEntries(Object.entries(d.shot).sort()));
+      const B = JSON.stringify(Object.fromEntries(Object.entries(r.doc.shot).sort()));
+      if (A !== B) bprobs.push(`${f}: shot changed\n${A}\n${B}`);
+    }
+    assertAll('imported shots open in the Create Drill builder and save back unchanged (lossless edit round trip)', bprobs);
+    const d = V1(ex['demo-single-drill.pooliq']).doc;
+    const b = BC.builderFromShot(d.shot, d, d);
+    b.speed = 2; b.balls[0].x = 45; b.instructions = 'Edited in builder';
+    b.markers = [{ rail: 'top', diamond: 3.5, label: '3.5', kind: 'reference' }];
+    const doc2 = BC.applyRootMeta({ ...clone(d), shot: BC.shotFromBuilder(b, null) }, b);
+    const r = V1(SC.serialize(doc2));
+    assert(r.ok && r.doc.shot.speed === 2 && r.doc.shot.ballPositions[0].x === 45 && r.doc.shot.instructions === 'Edited in builder' && r.doc.shot.referenceMarkers.length === 1, 'builder edits (SPEED, ball position, instructions, diamond marker) export as a valid .pooliq');
+    const sp = BC.snapPathPoint({ x: 30, y: 0.8 }, {});
+    const sb = BC.snapPathPoint({ x: 61, y: 25.3 }, { prev: { x: 25, y: 25 }, balls: [{ n: 1, x: 62.5, y: 25 }] });
+    assert(sp.rail === 'top' && sp.point.y === SC.BALL_R && sb.contact === 1 && Math.abs(sb.point.x - (62.5 - 2 * SC.BALL_R)) < 0.01, 'builder path drawing snaps to rails (ball centre R from the cushion) and to the ghost-ball contact point');
+  }
+  // storage safety: vault mirror, snapshots, backup file, restore summary
+  {
+    assert(V.KEYS.content === 'poolIQContentV1' && V.KEYS.contentProgress === 'poolIQContentProgressV1' && V.DATA_KEYS.includes(ST.CONTENT_KEY) && V.DATA_KEYS.includes(ST.PROGRESS_KEY), 'My Content keys are part of the IndexedDB mirror / snapshot key set');
+    store.clear();
+    ST.installDoc(V1(ex['demo-lesson.pooliq']).doc, {});
+    ST.installDoc(V1(ex['demo-gauntlet.pooliq']).doc, {});
+    ST.recordResult(ST.loadContent()[1].uid, { passed: true, score: 500 });
+    const bk = V.buildBackup(localStorage, { now: Date.parse('2026-09-25T12:00:00Z') });
+    const text = typeof bk === 'string' ? bk : JSON.stringify(bk);
+    const parsed = V.parseBackup(text);
+    const pk = parsed.keys || {};
+    assert(!!pk[ST.CONTENT_KEY] && JSON.parse(pk[ST.CONTENT_KEY]).items.length === 2 && !!pk[ST.PROGRESS_KEY] && parsed.summary.content === 2, `the backup file includes My Content + progress and the restore summary counts it (content ${parsed.summary?.content})`);
+    assert(/content/i.test(V.summaryLine(parsed.summary)), `summary line mentions content (${V.summaryLine(parsed.summary)})`);
+    let msg = '';
+    try { V.parseBackup(ex['demo-single-drill.pooliq']); } catch (e) { msg = e.message; }
+    assert(/pooliq|My Content|IMPORT CONTENT/i.test(msg), `restoring a .pooliq file as a backup gives a clear message (${msg})`);
+    store.clear();
+  }
+  // docs, service worker, manifest, isolation (static)
+  {
+    const md = src('POOLIQ_CONTENT_SCHEMA.md');
+    const blocks = [...md.matchAll(/```json\n([\s\S]*?)```/g)].map((m) => m[1]).filter((b) => /"format": "pooliq"/.test(b));
+    const bad = blocks.filter((b) => !V1(b).ok);
+    assert(blocks.length >= 2 && !bad.length, `schema doc minimal examples validate (${blocks.length} files)`);
+    const needed = ['Coordinate system', 'SPEED', 'Target zones', 'Scoring', 'lesson', 'pack', 'Validation', 'Security', 'Versioning', 'Prompt for an AI', 'TL', 'dx', 'careerEligible', 'gauntlet'];
+    assert(needed.every((w) => md.includes(w)), 'schema doc covers coordinates, SPEED, zones, scoring, lessons, packs, validation, security, versioning and an AI prompt');
+    const sw = src('sw.js');
+    const need = ['./POOLIQ_CONTENT_SCHEMA.md', ...exFiles.map((f) => `./examples/${f}`), './js/content/schema.js', './js/content/store.js', './js/content/templates.js', './js/content/convert.js', './js/ui/content.js', './js/ui/builderContent.js', './js/ui/share.js'];
+    const miss = need.filter((n) => !sw.includes(`'${n}'`));
+    assert(!miss.length, `sw precaches the schema doc, every example and the new modules (${miss.join(', ') || 'all present'})`);
+    const man = JSON.parse(src('manifest.json'));
+    assert(man.file_handlers?.[0]?.accept?.['application/json']?.includes('.pooliq'), 'manifest registers .pooliq file handling (Chromium installed PWA)');
+    const cjs = src('js/ui/content.js');
+    const ac = cjs.match(/ACCEPT = '([^']+)'/)[1].split(',');
+    assert(['.pooliq', '.json', 'application/json', 'application/octet-stream', 'text/plain'].every((x) => ac.includes(x)), `file picker accept list lets iOS pick .pooliq from Files (${ac.join(', ')})`);
+    const code = (t) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    assert(!/ctx\.commit/.test(code(cjs)) && !/\beval\s*\(|new Function/.test(cjs + src('js/content/schema.js') + src('js/content/store.js')), 'content screens never commit Career state and nothing evaluates file content');
+    const play = src('js/ui/play.js');
+    assert(/function saveSession\(next\) \{\s*session = next;\s*if \(C\) return;/.test(play) && /if \(C\) return finishContent\(\);/.test(play), 'play screen content sessions are memory-only (no Career commit on attempts or finish)');
   }
 }
 

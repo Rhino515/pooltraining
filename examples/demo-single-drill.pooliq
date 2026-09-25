@@ -1,0 +1,117 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "id": "demo-straight-in-stop",
+  "contentVersion": "1.0",
+  "title": "DEMO · Straight-In Stop Shot",
+  "description": "DEMO file for the Pool IQ .pooliq format — a simple geometric layout made to show how the app works. It is not an established drill or system. Pocket the 1 straight into the top side pocket and stop the cue ball.",
+  "category": "Demo",
+  "difficulty": 1,
+  "skill": "Shot Making",
+  "attribution": {
+    "author": "Pool IQ (demo content)",
+    "notes": "Example file shipped with Pool IQ to demonstrate importing."
+  },
+  "metadata": {
+    "tags": [
+      "demo",
+      "drill"
+    ],
+    "created": "2026-09-25",
+    "language": "en",
+    "demo": true,
+    "generator": "Pool IQ examples"
+  },
+  "shot": {
+    "kind": "pot",
+    "cueBallPosition": {
+      "x": 50,
+      "y": 35
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "x": 50,
+        "y": 12.5
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TM",
+    "cueBallPath": [
+      {
+        "x": 50,
+        "y": 35
+      },
+      {
+        "x": 50,
+        "y": 14.75
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPaths": [
+      {
+        "n": 1,
+        "points": [
+          {
+            "x": 50,
+            "y": 12.5
+          },
+          {
+            "x": 50,
+            "y": -1.45
+          }
+        ]
+      }
+    ],
+    "cueContact": {
+      "vTips": -0.25,
+      "hTips": 0
+    },
+    "technique": "stop",
+    "speed": 1.5,
+    "targetZones": [
+      {
+        "x": 50,
+        "y": 14.75,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4.5,
+            "stars": 2
+          },
+          {
+            "r": 7,
+            "stars": 1
+          }
+        ],
+        "label": "STOP"
+      }
+    ],
+    "goal": "Pocket the 1 in the top side pocket and stop the cue ball where the 1 was.",
+    "instructions": "DEMO: set the 1 one diamond below the top side pocket and the cue ball straight behind it. Shoot a stop shot.",
+    "setupInstructions": "1 ball: 4 diamonds from the head rail, 1 diamond down. Cue ball: 4 diamonds from the head rail, 2.8 diamonds down.",
+    "whyExplanation": {
+      "whyCustom": "This DEMO drill exists to show a .pooliq drill: layout, recipe, SPEED and scoring all come from the file.",
+      "whySpeed": "SPEED 1.5 is a gentle pace on the Pool IQ scale — enough to reach the pocket firmly."
+    },
+    "hints": [
+      "Keep the cue level.",
+      "Watch the cue ball stop on the spot."
+    ]
+  },
+  "scoringRules": {
+    "mode": "success",
+    "attempts": 10,
+    "pass": {
+      "made": 7
+    }
+  },
+  "xp": 40,
+  "skillEffects": {
+    "Shot Making": 1
+  }
+}

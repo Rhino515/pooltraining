@@ -49,20 +49,24 @@ function getSessionFor(state, key) {
 
 // ---------------------------------------------------------------------------------------------
 export function createPlayScreen(ctx, key) {
-  // key: { gameId, stageId } | { bossId }
+  // key: { gameId, stageId } | { bossId } | { gameId: 'drills', stageId, content }
+  // content (My Content / .pooliq Play Test): { challenge, title, skill, exitHref, onFinish(ev) → {note, buttons} }.
+  // Content sessions live only in memory — nothing is committed to the Career state (Play Test isolation).
   resetUI();
+  const C = key.content || null;
   let state = ctx.getState();
-  let session = getSessionFor(state, key);
+  let session = C ? E.newSession('drills', C.challenge.id) : getSessionFor(state, key);
   if (!session) {
     session = E.newSession(key.gameId || 'boss', key.stageId || key.bossId, { endless: key.stageId === 'endless', bossId: key.bossId || null });
     ctx.commit({ ...state, activeSession: session }, { silent: true });
   }
   const game = key.bossId ? null : key.gameId === 'drills' ? { id: 'drills', name: 'Drill', primarySkill: null } : getGame(key.gameId);
-  const stage = key.bossId ? null : key.gameId === 'drills' ? getDrillById(key.stageId) : key.stageId === 'endless' ? { id: 'endless', name: 'Endless', scoringRules: { mode: 'lives', lives: 3 } } : getStage(key.gameId, key.stageId);
+  const stage = C ? C.challenge : key.bossId ? null : key.gameId === 'drills' ? getDrillById(key.stageId) : key.stageId === 'endless' ? { id: 'endless', name: 'Endless', scoringRules: { mode: 'lives', lives: 3 } } : getStage(key.gameId, key.stageId);
   const boss = key.bossId ? getBoss(key.bossId) : null;
 
   function saveSession(next) {
     session = next;
+    if (C) return;
     state = ctx.getState();
     ctx.commit({ ...state, activeSession: session }, { silent: true });
   }
@@ -72,8 +76,9 @@ export function createPlayScreen(ctx, key) {
   }
 
   function coach(ch) {
+    if (C?.coach) return C.coach;
     if (!ch || ['lag', 'kick'].includes(ch.kind) || ev0().mode === 'calibration' || ev0().mode === 'ladder' || ev0().mode === 'pattern') return 'beginner';
-    return coachingLevel(ctx.getState(), game || { primarySkill: shotSkill() });
+    return coachingLevel(ctx.getState(), C ? { primarySkill: C.skill || null } : game || { primarySkill: shotSkill() });
   }
   const ev0 = () => evaluate();
   function shotSkill() {
@@ -125,8 +130,8 @@ export function createPlayScreen(ctx, key) {
     const isPattern = ev.mode === 'pattern';
     const patternPlanning = isPattern && !session.planLocked;
     const planning = vis.planner && !session.planLocked && !isPattern;
-    const title = boss ? `BOSS · ${boss.name}` : `${game.name}${stage.level ? ` · Level ${stage.level}` : ''}`;
-    const sub = boss ? `Shot ${ev.shotIndex + 1}/${ev.shots.length} · ${shot.shot.skill}` : session.endless ? `Endless · Bank ${ev.attemptsUsed + 1}` : stage.name;
+    const title = C ? C.title : boss ? `BOSS · ${boss.name}` : `${game.name}${stage.level ? ` · Level ${stage.level}` : ''}`;
+    const sub = C ? (ev.over ? 'Done' : `Attempt ${Math.min(ev.attemptsUsed + 1, ev.attemptsTotal)} of ${ev.attemptsTotal}`) : boss ? `Shot ${ev.shotIndex + 1}/${ev.shots.length} · ${shot.shot.skill}` : session.endless ? `Endless · Bank ${ev.attemptsUsed + 1}` : stage.name;
     const tableOpts = patternPlanning
       ? { showCuePath: false, showAim: false, showObPath: false, showZones: false, hidePocket: true, pickedOrder: ui.patternPick }
       : isPattern
@@ -264,7 +269,24 @@ export function createPlayScreen(ctx, key) {
   }
 
   // ---------------------------------------------------------------------- finishing
+  function finishContent() {
+    const r = evaluate();
+    const extra = (C.onFinish && C.onFinish(r, session)) || {};
+    const statsMade = r.made != null ? `<div><b>${r.made}/${r.attemptsTotal}</b><span>MADE</span></div>` : r.stars != null ? `<div><b>${r.stars}★</b><span>STARS</span></div>` : '';
+    const body = `<div class="resultPanel ${r.passed ? 'pass' : 'fail'}" data-result="${r.passed ? 'pass' : 'fail'}" data-content-result="1">
+        <div class="eyebrow">${esc(C.title)}</div>
+        <h1>${r.passed ? 'PASSED' : 'NOT PASSED'}</h1>
+        <div class="resultStats"><div><b data-final-score="${r.score}">${r.score}</b><span>SCORE</span></div>${statsMade}</div>
+        ${extra.newBest ? '<p class="pb">★ NEW PERSONAL BEST</p>' : ''}
+        <p class="muted">Needed: ${esc(r.needText || '')} · You: ${esc(r.progressText || '')}</p>
+        ${extra.note ? `<p class="sandboxNote" data-sandbox-note>${esc(extra.note)}</p>` : ''}
+        <div class="resultBtns">${(extra.buttons || []).map((b) => `<button type="button" class="bigBtn${b.alt ? ' alt' : ''}" data-action="${esc(b.action)}"${b.href ? ` data-href="${esc(b.href)}"` : ''}>${esc(b.label)}</button>`).join('')}<button type="button" class="bigBtn alt" data-action="retry">RETRY</button><button type="button" class="bigBtn alt" data-action="go" data-href="${esc(C.exitHref)}">DONE</button></div></div>`;
+    ui.resultHTML = `<div class="playScreen resultScreen">${body}</div>`;
+    ctx.root.innerHTML = ui.resultHTML;
+  }
+
   function finish() {
+    if (C) return finishContent();
     state = ctx.getState();
     const out = E.finishSession(state, session);
     const r = out.result;
@@ -413,6 +435,7 @@ export function createPlayScreen(ctx, key) {
       return true;
     }
     if (action === 'play-exit') {
+      if (C) { ctx.go(C.exitHref); return true; }
       ctx.go(session.bossId ? '#career' : session.gameId === 'drills' ? '#drills' : `#game/${session.gameId}`);
       return true;
     }

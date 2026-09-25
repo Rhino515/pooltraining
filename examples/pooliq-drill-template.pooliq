@@ -1,0 +1,204 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "id": "template-every-field",
+  "contentVersion": "1.0",
+  "title": "DEMO · Template With Every Field",
+  "description": "TEMPLATE / DEMO: shows every supported field of a single-drill .pooliq file. Copy it, change the values, keep the field names. Field-by-field documentation is in POOLIQ_CONTENT_SCHEMA.md.",
+  "category": "Demo",
+  "difficulty": 3,
+  "skill": "Position Play",
+  "attribution": {
+    "author": "Your name here",
+    "sourceName": "Where the idea came from (optional)",
+    "sourceURL": "https://example.com/",
+    "notes": "Attribution is optional. Leave author out when unknown — never guess."
+  },
+  "careerEligible": false,
+  "metadata": {
+    "tags": [
+      "template",
+      "demo"
+    ],
+    "created": "2026-09-25",
+    "updated": "2026-09-25",
+    "language": "en",
+    "demo": true,
+    "generator": "hand-written"
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "x": 45.89,
+      "y": 36.14
+    },
+    "ballPositions": [
+      {
+        "n": 3,
+        "x": 62.5,
+        "y": 25
+      },
+      {
+        "n": 9,
+        "x": 12.5,
+        "y": 37.5
+      }
+    ],
+    "targetBall": 3,
+    "targetPocket": "TR",
+    "cueBallPath": [
+      {
+        "x": 45.89,
+        "y": 36.14
+      },
+      {
+        "x": 60.63,
+        "y": 26.25
+      },
+      {
+        "x": 26.91,
+        "y": 48.88
+      },
+      {
+        "x": 21.93,
+        "y": 45.54
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPaths": [
+      {
+        "n": 3,
+        "points": [
+          {
+            "x": 62.5,
+            "y": 25
+          },
+          {
+            "x": 100.45,
+            "y": -0.45
+          }
+        ]
+      }
+    ],
+    "cueContact": {
+      "vTips": -1,
+      "hTips": 0
+    },
+    "technique": "draw",
+    "speed": 3,
+    "blockers": [
+      {
+        "n": 8,
+        "x": 81.25,
+        "y": 37.5
+      }
+    ],
+    "acceptPockets": [
+      "TR"
+    ],
+    "ghost": {
+      "x": 60.63,
+      "y": 26.25
+    },
+    "targetZones": [
+      {
+        "type": "rings",
+        "x": 21.93,
+        "y": 45.54,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4.5,
+            "stars": 2
+          },
+          {
+            "r": 6.5,
+            "stars": 1
+          }
+        ],
+        "label": "FOR 9"
+      },
+      {
+        "type": "band",
+        "center": 37.5,
+        "rings": [
+          {
+            "r": 3,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ]
+      }
+    ],
+    "railContacts": [
+      {
+        "x": 26.91,
+        "y": 50,
+        "rail": "bottom",
+        "by": "cue",
+        "order": 1
+      }
+    ],
+    "referenceMarkers": [
+      {
+        "rail": "bottom",
+        "diamond": 3,
+        "label": "ref 3",
+        "kind": "reference"
+      }
+    ],
+    "english": {
+      "type": "none"
+    },
+    "aim": {
+      "fraction": 1,
+      "label": "Full ball",
+      "short": "FULL",
+      "cutDeg": 0
+    },
+    "route": {
+      "rails": 1,
+      "text": "1 rail (bottom)",
+      "short": "1 RAIL"
+    },
+    "goal": "Pocket the 3 in the top-right corner and draw the cue ball off the bottom rail into the zone for the 9.",
+    "instructions": "Shooting instructions shown on the play screen.",
+    "setupInstructions": "Setup instructions (optional) — the SETUP diamond readout is generated from the coordinates automatically.",
+    "whyExplanation": {
+      "whyCustom": "Coach's note.",
+      "whyContact": "Why this cue-ball contact.",
+      "whySpeed": "Why this SPEED.",
+      "whySpin": "Why this spin.",
+      "whyRoute": "Why this route.",
+      "whyAim": "Why this aim."
+    },
+    "hints": [
+      "Hint 1",
+      "Hint 2"
+    ]
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 10,
+    "pass": {
+      "stars": 12,
+      "pockets": 7
+    },
+    "requirePocket": true
+  },
+  "xp": 60,
+  "skillEffects": {
+    "Position Play": 1,
+    "Shot Making": 0.5
+  },
+  "prerequisites": [
+    "demo-straight-in-stop"
+  ]
+}

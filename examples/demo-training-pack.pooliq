@@ -1,0 +1,480 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "pack",
+  "id": "demo-straight-in-pack",
+  "contentVersion": "1.0",
+  "title": "DEMO · STRAIGHT-IN BASICS",
+  "description": "DEMO file for the Pool IQ .pooliq format — a simple geometric layout made to show how the app works. It is not an established drill or system. A multi-stage pack: introduction lesson, practice drill, a rail-point test and a final score-attack challenge. Stages unlock in order.",
+  "category": "Demo",
+  "difficulty": 2,
+  "attribution": {
+    "author": "Pool IQ (demo content)"
+  },
+  "metadata": {
+    "tags": [
+      "demo",
+      "pack"
+    ],
+    "created": "2026-09-25",
+    "language": "en",
+    "demo": true,
+    "generator": "Pool IQ examples"
+  },
+  "unlockMode": "sequential",
+  "stages": [
+    {
+      "id": "intro",
+      "title": "Introduction",
+      "stageType": "lesson",
+      "contentType": "lesson",
+      "steps": [
+        {
+          "phase": "teach",
+          "title": "How this DEMO pack works",
+          "text": "Each stage unlocks when you pass the one before it. Your progress is saved in My Content and never changes your Career rank.",
+          "shot": {
+            "kind": "pot",
+            "cueBallPosition": {
+              "x": 50,
+              "y": 35
+            },
+            "ballPositions": [
+              {
+                "n": 1,
+                "x": 50,
+                "y": 12.5
+              }
+            ],
+            "targetBall": 1,
+            "targetPocket": "TM",
+            "cueBallPath": [
+              {
+                "x": 50,
+                "y": 35
+              },
+              {
+                "x": 50,
+                "y": 14.75
+              }
+            ],
+            "contactIndex": 1,
+            "objectBallPaths": [
+              {
+                "n": 1,
+                "points": [
+                  {
+                    "x": 50,
+                    "y": 12.5
+                  },
+                  {
+                    "x": 50,
+                    "y": -1.45
+                  }
+                ]
+              }
+            ],
+            "cueContact": {
+              "vTips": -0.25,
+              "hTips": 0
+            },
+            "technique": "stop",
+            "speed": 1.5,
+            "targetZones": [
+              {
+                "x": 50,
+                "y": 14.75,
+                "rings": [
+                  {
+                    "r": 2.5,
+                    "stars": 3
+                  },
+                  {
+                    "r": 4.5,
+                    "stars": 2
+                  },
+                  {
+                    "r": 7,
+                    "stars": 1
+                  }
+                ],
+                "label": "STOP"
+              }
+            ],
+            "goal": "Pocket the 1 in the top side pocket and stop the cue ball where the 1 was.",
+            "instructions": "DEMO: set the 1 one diamond below the top side pocket and the cue ball straight behind it. Shoot a stop shot.",
+            "setupInstructions": "1 ball: 4 diamonds from the head rail, 1 diamond down. Cue ball: 4 diamonds from the head rail, 2.8 diamonds down.",
+            "whyExplanation": {
+              "whyCustom": "This DEMO drill exists to show a .pooliq drill: layout, recipe, SPEED and scoring all come from the file.",
+              "whySpeed": "SPEED 1.5 is a gentle pace on the Pool IQ scale — enough to reach the pocket firmly."
+            },
+            "hints": [
+              "Keep the cue level.",
+              "Watch the cue ball stop on the spot."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "practice",
+      "title": "Guided Straight-In",
+      "stageType": "practice",
+      "contentType": "drill",
+      "skill": "Shot Making",
+      "shot": {
+        "kind": "pot",
+        "cueBallPosition": {
+          "x": 50,
+          "y": 35
+        },
+        "ballPositions": [
+          {
+            "n": 1,
+            "x": 50,
+            "y": 12.5
+          }
+        ],
+        "targetBall": 1,
+        "targetPocket": "TM",
+        "cueBallPath": [
+          {
+            "x": 50,
+            "y": 35
+          },
+          {
+            "x": 50,
+            "y": 14.75
+          }
+        ],
+        "contactIndex": 1,
+        "objectBallPaths": [
+          {
+            "n": 1,
+            "points": [
+              {
+                "x": 50,
+                "y": 12.5
+              },
+              {
+                "x": 50,
+                "y": -1.45
+              }
+            ]
+          }
+        ],
+        "cueContact": {
+          "vTips": -0.25,
+          "hTips": 0
+        },
+        "technique": "stop",
+        "speed": 1.5,
+        "targetZones": [
+          {
+            "x": 50,
+            "y": 14.75,
+            "rings": [
+              {
+                "r": 2.5,
+                "stars": 3
+              },
+              {
+                "r": 4.5,
+                "stars": 2
+              },
+              {
+                "r": 7,
+                "stars": 1
+              }
+            ],
+            "label": "STOP"
+          }
+        ],
+        "goal": "Pocket the 1 in the top side pocket and stop the cue ball where the 1 was.",
+        "instructions": "DEMO: set the 1 one diamond below the top side pocket and the cue ball straight behind it. Shoot a stop shot.",
+        "setupInstructions": "1 ball: 4 diamonds from the head rail, 1 diamond down. Cue ball: 4 diamonds from the head rail, 2.8 diamonds down.",
+        "whyExplanation": {
+          "whyCustom": "This DEMO drill exists to show a .pooliq drill: layout, recipe, SPEED and scoring all come from the file.",
+          "whySpeed": "SPEED 1.5 is a gentle pace on the Pool IQ scale — enough to reach the pocket firmly."
+        },
+        "hints": [
+          "Keep the cue level.",
+          "Watch the cue ball stop on the spot."
+        ]
+      },
+      "scoringRules": {
+        "mode": "success",
+        "attempts": 5,
+        "pass": {
+          "made": 3
+        }
+      }
+    },
+    {
+      "id": "rail-test",
+      "title": "Rail Point Test",
+      "stageType": "test",
+      "contentType": "challenge",
+      "challengeType": "diamond",
+      "question": "WHERE SHOULD THE CUE BALL CONTACT THE RAIL?",
+      "shot": {
+        "kind": "kick",
+        "cueBallPosition": {
+          "x": 25,
+          "y": 25
+        },
+        "ballPositions": [
+          {
+            "n": 1,
+            "x": 75,
+            "y": 25
+          }
+        ],
+        "targetBall": 1,
+        "cueBallPath": [
+          {
+            "x": 25,
+            "y": 25
+          },
+          {
+            "x": 50,
+            "y": 0
+          },
+          {
+            "x": 73.41,
+            "y": 23.41
+          }
+        ],
+        "contactIndex": 2,
+        "railContacts": [
+          {
+            "x": 50,
+            "y": 0,
+            "rail": "top",
+            "by": "cue"
+          }
+        ],
+        "cueContact": {
+          "vTips": 0,
+          "hTips": 0
+        },
+        "technique": "kick",
+        "speed": 2,
+        "route": {
+          "rails": 1,
+          "text": "1 rail (top)",
+          "short": "1 RAIL"
+        },
+        "referenceMarkers": [
+          {
+            "rail": "top",
+            "diamond": 4,
+            "label": "4.0",
+            "kind": "aim"
+          }
+        ],
+        "goal": "Kick off the top rail and hit the 1.",
+        "instructions": "DEMO: cue ball 2 diamonds from the head rail, the 1 six diamonds from the head rail, both 2 diamonds down. Tap the top rail where the cue ball should hit it, lock your answer, then shoot it.",
+        "whyExplanation": {
+          "whyRoute": "Mirror geometry only: reflect the 1 across the top rail and aim at the reflection. Real cushions, spin and speed change the rebound — this DEMO ignores them."
+        }
+      },
+      "answer": {
+        "rail": "top",
+        "diamond": 4,
+        "tolerance": {
+          "pass": 0.2,
+          "close": 0.5
+        },
+        "explanation": "Both balls are 2 diamonds from the top rail, so the mirror line crosses the rail halfway between them: diamond 4.0 (geometry only, DEMO)."
+      }
+    },
+    {
+      "id": "final",
+      "title": "Final Challenge",
+      "stageType": "final",
+      "contentType": "game",
+      "requires": [
+        "practice",
+        "rail-test"
+      ],
+      "template": "scoreAttack",
+      "rules": {
+        "shots": 5,
+        "pointsPerSuccess": 100,
+        "streakBonus": {
+          "every": 2,
+          "points": 50
+        },
+        "passScore": 300
+      },
+      "stages": [
+        {
+          "id": "s1",
+          "title": "DEMO · Short straight-in",
+          "difficulty": 1,
+          "points": 100,
+          "shot": {
+            "kind": "pot",
+            "cueBallPosition": {
+              "x": 50,
+              "y": 15.25
+            },
+            "ballPositions": [
+              {
+                "n": 1,
+                "x": 50,
+                "y": 6.25
+              }
+            ],
+            "targetBall": 1,
+            "targetPocket": "TM",
+            "cueBallPath": [
+              {
+                "x": 50,
+                "y": 15.25
+              },
+              {
+                "x": 50,
+                "y": 8.5
+              }
+            ],
+            "contactIndex": 1,
+            "objectBallPaths": [
+              {
+                "n": 1,
+                "points": [
+                  {
+                    "x": 50,
+                    "y": 6.25
+                  },
+                  {
+                    "x": 50,
+                    "y": -1.45
+                  }
+                ]
+              }
+            ],
+            "cueContact": {
+              "vTips": 0,
+              "hTips": 0
+            },
+            "technique": "stop",
+            "speed": 1,
+            "goal": "Pocket the 1 (short straight-in)."
+          }
+        },
+        {
+          "id": "s2",
+          "title": "DEMO · Medium straight-in",
+          "difficulty": 2,
+          "points": 150,
+          "shot": {
+            "kind": "pot",
+            "cueBallPosition": {
+              "x": 50,
+              "y": 24.25
+            },
+            "ballPositions": [
+              {
+                "n": 1,
+                "x": 50,
+                "y": 6.25
+              }
+            ],
+            "targetBall": 1,
+            "targetPocket": "TM",
+            "cueBallPath": [
+              {
+                "x": 50,
+                "y": 24.25
+              },
+              {
+                "x": 50,
+                "y": 8.5
+              }
+            ],
+            "contactIndex": 1,
+            "objectBallPaths": [
+              {
+                "n": 1,
+                "points": [
+                  {
+                    "x": 50,
+                    "y": 6.25
+                  },
+                  {
+                    "x": 50,
+                    "y": -1.45
+                  }
+                ]
+              }
+            ],
+            "cueContact": {
+              "vTips": 0,
+              "hTips": 0
+            },
+            "technique": "stop",
+            "speed": 1.5,
+            "goal": "Pocket the 1 (medium straight-in)."
+          }
+        },
+        {
+          "id": "s3",
+          "title": "DEMO · Long straight-in",
+          "difficulty": 3,
+          "points": 200,
+          "shot": {
+            "kind": "pot",
+            "cueBallPosition": {
+              "x": 50,
+              "y": 36.25
+            },
+            "ballPositions": [
+              {
+                "n": 1,
+                "x": 50,
+                "y": 6.25
+              }
+            ],
+            "targetBall": 1,
+            "targetPocket": "TM",
+            "cueBallPath": [
+              {
+                "x": 50,
+                "y": 36.25
+              },
+              {
+                "x": 50,
+                "y": 8.5
+              }
+            ],
+            "contactIndex": 1,
+            "objectBallPaths": [
+              {
+                "n": 1,
+                "points": [
+                  {
+                    "x": 50,
+                    "y": 6.25
+                  },
+                  {
+                    "x": 50,
+                    "y": -1.45
+                  }
+                ]
+              }
+            ],
+            "cueContact": {
+              "vTips": 0,
+              "hTips": 0
+            },
+            "technique": "stop",
+            "speed": 2,
+            "goal": "Pocket the 1 (long straight-in)."
+          }
+        }
+      ]
+    }
+  ]
+}

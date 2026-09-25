@@ -18,7 +18,9 @@ export const KEYS = {
   sim: 'poolIQSimV1', // Shot Simulator table, saved shots, collections, settings (sim/library.js)
   ghostPreset: 'poolIQGhostPreset', // last Ghost setup (app.js)
   drillWip: 'poolIQDrillWip', // Create Drill work in progress (ui/drillBuilder.js)
-  drillDraft: 'poolIQDrillDraft' // Simulator → Create Drill hand-off (ui/simulator.js)
+  drillDraft: 'poolIQDrillDraft', // Simulator → Create Drill hand-off (ui/simulator.js)
+  content: 'poolIQContentV1', // My Content: installed .pooliq drills, packs, lessons, games (content/store.js)
+  contentProgress: 'poolIQContentProgressV1' // My Content personal progress + bests, never Career (content/store.js)
 };
 export const DATA_KEYS = Object.values(KEYS);
 export const META_KEY = 'poolIQMetaV1'; // seq/savedAt, lastBackupAt, nudge + install dismissals, persist result
@@ -28,7 +30,7 @@ export const MAX_SNAPSHOTS = 3;
 export const SNAP_EVERY_MS = 6 * 3600 * 1000; // automatic rolling snapshot at most every 6 h
 export const BACKUP_FORMAT = 'pool-iq-backup';
 export const BACKUP_SCHEMA = 1;
-export const APP_VERSION = '9';
+export const APP_VERSION = '10';
 export const NUDGE_DAYS = 7;
 const DAY = 86400000;
 
@@ -94,24 +96,26 @@ export function summarize(keys) {
   }
   const custom = parseJSON(keys?.[KEYS.custom]);
   const sim = parseJSON(keys?.[KEYS.sim]);
+  const content = parseJSON(keys?.[KEYS.content]);
   const out = {
     sessions,
     matches: st ? (st.ghostMatches || []).length : 0,
     drills: Array.isArray(custom?.drills) ? custom.drills.length : 0,
     shots: Array.isArray(sim?.shots) ? sim.shots.length : 0,
+    content: Array.isArray(content?.items) ? content.items.length : 0,
     xp: st ? Number(st.xp) || 0 : 0,
     rankIndex: st ? Math.max(0, Math.min(RANK_NAMES.length - 1, Number(st.rankIndex) || 0)) : 0,
     calibrated: !!(st && st.speedCal && st.speedCal.results && Object.keys(st.speedCal.results).length)
   };
   out.rank = RANK_NAMES[out.rankIndex];
-  out.activity = out.sessions + out.matches + out.drills + out.shots;
+  out.activity = out.sessions + out.matches + out.drills + out.shots + out.content;
   out.score = out.activity + (out.xp > 0 ? 1 : 0) + (out.calibrated ? 1 : 0);
   return out;
 }
 export const isMeaningful = (keys) => summarize(keys).score > 0;
 export function summaryLine(s) {
   const p = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-  return `${s.rank} · ${p(s.sessions, 'session', 'sessions')} · ${p(s.matches, 'Ghost match', 'Ghost matches')} · ${p(s.drills, 'custom drill', 'custom drills')} · ${p(s.shots, 'saved shot', 'saved shots')}`;
+  return `${s.rank} · ${p(s.sessions, 'session', 'sessions')} · ${p(s.matches, 'Ghost match', 'Ghost matches')} · ${p(s.drills, 'custom drill', 'custom drills')} · ${p(s.shots, 'saved shot', 'saved shots')}${s.content ? ` · ${p(s.content, 'content item', 'content items')}` : ''}`;
 }
 
 /**
@@ -278,7 +282,9 @@ const VALIDATE = {
   [KEYS.sim]: isObj,
   [KEYS.ghostPreset]: isObj,
   [KEYS.drillWip]: isObj,
-  [KEYS.drillDraft]: isObj
+  [KEYS.drillDraft]: isObj,
+  [KEYS.content]: (v) => isObj(v) && Array.isArray(v.items),
+  [KEYS.contentProgress]: isObj
 };
 
 /**
@@ -291,6 +297,7 @@ export function parseBackup(text) {
   if (o === undefined) throw new Error('That file is not valid JSON — pick a Pool IQ backup (.json).');
   if (!isObj(o)) throw new Error('That file is not a Pool IQ backup.');
   if (o.format === 'pool-iq-drills') throw new Error('That is a drill export — import it from Drills → Import.');
+  if (o.format === 'pooliq') throw new Error('That is a .pooliq content file — import it from Drills → My Content → Import Content.');
   let src;
   let legacy = false;
   if (o.format === BACKUP_FORMAT) {

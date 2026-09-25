@@ -25,7 +25,7 @@ To deploy, copy the folder to any static host (for example GitHub Pages). All as
 
 | Area | Files |
 |---|---|
-| Hash router / boot | `js/app.js` (`#home #career #drills #analyze #arcade #profile #settings #ghost #game/<id> #play/<game>/<stage> #boss/<id> #bossplay/<id> #sim #sim/s=<code> #sim/target #drillnew #drilledit/<id>`) |
+| Hash router / boot | `js/app.js` (`#home #career #drills #analyze #arcade #profile #settings #ghost #game/<id> #play/<game>/<stage> #boss/<id> #bossplay/<id> #sim #sim/s=<code> #sim/target #drillnew #drilledit/<id> #content #cimport #cview/<ref> #cplay/<ref>[/<stage>] #cedit/<uid>[/<loc>]`) |
 | Challenge data model + geometry | `js/games/geometry.js`, `js/games/builders.js` (position, pot, lag, bank, kick, carom, safety, train) |
 | Game content | `js/games/data/*.js` (one file per game plus `bosses.js`), `js/games/registry.js` |
 | Engine (pure) | `js/games/engine.js`: sessions, scoring modes (zone, lives, kick, train, stars, binary, sniper, ladder, calibration, pattern), unlocks, PBs, bosses |
@@ -37,6 +37,7 @@ To deploy, copy the folder to any static host (for example GitHub Pages). All as
 | Create Drill | `js/customDrills.js` (builder model, validation, simulated route, challenge builder, storage, import/export), `js/ui/drillBuilder.js` (screen) |
 | Storage | `js/storage.js`: `localStorage` key `poolIQStateV4`, migrated from V3/V2. Old keys are left intact. |
 | Data safety | `js/vault.js` + `js/install.js`: IndexedDB mirror of every key, reconcile on load, 3 rolling snapshots, JSON backup/restore, backup reminder, protected storage, Install App. |
+| .pooliq content (v10) | `js/content/schema.js` (strict validator + security), `js/content/convert.js` (shot ⇄ challenge ⇄ builder), `js/content/store.js` (My Content + personal progress), `js/content/templates.js` (game templates, rail answers), `js/ui/content.js` (My Content, import, preview, play test, runners), `js/ui/builderContent.js` (builder ⇄ .pooliq), `js/ui/share.js` (Web Share / download). Format: `POOLIQ_CONTENT_SCHEMA.md`; examples: `examples/*.pooliq` (regenerate with `node scripts/make-examples.mjs`). |
 
 ### Games
 
@@ -225,6 +226,16 @@ Use this style for hand-drawn layouts. These fields are required:
 
 Before shipping new drills, run `node scripts/verify.mjs`. It applies the same geometry checks to every drill that it applies to the Arcade stages. You can also call `geometryProblems(challenge)` from `scripts/geometryCheck.mjs` directly.
 
+## My Content and .pooliq files (v10)
+
+**Drills tab → MY CONTENT** (`#content`). Tap **IMPORT CONTENT** and pick a `.pooliq` file from Files, iCloud Drive or Downloads. The flow is: validate → **preview** (`#cview/pending`, same table, Shot Recipe and SPEED as normal play) → **PLAY TEST** (`#cplay/pending`, normal play screen, nothing saved) → **ADD TO MY CONTENT** or **DISCARD**. Nothing is installed until you choose to add it.
+
+- Content types: `drill`, `challenge` (diamond / rail answer, player solution), `lesson` (Teach → Guided → Solve it yourself → Execute → Test), `game` (gauntlet, target, streak, lives, scoreAttack, multiStage, quizExecution) and `pack` (ordered stages, locks, progress %).
+- The format is strict JSON and data only. Files are capped at 512 KB. Unknown keys, script-like strings, prototype keys and non-http(s) URLs are rejected, and all text is rendered as text. The full reference, written so another AI can generate valid files, is in `POOLIQ_CONTENT_SCHEMA.md`.
+- Installed items live in `poolIQContentV1` and personal bests and progress in `poolIQContentProgressV1`. Both are mirrored, snapshotted and backed up like every other key. Imported content never changes Career, ratings, history or achievements.
+- If an item with the same id is already installed, you choose **REPLACE / KEEP BOTH / CANCEL** (installed vs incoming `contentVersion` shown). **EDIT** opens the visual builder in content mode. **EXPORT** shares a `.pooliq` file (or downloads it); the round trip is lossless.
+- Old Create Drill JSON exports still import (into My Drills).
+
 ## Career
 
 A rank's requirements are Arcade game levels, Ghost wins and that rank's Boss Battle; some higher ranks also require star totals or PBs. When every non-boss requirement is met, the boss unlocks. Beating the boss is the only way to promote, and XP never promotes by itself.
@@ -329,13 +340,15 @@ It covers:
   - no scrolling on score screens at both sizes
 - Ghost: order rule visible for 3-ball and 9-ball; 8-Ball Ghost custom count remembered after reload, scored and saved, undo; Pro break → ball in hand → run-out, SCRATCHED ON BREAK → ball in hand (no Ghost point) + undo, break log saved, no stale toast over the buttons; Set up in Shot Simulator; no scrolling at 390×844 and 375×667
 - data safety: play a rack → wipe localStorage → reload → everything restored from IndexedDB (also after corrupting the save); Settings shows protected storage / usage / safety copy / last backup; Back Up Now downloads `PoolIQ-backup-YYYY-MM-DD.json` with every key (and uses the share sheet when files can be shared; a cancelled share isn't counted); Restore from Backup shows the summary and restores exactly; invalid file rejected; Restore previous snapshot undoes a restore; RESET ALL PROGRESS is two-step + typed, takes a snapshot, isn't undone by the mirror, and can be undone from the snapshot; Home backup nudge after 7+ days, dismissible; Install: iPhone steps, Android `beforeinstallprompt` → INSTALL APP, hidden when standalone; Android 412×915 and 360×800 Settings + score screens without scrolling
-- service worker (cache v9) and offline reload
+- My Content: entry point; accept list; bad, malicious (`<script>`, `onerror=`, `javascript:`, `__proto__`), schema 3.0, oversized and non-JSON files rejected with readable errors; preview (same renderer, recipe, SPEED, attempts, attribution); PLAY TEST isolation (every official key byte-for-byte unchanged); install + reload; conflict CANCEL / KEEP BOTH / REPLACE; installed play → personal progress only; builder edit (touch drag, SPEED, instructions, marker, inputs ≥ 16px); Web Share export + download fallback + lossless re-import; delete with confirm; pack locks + progress %; lesson solve → lock → reveal; gauntlet hearts / game over / PB persistence; diamond answer tap / 0.1 nudge / difference / tolerance; player-solution comparison; Advanced coaching on imported drills; legacy v9 drill export import; backup / mirror include content; every play screen fits without scrolling at 375×667, 412×915 and 360×800
+- service worker (cache v10) and offline reload
 
 ## Storage
 
 - `localStorage` key `poolIQStateV4`. It migrates from `poolIQStateV3` and `poolIQStateV2`, and the old keys are left intact as backups.
 - The in-progress session (`activeSession`) and Ghost match (`activeGhost`) are saved after every tap, so a reload resumes play.
 - Shot Simulator: `poolIQSimV1` (current table, saved shots, collections, settings, Target Game best). Create Drill: `poolIQCustomDrillsV1` (custom drills), `poolIQDrillWip` (unsaved builder work), `poolIQDrillDraft` (simulator → drill hand-off). These are new keys, so existing saves are untouched.
+- My Content (v10): `poolIQContentV1` (installed .pooliq documents) and `poolIQContentProgressV1` (personal bests, pack stage progress). These are new keys; nothing existing is migrated or rewritten.
 - Ghost setup: `poolIQGhostPreset`. Vault bookkeeping (save sequence, last backup, dismissed tips, protected-storage result): `poolIQMetaV1`.
 - IndexedDB (`poolIQ_idb` / `blobs`, helpers `idbPut`/`idbGet`/`idbDelete` in `js/storage.js`) holds the safety copy and snapshots — see Data safety below.
 
@@ -343,7 +356,7 @@ It covers:
 
 History must never be lost, on iPhone or Android.
 
-- **Every key is mirrored.** All eight data keys (`poolIQStateV4`, legacy `poolIQStateV3`/`V2`, `poolIQCustomDrillsV1`, `poolIQSimV1`, `poolIQGhostPreset`, `poolIQDrillWip`, `poolIQDrillDraft`) are copied to IndexedDB (`mirror:current`) shortly after every save and when the app is hidden/closed. Each write bumps a save sequence + `savedAt` timestamp in `poolIQMetaV1`.
+- **Every key is mirrored.** All ten data keys (`poolIQStateV4`, legacy `poolIQStateV3`/`V2`, `poolIQCustomDrillsV1`, `poolIQSimV1`, `poolIQGhostPreset`, `poolIQDrillWip`, `poolIQDrillDraft`, `poolIQContentV1`, `poolIQContentProgressV1`) are copied to IndexedDB (`mirror:current`) shortly after every save and when the app is hidden/closed. Each write bumps a save sequence + `savedAt` timestamp in `poolIQMetaV1`.
 - **On load** the app picks the good copy before anything renders: missing or corrupt localStorage → restored from IndexedDB (and a corrupt single key is repaired); a missing IndexedDB copy is rebuilt from localStorage; otherwise the newer `savedAt` wins. A good copy is **never** replaced by an empty/default state — only a deliberate RESET or restore may do that.
 - **Snapshots:** the last 3 are kept in IndexedDB (`mirror:snapshots`): one automatically at most every 6 hours of use, plus one right before any reset or restore. Settings → **Restore previous snapshot** (with confirm; the replaced data becomes a snapshot too).
 - **Backup file:** Settings → **Back Up Now** makes one `PoolIQ-backup-YYYY-MM-DD.json` (`format: "pool-iq-backup"`, `schema`, `appVersion`, `exportedAt`, `summary`, `keys`). It uses the Web Share API with the file when the browser allows it (iPhone share sheet → Save to Files / iCloud Drive), otherwise a download (Android Chrome → Downloads, then share to Drive if you like). A **Download file instead** button appears when sharing is available.

@@ -1,0 +1,349 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "lesson",
+  "id": "demo-mirror-lesson",
+  "contentVersion": "1.0",
+  "title": "DEMO · Lesson Flow: The Mirror Line",
+  "description": "DEMO file for the Pool IQ .pooliq format — a simple geometric layout made to show how the app works. It is not an established drill or system. Walks through every lesson phase: TEACH → GUIDED PRACTICE → SOLVE IT YOURSELF → EXECUTE → TEST.",
+  "category": "Demo",
+  "difficulty": 2,
+  "skill": "Kicks",
+  "attribution": {
+    "author": "Pool IQ (demo content)"
+  },
+  "metadata": {
+    "tags": [
+      "demo",
+      "lesson"
+    ],
+    "created": "2026-09-25",
+    "language": "en",
+    "demo": true,
+    "generator": "Pool IQ examples"
+  },
+  "steps": [
+    {
+      "phase": "teach",
+      "title": "The mirror idea (geometry only)",
+      "text": "This DEMO lesson uses plain mirror geometry: reflect the object ball across the rail and aim at the reflection. With both balls the same distance from the rail, the route touches the rail halfway between them. Real tables add spin, speed and cushion effects, which this demo ignores.",
+      "shot": {
+        "kind": "kick",
+        "cueBallPosition": {
+          "x": 25,
+          "y": 25
+        },
+        "ballPositions": [
+          {
+            "n": 1,
+            "x": 75,
+            "y": 25
+          }
+        ],
+        "targetBall": 1,
+        "cueBallPath": [
+          {
+            "x": 25,
+            "y": 25
+          },
+          {
+            "x": 50,
+            "y": 0
+          },
+          {
+            "x": 73.41,
+            "y": 23.41
+          }
+        ],
+        "contactIndex": 2,
+        "railContacts": [
+          {
+            "x": 50,
+            "y": 0,
+            "rail": "top",
+            "by": "cue"
+          }
+        ],
+        "cueContact": {
+          "vTips": 0,
+          "hTips": 0
+        },
+        "technique": "kick",
+        "speed": 2,
+        "route": {
+          "rails": 1,
+          "text": "1 rail (top)",
+          "short": "1 RAIL"
+        },
+        "referenceMarkers": [
+          {
+            "rail": "top",
+            "diamond": 4,
+            "label": "mirror point",
+            "kind": "aim"
+          }
+        ]
+      }
+    },
+    {
+      "phase": "guided",
+      "title": "Guided: follow the drawn route",
+      "text": "The route and the rail point are shown. Set it up and shoot it.",
+      "shot": {
+        "kind": "kick",
+        "cueBallPosition": {
+          "x": 25,
+          "y": 25
+        },
+        "ballPositions": [
+          {
+            "n": 1,
+            "x": 75,
+            "y": 25
+          }
+        ],
+        "targetBall": 1,
+        "cueBallPath": [
+          {
+            "x": 25,
+            "y": 25
+          },
+          {
+            "x": 50,
+            "y": 0
+          },
+          {
+            "x": 73.41,
+            "y": 23.41
+          }
+        ],
+        "contactIndex": 2,
+        "railContacts": [
+          {
+            "x": 50,
+            "y": 0,
+            "rail": "top",
+            "by": "cue"
+          }
+        ],
+        "cueContact": {
+          "vTips": 0,
+          "hTips": 0
+        },
+        "technique": "kick",
+        "speed": 2,
+        "route": {
+          "rails": 1,
+          "text": "1 rail (top)",
+          "short": "1 RAIL"
+        },
+        "referenceMarkers": [
+          {
+            "rail": "top",
+            "diamond": 4,
+            "label": "mirror point",
+            "kind": "aim"
+          }
+        ]
+      },
+      "scoringRules": {
+        "mode": "success",
+        "attempts": 3,
+        "pass": {
+          "made": 1
+        }
+      }
+    },
+    {
+      "phase": "solve",
+      "title": "Solve it yourself",
+      "text": "The balls moved closer together. Where does the cue ball hit the top rail? Choose the rail point and SPEED, then lock your answer.",
+      "question": "WHERE SHOULD THE CUE BALL CONTACT THE RAIL?",
+      "ask": [
+        "rail",
+        "diamond",
+        "speed"
+      ],
+      "shot": {
+        "kind": "kick",
+        "cueBallPosition": {
+          "x": 37.5,
+          "y": 25
+        },
+        "ballPositions": [
+          {
+            "n": 1,
+            "x": 62.5,
+            "y": 25
+          }
+        ],
+        "targetBall": 1,
+        "cueBallPath": [
+          {
+            "x": 37.5,
+            "y": 25
+          },
+          {
+            "x": 50,
+            "y": 0
+          },
+          {
+            "x": 61.49,
+            "y": 22.99
+          }
+        ],
+        "contactIndex": 2,
+        "railContacts": [
+          {
+            "x": 50,
+            "y": 0,
+            "rail": "top",
+            "by": "cue"
+          }
+        ],
+        "cueContact": {
+          "vTips": 0,
+          "hTips": 0
+        },
+        "technique": "kick",
+        "speed": 2,
+        "route": {
+          "rails": 1,
+          "text": "1 rail (top)",
+          "short": "1 RAIL"
+        }
+      },
+      "answer": {
+        "rail": "top",
+        "diamond": 4,
+        "tolerance": {
+          "pass": 0.2,
+          "close": 0.5
+        },
+        "explanation": "Same distance from the rail, so the point is halfway between the balls: 4.0 (geometry only)."
+      }
+    },
+    {
+      "phase": "execute",
+      "title": "Execute",
+      "text": "Shoot the route you just solved.",
+      "shot": {
+        "kind": "kick",
+        "cueBallPosition": {
+          "x": 37.5,
+          "y": 25
+        },
+        "ballPositions": [
+          {
+            "n": 1,
+            "x": 62.5,
+            "y": 25
+          }
+        ],
+        "targetBall": 1,
+        "cueBallPath": [
+          {
+            "x": 37.5,
+            "y": 25
+          },
+          {
+            "x": 50,
+            "y": 0
+          },
+          {
+            "x": 61.49,
+            "y": 22.99
+          }
+        ],
+        "contactIndex": 2,
+        "railContacts": [
+          {
+            "x": 50,
+            "y": 0,
+            "rail": "top",
+            "by": "cue"
+          }
+        ],
+        "cueContact": {
+          "vTips": 0,
+          "hTips": 0
+        },
+        "technique": "kick",
+        "speed": 2,
+        "route": {
+          "rails": 1,
+          "text": "1 rail (top)",
+          "short": "1 RAIL"
+        }
+      },
+      "scoringRules": {
+        "mode": "success",
+        "attempts": 5,
+        "pass": {
+          "made": 2
+        }
+      }
+    },
+    {
+      "phase": "test",
+      "title": "Test",
+      "text": "Final test: hit the 1 off the top rail.",
+      "shot": {
+        "kind": "kick",
+        "cueBallPosition": {
+          "x": 25,
+          "y": 25
+        },
+        "ballPositions": [
+          {
+            "n": 1,
+            "x": 75,
+            "y": 25
+          }
+        ],
+        "targetBall": 1,
+        "cueBallPath": [
+          {
+            "x": 25,
+            "y": 25
+          },
+          {
+            "x": 50,
+            "y": 0
+          },
+          {
+            "x": 73.41,
+            "y": 23.41
+          }
+        ],
+        "contactIndex": 2,
+        "railContacts": [
+          {
+            "x": 50,
+            "y": 0,
+            "rail": "top",
+            "by": "cue"
+          }
+        ],
+        "cueContact": {
+          "vTips": 0,
+          "hTips": 0
+        },
+        "technique": "kick",
+        "speed": 2,
+        "route": {
+          "rails": 1,
+          "text": "1 rail (top)",
+          "short": "1 RAIL"
+        }
+      },
+      "scoringRules": {
+        "mode": "success",
+        "attempts": 10,
+        "pass": {
+          "made": 5
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "challenge",
+  "id": "demo-mirror-diamond",
+  "contentVersion": "1.0",
+  "title": "DEMO · Mirror Line Rail Point",
+  "description": "DEMO file for the Pool IQ .pooliq format — a simple geometric layout made to show how the app works. It is not an established drill or system. Pure mirror geometry: with the cue ball and the 1 the same distance from the top rail, the mirror line meets the rail halfway between them.",
+  "category": "Demo",
+  "difficulty": 2,
+  "skill": "Kicks",
+  "attribution": {
+    "author": "Pool IQ (demo content)"
+  },
+  "metadata": {
+    "tags": [
+      "demo",
+      "challenge",
+      "diamond"
+    ],
+    "created": "2026-09-25",
+    "language": "en",
+    "demo": true,
+    "generator": "Pool IQ examples"
+  },
+  "challengeType": "diamond",
+  "question": "WHERE SHOULD THE CUE BALL CONTACT THE RAIL?",
+  "shot": {
+    "kind": "kick",
+    "cueBallPosition": {
+      "x": 25,
+      "y": 25
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "x": 75,
+        "y": 25
+      }
+    ],
+    "targetBall": 1,
+    "cueBallPath": [
+      {
+        "x": 25,
+        "y": 25
+      },
+      {
+        "x": 50,
+        "y": 0
+      },
+      {
+        "x": 73.41,
+        "y": 23.41
+      }
+    ],
+    "contactIndex": 2,
+    "railContacts": [
+      {
+        "x": 50,
+        "y": 0,
+        "rail": "top",
+        "by": "cue"
+      }
+    ],
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "technique": "kick",
+    "speed": 2,
+    "route": {
+      "rails": 1,
+      "text": "1 rail (top)",
+      "short": "1 RAIL"
+    },
+    "referenceMarkers": [
+      {
+        "rail": "top",
+        "diamond": 4,
+        "label": "4.0",
+        "kind": "aim"
+      }
+    ],
+    "goal": "Kick off the top rail and hit the 1.",
+    "instructions": "DEMO: cue ball 2 diamonds from the head rail, the 1 six diamonds from the head rail, both 2 diamonds down. Tap the top rail where the cue ball should hit it, lock your answer, then shoot it.",
+    "whyExplanation": {
+      "whyRoute": "Mirror geometry only: reflect the 1 across the top rail and aim at the reflection. Real cushions, spin and speed change the rebound — this DEMO ignores them."
+    }
+  },
+  "answer": {
+    "rail": "top",
+    "diamond": 4,
+    "tolerance": {
+      "pass": 0.2,
+      "close": 0.5
+    },
+    "explanation": "Both balls are 2 diamonds from the top rail, so the mirror line crosses the rail halfway between them: diamond 4.0 (geometry only, DEMO)."
+  },
+  "scoringRules": {
+    "mode": "success",
+    "attempts": 5,
+    "pass": {
+      "made": 3
+    }
+  }
+}

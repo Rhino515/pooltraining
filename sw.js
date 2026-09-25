@@ -1,4 +1,4 @@
-const CACHE = 'pool-iq-v9';
+const CACHE = 'pool-iq-v10';
 const ASSETS = [
   './',
   './index.html',
@@ -9,9 +9,21 @@ const ASSETS = [
   './icons/maskable-192.png',
   './icons/maskable-512.png',
   './icons/apple-touch-icon.png',
+  './POOLIQ_CONTENT_SCHEMA.md',
+  './examples/demo-single-drill.pooliq',
+  './examples/demo-training-pack.pooliq',
+  './examples/demo-lesson.pooliq',
+  './examples/demo-gauntlet.pooliq',
+  './examples/demo-diamond-challenge.pooliq',
+  './examples/demo-player-solution.pooliq',
+  './examples/pooliq-drill-template.pooliq',
   './js/analyze.js',
   './js/app.js',
   './js/career.js',
+  './js/content/convert.js',
+  './js/content/schema.js',
+  './js/content/store.js',
+  './js/content/templates.js',
   './js/customDrills.js',
   './js/dashboard.js',
   './js/drills.js',
@@ -53,8 +65,11 @@ const ASSETS = [
   './js/storage.js',
   './js/tableDiagram.js',
   './js/vault.js',
+  './js/ui/builderContent.js',
+  './js/ui/content.js',
   './js/ui/drillBuilder.js',
   './js/ui/play.js',
+  './js/ui/share.js',
   './js/ui/sheet.js',
   './js/ui/simulator.js'
 ];
