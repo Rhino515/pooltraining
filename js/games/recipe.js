@@ -179,7 +179,7 @@ export function setupSheetHTML(ch) {
 import { BALL_COLORS } from '../tableDiagram.js';
 const ballColor = (n) => BALL_COLORS[Number(n)] || '#94a3b8';
 
-const WHY_TITLES = { whyContact: 'Why this cue-ball contact', whySpeed: 'Why this speed', whySpin: 'Why this spin', whyRoute: 'Why this route', whyAim: 'Why this aim' };
+const WHY_TITLES = { whyCustom: "Coach's note", whyContact: 'Why this cue-ball contact', whySpeed: 'Why this speed', whySpin: 'Why this spin', whyRoute: 'Why this route', whyAim: 'Why this aim' };
 
 export function whyHTML(ch) {
   const w = ch.whyExplanation || {};

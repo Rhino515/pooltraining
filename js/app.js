@@ -2,15 +2,20 @@
  * Pool IQ — hash router / boot.
  * Routes: #home #career #drills #analyze #arcade #profile (#stats alias) #settings
  *         #ghost[/balls/race] #ghostmatch #game/<id> #play/<game>/<stage> #boss/<id> #bossplay/<id>
+ *         #sim[/s=<code>|/target] (Shot Simulator) #drillnew[/fromsim] #drilledit/<id> (Create Drill)
  */
 import { loadState, saveState, resetState, archiveUnknownDrills } from './storage.js';
 import { syncRank } from './career.js';
 import { withSkills } from './skills.js';
-import { drills, getDrillById } from './drills.js';
+import { drills, getDrillById, allDrills } from './drills.js';
 import { renderHome, renderCareerPage, renderDrillsPage, renderArcade, renderGameLobby, renderBossPage, renderProfile, renderSettings } from './dashboard.js';
 import { renderAnalyzePage, bindAnalyzeHandlers } from './analyze.js';
-import { renderGhostLobby, renderGhostMatch, newGhostSession, applyRack, applyUndo, maxUnlockedBalls, matchOver } from './ghost.js';
+import { renderGhostLobby, renderGhostMatch, newGhostSession, newEightSession, applyRack, applyUndo, applyBreak, setBreakMade, rulesSheetHTML, maxUnlockedBalls, matchOver } from './ghost.js';
 import { createPlayScreen } from './ui/play.js';
+import { createSimScreen } from './ui/simulator.js';
+import { createDrillBuilder } from './ui/drillBuilder.js';
+import { customDrills, refreshCustomDrills } from './drills.js';
+import * as CD from './customDrills.js';
 import { openSheet, closeSheet, toast } from './ui/sheet.js';
 import { getGame, getBoss, getStage } from './games/registry.js';
 import { isStageUnlocked, isEndlessUnlocked, isGameUnlocked } from './games/engine.js';
@@ -20,12 +25,15 @@ function derive(s) {
   return syncRank(withSkills(s));
 }
 
-let state = derive(archiveUnknownDrills(loadState(), drills.map((d) => d.id)));
+let state = derive(archiveUnknownDrills(loadState(), allDrills().map((d) => d.id)));
 saveState(state);
 
 let screen = null; // active play screen (has render/onAction)
 let route = { name: 'home', args: [] };
-let ghostPreset = { balls: 3, race: 5 };
+const GHOST_PRESET_KEY = 'poolIQGhostPreset';
+let ghostPreset = { balls: 3, race: 5, mode: 'rotation', level: 'beginner', group: 3 };
+try { ghostPreset = { ...ghostPreset, ...JSON.parse(localStorage.getItem(GHOST_PRESET_KEY) || '{}') }; } catch { /* ignore */ }
+function saveGhostPreset() { try { localStorage.setItem(GHOST_PRESET_KEY, JSON.stringify(ghostPreset)); } catch { /* ignore */ } }
 let drillFilter = 'All';
 const view = () => document.getElementById('view');
 
@@ -55,7 +63,7 @@ function parseHash() {
   return { name: name || 'home', args };
 }
 
-const NAV_FOR = { home: 'home', career: 'career', drills: 'drills', analyze: 'analyze', arcade: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
+const NAV_FOR = { sim: 'sim', drillnew: 'drills', drilledit: 'drills', home: 'home', career: 'career', drills: 'drills', analyze: 'analyze', arcade: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
 
 function setChrome(playing, navName) {
   document.body.classList.toggle('playing', playing);
@@ -66,6 +74,7 @@ function renderRoute() {
   closeSheet();
   route = parseHash();
   const { name, args } = route;
+  if (screen && screen.destroy) screen.destroy();
   screen = null;
   const v = view();
   let playing = false;
@@ -87,6 +96,21 @@ function renderRoute() {
       screen.render();
       playing = true;
     } else v.innerHTML = renderBossPage(state, args[0]);
+  } else if (name === 'sim') {
+    screen = createSimScreen(ctx, args);
+    screen.render();
+    playing = true;
+  } else if (name === 'drillnew' || name === 'drilledit') {
+    const existing = name === 'drilledit' ? customDrills().find((d) => d.id === args[0]) : null;
+    if (name === 'drilledit' && !existing) {
+      toast('That custom drill no longer exists');
+      v.innerHTML = renderDrillsPage(state, drillFilter);
+    } else {
+      const raw = existing ? CD.loadCustomDrills().find((d) => d.id === existing.id) || existing : null;
+      screen = createDrillBuilder(ctx, { editId: existing ? existing.id : null, fromSim: args[0] === 'fromsim', existing: raw });
+      screen.render();
+      playing = true;
+    }
   } else if (name === 'boss') v.innerHTML = renderBossPage(state, args[0]);
   else if (name === 'game') v.innerHTML = args[0] === 'ghost' ? renderGhostLobby(state, ghostPreset) : renderGameLobby(state, args[0]);
   else if (name === 'career') v.innerHTML = renderCareerPage(state);
@@ -98,7 +122,8 @@ function renderRoute() {
   else if (name === 'profile' || name === 'stats') v.innerHTML = renderProfile(state);
   else if (name === 'settings') v.innerHTML = renderSettings(state);
   else if (name === 'ghost') {
-    if (args[0]) ghostPreset = { balls: Math.min(Number(args[0]) || 3, maxUnlockedBalls(state)), race: Number(args[1]) || 5 };
+    if (args[0] === 'eight') ghostPreset = { ...ghostPreset, mode: 'eight' };
+    else if (args[0]) ghostPreset = { ...ghostPreset, mode: 'rotation', balls: Math.min(Number(args[0]) || 3, maxUnlockedBalls(state)), race: Number(args[1]) || 5 };
     v.innerHTML = renderGhostLobby(state, ghostPreset);
   } else if (name === 'ghostmatch') {
     v.innerHTML = renderGhostMatch(state);
@@ -126,6 +151,77 @@ function handleAction(action, el, e) {
   }
   if (screen && screen.onAction(action, el, e)) return;
   switch (action) {
+    case 'drill-create':
+      navigate('#drillnew');
+      break;
+    case 'drill-edit':
+      navigate(`#drilledit/${el.dataset.id}`);
+      break;
+    case 'drill-dup': {
+      const c = CD.duplicateCustomDrill(el.dataset.id);
+      refreshCustomDrills();
+      if (c) toast(`Duplicated as “${c.name}”`);
+      renderRoute();
+      break;
+    }
+    case 'drill-del': {
+      const d = customDrills().find((x) => x.id === el.dataset.id);
+      if (d) openSheet(`<h2 class="sheetTitle">Delete “${escHTML(d.name)}”?</h2><p class="muted">The drill is removed from this device. Your past results stay in your history. Export it first if you might want it back.</p><button type="button" class="bigBtn danger" data-action="drill-del-do" data-id="${escHTML(d.id)}">DELETE DRILL</button><button type="button" class="bigBtn alt" data-action="sheet-close">CANCEL</button>`, { id: 'confirm' });
+      break;
+    }
+    case 'drill-del-do':
+      CD.deleteCustomDrill(el.dataset.id);
+      refreshCustomDrills();
+      if (state.activeSession?.gameId === 'drills' && state.activeSession.stageId === el.dataset.id) commit({ ...state, activeSession: null }, { silent: true });
+      commit({ ...state });
+      closeSheet();
+      toast('Drill deleted');
+      renderRoute();
+      break;
+    case 'drill-export': {
+      const list = el.dataset.id ? CD.loadCustomDrills().filter((d) => d.id === el.dataset.id) : CD.loadCustomDrills();
+      if (!list.length) { toast('No custom drills to export yet'); break; }
+      const name = el.dataset.id ? `${list[0].name.replace(/[^\w-]+/g, '-').toLowerCase() || 'drill'}.pooliq-drill.json` : `pool-iq-drills-${new Date().toISOString().slice(0, 10)}.json`;
+      downloadFile(name, CD.exportDrills(list));
+      toast(el.dataset.id ? 'Drill exported as a JSON file' : `Exported ${list.length} drill${list.length > 1 ? 's' : ''}`);
+      break;
+    }
+    case 'drill-import': {
+      const inp = document.createElement('input');
+      inp.type = 'file';
+      inp.accept = '.json,application/json';
+      inp.id = 'drillImportInput';
+      inp.style.display = 'none';
+      document.body.appendChild(inp);
+      inp.addEventListener('change', async () => {
+        const file = inp.files?.[0];
+        inp.remove();
+        if (!file) return;
+        try {
+          const existing = CD.loadCustomDrills();
+          const out = CD.parseDrillImport(await file.text(), existing.map((d) => d.id));
+          if (!out.drills.length) throw new Error('No drills found in that file.');
+          CD.saveCustomDrills([...existing, ...out.drills]);
+          refreshCustomDrills();
+          toast(`Imported ${out.drills.length} drill${out.drills.length > 1 ? 's' : ''}${out.skipped ? ` (${out.skipped} skipped)` : ''}`);
+          renderRoute();
+        } catch (err) {
+          toast(err.message || 'Import failed');
+        }
+      });
+      inp.click();
+      break;
+    }
+    case 'drill-history': {
+      const d = getDrillById(el.dataset.id);
+      const rec = state.games?.drills?.stages?.[el.dataset.id];
+      const hist = (rec?.history || []).slice().reverse();
+      openSheet(`<div class="eyebrow">HISTORY · PERSONAL BESTS</div><h2 class="sheetTitle">${escHTML(d?.name || 'Drill')}</h2>
+        <div class="card stats"><div><b>${rec?.bestScore || 0}</b><span>BEST SCORE</span></div><div><b>${rec?.bestStars || 0}★</b><span>BEST STARS</span></div><div><b>${rec?.tries || 0}</b><span>SESSIONS</span></div></div>
+        <div class="histList">${hist.length ? hist.map((h) => `<div class="historyRow"><span>${new Date(h.date).toLocaleDateString()} ${new Date(h.date).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span><span>${h.score} pts${h.stars ? ` · ${'★'.repeat(h.stars)}` : ''}</span><b class="${h.passed ? 'green' : 'red'}">${h.passed ? 'PASSED' : 'not passed'}</b></div>`).join('') : '<p class="muted">No sessions yet — train it to start your history.</p>'}</div>
+        <button type="button" class="bigBtn" data-action="go" data-href="#play/drills/${escHTML(el.dataset.id)}">TRAIN</button>`, { id: 'history' });
+      break;
+    }
     case 'locked-stage':
       toast('Locked — pass the previous stage first');
       break;
@@ -135,10 +231,12 @@ function handleAction(action, el, e) {
       break;
     case 'ghost-balls':
       ghostPreset.balls = Number(el.dataset.v);
+      saveGhostPreset();
       renderRoute();
       break;
     case 'ghost-race':
       ghostPreset.race = Number(el.dataset.v);
+      saveGhostPreset();
       renderRoute();
       break;
     case 'ghost-start': {
@@ -147,9 +245,47 @@ function handleAction(action, el, e) {
       navigate('#ghostmatch');
       break;
     }
+    case 'ghost-mode':
+      ghostPreset.mode = el.dataset.v === 'eight' ? 'eight' : 'rotation';
+      saveGhostPreset();
+      renderRoute();
+      break;
+    case 'ghost-level':
+      ghostPreset.level = el.dataset.v;
+      saveGhostPreset();
+      renderRoute();
+      break;
+    case 'ghost-group':
+      ghostPreset.group = Number(el.dataset.v);
+      saveGhostPreset();
+      renderRoute();
+      break;
+    case 'ghost-start8':
+      commit({ ...state, activeGhost: newEightSession(ghostPreset.level, ghostPreset.race, ghostPreset.group) }, { silent: true });
+      navigate('#ghostmatch');
+      break;
+    case 'ghost-rules':
+      if (state.activeGhost) openSheet(rulesSheetHTML(state.activeGhost), { id: 'rules' });
+      break;
+    case 'ghost-bmade': {
+      const out = setBreakMade(state, state.activeGhost, Number(el.dataset.v));
+      commit(out.state, { silent: true });
+      renderRoute();
+      break;
+    }
+    case 'ghost-break': {
+      const out = applyBreak(state, state.activeGhost, el.dataset.v);
+      commit(out.state);
+      if (el.dataset.v === 'eight') toast('8 on the break — your rack');
+      else if (el.dataset.v === 'scratch') toast('Scratch on the break — Ghost’s rack');
+      else toast('Ball in hand — run out');
+      if (out.ended) toast(out.match.won ? 'Match won — saved' : 'Ghost wins — match saved');
+      renderRoute();
+      break;
+    }
     case 'ghost-again': {
       const g = state.activeGhost;
-      commit({ ...state, activeGhost: newGhostSession(g.balls, g.race) }, { silent: true });
+      commit({ ...state, activeGhost: g.mode === 'eight' ? newEightSession(g.level, g.race, g.group) : newGhostSession(g.balls, g.race) }, { silent: true });
       renderRoute();
       break;
     }
@@ -163,7 +299,7 @@ function handleAction(action, el, e) {
     case 'ghost-undo': {
       const out = applyUndo(state, state.activeGhost);
       commit(out.state);
-      toast('Last rack undone');
+      toast('Last step undone');
       renderRoute();
       break;
     }
@@ -205,11 +341,23 @@ document.addEventListener('click', (e) => {
   }
 });
 
+function escHTML(t) {
+  return String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+function downloadFile(name, text) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
 window.addEventListener('hashchange', renderRoute);
 renderRoute();
 window.addEventListener('load', () => {
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
 });
 
-window.PoolIQ = { getState: () => state, drills, getDrillById, commit, navigate, rerender };
+window.PoolIQ = { getState: () => state, drills, getDrillById, allDrills, commit, navigate, rerender, get screen() { return screen; } };
 export { drills, getDrillById };

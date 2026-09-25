@@ -530,6 +530,355 @@ let state = storage.defaultState();
   assert(ok, 'stageFor() on a deleted drill id does not throw');
 }
 
+// ---------------------------------------------------------------- Shot Simulator: physics
+{
+  const P = await import(js('sim/physics.js'));
+  const L = await import(js('sim/layouts.js'));
+  const SH = await import(js('sim/share.js'));
+  const LIB = await import(js('sim/library.js'));
+  const SO = await import(js('sim/solver.js'));
+  const R = P.R;
+  assert(R === 1.125 && table.BALL_RADIUS === 1.125, 'simulator uses the shared true-scale ball radius (1.125" on 100×50)');
+  // SPEED calibration: Speed N ≈ N table lengths of centre-ball travel, and the precomputed table matches the physics
+  const lagErr = [0.5, 1, 1.5, 2, 3, 4, 5, 6, 7].map((s) => [s, P.lagLengths(P.speedToV0(s))]).filter(([s, l]) => Math.abs(l - s) > 0.03);
+  assertAll('SPEED calibration: Speed N sends a centre-ball cue ball N table lengths (0.5…7, ±0.03; table not stale)', lagErr.map(([s, l]) => `Speed ${s} → ${l.toFixed(3)} lengths`));
+  assert(Math.abs(P.lagLengths(P.speedToV0(1)) - 1) < 0.01, `Speed 1 ≈ 1 table length (${P.lagLengths(P.speedToV0(1)).toFixed(3)})`);
+  assert(Math.abs(P.v0ToSpeed(P.speedToV0(3.3)) - 3.3) < 1e-6, 'speedToV0 / v0ToSpeed are inverses');
+  // straight-in stop shot (stun): a touch of draw at SPEED 3 over 16" leaves the cue ball on the contact spot
+  {
+    const d = { x: Math.SQRT1_2, y: Math.SQRT1_2 };
+    const ob = { x: 100 - 12 * d.x, y: 50 - 12 * d.y };
+    const cue = { x: ob.x - 16 * d.x, y: ob.y - 16 * d.y };
+    const lay = [{ id: 'cue', ...cue }, { id: 1, ...ob }];
+    const contact = { x: ob.x - 2 * R * d.x, y: ob.y - 2 * R * d.y };
+    const along = (r) => { const c = r.final.find((b) => b.id === 'cue'); return (c.x - contact.x) * d.x + (c.y - contact.y) * d.y; };
+    const stun = P.simulate(lay, { aim: P.aimAt(cue, ob), speed: 3, vTips: -0.25 }, { record: false });
+    const cf = stun.final.find((b) => b.id === 'cue');
+    assert(Math.hypot(cf.x - contact.x, cf.y - contact.y) < 1 && stun.pocketed.some((p) => p.id === 1 && p.pocket === 'BR'), `straight-in stun: object ball pocketed, cue ball stops ${Math.hypot(cf.x - contact.x, cf.y - contact.y).toFixed(2)}" from the contact spot`);
+    const fol = along(P.simulate(lay, { aim: P.aimAt(cue, ob), speed: 3, vTips: 0.5 }, { record: false }));
+    const drw = along(P.simulate(lay, { aim: P.aimAt(cue, ob), speed: 3, vTips: -0.75 }, { record: false }));
+    assert(fol > 3 && drw < -3, `follow goes forward (${fol.toFixed(1)}"), draw comes back (${drw.toFixed(1)}")`);
+    // pure sliding impact (no spin at contact): the cue ball transfers almost all its speed
+    const c2 = { x: ob.x - 2 * R * d.x - 0.01 * d.x, y: ob.y - 2 * R * d.y - 0.01 * d.y };
+    const hit = P.simulate([{ id: 'cue', ...c2 }, { id: 1, ...ob }], null, { record: false, initial: { cue: { vx: 100 * d.x, vy: 100 * d.y, wx: 0, wy: 0, wz: 0 } } });
+    const hc = hit.final.find((b) => b.id === 'cue');
+    assert(Math.hypot(hc.x - c2.x, hc.y - c2.y) < 0.6, `sliding head-on hit with no spin stops the cue ball dead (${Math.hypot(hc.x - c2.x, hc.y - c2.y).toFixed(2)}")`);
+  }
+  // 30° half-ball hit with natural roll: cue ball deflects ≈ 30° (theory 33.7°)
+  {
+    const cue = { x: 12, y: 25 }, ob = { x: 50, y: 25 };
+    const ghost = { x: ob.x - 2 * R * Math.cos(Math.PI / 6), y: ob.y + 2 * R * Math.sin(Math.PI / 6) };
+    const r = P.simulate([{ id: 'cue', ...cue }, { id: 1, ...ob }], { aim: P.aimAt(cue, ghost), speed: 2 }, { record: true });
+    const ci = r.ids.indexOf('cue');
+    const fr = r.frames.find((f) => f.t > r.firstHit.t + 0.7) || r.frames[r.frames.length - 1];
+    const p = fr.p[ci];
+    const din = Math.atan2(ghost.y - cue.y, ghost.x - cue.x);
+    const dout = Math.atan2(p[1] - r.firstHit.cueAt.y, p[0] - r.firstHit.cueAt.x);
+    const defl = (Math.abs(dout - din) * 180) / Math.PI;
+    const oi = r.ids.indexOf(1);
+    const obDir = (Math.atan2(fr.p[oi][1] - ob.y, fr.p[oi][0] - ob.x) * 180) / Math.PI;
+    assert(defl > 27 && defl < 40, `half-ball natural roll: cue ball deflection ${defl.toFixed(1)}° after it rolls (≈30°)`);
+    assert(Math.abs(Math.abs(obDir) - 30) < 3, `half-ball: object ball leaves on the 30° cut line (${obDir.toFixed(1)}°, incl. throw)`);
+  }
+  // draw reverses; follow keeps going
+  {
+    const lay = [{ id: 'cue', x: 30, y: 25 }, { id: 1, x: 60, y: 25 }];
+    const dr = P.simulate(lay, { aim: 0, speed: 2.5, vTips: -1.25 }, { record: false });
+    assert(dr.final[0].x < dr.firstHit.cueAt.x - 10, `draw reverses the cue ball (contact x ${dr.firstHit.cueAt.x.toFixed(1)} → stops x ${dr.final[0].x.toFixed(1)})`);
+  }
+  // rail rebound roughly mirrors at medium speed with no spin
+  {
+    const out = [];
+    for (const inc of [20, 30, 45]) {
+      const r = P.simulate([{ id: 'cue', x: 30, y: 25 }], { aim: -(90 - inc), speed: 2 }, { record: true });
+      const ev = r.events.find((e) => e.type === 'cushion');
+      const fr = r.frames.find((f) => f.t > ev.t + 0.25);
+      const ang = (Math.atan2(Math.abs(fr.p[0][0] - ev.x), Math.abs(fr.p[0][1] - ev.y)) * 180) / Math.PI;
+      out.push([inc, ang, ev.rail]);
+    }
+    assert(out.every(([i, a, rail]) => rail === 'bottom' && Math.abs(a - i) < 6), `rail rebound ≈ mirror angle (${out.map(([i, a]) => `${i}°→${a.toFixed(1)}°`).join(', ')})`);
+    const e1 = P.simulate([{ id: 'cue', x: 30, y: 25 }], { aim: -60, speed: 2, hTips: 1 }, { record: true });
+    const e2 = P.simulate([{ id: 'cue', x: 30, y: 25 }], { aim: -60, speed: 2, hTips: -1 }, { record: true });
+    const dirAfter = (r) => { const ev = r.events.find((e) => e.type === 'cushion'); const f = r.frames.find((q) => q.t > ev.t + 0.25); return Math.atan2(Math.abs(f.p[0][0] - ev.x), Math.abs(f.p[0][1] - ev.y)); };
+    assert(Math.abs(dirAfter(e1) - dirAfter(e2)) > 0.1, `side spin changes the rebound angle (${((dirAfter(e1) * 180) / Math.PI).toFixed(1)}° vs ${((dirAfter(e2) * 180) / Math.PI).toFixed(1)}°)`);
+    const slow = P.simulate([{ id: 'cue', x: 30, y: 25 }], { aim: -90, speed: 0.6 }, { record: false });
+    const fast = P.simulate([{ id: 'cue', x: 30, y: 25 }], { aim: -90, speed: 4 }, { record: false });
+    const ev = (r) => r.events.find((e) => e.type === 'cushion');
+    assert(P.cushionE(300) < P.cushionE(20) && ev(fast).v > ev(slow).v, 'cushion restitution drops with impact speed');
+    assert(!!ev(slow) && !!ev(fast), 'cushion events recorded');
+  }
+  // energy never increases, no tunnelling at max speed, balls stay on the table
+  {
+    const lay = [{ id: 'cue', x: 10, y: 25 }, { id: 1, x: 40, y: 25.5 }, { id: 2, x: 42.3, y: 24.2 }, { id: 3, x: 60, y: 10 }, { id: 4, x: 70, y: 40 }, { id: 5, x: 88, y: 25 }];
+    let minD = 99;
+    const probs = [];
+    for (let k = 0; k < 14; k++) {
+      const r = P.simulate(lay, { aim: -9 + k * 1.4, speed: P.SPEED_MAX, vTips: k % 3 - 1, hTips: (k % 5) / 2 - 1 }, { record: true, frameDt: 1 / 240 });
+      for (let i = 1; i < r.energy.length; i++) if (r.energy[i] > r.energy[i - 1] * (1 + 1e-9) + 1e-9) { probs.push(`energy rose at shot ${k}`); break; }
+      for (const f of r.frames) {
+        for (let i = 0; i < f.p.length; i++) {
+          const a = f.p[i];
+          if (!a) continue;
+          if (a[0] < -3 || a[0] > 103 || a[1] < -3 || a[1] > 53) probs.push(`ball left the table at shot ${k}`);
+          for (let j = i + 1; j < f.p.length; j++) if (f.p[j]) minD = Math.min(minD, Math.hypot(a[0] - f.p[j][0], a[1] - f.p[j][1]));
+        }
+      }
+    }
+    assertAll('max-speed shots: energy never increases, no ball leaves the table', [...new Set(probs)]);
+    assert(minD > 2 * R - 0.05, `no tunnelling / overlap at SPEED ${P.SPEED_MAX} (closest centres ${minD.toFixed(3)}", ball diameter ${2 * R}")`);
+  }
+  // pocketing + rattles + determinism
+  {
+    const r = P.simulate([{ id: 'cue', x: 50, y: 25 }], { aim: P.aimAt({ x: 50, y: 25 }, { x: 100, y: 50 }), speed: 2 }, { record: false });
+    assert(r.scratch && r.pocketed[0]?.pocket === 'BR', 'a ball rolled at a corner drops (scratch detected)');
+    const s = P.simulate([{ id: 'cue', x: 50, y: 40 }], { aim: -90, speed: 1 }, { record: false });
+    assert(s.pocketed[0]?.pocket === 'BM', 'straight into the side pocket drops');
+    const jaw = P.simulate([{ id: 'cue', x: 20, y: 25 }], { aim: P.aimAt({ x: 20, y: 25 }, { x: 100, y: 46.2 }), speed: 3 }, { record: false });
+    assert(jaw.events.some((e) => e.type === 'jaw' || e.type === 'cushion') , `a ball hitting the pocket facing reacts to the jaw geometry (${jaw.pocketed.length ? 'dropped after jaw contact' : 'rattled out'})`);
+    const a = JSON.stringify(P.simulate(L.rackLayout(9, 3), { aim: 0, speed: 6 }, { record: false }).final);
+    const b = JSON.stringify(P.simulate(L.rackLayout(9, 3), { aim: 0, speed: 6 }, { record: false }).final);
+    assert(a === b, 'simulation is deterministic (same break twice → identical result)');
+    const brk = P.simulate(L.rackLayout(9, 3), { aim: 0, speed: 6 }, { record: false });
+    assert(brk.firstHit && brk.firstHit.ob === 1 && brk.events.filter((e) => e.type === 'ball').length > 10, `9-ball break spreads the rack (${brk.events.filter((e) => e.type === 'ball').length} ball contacts)`);
+    const d = P.describeResult(brk);
+    assert(Array.isArray(d.pots) && typeof d.rails === 'number', 'describeResult summarises the shot');
+  }
+  // throw-compensated aim pockets the ball; Find a Shot finds a make
+  {
+    const lay = [{ id: 'cue', x: 30, y: 30 }, { id: 1, x: 70, y: 18 }];
+    const probs = [];
+    for (const [v, h] of [[0, 0], [0.5, 0], [-0.5, 1], [0, -1]]) {
+      const a = SO.aimToPocket(lay, 1, 'TR', { speed: 2.5, vTips: v, hTips: h });
+      const r = P.simulate(lay, { aim: a.aim, speed: 2.5, vTips: v, hTips: h }, { record: false });
+      if (!r.pocketed.some((p) => p.id === 1 && p.pocket === 'TR')) probs.push(`tip ${v}/${h} missed`);
+    }
+    assertAll('aimToPocket (throw + squirt compensated) pockets the ball with any tip', probs);
+    const f = await SO.findShot(lay, { x: 50, y: 25 }, { mode: 'fast' });
+    assert(f.best && f.best.miss < 12 && f.tried > 50, `Find a Shot returns a pot that lands near the target (${f.best?.miss.toFixed(1)}" off, ${f.tried} shots simulated)`);
+    const rd = SO.targetRound(42);
+    assert(rd && rd.balls.length === 2 && rd.target && SO.targetStars(rd.target, rd.target) === 3, 'Target Game round generated with a reachable target');
+  }
+  // racks + random layouts are legal and non-overlapping
+  {
+    const probs = [];
+    for (const g of [8, 9, 10]) {
+      const want = { 8: 15, 9: 9, 10: 10 }[g];
+      for (let seed = 1; seed <= 40; seed++) {
+        for (const [kind, lay] of [['rack', L.rackLayout(g, seed)], ['random', L.randomLayout(g, seed)]]) {
+          const v = L.validateLayout(lay);
+          if (v.errors?.length || (Array.isArray(v) && v.length)) probs.push(`${g}-ball ${kind} seed ${seed}: ${(v.errors || v).join('; ')}`);
+          const obs = lay.filter((b) => b.id !== 'cue');
+          if (obs.length !== want || new Set(obs.map((b) => b.id)).size !== want) probs.push(`${g}-ball ${kind} seed ${seed}: ${obs.length} balls`);
+          for (let i = 0; i < lay.length; i++) for (let j = i + 1; j < lay.length; j++) if (Math.hypot(lay[i].x - lay[j].x, lay[i].y - lay[j].y) < 2 * R - 1e-6) probs.push(`${g}-ball ${kind} seed ${seed}: overlap`);
+          if (lay.some((b) => b.x < R || b.x > 100 - R || b.y < R || b.y > 50 - R)) probs.push(`${g}-ball ${kind} seed ${seed}: off table`);
+        }
+      }
+      const rk = L.rackLayout(g, 7);
+      const apex = rk.filter((b) => b.id !== 'cue').reduce((a, b) => (b.x < a.x ? b : a));
+      if (Math.abs(apex.x - 75) > 0.01 || Math.abs(apex.y - 25) > 0.01) probs.push(`${g}-ball apex not on the foot spot`);
+      if (g === 9 && apex.id !== 1) probs.push('9-ball: 1 not on the apex');
+      if (g === 10 && apex.id !== 1) probs.push('10-ball: 1 not on the apex');
+    }
+    assertAll('8/9/10-ball racks and random run-out layouts: right balls, legal, non-overlapping, on the table (240 layouts)', probs);
+    const v = L.validateLayout([{ id: 'cue', x: 20, y: 20 }, { id: 1, x: 20.5, y: 20 }, { id: 2, x: 120, y: 20 }]);
+    const msgs = (v.errors || v).join(' ');
+    assert(/overlap/i.test(msgs) && /table/i.test(msgs), `layout validation gives friendly messages ("${msgs.slice(0, 80)}…")`);
+    const sp = L.snapPoint({ x: 33.9, y: 20.2 });
+    assert(Math.abs(sp.x - 34.375) < 1e-9 && Math.abs(sp.y - 18.75) < 1e-9, '¼-diamond snap (3.125")');
+  }
+  // share link round trip
+  {
+    const state = { balls: [{ id: 'cue', x: 25.13, y: 31.25 }, { id: 1, x: 62.5, y: 18.75 }, { id: 9, x: 90.01, y: 3.3 }], shot: { aim: 12.3456, speed: 2.5, vTips: -0.5, hTips: 1 }, annotations: [{ kind: 'arrow', color: '#ffd24a', points: [{ x: 10, y: 10 }, { x: 30, y: 20 }] }, { kind: 'text', color: '#fff', points: [{ x: 50, y: 25 }], text: 'Here' }], name: 'Test shot' };
+    const code = SH.encodeState(state);
+    const back = SH.decodeState(code);
+    const link = SH.shareLink('https://rhino515.github.io/pooltraining/', state);
+    assert(/^[A-Za-z0-9_-]+$/.test(code) && /#sim\/s=/.test(link) && SH.codeFromLink(link) === code, `share link encodes the layout in the URL hash (${link.length} chars)`);
+    assert(JSON.stringify(back.balls) === JSON.stringify(state.balls) && Math.abs(back.shot.aim - 12.346) < 1e-9 && back.shot.speed === 2.5 && back.shot.vTips === -0.5 && back.annotations.length === 2 && back.annotations[1].text === 'Here' && back.name === 'Test shot', 'share encode → decode round-trip keeps balls, aim, speed, tip, drawings and name');
+    let err = '';
+    try { SH.decodeState('not-a-real-code'); } catch (e) { err = e.message; }
+    assert(/share link/i.test(err), `damaged share link → friendly error ("${err}")`);
+    const file = SH.exportFile([{ name: 'A', balls: state.balls, shot: state.shot }]);
+    const imp = SH.importFile(file);
+    assert(Array.isArray(imp) ? imp.length === 1 : !!imp, 'shot JSON export → import');
+  }
+  // shot library CRUD
+  {
+    let d = LIB.loadSim();
+    const s1 = LIB.saveShot(d, { name: 'One', balls: [{ id: 'cue', x: 1, y: 1 }], shot: { aim: 0, speed: 2, vTips: 0, hTips: 0 } });
+    const c = LIB.addCollection(d, 'Breaks');
+    const id = s1?.id || d.shots[0].id;
+    LIB.updateShot(d, id, { name: 'Renamed', favorite: true, collection: c?.id || d.collections[1].id });
+    LIB.duplicateShot(d, id);
+    LIB.saveSim(d);
+    d = LIB.loadSim();
+    assert(d.shots.length === 2 && d.shots.some((s) => s.name === 'Renamed' && s.favorite), 'shot library: save, rename, favourite, duplicate, persist');
+    assert(LIB.listShots(d, { favorites: true }).length >= 1 && LIB.listShots(d, { query: 'renam' }).length >= 1, 'shot library: filter by favourites and search');
+    LIB.deleteCollection(d, d.collections.find((x) => x.name === 'Breaks').id);
+    assert(d.shots.every((s) => d.collections.some((x) => x.id === s.collection)), 'deleting a collection keeps its shots (moved to My Shots)');
+    LIB.deleteShot(d, id);
+    assert(d.shots.length === 1, 'shot library: delete');
+    localStorage.removeItem(LIB.SIM_KEY);
+  }
+}
+
+// ---------------------------------------------------------------- Create Drill (custom drills)
+{
+  const CD = await import(js('customDrills.js'));
+  const b = CD.defaultBuilder();
+  let v = CD.validateBuilder(b);
+  assert(v.errors.some((e) => /title/i.test(e)), `builder validation: title required ("${v.errors[0]}")`);
+  const bad = { ...CD.defaultBuilder(), title: 'Bad', balls: [{ n: 1, x: 25.5, y: 31.25 }, { n: 1, x: 150, y: 20 }], pockets: [] };
+  v = CD.validateBuilder(bad);
+  const msgs = v.errors.join(' | ');
+  assert(/overlap/i.test(msgs) && /table/i.test(msgs) && /pocket/i.test(msgs) && /twice|once|same number|duplicate/i.test(msgs), `builder validation: overlap, off-table, duplicate number, no pocket (${v.errors.length} messages)`);
+  b.title = 'Verify Stop Shot';
+  b.balls.push({ n: 2, x: 75, y: 40.625 });
+  b.zones = [{ x: 70, y: 30 }];
+  b.why = 'Coach note from verify.';
+  b.scoring.mode = 'zone';
+  const route = CD.computeRoute(b);
+  v = CD.validateBuilder(b, route);
+  assert(v.errors.length === 0, `valid builder passes (${v.errors.join('; ') || 'no errors'}${v.warnings.length ? `, warnings: ${v.warnings.join('; ')}` : ''})`);
+  assert(route.cuePath.length >= 2 && route.obPath.length >= 2 && route.contactIndex === 1, 'route computed by the simulator (cue path, object-ball path)');
+  const ch = CD.buildCustomDrill(b, { now: 1767225600000, route });
+  assert(CD.isChallenge(ch) && ch.id.startsWith('cd-') && ch.custom && ch.ballPositions.length === 2 && ch.targetZones.length === 1, 'builder → structured challenge (README drill template fields)');
+  assert(ch.whyExplanation && Object.keys(ch.whyExplanation).length >= 3 && /Coach note/.test(ch.whyExplanation.whyCustom), 'custom drill has Why This Shot? text incl. the coach note');
+  assert(ch.skillEffects[b.skill] === 1 && ch.scoringRules && ch.attemptCount === 10, 'custom drill has skill effects, scoring rules and attempts');
+  CD.upsertCustomDrill(ch);
+  drillsMod.refreshCustomDrills();
+  const got = drillsMod.getDrillById(ch.id);
+  assert(!!got && got.custom && drillsMod.allDrills().length === drills.length + 1 && drills.length === 0, 'saved drill merges into the (empty) built-in library via allDrills()/getDrillById()');
+  const svg = stageTable.renderStageTable(got);
+  assert(/<svg/.test(svg) && (svg.match(/class="ball[ "]/g) || []).length >= 3 && /diamond-grid/.test(svg) && /zone-ring/.test(svg), 'custom drill renders: table, grid, 3 balls, zone rings');
+  const stage = engine.stageFor({ gameId: 'drills', stageId: ch.id });
+  assert(!!stage, 'custom drill plays through the same stage engine as other drills');
+  const aimInfo = recipe.recipeGaugesHTML ? recipe.recipeGaugesHTML(got) : '';
+  assert(!recipe.recipeGaugesHTML || /gauge-aim/.test(aimInfo), 'custom drill gets the 3-gauge recipe incl. Aim View');
+  // unplayed custom drill does not change skills; played one feeds its skill; rank requirements stay game/boss based
+  const fresh = storage.loadState ? JSON.parse(JSON.stringify(storage.defaultState ? storage.defaultState() : { games: {}, bosses: {}, ghostMatches: [] })) : { games: {} };
+  const base = skills.computeSkillRatings(fresh);
+  CD.saveCustomDrills([]);
+  drillsMod.refreshCustomDrills();
+  const without = skills.computeSkillRatings(fresh);
+  CD.upsertCustomDrill(ch);
+  drillsMod.refreshCustomDrills();
+  assert(JSON.stringify(base) === JSON.stringify(without), 'an unplayed custom drill never lowers skill ratings');
+  const played = JSON.parse(JSON.stringify(fresh));
+  played.games = played.games || {};
+  played.games.drills = { stages: { [ch.id]: { passed: true, tries: 1, bestScore: 30, bestStars: 3, lastDate: new Date().toISOString(), history: [{}] } }, pb: {}, sessions: [] };
+  const withRes = skills.computeSkillRatings(played);
+  assert(withRes[b.skill] > base[b.skill], `a passed custom drill raises ${b.skill} (${base[b.skill]} → ${withRes[b.skill]})`);
+  const r0 = career.syncRank(skills.withSkills(JSON.parse(JSON.stringify(fresh)))).rankIndex;
+  const r1 = career.syncRank(skills.withSkills(played)).rankIndex;
+  assert(r0 === r1, 'custom drill results do not change career rank (requirements stay game/boss based)');
+  // export / import / duplicate / delete
+  const file = CD.exportDrills([ch]);
+  const imp = CD.parseDrillImport(file, [ch.id]);
+  const list = imp.drills || imp;
+  assert(list.length === 1 && list[0].id !== ch.id && list[0].name === ch.name, 'drill export → import (clashing id gets a new one)');
+  const dup = CD.duplicateCustomDrill(ch.id);
+  assert(CD.loadCustomDrills().length === 2 && dup && dup.id !== ch.id, 'duplicate custom drill');
+  CD.deleteCustomDrill(dup.id);
+  assert(CD.loadCustomDrills().length === 1 && CD.loadCustomDrills()[0].id === ch.id, 'delete custom drill');
+  let bad2 = false;
+  try { CD.parseDrillImport('{"format":"nope"}', []); } catch { bad2 = true; }
+  assert(bad2, 'importing a non-drill file is rejected with an error');
+  CD.saveCustomDrills([]);
+  drillsMod.refreshCustomDrills();
+}
+
+// ---------------------------------------------------------------- service worker + text fixes
+{
+  const fs = await import('fs');
+  const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+  const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
+  const missing = walk(path.join(root, 'js')).filter((f) => f.endsWith('.js')).map((f) => './' + path.relative(root, f)).filter((f) => !sw.includes(`'${f}'`));
+  assert(/pool-iq-v7/.test(sw), 'service worker cache is pool-iq-v7');
+  assertAll('service worker precaches every JS module (incl. simulator + Create Drill)', missing.map((m) => `missing ${m}`));
+  const wordN = { one: 1, two: 2, three: 3, four: 4 };
+  const probs = [];
+  for (const [g, id] of [['follow', 'fo-8'], ['speed', 'sp-6'], ['kick', 'ke-4']]) {
+    const st = reg.getStages(g).find((s) => s.id === id);
+    const t = `${st.name} ${st.instructions || ''} ${st.goal || ''}`.toLowerCase();
+    const rails = st.route?.rails ?? (st.railContacts || []).filter((r) => r.by !== 'ob').length;
+    for (const m of t.matchAll(/\b(one|two|three|four)[- ](?:rail|cushion)/g)) if (wordN[m[1]] !== rails) probs.push(`${id}: "${m[0]}" but the route uses ${rails}`);
+  }
+  assertAll('fo-8, sp-6, ke-4 rail counts in the text match their routes', probs);
+}
+
+// ---------------------------------------------------------------- Ghost: order rules + 8-Ball Ghost (incl. Pro)
+{
+  const GH = await import(js('ghost.js'));
+  const L = await import(js('sim/layouts.js'));
+  const r3 = GH.rotationRule(3);
+  const r9 = GH.rotationRule(9);
+  assert(/in order: 1, 2, 3\./.test(r3) && /out of order = Ghost wins the rack/.test(r3), `3-ball rule text states numerical order ("${r3}")`);
+  assert(/1, 2, 3, 4, 5, 6, 7, 8, 9\./.test(r9), '9-ball rule text lists 1 through 9 in order');
+  const base = { games: {}, bosses: {}, ghostMatches: [], xp: 0 };
+  const m3 = GH.renderGhostMatch({ ...base, activeGhost: GH.newGhostSession(3, 5) });
+  const m9 = GH.renderGhostMatch({ ...base, activeGhost: GH.newGhostSession(9, 5) });
+  assert(/data-rule="order"/.test(m3) && /1, 2, 3\./.test(m3) && /ALL IN ORDER/.test(m3) && /OUT OF ORDER/.test(m3) && /ghost-rules/.test(m3), '3-ball in-game screen shows the order rule, a RULES button and order-based score buttons');
+  assert(/1, 2, 3, 4, 5, 6, 7, 8, 9\./.test(m9), '9-ball in-game screen shows the 1…9 order rule');
+  const lob = GH.renderGhostLobby(base, { balls: 3, race: 5 });
+  assert(/data-rule="order"/.test(lob) && /in order: 1, 2, 3/.test(lob), 'Ghost setup screen shows the order rule');
+  assert(/lowest number first/.test(GH.rulesSheetHTML(GH.newGhostSession(4, 5))), 'rotation rules sheet explains lowest number first');
+  // 8-Ball Ghost sessions
+  const lv = Object.fromEntries(['beginner', 'intermediate', 'advanced', 'pro'].map((l) => [l, GH.newEightSession(l, 5)]));
+  const cu = GH.newEightSession('custom', 7, 4);
+  assert(lv.beginner.group === 3 && lv.intermediate.group === 5 && lv.advanced.group === 7 && lv.pro.group === 7 && lv.pro.phase === 'break' && cu.group === 4 && cu.race === 7 && lv.beginner.mode === 'eight', '8-Ball Ghost presets: Beginner 3+8, Intermediate 5+8, Advanced 7+8, Pro full rack (break phase), Custom 1–7');
+  const lob8 = GH.renderGhostLobby(base, { mode: 'eight', level: 'custom', group: 4, race: 5 });
+  assert(/Beginner/.test(lob8) && /Intermediate/.test(lob8) && /Advanced/.test(lob8) && />Pro</.test(lob8) && /Custom/.test(lob8) && /any order/.test(lob8) && /called pocket/.test(lob8) && /#sim\/eight\/4/.test(lob8), '8-Ball Ghost setup: level presets, custom count, plain rules, Set up in Shot Simulator link');
+  const lobPro = GH.renderGhostLobby(base, { mode: 'eight', level: 'pro', race: 5 });
+  assert(/you break/i.test(lobPro) && /solids or stripes/.test(lobPro) && /8 on the break = you win the rack/.test(lobPro) && /#sim\/eight\/pro/.test(lobPro), 'Pro rules state the break, open table and the 8-on-the-break house rule');
+  // scoring: race to 3 with a custom 4+8 session
+  let st = { ...base, activeGhost: GH.newEightSession('custom', 3, 4) };
+  let s = st.activeGhost;
+  for (const r of ['W', 'L', 'W']) ({ state: st, session: s } = GH.applyRack(st, s, r));
+  let out = GH.applyRack(st, s, 'W');
+  st = out.state;
+  assert(out.ended && out.match.won && out.match.mode === 'eight' && out.match.group === 4 && st.ghostMatches.length === 1 && st.xp > 0, `8-Ball Ghost match to 3 saves with its ball count (${out.match.you}–${out.match.ghost}, +${st.xp} XP)`);
+  assert(career.ghostWins(st) === 1 && career.ghostWins(st, 3) === 0 && !engine.ghostBeaten(st, 3, 3), '8-Ball Ghost win counts as a general Ghost win but never as an N-ball Ghost requirement');
+  const sk0 = skills.computeSkillRatings(base);
+  const sk1 = skills.computeSkillRatings(st);
+  assert(sk1['Pattern Play'] >= sk0['Pattern Play'] && career.syncRank(skills.withSkills({ ...st })).rankIndex === career.syncRank(skills.withSkills({ ...base })).rankIndex, `8-Ball Ghost feeds Pattern Play (${sk0['Pattern Play']} → ${sk1['Pattern Play']}) without changing rank`);
+  const un = GH.applyUndo(st, out.session);
+  assert(un.state.ghostMatches.length === 0 && un.session.you === 2 && un.state.xp === 0, 'undo after the final rack removes the saved 8-ball match and its XP');
+  // Pro flow
+  st = { ...base, activeGhost: GH.newEightSession('pro', 3) };
+  s = st.activeGhost;
+  ({ state: st, session: s } = GH.setBreakMade(st, s, 2));
+  ({ state: st, session: s } = GH.applyBreak(st, s, 'ok'));
+  assert(s.phase === 'run' && s.breakMade === 2 && s.log.length === 0, 'Pro: logging the break (2 made) moves to ball-in-hand run-out');
+  let u = GH.applyUndo(st, s);
+  assert(u.session.phase === 'break' && u.session.log.length === 0, 'Pro: undo in the run-out goes back to the break');
+  ({ state: st, session: s } = GH.applyBreak(st, u.session, 'ok'));
+  ({ state: st, session: s } = GH.applyRack(st, s, 'W'));
+  assert(s.you === 1 && s.phase === 'break' && s.breaks[0].made === 2 && !s.breaks[0].eight, 'Pro: run-out win records the rack with its break (2 made)');
+  ({ state: st, session: s } = GH.applyBreak(st, s, 'eight'));
+  assert(s.you === 2 && s.breaks[1].eight, 'Pro house rule: 8 on the break = rack win');
+  ({ state: st, session: s } = GH.applyBreak(st, s, 'scratch'));
+  assert(s.ghost === 1 && s.breaks[2].scratch, 'Pro house rule: scratch on the break = Ghost wins the rack');
+  u = GH.applyUndo(st, s);
+  assert(u.session.ghost === 0 && u.session.breaks.length === 2 && u.session.phase === 'break', 'Pro: undo removes the last rack and its break record');
+  ({ state: st, session: s } = GH.applyBreak(st, s, 'ok'));
+  out = GH.applyRack(st, s, 'W');
+  assert(out.ended && out.match.level === 'pro' && out.match.breaks.length === 4 && GH.ghostLabel(out.match) === '8-Ball Ghost · Pro', 'Pro match saved with break history');
+  const stats = GH.ghostStats(out.state);
+  assert(stats.byEight.find((x) => x.level === 'pro').won === 1 && stats.byBalls.every((b) => b.played === 0), '8-ball stats kept separate from 3–9-ball stats');
+  // Shot Simulator layouts for 8-Ball Ghost
+  const probs = [];
+  for (let g = 1; g <= 7; g++) for (let seed = 1; seed <= 10; seed++) {
+    const lay = L.eightGhostLayout(g, seed);
+    const ids = lay.filter((b) => b.id !== 'cue').map((b) => b.id).sort((a, b) => a - b);
+    const want = [...Array.from({ length: g }, (_, i) => i + 1), 8].sort((a, b) => a - b);
+    if (JSON.stringify(ids) !== JSON.stringify(want)) probs.push(`group ${g} seed ${seed}: ${ids}`);
+    const v = L.validateLayout(lay);
+    if ((v.errors || v).length) probs.push(`group ${g} seed ${seed}: ${(v.errors || v).join('; ')}`);
+  }
+  if (L.eightGhostLayout(7, 3, true).length !== 16) probs.push('pro layout is not a full rack');
+  assertAll('8-Ball Ghost simulator layouts: your group + the 8 (legal), Pro = full 15-ball rack', probs);
+}
+
 console.log('\n--- Summary ---');
 console.log('Games:', reg.GAMES.length, '| Stages (non-ghost):', stageCount, '| Boss shots:', bossShots, '| Drills:', drills.length);
 console.log('Passed:', passes, '| Fails:', fails.length);

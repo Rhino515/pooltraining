@@ -111,7 +111,7 @@ check(await exists('#view'), 'app boots');
 await inject(`s.settings.coaching = 'beginner'; return s;`, '#home');
 
 // ------------------------------------------------------------------------------------------ routes
-const ROUTES = ['#home', '#career', '#drills', '#analyze', '#arcade', '#profile', '#stats', '#settings', '#ghost', '#game/landing', '#game/bank', '#game/speed', '#play/landing/lz-1', '#play/speed/sp-cal', '#boss/boss-1', '#ghostmatch'];
+const ROUTES = ['#sim', '#home', '#career', '#drills', '#analyze', '#arcade', '#profile', '#stats', '#settings', '#ghost', '#game/landing', '#game/bank', '#game/speed', '#play/landing/lz-1', '#play/speed/sp-cal', '#boss/boss-1', '#ghostmatch'];
 for (const r of ROUTES) {
   await go(r);
   const t = await text('#view');
@@ -120,7 +120,7 @@ for (const r of ROUTES) {
 await go('#drills');
 check(await exists('.drillsEmpty[data-empty="1"]'), 'drills route shows the empty state');
 const dt = await text('#view');
-check(/No drills loaded yet/.test(dt) && /Your drills will appear here once added/.test(dt), 'empty-state copy');
+check(/No drills yet/.test(dt) && /CREATE YOUR FIRST DRILL/i.test(dt) && (await exists('.drillsEmpty [data-action="drill-create"]')), 'empty state offers Create Drill');
 check(!/coming soon/i.test(dt) && !(await exists('.drillCard')), 'no fake "Coming Soon" drill cards');
 check(errors.length === 0, `drills route: zero console errors (${errors.length})`);
 await shot('14-drills-empty-state');
@@ -462,6 +462,349 @@ await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile
   check(errors.length === errBefore, `stage sweep: no console errors (${errors.length - errBefore})`);
 }
 
+// ------------------------------------------------------------------------------------------ Shot Simulator
+{
+  const errBefore = errors.length;
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+  await page.evaluate(() => { localStorage.removeItem('poolIQSimV1'); });
+  await go('#home');
+  check(await exists('.simPromo[data-href="#sim"], .simPromo'), 'home shows the Shot Simulator card');
+  check(await exists('nav [data-page="sim"]'), 'bottom nav has the Simulator tab');
+  await tap('nav [data-page="sim"]');
+  await sleep(300);
+  check(await exists('.simScreen[data-mode="edit"] #simSvg'), 'Shot Simulator opens in edit mode with the table');
+  check(/Shot Simulator/.test(await text('.simHead')), 'screen is titled "Shot Simulator"');
+  const simInfo = await page.evaluate(() => ({
+    grid: document.querySelectorAll('#simSvg .diamond-grid line').length,
+    balls: document.querySelectorAll('#simSvg g.ball').length,
+    r: [...document.querySelectorAll('#simSvg g.ball circle.ball-body')].map((c) => +c.getAttribute('r')),
+    setup: document.querySelectorAll('#simSetup .su-ball').length,
+    aimView: !!document.querySelector('.simAim svg'),
+    shoot: document.querySelector('.shootBtn')?.getBoundingClientRect().height || 0,
+    sh: document.documentElement.scrollWidth, vw: innerWidth,
+  }));
+  check(simInfo.grid >= 10 && simInfo.balls >= 2 && simInfo.r.every((r) => r === 1.125) && simInfo.setup === simInfo.balls, `simulator: true-scale balls on the diamond grid with SETUP readout (${simInfo.balls} balls, ${simInfo.grid} grid lines)`);
+  check(simInfo.aimView && simInfo.shoot >= 50 && simInfo.sh <= simInfo.vw, `simulator: Aim View, big SHOOT button (${Math.round(simInfo.shoot)}px), no sideways scroll`);
+  const tablePt = (x, y) => page.evaluate((x, y) => { const svg = document.querySelector('#simSvg'); const p = svg.createSVGPoint(); p.x = x; p.y = y; const q = p.matrixTransform(svg.getScreenCTM()); return { x: q.x, y: q.y }; }, x, y);
+  const simSt = () => page.evaluate(() => { const s = window.PoolIQ.screen; const st = s.state; return { balls: st.balls, shot: st.shot, mode: st.mode, undo: s.undoDepth, redo: s.redoDepth, res: st.res ? { dur: st.res.duration, pocketed: st.res.pocketed } : null, playT: st.playT, playing: st.playing }; });
+  // drag the cue ball with a touch-style drag
+  let s0 = await simSt();
+  const cue0 = s0.balls.find((b) => b.id === 'cue');
+  const scroll0 = await page.evaluate(() => scrollY);
+  const a = await tablePt(cue0.x, cue0.y);
+  const bpt = await tablePt(cue0.x + 6.25, cue0.y + 6.25);
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  for (let k = 1; k <= 8; k++) { await page.mouse.move(a.x + ((bpt.x - a.x) * k) / 8, a.y + ((bpt.y - a.y) * k) / 8); await sleep(16); }
+  const bubble = await page.$eval('#dragBubble', (e) => e.classList.contains('show') && e.textContent).catch(() => '');
+  await page.mouse.up();
+  await sleep(200);
+  let s1 = await simSt();
+  const cue1 = s1.balls.find((b) => b.id === 'cue');
+  check(Math.hypot(cue1.x - cue0.x - 6.25, cue1.y - cue0.y - 6.25) < 0.8 && (await page.evaluate(() => scrollY)) === scroll0, `drag moves the cue ball (${cue0.x},${cue0.y} → ${cue1.x},${cue1.y}) without scrolling the page`);
+  check(!!bubble && /Cue/.test(bubble), `drag shows a live position bubble ("${bubble}")`);
+  check(s1.undo > s0.undo, 'ball move is undoable');
+  await tap('[data-action="sim-undo"]');
+  let s2 = await simSt();
+  check(s2.balls.find((b) => b.id === 'cue').x === cue0.x && s2.redo >= 1, 'undo puts the ball back');
+  await tap('[data-action="sim-redo"]');
+  s2 = await simSt();
+  check(s2.balls.find((b) => b.id === 'cue').x === cue1.x, 'redo re-applies the move');
+  // aim: tap the 1-ball → throw-compensated aim at a pocket; nudge
+  const ob = s2.balls.find((b) => b.id !== 'cue');
+  const obp = await tablePt(ob.x, ob.y);
+  await page.mouse.click(obp.x, obp.y);
+  await sleep(200);
+  const aim1 = (await simSt()).shot.aim;
+  const aimTxt = await text('.simAim');
+  check(/cut|straight/i.test(aimTxt) && (await exists('#simUnder .aim-ghost')), `tapping a ball aims at it with a ghost ball ("${aimTxt.replace(/\s+/g, ' ').slice(0, 60)}")`);
+  await tap('[data-action="sim-nudge"][data-v="1"]');
+  const aim2 = (await simSt()).shot.aim;
+  check(Math.abs(aim2 - aim1) > 0.05, `nudge fine-tunes the aim (${aim1} → ${aim2})`);
+  await page.mouse.click(obp.x, obp.y);
+  await sleep(150);
+  await page.mouse.click(obp.x, obp.y);
+  await sleep(150);
+  // speed
+  await tap('[data-action="sim-speed"][data-v="0.5"]');
+  const spd = (await simSt()).shot.speed;
+  check(spd > 0, `speed control (${spd})`);
+  await shot('20-sim-edit');
+  // shoot
+  await tap('.shootBtn');
+  check((await simSt()).mode === 'play', 'SHOOT starts the animation');
+  await page.waitForFunction(() => { const st = window.PoolIQ.screen.state; return st.mode === 'play' && !st.playing && st.res && st.playT >= st.res.duration - 1e-6; }, { timeout: 20000 }).catch(() => {});
+  const played = await simSt();
+  check(played.res && played.playT >= played.res.dur - 1e-6, `animation runs to the end (${played.res?.dur.toFixed(2)} s simulated)`);
+  const tracks = await page.$$eval('#simTracks polyline.track', (els) => els.map((e) => ({ b: e.dataset.ball, c: getComputedStyle(e).stroke, n: e.getAttribute('points').split(' ').length })));
+  check(tracks.length >= 2 && new Set(tracks.map((t) => t.c)).size >= 2 && tracks.every((t) => t.n >= 2), `coloured track lines for each moved ball (${tracks.map((t) => t.b).join(',')})`);
+  check(await exists('.simResult[data-done="1"]'), `result panel after the shot ("${(await text('.simResult')).replace(/\s+/g, ' ').slice(0, 70)}")`);
+  await shot('21-sim-played');
+  await tap('[data-action="sim-tracks"]');
+  check((await page.$$('#simTracks polyline.track')).length === 0, 'tracks toggle hides the lines');
+  await tap('[data-action="sim-tracks"]');
+  check((await page.$$('#simTracks polyline.track')).length >= 2, 'tracks toggle shows them again');
+  await tap('[data-action="sim-rate"]');
+  await tap('[data-action="sim-replay"]');
+  const rp = await simSt();
+  check(rp.playT < played.res.dur, 'replay restarts the animation');
+  await tap('[data-action="sim-end"]');
+  await sleep(150);
+  const ended = await simSt();
+  check(ended.playT >= played.res.dur - 1e-6, 'skip-to-end jumps to the final position');
+  // continue next shot
+  const finals = await page.evaluate(() => window.PoolIQ.screen.state.res.final.filter((b) => b.on).map((b) => [b.id, +b.x.toFixed(2), +b.y.toFixed(2)]));
+  await tap('[data-action="sim-continue"]');
+  const cont = await simSt();
+  const same = finals.every(([id, x, y]) => { const b = cont.balls.find((q) => q.id === id); return b && Math.abs(b.x - x) < 0.02 && Math.abs(b.y - y) < 0.02; });
+  check(cont.mode === 'edit' && same, `Continue with next shot starts from the end position (${cont.balls.length} balls)`);
+  await tap('[data-action="sim-undo"]');
+  check((await simSt()).balls.find((b) => b.id === 'cue').x === cue1.x, 'undo after Continue returns to the pre-shot layout');
+  // random 9-ball rack via Actions
+  await tap('[data-action="sim-actions"]');
+  check(await exists('#sheet .actBtn[data-action="sim-rack"][data-g="9"]') && (await exists('#sheet .actBtn[data-action="sim-random"][data-g="10"]')), 'Actions menu lists racks and random layouts');
+  await shot('22-sim-actions');
+  await tap('#sheet .actBtn[data-action="sim-random"][data-g="9"]');
+  const r9 = await simSt();
+  const obs = r9.balls.filter((b) => b.id !== 'cue');
+  let minGap = 99;
+  for (let i = 0; i < r9.balls.length; i++) for (let j = i + 1; j < r9.balls.length; j++) minGap = Math.min(minGap, Math.hypot(r9.balls[i].x - r9.balls[j].x, r9.balls[i].y - r9.balls[j].y));
+  check(obs.length === 9 && obs.every((b) => +b.id >= 1 && +b.id <= 9) && minGap >= 2.25, `random 9-ball layout: 9 balls, non-overlapping (min gap ${minGap.toFixed(2)}")`);
+  await tap('[data-action="sim-actions"]');
+  await tap('#sheet .actBtn[data-action="sim-rack"][data-g="9"]');
+  const rk = await simSt();
+  check(rk.balls.length === 10, 'racked 9-ball layout');
+  await shot('23-sim-9ball-rack');
+  // save & reopen
+  await tap('[data-action="sim-actions"]');
+  await tap('#sheet .actBtn[data-action="sim-save"]');
+  await page.$eval('#simSaveName', (e) => { e.value = 'E2E rack'; });
+  await tap('#sheet [data-action="sim-save-do"]');
+  const lib = await page.evaluate(() => JSON.parse(localStorage.getItem('poolIQSimV1')).shots.map((s) => s.name));
+  check(lib.includes('E2E rack'), `shot saved to the library (${lib.join(', ')})`);
+  await tap('[data-action="sim-actions"]');
+  await tap('#sheet .actBtn[data-action="sim-clear"]');
+  check((await simSt()).balls.length <= 1, 'Clear table empties the object balls');
+  await tap('[data-action="sim-actions"]');
+  await tap('#sheet .actBtn[data-action="sim-library"]');
+  check(await exists('#sheet .libItem'), 'library sheet lists saved shots');
+  await shot('24-sim-library');
+  await tap('#sheet .libItem [data-action="lib-open"]');
+  check((await simSt()).balls.length === 10, 'opening the saved shot restores the rack');
+  // share link
+  await tap('[data-action="sim-actions"]');
+  await tap('#sheet .actBtn[data-action="sim-share"]');
+  await sleep(300);
+  const link = await page.evaluate(() => window.PoolIQ.screen.state.lastShareUrl || '');
+  check(/#sim\/s=[\w-]+/.test(link), `share link encodes the layout in the URL (${link.length} chars)`);
+  await page.evaluate(() => { const sh = document.querySelector('#sheetWrap, .sheetWrap.show'); if (sh) sh.classList.remove('show'); });
+  await go('#home');
+  await page.evaluate(() => localStorage.removeItem('poolIQSimV1'));
+  await page.goto(link.replace(/^https?:\/\/[^/]+\/(pooltraining\/)?/, BASE), { waitUntil: 'networkidle0' });
+  await sleep(500);
+  const shared = await simSt().catch(() => null);
+  check(shared && shared.balls.length === 10 && /#sim$/.test(await page.evaluate(() => location.hash)), 'opening the share link on a fresh device loads the same layout');
+  // png / todrill buttons exist
+  await tap('[data-action="sim-actions"]');
+  check(await exists('#sheet .actBtn[data-action="sim-png"]') && (await exists('#sheet .actBtn[data-action="sim-todrill"]')) && (await exists('#sheet .actBtn[data-action="sim-find"]')), 'Actions: Export PNG, Turn into drill, Find a Shot available');
+  await page.evaluate(() => document.querySelector('.sheetWrap')?.classList.remove('show'));
+  // small phone
+  await page.setViewport({ width: 375, height: 667, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  await go('#home');
+  await go('#sim');
+  await sleep(300);
+  const sm = await page.evaluate(() => { const b = document.querySelector('.shootBtn').getBoundingClientRect(); const t = document.querySelector('#simSvg').getBoundingClientRect(); return { bar: b.bottom <= innerHeight + 1, h: b.height, tw: t.right <= innerWidth + 1, sw: document.documentElement.scrollWidth <= innerWidth }; });
+  check(sm.bar && sm.h >= 44 && sm.tw && sm.sw, '375×667: simulator table fits, SHOOT bar on screen');
+  await shot('25-sim-375');
+  await tap('.shootBtn');
+  await page.waitForFunction(() => { const st = window.PoolIQ.screen.state; return st.res && !st.playing; }, { timeout: 20000 }).catch(() => {});
+  const pb2 = await page.evaluate(() => { const r = [...document.querySelectorAll('.simBar.play button')].map((b) => b.getBoundingClientRect()); return { onScreen: r.every((q) => q.bottom <= innerHeight + 1), minH: Math.min(...r.map((q) => q.height)) }; });
+  check(pb2.onScreen && pb2.minH >= 44, `375×667: playback controls on screen, ≥44px (${Math.round(pb2.minH)}px)`);
+  await shot('26-sim-375-played');
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+  check(errors.length === errBefore, `simulator: zero console errors (${errors.length - errBefore})`);
+}
+
+// ------------------------------------------------------------------------------------------ Create Drill
+{
+  const errBefore = errors.length;
+  await go('#drills');
+  check(await exists('.createDrill[data-action="drill-create"]'), 'Drills page has a prominent CREATE DRILL button');
+  await tap('.createDrill');
+  await sleep(300);
+  check(await exists('.builderScreen[data-builder="new"] #dbTable svg'), 'Create Drill opens the builder with the table');
+  check((await page.$$('#dbTable svg .diamond-grid line')).length >= 10 && (await exists('#dbSetup .su-ball')), 'builder table has the grid and SETUP readout');
+  await shot('30-builder');
+  // save without title → friendly error
+  await tap('[data-action="db-save"]');
+  const msg = await text('#dbMsgs');
+  check(/title/i.test(msg) && (await exists('.builderScreen')), `validation blocks saving without a title ("${msg.replace(/\s+/g, ' ').slice(0, 60)}")`);
+  // add a ball, set title + details
+  await tap('[data-action="db-ball"][data-n="2"]');
+  await page.$eval('#db-title', (e) => { e.value = 'E2E Stop Shot'; e.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.$eval('#db-instructions', (e) => { e.value = 'Pocket the 1 and hold the cue ball in the zone.'; e.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.$eval('#db-why', (e) => { e.value = 'Custom coach note from e2e.'; e.dispatchEvent(new Event('input', { bubbles: true })); });
+  await tap('[data-action="db-zone-add"]');
+  check((await page.$$('#dbTable svg .zone-ring')).length >= 1, 'landing zone added with star rings');
+  check(await exists('#dbTable svg .cue-path') && (await exists('#dbTable svg .ob-path')), 'builder shows the computed cue and object-ball paths');
+  await tap('[data-action="db-preview"]');
+  check(await exists('#sheet .previewTable svg'), 'Preview shows how the drill will look');
+  await page.evaluate(() => document.querySelector('.sheetWrap')?.classList.remove('show'));
+  await shot('31-builder-filled');
+  await tap('[data-action="db-save"]');
+  await sleep(300);
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('poolIQCustomDrillsV1') || '{"drills":[]}').drills);
+  check(saved.length === 1 && saved[0].name === 'E2E Stop Shot' && saved[0].ballPositions.length === 2 && saved[0].cueBallPosition && saved[0].speed && saved[0].scoringRules && saved[0].whyExplanation, 'drill saved in the structured challenge format');
+  check(/#drills/.test(await page.evaluate(() => location.hash)) && (await exists(`.drill[data-drill="${saved[0].id}"]`)), 'saved drill appears in the Drills library');
+  await shot('32-drills-library');
+  // play & score
+  await tap(`.drill[data-drill="${saved[0].id}"] [data-action="go"]`);
+  await sleep(300);
+  const pd = await page.evaluate(() => ({
+    grid: document.querySelectorAll('.playTable svg .diamond-grid line').length,
+    setup: document.querySelectorAll('.setupLine .su-ball').length,
+    gauges: document.querySelectorAll('.gaugeCard .gauge').length,
+    aim: !!document.querySelector('.gauge-aim'),
+    btns: document.querySelectorAll('.resultBar .rb[data-action="record"]').length,
+    fit: (document.querySelector('.resultBar')?.getBoundingClientRect().bottom || 9e9) <= innerHeight + 1,
+    noScroll: document.documentElement.scrollHeight <= innerHeight + 2,
+  }));
+  check(pd.grid === 10 && pd.setup >= 3 && pd.gauges === 3 && pd.aim, `custom drill plays with grid, SETUP (${pd.setup}), 3 gauges incl. Aim View`);
+  check(pd.btns >= 2 && pd.fit && pd.noScroll, `custom drill: score buttons on screen, no scrolling (${pd.btns} buttons)`);
+  await shot('33-custom-drill-play');
+  await page.$$eval('[data-action="why-open"]', (els) => els[0]?.click());
+  await sleep(200);
+  check(/Custom coach note from e2e/.test(await text('#sheet')), 'Why sheet shows the custom coach note');
+  await page.evaluate(() => document.querySelector('.sheetWrap')?.classList.remove('show'));
+  await recordLast(12);
+  check(await exists('.resultPanel'), 'scoring the custom drill reaches the result screen');
+  const stD = await getState();
+  check(!!stD.games?.drills?.stages?.[saved[0].id]?.history?.length, 'custom drill result saved to history');
+  await go('#drills');
+  check(/Best \d+ pts/.test(await text(`.drill[data-drill="${saved[0].id}"]`)), 'drill card shows the personal best');
+  // small phone check of the custom drill
+  await page.setViewport({ width: 375, height: 667, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  await go(`#play/drills/${saved[0].id}`);
+  await sleep(250);
+  if (await exists('.resultPanel')) await tap('[data-action="retry"]').catch(() => {});
+  const pdS = await page.evaluate(() => ({ fit: (document.querySelector('.resultBar')?.getBoundingClientRect().bottom || 9e9) <= innerHeight + 1, noScroll: document.documentElement.scrollHeight <= innerHeight + 2, aim: !!document.querySelector('.gauge-aim') }));
+  check(pdS.fit && pdS.noScroll && pdS.aim, '375×667: custom drill score screen fits without scrolling');
+  await shot('34-custom-drill-375');
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+  // edit
+  await go('#drills');
+  await tap(`.drill[data-drill="${saved[0].id}"] [data-action="drill-edit"]`);
+  await sleep(300);
+  check(await exists('.builderScreen[data-builder="edit"]') && (await page.$eval('#db-title', (e) => e.value)) === 'E2E Stop Shot', 'Edit reopens the builder with the drill');
+  await page.$eval('#db-title', (e) => { e.value = 'E2E Stop Shot v2'; e.dispatchEvent(new Event('input', { bubbles: true })); });
+  await tap('[data-action="db-save"]');
+  await sleep(300);
+  const saved2 = await page.evaluate(() => JSON.parse(localStorage.getItem('poolIQCustomDrillsV1')).drills);
+  check(saved2.length === 1 && saved2[0].id === saved[0].id && saved2[0].name === 'E2E Stop Shot v2', 'edit saves in place (same id)');
+  // duplicate + delete
+  await tap(`.drill[data-drill="${saved[0].id}"] [data-action="drill-dup"]`);
+  await sleep(200);
+  check((await page.$$('.drill[data-custom], .drill .tag.mine')).length === 2, 'Duplicate adds a copy');
+  await tap(`.drill[data-drill="${saved[0].id}"] [data-action="drill-del"]`);
+  check(/Delete/i.test(await text('#sheet')), 'Delete asks for confirmation');
+  await tap('#sheet [data-action="drill-del-do"]');
+  await sleep(200);
+  const saved3 = await page.evaluate(() => JSON.parse(localStorage.getItem('poolIQCustomDrillsV1')).drills);
+  check(saved3.length === 1 && !saved3.some((d) => d.id === saved[0].id) && !(await exists(`.drill[data-drill="${saved[0].id}"]`)), 'confirmed delete removes the drill');
+  check(errors.length === errBefore, `Create Drill: zero console errors (${errors.length - errBefore})`);
+}
+
+// ------------------------------------------------------------------------------------------ Ghost rules + 8-Ball Ghost
+{
+  const errBefore = errors.length;
+  await inject('s.ghostUnlockFloor = 9; s.activeGhost = null; return s;', '#ghost/3/5');
+  const fitG = () => page.evaluate(() => { const bar = document.querySelector('.resultBar')?.getBoundingClientRect(); const rl = document.querySelector('.ruleLine')?.getBoundingClientRect(); const btns = [...document.querySelectorAll('.resultBar button')].map((x) => x.getBoundingClientRect().height); return { ok: !!bar && bar.bottom <= innerHeight + 1 && !!rl && rl.bottom <= bar.top + 1 && document.documentElement.scrollHeight <= innerHeight + 2, minH: Math.min(...btns) }; });
+  check(/in order: 1, 2, 3/.test(await text('.ghostSetup .ruleBox')), 'Ghost setup (3-ball) states the numerical-order rule');
+  await tap('[data-action="ghost-start"]');
+  const r3 = await text('.ruleLine');
+  check(/in order: 1, 2, 3\./.test(r3) && /out of order = Ghost wins/.test(r3) && /ALL IN ORDER/.test(await text('.resultBar')), `3-ball in-game rule visible ("${r3.replace(/\s+/g, ' ')}")`);
+  let f = await fitG();
+  check(f.ok && f.minH >= 44, `390×844: 3-ball rule + score buttons visible without scrolling (${Math.round(f.minH)}px)`);
+  await shot('40-ghost-3ball-rules');
+  await tap('[data-action="ghost-rules"]');
+  check(/lowest number first/.test(await text('#sheet')), 'RULES sheet explains lowest number first');
+  await tap('#sheet [data-action="sheet-close"]');
+  await go('#ghost/9/5');
+  check(/1, 2, 3, 4, 5, 6, 7, 8, 9/.test(await text('.ghostSetup .ruleBox')), 'Ghost setup (9-ball) lists 1…9 in order');
+  await tap('[data-action="ghost-start"]');
+  check(/1, 2, 3, 4, 5, 6, 7, 8, 9\./.test(await text('.ruleLine')), '9-ball in-game rule lists 1…9 in order');
+  await page.setViewport({ width: 375, height: 667, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  await sleep(200);
+  f = await fitG();
+  check(f.ok && f.minH >= 44, '375×667: 9-ball rule + score buttons visible without scrolling');
+  await shot('41-ghost-9ball-375');
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+  // 8-Ball Ghost: custom ball count saves and scores
+  await go('#ghost');
+  await tap('[data-action="ghost-mode"][data-v="eight"]');
+  check(await exists('.ghostSetup[data-mode="eight"] .lvlOpt[data-v="pro"]'), '8-Ball Ghost setup shows Beginner / Intermediate / Advanced / Pro / Custom');
+  await tap('[data-action="ghost-level"][data-v="custom"]');
+  await tap('[data-action="ghost-group"][data-v="4"]');
+  await tap('[data-action="ghost-race"][data-v="3"]');
+  await shot('42-eight-ghost-setup');
+  await page.reload({ waitUntil: 'networkidle0' });
+  await sleep(300);
+  check((await exists('.ghostSetup[data-mode="eight"] .lvlOpt.active[data-v="custom"]')) && (await exists('.ballOpt.active[data-v="4"]')), '8-Ball Ghost ball-count selection is remembered after reload');
+  check(/your 4 balls in any order, then the 8 in a called pocket/.test(await text('.ruleBox')), '8-Ball Ghost rules stated plainly on the setup screen');
+  await tap('[data-action="ghost-start8"]');
+  check(/8-Ball Ghost · 4 \+ 8/.test(await text('.phTitle')) && /any order/.test(await text('.ruleLine')), '8-Ball Ghost match shows the ball count and rule in-game');
+  f = await fitG();
+  check(f.ok && f.minH >= 44, '390×844: 8-Ball Ghost score buttons visible without scrolling');
+  await tap('[data-action="ghost-rack"][data-v="W"]');
+  await tap('[data-action="ghost-rack"][data-v="L"]');
+  await tap('[data-action="ghost-rack"][data-v="W"]');
+  await tap('[data-action="ghost-rack"][data-v="W"]');
+  st = await getState();
+  const m8 = st.ghostMatches[st.ghostMatches.length - 1];
+  check(m8 && m8.mode === 'eight' && m8.group === 4 && m8.won && m8.you === 3 && (await exists('.ghostMatch[data-over="1"]')), '8-Ball Ghost match scored and saved with its ball count (3–1)');
+  await tap('[data-action="ghost-undo"]');
+  st = await getState();
+  check(!st.ghostMatches.some((m) => m.id === m8.id), '8-Ball Ghost undo reopens the match');
+  await tap('[data-action="ghost-rack"][data-v="W"]');
+  // Pro
+  await go('#ghost');
+  await tap('[data-action="ghost-level"][data-v="pro"]');
+  check(/you break/i.test(await text('.ruleBox')) && /8 on the break = you win the rack/.test(await text('.ruleBox')), 'Pro setup states the break + house rule');
+  await tap('[data-action="ghost-start8"]');
+  check(await exists('.ghostMatch[data-phase="break"]') && /Break/.test(await text('.ruleLine')), 'Pro match starts with the break');
+  f = await fitG();
+  check(f.ok && f.minH >= 44, `390×844: Pro break screen fits without scrolling (${Math.round(f.minH)}px)`);
+  await tap('[data-action="ghost-bmade"][data-v="1"]');
+  await tap('[data-action="ghost-bmade"][data-v="1"]');
+  await shot('43-eight-ghost-pro-break');
+  await tap('[data-action="ghost-break"][data-v="ok"]');
+  check(await exists('.ghostMatch[data-phase="run"]') && /solids or stripes/.test(await text('.ruleLine')), 'Pro: after the break → ball in hand run-out with open-table rule');
+  await tap('[data-action="ghost-undo"]');
+  check(await exists('.ghostMatch[data-phase="break"]'), 'Pro: undo returns to the break');
+  await tap('[data-action="ghost-break"][data-v="ok"]');
+  await tap('[data-action="ghost-rack"][data-v="W"]');
+  await tap('[data-action="ghost-break"][data-v="eight"]');
+  await tap('[data-action="ghost-break"][data-v="scratch"]');
+  await page.setViewport({ width: 375, height: 667, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  await sleep(200);
+  f = await fitG();
+  check(f.ok && f.minH >= 44, '375×667: Pro break screen fits without scrolling');
+  await shot('44-eight-ghost-pro-375');
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+  await tap('[data-action="ghost-break"][data-v="ok"]');
+  await tap('[data-action="ghost-rack"][data-v="W"]');
+  st = await getState();
+  const mp = st.ghostMatches[st.ghostMatches.length - 1];
+  check(mp && mp.level === 'pro' && mp.won && mp.breaks.length === 4 && mp.breaks[0].made === 2 && mp.breaks[1].eight && mp.breaks[2].scratch, 'Pro match saved with break log (2 made, 8 on break, scratch)');
+  await go('#ghost');
+  check(/8-Ball Ghost · Pro/.test(await text('#ghostHistory')), 'Ghost history lists 8-Ball Ghost matches');
+  await tap('[data-action="go"][data-href="#sim/eight/pro"]');
+  await sleep(400);
+  const simBalls = await page.evaluate(() => window.PoolIQ.screen?.state?.balls?.length || 0);
+  check(simBalls === 16, `Set up in Shot Simulator opens a 15-ball rack for Pro (${simBalls} balls incl. cue)`);
+  check(errors.length === errBefore, `Ghost rules / 8-Ball Ghost: zero console errors (${errors.length - errBefore})`);
+}
+
 // ------------------------------------------------------------------------------------------ service worker + offline
 const swOk = await page.evaluate(async () => {
   if (!('serviceWorker' in navigator)) return false;
@@ -470,7 +813,7 @@ const swOk = await page.evaluate(async () => {
 });
 check(swOk, 'service worker registered and active');
 const cacheName = await page.evaluate(async () => (await caches.keys()).join(','));
-check(/pool-iq-v6/.test(cacheName) && !/pool-iq-v5/.test(cacheName), `cache bumped to v6 (${cacheName})`);
+check(/pool-iq-v7/.test(cacheName) && !/pool-iq-v6/.test(cacheName), `cache bumped to v7 (${cacheName})`);
 await page.setOfflineMode(true);
 await page.goto(BASE + 'index.html#arcade', { waitUntil: 'domcontentloaded' });
 await sleep(800);

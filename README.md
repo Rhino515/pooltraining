@@ -25,7 +25,7 @@ To deploy, copy the folder to any static host (for example GitHub Pages). All as
 
 | Area | Files |
 |---|---|
-| Hash router / boot | `js/app.js` (`#home #career #drills #analyze #arcade #profile #settings #ghost #game/<id> #play/<game>/<stage> #boss/<id> #bossplay/<id>`) |
+| Hash router / boot | `js/app.js` (`#home #career #drills #analyze #arcade #profile #settings #ghost #game/<id> #play/<game>/<stage> #boss/<id> #bossplay/<id> #sim #sim/s=<code> #sim/target #drillnew #drilledit/<id>`) |
 | Challenge data model + geometry | `js/games/geometry.js`, `js/games/builders.js` (position, pot, lag, bank, kick, carom, safety, train) |
 | Game content | `js/games/data/*.js` (one file per game plus `bosses.js`), `js/games/registry.js` |
 | Engine (pure) | `js/games/engine.js`: sessions, scoring modes (zone, lives, kick, train, stars, binary, sniper, ladder, calibration, pattern), unlocks, PBs, bosses |
@@ -33,6 +33,8 @@ To deploy, copy the folder to any static host (for example GitHub Pages). All as
 | SPEED system | `js/games/speed.js`: SPEED 0.5–5.0 (1.0 = one table length of travel), personal calibration, table size and cloth |
 | Screens | `js/ui/play.js` (every game, drill and boss), `js/ui/sheet.js`, `js/dashboard.js`, `js/ghost.js` |
 | Career / skills | `js/career.js` (game levels, Ghost wins, Boss Battles), `js/skills.js` (ratings computed from results) |
+| Shot Simulator | `js/sim/physics.js` (deterministic ball physics), `js/sim/layouts.js` (racks, random layouts, snap, validation), `js/sim/solver.js` (throw-compensated aim, Find a Shot, shape zones, Target Game), `js/sim/share.js` (URL/JSON share format), `js/sim/library.js` (saved shots + settings), `js/ui/simulator.js` (screen) |
+| Create Drill | `js/customDrills.js` (builder model, validation, simulated route, challenge builder, storage, import/export), `js/ui/drillBuilder.js` (screen) |
 | Storage | `js/storage.js`: `localStorage` key `poolIQStateV4`, migrated from V3/V2. Old keys are left intact. |
 
 ### Games
@@ -55,6 +57,24 @@ To deploy, copy the folder to any static host (for example GitHub Pages). All as
 | Rail Runner | 6 |
 
 There are also 9 Boss Battles, one per rank from Club Player to Champion.
+
+### Race the Ghost
+
+- **3- to 9-Ball (rotation):**
+  - Rule, shown on the setup screen, in-game, and in a RULES sheet: "Run the balls in order: 1, 2, 3 … Miss, foul or shoot out of order = Ghost wins the rack."
+  - RUNOUT means every ball went down in order; anything else goes to the Ghost.
+  - Beating the N-ball Ghost in a race to 3+ unlocks N+1.
+- **8-Ball Ghost:**
+  - Levels: Beginner (3 + 8), Intermediate (5 + 8), Advanced (7 + 8, ball in hand, no break), Pro (full rack, you break), and Custom (1–7 balls + the 8). Your choice is remembered (`poolIQGhostPreset`).
+  - Rules: ball in hand, pocket your group in any order, then the 8 in a called pocket. Miss, scratch or 8 early = Ghost wins the rack.
+  - **Pro** has a break step:
+    - log balls made on the break (optional)
+    - house rules: 8 on the break = you win the rack; scratch on the break = Ghost wins the rack
+    - then **BALL IN HAND ›**: the table is open (pick solids or stripes), ball in hand anywhere, run your 7 + the 8
+    - Undo steps back through the run-out → break → previous rack
+  - Races 3/5/7/9, history and stats per level.
+  - "Set up in Shot Simulator" (`#sim/eight/<n|pro>`) builds a matching random layout, or a 15-ball rack for Pro.
+  - 8-Ball Ghost wins count as general Ghost wins and feed Pattern Play once played. They never satisfy an "N-Ball Ghost" career requirement.
 
 ### True-scale table
 
@@ -85,9 +105,62 @@ The recipe card shows three round gauges:
 
 Every attempt is saved with `resultSource: 'manual'`. A future camera module can call `registerResultAdapter({ id, available, verifyAttempt(challenge, outcome) })` from `js/analyze.js`. From then on, the play screen passes each tapped outcome through the adapter before saving it, so the attempt records the adapter's `resultSource`.
 
+## Shot Simulator (`#sim`)
+
+A pool-table simulator for planning and studying shots. It is a **physics approximation**, and the UI says so. Use it to learn patterns, not as a guarantee of what the real table will do.
+
+- **Table:** the shared true-scale renderer (100 × 50 playing surface, ball radius 1.125, diamond grid full/half/off). The SETUP readout lists every ball in diamonds.
+- **Placing balls:** drag a ball to move it (optional ¼-diamond snap, live position bubble, page never scrolls while dragging). Tap the tray to add or remove balls 1–15.
+- **Aiming:** drag the felt to aim, or tap an object ball to aim at it (tap again to cycle pockets, throw-compensated). You can also tap a pocket to aim the last ball there. ±1° / ±0.1° nudge buttons, aim readout, ghost ball, Aim View gauge, tangent line.
+- **Cue:** tip position uses the contact diagram (±1.5 tips, squirt included). SPEED 0.3–7 on Pool IQ's scale (Speed N ≈ N table lengths of centre-ball travel), with optional personal calibration.
+- **Playback:** SHOOT animates the shot and draws coloured tracks per ball. Controls: replay, pause/play, step to the next event, skip to end, ¼×/½×/1×/2× speed, tracks on/off. The result summary covers the first ball hit, balls pocketed, cue-ball rails, where it stopped, and scratches.
+- **Continue:** "Continue ▶" plays the next shot from where the balls stopped; after a scratch the cue ball is in hand on the head spot. Undo/redo cover every layout, aim, tip, speed and continue step. "Reset to start" restores the starting layout.
+- **Actions menu:**
+  - 8/9/10-ball racks, and random 8/9/10-ball run-out layouts (legal, non-overlapping)
+  - clear, reset, flip ends/sides
+  - Find a Shot: tap where the cue ball should finish; it searches pockets × tip × SPEED in the simulator and lists the best four
+  - Shape zone: where the cue ball can land for an easy next shot, within the max-cut setting
+  - Target Game: 5 rounds, 60 s each; pot the ball and land on the target for stars; best score saved
+  - Save to the shot library: named, with notes, collections, favourites, search/sort, rename, move, duplicate, delete
+  - Share link, JSON export/import, PNG image export
+  - Turn into drill: opens Create Drill prefilled
+  - Settings
+- **Drawing:** arrows, lines, circles, text labels, and a measure tool (distance in diamonds plus angle), in 4 colours. Erase and clear.
+
+### Physics model (`js/sim/physics.js`)
+
+- **Time step:** adaptive, each ball moves ≤ 0.2 R per step, capped at 1/120 s. Friction is integrated exactly within a step: sliding friction (μ 0.2) until the contact point stops slipping, then rolling resistance (μ 0.0105), plus side-spin decay.
+- **Ball–ball:** each collision is backed off to the exact moment of touch. It is nearly elastic (e 0.95), with a speed-dependent ball–ball friction impulse. That impulse produces cut-induced and spin-induced throw and transfers spin.
+- **Cushions:** speed-dependent restitution (0.93 → 0.75 as impact speed rises). Cushion friction lets side spin change the rebound angle and kills part of the roll.
+- **Pockets:** real mouth geometry; corner and side jaws are angled segments. A ball can hit a facing and rattle out, or drop once past the drop radius.
+- **Cue strike:** the tip offset sets top/back spin and side spin. Squirt is 1.2° per tip.
+- **SPEED:** `SPEED_TABLE` maps SPEED → launch speed by simulating centre-ball lags, so Speed 1 travels exactly one table length. Regenerate it with `node scripts/gen-speed-table.mjs` after changing constants; `verify.mjs` fails if it goes stale.
+- **Deterministic:** the same layout and shot always give the same result.
+- **Not modelled:** cue elevation (massé/jump), swerve/curve from side spin, cloth wear, humidity, ball-to-ball differences, and table roll. Cushion and jaw responses are simplified.
+
+### Share format
+
+The share link is `#sim/s=<code>`. `<code>` is base64url JSON: `{v:1, b:[[id (0 = cue), x, y]…], a: aim°, s: SPEED, t:[vTips, hTips], n:[drawings], m: name}`. Opening the link loads the layout on any device. JSON files use `{format:'pool-iq-shot', version:1, shots:[…]}`.
+
+## Create Drill (`#drillnew`, `#drilledit/<id>`)
+
+The Drills tab has a **＋ CREATE DRILL** button, which also appears in the empty state. The builder offers:
+
+- **Layout:** cue ball, object balls 1–15 and blocker balls, placed by dragging on the true-scale grid table with ¼-diamond snap (or nudge buttons). The SETUP readout updates live.
+- **Target:** the target ball, plus one or more accepted pockets (★ marks the main one). You can tap a pocket on the table to choose it.
+- **Cue-ball zones:** add a zone, or "zone where the cue ball stops". Zones use the star-ring system (S/M/L) and can be dragged.
+- **Recipe:** tip position, SPEED, an aim fine-tune (± on top of the automatic throw-compensated aim), and "show cue route". The route is computed by the simulator: cue path, object-ball path and rail contacts, with warnings if the simulated shot misses, scratches or lands outside the zone.
+- **Details:** title, category, skill trained (the 8 career skills), level 1–5, instructions, goal, and a coach's note shown first in Why This Shot? (automatic Why texts are added too).
+- **Scoring:** pocket + zone stars / made-miss / quality stars, attempts, pass criteria, and "pocket required".
+- **Preview, Save:** saving validates (title, balls on the table, no overlaps, duplicate numbers, pocket chosen, zone present when needed) with friendly messages.
+
+Saved drills use the same challenge data model as Template 2 below. They are stored under `localStorage` key `poolIQCustomDrillsV1` and merged with the built-in library at load (`allDrills()`), so they play exactly like every other drill: grid table, SETUP, 3-gauge recipe with Aim View, Why sheet, large score buttons, history, PBs and coaching levels.
+
+Drill cards have Edit / Duplicate / History / Export / Delete (with confirm) buttons. You can also export all drills or import a file. Drill files use `{format:'pool-iq-drills', version:1, drills:[challenge…]}`; imported ids that clash are re-numbered. Custom drill results feed skill ratings once played. Career ranks still depend only on games, Ghost and bosses.
+
 ## Drill library (ships empty)
 
-The drill library is intentionally empty; your drills go here. The Drills tab shows a clean empty state until drills are added.
+The built-in drill library is intentionally empty. Build drills in the app with **Create Drill** (above), or add them in code as described here. The Drills tab shows a clean empty state with a Create Drill button until drills exist.
 
 Drills use the same challenge data model as the Arcade. Each new drill automatically gets:
 
@@ -188,6 +261,26 @@ It checks:
 - Career ticks and boss pass/fail with weak skills
 - skill ratings
 - V3 → V4 migration, including archiving deleted drill ids
+- Shot Simulator physics:
+  - SPEED calibration (Speed N = N lengths; table not stale)
+  - straight-in stun stops on the contact spot
+  - follow/draw
+  - 30° half-ball natural-roll deflection
+  - rail rebound ≈ mirror, side-spin effect
+  - restitution vs speed
+  - energy never increases, no tunnelling at SPEED 7
+  - pocketing and jaw rattles
+  - determinism, break spread
+  - throw-compensated aim, Find a Shot, Target Game
+- racks/random layouts: legal and non-overlapping (240 layouts)
+- snap and validation, share-link round-trip, shot library CRUD
+- Create Drill:
+  - validation messages
+  - builder → challenge → save → `allDrills()` → render
+  - skills (unplayed drills never lower ratings; played ones count), rank unaffected
+  - export/import/duplicate/delete
+- Ghost: order-rule text for 3- and 9-ball (setup, in-game, sheet); 8-Ball Ghost presets/custom count, scoring, undo, XP, general-vs-N-ball career credit, skills; Pro break flow + house rules; simulator layouts
+- service worker precaches every module (v7)
 
 ### e2e (real Chrome, iPhone 390×844, touch)
 
@@ -217,10 +310,27 @@ It covers:
 - true-scale balls on screen (2.25% of the playing length), tap area, Aim View size
 - the diamond grid, Setup readout and Aim View on a stage, a bank stage, a boss shot and the drill template
 - layout at 390×844 and 375×667 (table, gauges, instructions and score buttons fit without scrolling)
-- service worker and offline reload
+- Shot Simulator:
+  - drag a ball without page scroll, undo/redo
+  - tap-to-aim, nudge, speed
+  - shoot → animation completes, per-ball coloured tracks, tracks toggle, replay, skip to end
+  - Continue with next shot
+  - random 9-ball and racked layouts
+  - save and reopen from the library
+  - share link opened on a fresh device
+  - 375×667 layout
+- Create Drill:
+  - validation
+  - build, zone, computed route, preview, save
+  - appears in the library; play with grid/SETUP/Aim View, Why coach note, score to the result screen, PB on the card
+  - edit in place, duplicate, delete with confirm
+  - no scrolling on score screens at both sizes
+- Ghost: order rule visible for 3-ball and 9-ball; 8-Ball Ghost custom count remembered after reload, scored and saved, undo; Pro break → ball in hand → run-out, break log saved; Set up in Shot Simulator; no scrolling at 390×844 and 375×667
+- service worker (cache v7) and offline reload
 
 ## Storage
 
 - `localStorage` key `poolIQStateV4`. It migrates from `poolIQStateV3` and `poolIQStateV2`, and the old keys are left intact as backups.
 - The in-progress session (`activeSession`) and Ghost match (`activeGhost`) are saved after every tap, so a reload resumes play.
+- Shot Simulator: `poolIQSimV1` (current table, saved shots, collections, settings, Target Game best). Create Drill: `poolIQCustomDrillsV1` (custom drills), `poolIQDrillWip` (unsaved builder work), `poolIQDrillDraft` (simulator → drill hand-off). These are new keys, so existing saves are untouched.
 - IndexedDB helpers (`idbPut`/`idbGet`) are reserved for future camera captures.

@@ -57,8 +57,13 @@ export const GRID_LINES_X = [12.5, 25, 37.5, 50, 62.5, 75, 87.5];
 export const GRID_LINES_Y = [12.5, 25, 37.5];
 
 /** SVG for the diamond grid (drawn right on the felt, under zones, paths and balls) */
-export function diamondGridSVG() {
+export function diamondGridSVG(half = false) {
   let g = '<g class="diamond-grid" data-lines="' + (GRID_LINES_X.length + GRID_LINES_Y.length) + '" stroke="#cdeefa" stroke-width="0.16" stroke-dasharray="1.2 1.2" opacity="0.26" fill="none" pointer-events="none">';
+  if (half) {
+    // half-diamond lines (Shot Simulator grid option), fainter than the full-diamond grid
+    for (let x = 6.25; x < 100; x += 12.5) g += `<line class="grid-hx" x1="${x}" y1="0" x2="${x}" y2="50" stroke-width="0.1" opacity="0.6"/>`;
+    for (let y = 6.25; y < 50; y += 12.5) g += `<line class="grid-hy" x1="0" y1="${y}" x2="100" y2="${y}" stroke-width="0.1" opacity="0.6"/>`;
+  }
   for (const x of GRID_LINES_X) g += `<line class="grid-x" data-x="${x}" x1="${x}" y1="0" x2="${x}" y2="50"/>`;
   for (const y of GRID_LINES_Y) g += `<line class="grid-y" data-y="${y}" x1="0" y1="${y}" x2="100" y2="${y}"/>`;
   return g + '</g>';
@@ -323,7 +328,7 @@ export function renderTableDiagram(spec = {}, options = {}) {
     showGhost = shouldShowGhostBall(spec, cue, ob, pocket, ghost, ballR);
   }
 
-  let svg = `<svg class="${esc(className)}" viewBox="${VIEWBOX}" data-ball-r="${ballR}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pool table drill diagram" preserveAspectRatio="xMidYMid meet">`;
+  let svg = `<svg${options.id ? ` id="${esc(options.id)}"` : ''} class="${esc(className)}" viewBox="${VIEWBOX}" data-ball-r="${ballR}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pool table drill diagram" preserveAspectRatio="xMidYMid meet">`;
 
   // Rails / felt
   svg += `<defs>
@@ -360,7 +365,7 @@ export function renderTableDiagram(spec = {}, options = {}) {
   svg += `<rect x="0" y="0" width="100" height="50" fill="none" stroke="#062a32" stroke-width="0.22" opacity="0.9"/>`;
 
   // Diamond grid (under everything that follows)
-  if (spec.grid !== false) svg += diamondGridSVG();
+  if (spec.grid !== false) svg += diamondGridSVG(spec.grid === 'half');
 
   // Head string
   if (headString) {

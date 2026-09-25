@@ -32,7 +32,8 @@ export function gameLevel(state, gameId) {
 }
 
 export function ghostBeaten(state, balls, race = 3) {
-  return (state.ghostMatches || []).some((m) => m.won && m.balls >= balls && (m.race || 5) >= race);
+  // N-ball (rotation) Ghost only — 8-Ball Ghost wins never satisfy an N-ball requirement
+  return (state.ghostMatches || []).some((m) => m.won && m.mode !== 'eight' && m.balls >= balls && (m.race || 5) >= race);
 }
 
 /** Ghost "level": highest N-ball ghost beaten in a race to 3+ (3-ball = level 1) */

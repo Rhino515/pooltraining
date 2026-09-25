@@ -17,7 +17,7 @@ export default {
     { id: 'ke-3', name: 'Short-Rail Kick', difficulty: 4, cue: [62, 14], target: [3, 70, 38], rails: ['right'], blockers: [[7, 66, 26]],
       instructions: 'Use the foot rail: kick off the short cushion back onto the 3.' },
     { id: 'ke-4', name: 'Two-Rail Corner', difficulty: 5, cue: [40, 20], target: [4, 76, 14], rails: ['bottom', 'right'], blockers: [[6, 58, 17], [2, 66, 30], [3, 52, 11]],
-      instructions: 'The direct line and both one-rail lines are blocked. Go bottom rail, foot rail, into the 4.' },
+      instructions: 'The direct line and both single-cushion kicks are blocked. Kick two rails — bottom rail, then the foot rail — into the 4.' },
     { id: 'ke-5', name: 'Across and Back', difficulty: 6, cue: [8, 25], target: [5, 40, 25], rails: ['top', 'bottom'], blockers: [[1, 31, 25]], scoring: { attempts: 5, pass: { hits: 3 } },
       instructions: 'Two parallel rails: top, then bottom, then onto the 5.' },
     { id: 'ke-6', name: 'Kick and Safe', difficulty: 6, cue: [24, 20], target: [6, 72, 36], rails: ['top'], blockers: [[4, 48, 28]], safeTravel: 11, pass: { hits: 3, bonus: 2 },

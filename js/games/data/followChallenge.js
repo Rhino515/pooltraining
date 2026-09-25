@@ -25,7 +25,7 @@ export default {
     { id: 'fo-7', name: 'Natural Angle', difficulty: 6, ob: [7, 60, 30], pocket: 'BR', cut: [30, -1, 30], k: 1, travel: 29,
       instructions: 'A true half-ball hit into the bottom-right corner. The rolling cue ball deflects about 30° off its aim line into the zone.' },
     { id: 'fo-8', name: 'Around the Table', difficulty: 8, ob: [8, 84, 32], pocket: 'BR', cut: [35, -1, 30], k: 1.2, travel: 110, rings: [8, 5, 2.8],
-      instructions: 'Pocket the 8 in the corner and follow three rails around the table to the head half.',
+      instructions: 'Pocket the 8 in the corner and follow two rails around the table to the head half.',
       note: { route: 'The first rail decides the whole route — watch the contact point, not the zone, while you stroke.' } }
   ]
 };

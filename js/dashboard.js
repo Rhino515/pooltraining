@@ -3,7 +3,7 @@
  */
 import { nextRankInfo, RANK_NAMES, RANK_REQUIREMENTS, requirementChecklist, nextUp, isBossUnlocked } from './career.js';
 import { skillBarsHTML, weakestSkills, recommendations } from './skills.js';
-import { drills, drillsByCategory, isDrillUnlocked, CATEGORIES } from './drills.js';
+import { allDrills, drillsByCategory, isDrillUnlocked, CATEGORIES } from './drills.js';
 import { maxUnlockedBalls, ghostStats } from './ghost.js';
 import { GAMES, getGame, stageSpecs, getStages, getBosses, getBoss } from './games/registry.js';
 import * as E from './games/engine.js';
@@ -41,6 +41,7 @@ export function renderHome(state) {
       <div class="rankBadge">${(state.rankIndex || 0) + 1}</div>
     </div>
     ${nextUpCard(state)}
+    <button type="button" class="card simPromo" data-action="go" data-href="#sim"><span class="simPromoIcon">◔</span><span class="simPromoText"><span class="eyebrow">NEW</span><b>Shot Simulator</b><small>Set up any layout, shoot it and watch the physics — racks, run-outs, Find a Shot and more.</small></span><span class="simPromoGo">›</span></button>
     <div class="dashActions">
       <button type="button" class="dashAction card" data-action="go" data-href="#arcade"><span class="icon">🎯</span><b>Arcade</b><span>${GAMES.length} skill games · ${E.totalStars(state)}★ earned</span></button>
       <button type="button" class="dashAction card" data-action="go" data-href="#ghost"><span class="icon">♚</span><b>Ghost</b><span>Up to ${maxUnlockedBalls(state)}-ball · ${st.pct}% wins</span></button>
@@ -167,16 +168,28 @@ export function renderProfile(state) {
 
 // ------------------------------------------------------------------------------ drills
 export function renderDrillsPage(state, filter = 'All') {
-  if (!drills.length) {
-    return `<div class="title"><span class="eyebrow">DRILL LIBRARY</span><h1>Drills</h1></div>
-      <div class="card empty drillsEmpty" data-empty="1"><div class="emptyIcon">◎</div><h3>No drills loaded yet.</h3><p class="muted">Your drills will appear here once added. Each drill gets the table diagram, Shot Recipe, contact diagram and Why This Shot? automatically.</p><button type="button" class="bigBtn" data-action="go" data-href="#arcade">PLAY THE ARCADE MEANWHILE</button></div>`;
+  const list0 = allDrills();
+  const head = `<div class="title drillsTitle"><span class="eyebrow">DRILL LIBRARY</span><h1>Drills</h1></div>
+    <div class="drillTools"><button type="button" class="bigBtn createDrill" data-action="drill-create">＋ CREATE DRILL</button>
+    <div class="drillFileBtns"><button type="button" class="chip" data-action="drill-import">⤒ Import drills</button>${list0.some((d) => d.custom) ? '<button type="button" class="chip" data-action="drill-export">⤓ Export all</button>' : ''}</div></div>`;
+  if (!list0.length) {
+    return `${head}
+      <div class="card empty drillsEmpty" data-empty="1"><div class="emptyIcon">◎</div><h3>No drills yet.</h3><p class="muted">Build your own: place the balls on the true-scale table, choose the pocket and cue-ball zone, and Pool IQ works out the route, recipe and Why This Shot? — then it plays like every other drill, with scoring and history.</p><button type="button" class="bigBtn" data-action="drill-create">CREATE YOUR FIRST DRILL</button><button type="button" class="bigBtn alt" data-action="go" data-href="#sim">OPEN THE SHOT SIMULATOR</button></div>`;
   }
   const by = drillsByCategory();
   const cats = ['All', ...CATEGORIES.filter((c) => by[c])];
-  const list = filter === 'All' ? drills : by[filter] || [];
-  return `<div class="title"><span class="eyebrow">DRILL LIBRARY</span><h1>Drills</h1></div>
+  const list = filter === 'All' ? list0 : by[filter] || [];
+  return `${head}
     <div class="catFilter">${cats.map((c) => `<button type="button" class="chip${c === filter ? ' active' : ''}" data-action="drill-filter" data-v="${esc(c)}">${esc(c)}</button>`).join('')}</div>
-    <div class="grid">${list.map((d) => { const rec = state.games?.drills?.stages?.[d.id]; const open = isDrillUnlocked(d, state); return `<div class="drill card ${open ? '' : 'locked'}"><div class="diagramWrap mini">${renderStageTable(d, { className: 'table-diagram mini' })}</div><span class="tag">${esc(d.category)}</span><h3>${esc(d.name)}</h3><p>${esc(d.instructions || d.goal || '')}</p>${speedChip(d.speed)}<button type="button" class="${rec?.passed ? 'done' : ''}" data-action="go" data-href="#play/drills/${esc(d.id)}" ${open ? '' : 'disabled'}>${rec?.passed ? 'Passed ✓ — Train again' : 'Train'}</button></div>`; }).join('')}</div>`;
+    <div class="grid">${list.map((d) => drillCard(state, d)).join('')}</div>`;
+}
+function drillCard(state, d) {
+  const rec = state.games?.drills?.stages?.[d.id];
+  const open = isDrillUnlocked(d, state);
+  const meta = `${d.custom ? '<span class="tag mine">MY DRILL</span> ' : ''}<span class="tag">${esc(d.category)}</span>${d.difficulty ? ` <span class="tag">Level ${d.difficulty}</span>` : ''}`;
+  const pb = rec ? `<small class="pbLine">Best ${rec.bestScore || 0} pts${rec.bestStars ? ` · ${'★'.repeat(rec.bestStars)}` : ''} · ${rec.tries || 0} session${rec.tries === 1 ? '' : 's'}${rec.passed ? ' · passed ✓' : ''}</small>` : '';
+  const tools = d.custom ? `<div class="drillBtns"><button type="button" class="miniAct" data-action="drill-edit" data-id="${esc(d.id)}">Edit</button><button type="button" class="miniAct" data-action="drill-dup" data-id="${esc(d.id)}">Duplicate</button><button type="button" class="miniAct" data-action="drill-history" data-id="${esc(d.id)}">History</button><button type="button" class="miniAct" data-action="drill-export" data-id="${esc(d.id)}">Export</button><button type="button" class="miniAct danger" data-action="drill-del" data-id="${esc(d.id)}">Delete</button></div>` : '';
+  return `<div class="drill card ${open ? '' : 'locked'}" data-drill="${esc(d.id)}"><div class="diagramWrap mini">${renderStageTable(d, { className: 'table-diagram mini' })}</div>${meta}<h3>${esc(d.name)}</h3><p>${esc(d.goal || d.instructions || '')}</p>${speedChip(d.speed)}${pb}<button type="button" class="${rec?.passed ? 'done' : ''}" data-action="go" data-href="#play/drills/${esc(d.id)}" ${open ? '' : 'disabled'}>${rec?.passed ? 'Passed ✓ — Train again' : 'Train'}</button>${tools}</div>`;
 }
 
 // ------------------------------------------------------------------------------ settings

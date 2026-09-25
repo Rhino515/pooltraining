@@ -32,6 +32,7 @@
  */
 import { extraDrills } from './drillsExtra.js';
 import { buildChallenge } from './games/builders.js';
+import { loadCustomDrills } from './customDrills.js';
 
 export const CATEGORIES = [
   'Shot Making',
@@ -83,15 +84,43 @@ function buildAll() {
   return built;
 }
 
+/** Built-in library (ships empty) */
 export const drills = buildAll();
 
+// Custom drills made with Create Drill live in localStorage and are merged in at load.
+let customCache = null;
+export function customDrills() {
+  if (!customCache) {
+    customCache = [];
+    for (const c of loadCustomDrills()) {
+      try {
+        const d = normalizeDrill(c);
+        d.custom = true;
+        customCache.push(d);
+      } catch (e) {
+        console.warn('Pool IQ: skipped invalid custom drill', c && c.id, e);
+      }
+    }
+  }
+  return customCache;
+}
+/** Call after saving / deleting / importing custom drills */
+export function refreshCustomDrills() {
+  customCache = null;
+}
+/** Built-in + custom drills (custom ids never clash: they start with "cd-") */
+export function allDrills() {
+  const custom = customDrills().filter((c) => !drills.some((d) => d.id === c.id));
+  return [...drills, ...custom];
+}
+
 export function getDrillById(id) {
-  return drills.find((d) => d.id === id) || null;
+  return allDrills().find((d) => d.id === id) || null;
 }
 
 export function drillsByCategory() {
   const out = {};
-  for (const d of drills) (out[d.category] ||= []).push(d);
+  for (const d of allDrills()) (out[d.category] ||= []).push(d);
   return out;
 }
 

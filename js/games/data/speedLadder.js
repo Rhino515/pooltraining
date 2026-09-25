@@ -23,7 +23,7 @@ export default {
     { id: 'sp-5', name: 'SPEED 3.0 — Three Lengths', difficulty: 5, speed: 3, cue: [5, 36],
       instructions: 'Three full lengths, finishing at the far rail after two rebounds.' },
     { id: 'sp-6', name: 'Angled SPEED 2.0', difficulty: 5, speed: 2, cue: [5, 10], dir: [1, 0.3], zoneType: 'rings',
-      instructions: 'Same SPEED 2.0 stroke on a diagonal route that uses three cushions. Same number, different path.',
+      instructions: 'Same SPEED 2.0 stroke on a diagonal route that uses two cushions. Same number, different path.',
       note: { speed: 'Angled routes lose a little more pace per cushion; feel how the same number still lands in the zone.' } },
     { id: 'sp-7', name: 'SPEED 3.5 — Power Control', difficulty: 7, speed: 3.5, cue: [5, 25], bands: [10, 5, 2.5],
       instructions: 'The firmest controlled stroke in the ladder: three and a half lengths and still stop in a tight band.' },

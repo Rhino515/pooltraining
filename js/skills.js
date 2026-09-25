@@ -5,7 +5,7 @@
  * A rating of 100 means every piece of content that trains the skill has been mastered recently.
  */
 import { SKILL_NAMES } from './storage.js';
-import { drills } from './drills.js';
+import { drills, customDrills } from './drills.js';
 import { GAMES, stageSpecs, BOSSES } from './games/registry.js';
 import { isGameUnlocked, nextOpenStage, gameLevel } from './games/engine.js';
 
@@ -53,11 +53,19 @@ export function computeSkillRatings(state, now = Date.now()) {
   // Ghost: one entry per ball count
   const ghostEff = { 'Pattern Play': 1, 'Shot Making': 0.6, 'Position Play': 0.5 };
   for (let n = 3; n <= 9; n++) {
-    const ms = (state.ghostMatches || []).filter((m) => m.balls === n);
+    const ms = (state.ghostMatches || []).filter((m) => m.mode !== 'eight' && m.balls === n);
     const won = ms.filter((m) => m.won);
     const last = ms.length ? ms[ms.length - 1].date : null;
     const perf = won.some((m) => (m.race || 5) >= 3) ? Math.min(1, 0.7 + 0.1 * won.length) : ms.length ? 0.3 * (won.length / ms.length) : 0;
     add(ghostEff, 2 + (n - 3) * 1.3, perf, recency(last, now));
+  }
+  // 8-Ball Ghost counts once played (never lowers a rating)
+  const eightMs = (state.ghostMatches || []).filter((m) => m.mode === 'eight');
+  if (eightMs.length) {
+    const won8 = eightMs.filter((m) => m.won);
+    const top = Math.max(...eightMs.map((m) => (m.level === 'pro' ? 9 : (m.group || 3) + 1)));
+    const perf = won8.length ? Math.min(1, 0.6 + 0.1 * won8.length) : 0.3 * (won8.length / eightMs.length);
+    add({ 'Pattern Play': 1, 'Shot Making': 0.6, 'Position Play': 0.6 }, 2 + (top - 3) * 1.1, perf, recency(eightMs[eightMs.length - 1].date, now));
   }
   // Boss battles: each shot trains its skill
   for (const b of BOSSES) {
@@ -71,6 +79,8 @@ export function computeSkillRatings(state, now = Date.now()) {
   // Drills (library may be empty)
   const ds = state.games?.drills?.stages || {};
   for (const d of drills) add(d.skillEffects || {}, d.difficulty, perfFromRecord(ds[d.id]), recency(ds[d.id]?.lastDate, now));
+  // Custom drills count once they have been played (an unplayed custom drill never lowers a rating)
+  for (const d of customDrills()) if (ds[d.id]) add(d.skillEffects || {}, d.difficulty, perfFromRecord(ds[d.id]), recency(ds[d.id]?.lastDate, now));
   const out = {};
   for (const n of SKILL_NAMES) out[n] = W[n] ? Math.round(100 * Math.pow(Math.min(1, E[n] / W[n]), 0.7)) : 0;
   return out;
