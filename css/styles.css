@@ -503,5 +503,6 @@ body.playing main{padding:0}
 .breakMade b{text-align:center;font-size:22px;color:var(--cyan)}
 .breakMade .spBtn{height:44px}
 .breakBar .rb.wide{grid-column:span 6}
-.breakBar .rb.pot,.breakBar .rb.miss{grid-column:span 3}
+.breakBar .rb.pot,.breakBar .rb.miss,.breakBar .rb.alt{grid-column:span 3}
+.breakBar .rb.alt{background:#123a52;border:1px solid #1f6c8d;color:#dff6ff}
 @media(max-height:700px){.ghostMatch .ghostScore b{font-size:44px}.ghostMatch .ghostScore{margin:8px 0}.ruleLine{font-size:13px;padding:8px 10px}.ghostBar .rb{min-height:60px}.breakBar .rb{min-height:54px}}

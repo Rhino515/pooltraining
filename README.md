@@ -69,9 +69,9 @@ There are also 9 Boss Battles, one per rank from Club Player to Champion.
   - Rules: ball in hand, pocket your group in any order, then the 8 in a called pocket. Miss, scratch or 8 early = Ghost wins the rack.
   - **Pro** has a break step:
     - log balls made on the break (optional)
-    - house rules: 8 on the break = you win the rack; scratch on the break = Ghost wins the rack
+    - house rules: 8 on the break = you win the rack. Scratch on the break: take ball in hand and run out, no penalty (re-spot as needed; **SCRATCHED ON BREAK** goes straight to the run-out and the scratch is noted in the rack history)
     - then **BALL IN HAND ›**: the table is open (pick solids or stripes), ball in hand anywhere, run your 7 + the 8
-    - Undo steps back through the run-out → break → previous rack
+    - Undo steps back through the run-out → break → previous rack (including a break scratch)
   - Races 3/5/7/9, history and stats per level.
   - "Set up in Shot Simulator" (`#sim/eight/<n|pro>`) builds a matching random layout, or a 15-ball rack for Pro.
   - 8-Ball Ghost wins count as general Ghost wins and feed Pattern Play once played. They never satisfy an "N-Ball Ghost" career requirement.
@@ -279,8 +279,8 @@ It checks:
   - builder → challenge → save → `allDrills()` → render
   - skills (unplayed drills never lower ratings; played ones count), rank unaffected
   - export/import/duplicate/delete
-- Ghost: order-rule text for 3- and 9-ball (setup, in-game, sheet); 8-Ball Ghost presets/custom count, scoring, undo, XP, general-vs-N-ball career credit, skills; Pro break flow + house rules; simulator layouts
-- service worker precaches every module (v7)
+- Ghost: order-rule text for 3- and 9-ball (setup, in-game, sheet); 8-Ball Ghost presets/custom count, scoring, undo, XP, general-vs-N-ball career credit, skills; Pro break flow + house rules (8 on the break wins, break scratch = ball in hand, no penalty) + undo; simulator layouts
+- service worker precaches every module (v8)
 
 ### e2e (real Chrome, iPhone 390×844, touch)
 
@@ -325,8 +325,8 @@ It covers:
   - appears in the library; play with grid/SETUP/Aim View, Why coach note, score to the result screen, PB on the card
   - edit in place, duplicate, delete with confirm
   - no scrolling on score screens at both sizes
-- Ghost: order rule visible for 3-ball and 9-ball; 8-Ball Ghost custom count remembered after reload, scored and saved, undo; Pro break → ball in hand → run-out, break log saved; Set up in Shot Simulator; no scrolling at 390×844 and 375×667
-- service worker (cache v7) and offline reload
+- Ghost: order rule visible for 3-ball and 9-ball; 8-Ball Ghost custom count remembered after reload, scored and saved, undo; Pro break → ball in hand → run-out, SCRATCHED ON BREAK → ball in hand (no Ghost point) + undo, break log saved, no stale toast over the buttons; Set up in Shot Simulator; no scrolling at 390×844 and 375×667
+- service worker (cache v8) and offline reload
 
 ## Storage
 

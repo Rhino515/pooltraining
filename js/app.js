@@ -16,7 +16,7 @@ import { createSimScreen } from './ui/simulator.js';
 import { createDrillBuilder } from './ui/drillBuilder.js';
 import { customDrills, refreshCustomDrills } from './drills.js';
 import * as CD from './customDrills.js';
-import { openSheet, closeSheet, toast } from './ui/sheet.js';
+import { openSheet, closeSheet, toast, clearToast } from './ui/sheet.js';
 import { getGame, getBoss, getStage } from './games/registry.js';
 import { isStageUnlocked, isEndlessUnlocked, isGameUnlocked } from './games/engine.js';
 import { isBossUnlocked } from './career.js';
@@ -240,6 +240,7 @@ function handleAction(action, el, e) {
       renderRoute();
       break;
     case 'ghost-start': {
+      clearToast();
       const balls = Math.min(ghostPreset.balls, maxUnlockedBalls(state));
       commit({ ...state, activeGhost: newGhostSession(balls, ghostPreset.race) }, { silent: true });
       navigate('#ghostmatch');
@@ -261,6 +262,7 @@ function handleAction(action, el, e) {
       renderRoute();
       break;
     case 'ghost-start8':
+      clearToast();
       commit({ ...state, activeGhost: newEightSession(ghostPreset.level, ghostPreset.race, ghostPreset.group) }, { silent: true });
       navigate('#ghostmatch');
       break;
@@ -277,13 +279,14 @@ function handleAction(action, el, e) {
       const out = applyBreak(state, state.activeGhost, el.dataset.v);
       commit(out.state);
       if (el.dataset.v === 'eight') toast('8 on the break — your rack');
-      else if (el.dataset.v === 'scratch') toast('Scratch on the break — Ghost’s rack');
+      else if (el.dataset.v === 'scratch') toast('Scratch on the break — ball in hand, no penalty');
       else toast('Ball in hand — run out');
       if (out.ended) toast(out.match.won ? 'Match won — saved' : 'Ghost wins — match saved');
       renderRoute();
       break;
     }
     case 'ghost-again': {
+      clearToast();
       const g = state.activeGhost;
       commit({ ...state, activeGhost: g.mode === 'eight' ? newEightSession(g.level, g.race, g.group) : newGhostSession(g.balls, g.race) }, { silent: true });
       renderRoute();

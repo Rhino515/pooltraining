@@ -37,8 +37,23 @@ export function toast(msg) {
   }
   el.textContent = msg;
   el.className = 'toast show';
+  // keep it above the bottom bar while it is visible (screens re-render and bars change height)
+  const follow = () => { if (!el.classList.contains('show')) return; placeToast(el); requestAnimationFrame(follow); };
+  follow();
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => (el.className = 'toast'), 2200);
+}
+/** Keep toasts clear of the fixed score / playback bar so they never cover a button */
+function placeToast(el) {
+  const bars = [...document.querySelectorAll('.resultBar, .simBar')].filter((b) => b.offsetParent !== null || getComputedStyle(b).position === 'fixed');
+  const top = bars.reduce((m, b) => Math.min(m, b.getBoundingClientRect().top), Infinity);
+  el.style.bottom = Number.isFinite(top) && top < innerHeight ? `${Math.round(innerHeight - top + 12)}px` : '';
+}
+/** Hide any toast immediately (new screen / new match) */
+export function clearToast() {
+  clearTimeout(toastTimer);
+  const el = document.getElementById('toast');
+  if (el) el.className = 'toast';
 }
 
 export const stars = (n, max = 3) => `<span class="stars" data-stars="${n}">${'★'.repeat(n)}<i>${'★'.repeat(Math.max(0, max - n))}</i></span>`;

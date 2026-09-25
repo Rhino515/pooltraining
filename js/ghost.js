@@ -9,7 +9,7 @@
  * then the 8 in a called pocket. Miss, scratch or 8 early = Ghost's rack.
  *   Pro: full 15-ball rack and you break. Balls made on the break stay down. The table is open after the break
  *   (choose solids or stripes), then ball in hand anywhere and run your group + the 8.
- *   House rules: the 8 on the break = you win the rack; a scratch on the break = Ghost wins the rack.
+ *   House rules: the 8 on the break = you win the rack; scratch on the break = take ball in hand and run out, no penalty.
  * 8-Ball Ghost wins count as general Ghost wins; they never satisfy an "N-ball Ghost" career requirement.
  *
  * Matches auto-save when a player reaches the race; UNDO LAST RACK reverts the last step, including a finished
@@ -76,9 +76,9 @@ export function applyRack(state, session, result, brk = null) {
   if (!session || matchOver(session)) return { state, session, ended: false };
   let s = ghostRackResult(session, result);
   if (isEight(session)) {
-    const b = session.level === 'pro' ? brk || { made: session.breakMade || 0, eight: false, scratch: false } : null;
+    const b = session.level === 'pro' ? brk || { made: session.breakMade || 0, eight: false, scratch: !!session.breakScratch } : null;
     s = { ...s, breaks: [...(session.breaks || []), b] };
-    if (session.level === 'pro') s = { ...s, phase: 'break', breakMade: 0 };
+    if (session.level === 'pro') s = { ...s, phase: 'break', breakMade: 0, breakScratch: false };
   }
   if (!matchOver(s)) return { state: { ...state, activeGhost: s }, session: s, ended: false };
   const m = matchRecord(s);
@@ -87,13 +87,15 @@ export function applyRack(state, session, result, brk = null) {
   return { state: { ...state, xp, ghostMatches: [...(state.ghostMatches || []), m], activeGhost: s2 }, session: s2, ended: true, match: m };
 }
 
-/** Pro 8-ball: the break result. kind: 'ok' (→ ball in hand, run-out phase), 'eight' (rack won), 'scratch' (Ghost's rack) */
+/**
+ * Pro 8-ball: the break result. kind: 'ok' (→ ball in hand, run-out phase), 'eight' (rack won),
+ * 'scratch' (house rule: no penalty — re-spot as needed, ball in hand, run-out phase; the scratch is recorded).
+ */
 export function applyBreak(state, session, kind, made = null) {
   if (!isEight(session) || session.level !== 'pro' || session.phase !== 'break' || matchOver(session)) return { state, session, ended: false };
   const m = Math.max(0, Math.min(15, Math.round(made ?? session.breakMade ?? 0)));
   if (kind === 'eight') return applyRack(state, session, 'W', { made: Math.max(1, m), eight: true, scratch: false });
-  if (kind === 'scratch') return applyRack(state, session, 'L', { made: m, eight: false, scratch: true });
-  const s = { ...session, phase: 'run', breakMade: m };
+  const s = { ...session, phase: 'run', breakMade: m, breakScratch: kind === 'scratch' };
   return { state: { ...state, activeGhost: s }, session: s, ended: false };
 }
 /** Pro 8-ball: change the "made on the break" count (optional) */
@@ -107,7 +109,7 @@ export function setBreakMade(state, session, delta) {
 export function applyUndo(state, session) {
   if (!session) return { state, session };
   if (isEight(session) && session.level === 'pro' && session.phase === 'run') {
-    const s = { ...session, phase: 'break' };
+    const s = { ...session, phase: 'break', breakScratch: false };
     return { state: { ...state, activeGhost: s }, session: s };
   }
   if (!session.log.length) return { state, session };
@@ -123,7 +125,7 @@ export function applyUndo(state, session) {
     const breaks = (session.breaks || []).slice(0, -1);
     const last = (session.breaks || [])[session.breaks.length - 1];
     s = { ...s, breaks };
-    if (session.level === 'pro') s = { ...s, phase: last && !last.eight && !last.scratch ? 'run' : 'break', breakMade: last?.made || 0 };
+    if (session.level === 'pro') s = { ...s, phase: last && !last.eight ? 'run' : 'break', breakMade: last?.made || 0, breakScratch: !!last?.scratch };
   }
   return { state: { ...state, ghostMatches, xp, activeGhost: s }, session: s };
 }
@@ -158,7 +160,7 @@ export function rulesSheetHTML(session) {
     const pro = session.level === 'pro';
     return `<div class="eyebrow">RULES · 8-BALL GHOST</div><h2 class="sheetTitle">${esc(ghostLabel(session))}</h2>
       <ol class="rulesList">
-        ${pro ? `<li>Rack all 15 balls. <b>You break.</b></li><li>Balls made on the break stay down. Log how many (optional).</li><li><b>House rules:</b> the 8 on the break = you win the rack. A scratch on the break = Ghost wins the rack.</li><li>The table is open after the break — choose <b>solids or stripes</b>, then take <b>ball in hand anywhere</b>.</li>` : `<li>Put your ${session.group} ball${session.group === 1 ? '' : 's'} (solids 1–${session.group}) and the 8 on the table${session.level === 'advanced' ? ' — no break' : ''}.</li><li>Take <b>ball in hand</b> anywhere.</li>`}
+        ${pro ? `<li>Rack all 15 balls. <b>You break.</b></li><li>Balls made on the break stay down. Log how many (optional).</li><li><b>House rules:</b> 8 on the break = you win the rack. Scratch on the break: take ball in hand and run out, no penalty (re-spot as needed).</li><li>The table is open after the break — choose <b>solids or stripes</b>, then take <b>ball in hand anywhere</b>.</li>` : `<li>Put your ${session.group} ball${session.group === 1 ? '' : 's'} (solids 1–${session.group}) and the 8 on the table${session.level === 'advanced' ? ' — no break' : ''}.</li><li>Take <b>ball in hand</b> anywhere.</li>`}
         <li>Pocket all of your group in <b>any order</b>, then the <b>8 last in a called pocket</b>.</li>
         <li>Clear your group + the 8 = <b>your rack</b>.</li>
         <li>Miss, scratch, 8 early${pro ? ' or 8 in the wrong pocket' : ' or in an uncalled pocket'} = <b>Ghost wins the rack</b>.</li>
@@ -201,7 +203,7 @@ export function renderGhostLobby(state, preset = {}) {
       <div class="levelPick">${EIGHT_LEVELS.map((l) => `<button type="button" class="lvlOpt${l.id === lvl.id ? ' active' : ''}" data-action="ghost-level" data-v="${l.id}"><b>${l.label}</b><small>${l.short}</small></button>`).join('')}</div>
       ${lvl.id === 'custom' ? `<div class="eyebrow">YOUR BALLS (+ THE 8)</div><div class="ballPick">${[1, 2, 3, 4, 5, 6, 7].map((n) => `<button type="button" class="ballOpt${n === grp ? ' active' : ''}" data-action="ghost-group" data-v="${n}"><b>${n}</b><small>+ 8</small></button>`).join('')}</div>` : ''}
       <p class="muted small">${esc(lvl.id === 'custom' ? `Ball in hand · ${grp} ball${grp === 1 ? '' : 's'} + the 8` : lvl.desc)}</p>
-      <div class="ruleBox" data-rule="eight"><b>RULES</b> ${esc(eightRule(lvl.id, grp))}${lvl.id === 'pro' ? ' <b>House rules:</b> 8 on the break = you win the rack; scratch on the break = Ghost wins the rack. Miss, scratch, or 8 early / wrong pocket = Ghost wins the rack.' : ''}</div>
+      <div class="ruleBox" data-rule="eight"><b>RULES</b> ${esc(eightRule(lvl.id, grp))}${lvl.id === 'pro' ? ' <b>House rules:</b> 8 on the break = you win the rack. Scratch on the break: take ball in hand and run out, no penalty. After the break: miss, scratch, or 8 early / wrong pocket = Ghost wins the rack.' : ''}</div>
       ${race}
       <button type="button" class="bigBtn" data-action="ghost-start8">START 8-BALL · ${lvl.id === 'pro' ? 'PRO' : `${grp} + 8`} · RACE TO ${selRace}</button>
       <button type="button" class="bigBtn alt" data-action="go" data-href="#sim/eight/${lvl.id === 'pro' ? 'pro' : grp}">SET UP IN SHOT SIMULATOR</button>
@@ -222,7 +224,7 @@ export function renderGhostLobby(state, preset = {}) {
 
 function rackChip(g, x, i) {
   const b = isEight(g) && g.level === 'pro' ? (g.breaks || [])[i] : null;
-  const note = b ? (b.eight ? ' · 8 ON BREAK' : b.scratch ? ' · BREAK SCRATCH' : b.made ? ` · ${b.made} ON BREAK` : '') : '';
+  const note = b ? (b.eight ? ' · 8 ON BREAK' : `${b.made ? ` · ${b.made} ON BREAK` : ''}${b.scratch ? ' · BREAK SCRATCH' : ''}`) : '';
   return `<span class="${x === 'W' ? 'win' : 'loss'}">R${i + 1} ${x === 'W' ? 'RUNOUT' : 'GHOST'}${note}</span>`;
 }
 
@@ -237,7 +239,7 @@ export function renderGhostMatch(state) {
   const rackNo = g.log.length + 1;
   let rule;
   if (!eight) rule = `<p class="instructions ruleLine" data-rule="order"><b>Rack ${rackNo}:</b> break, then ball in hand. ${esc(rotationRule(g.balls))}</p>`;
-  else if (breakPhase) rule = `<p class="instructions ruleLine" data-rule="break"><b>Rack ${rackNo} · Break:</b> full 15-ball rack, you break. Balls made stay down. 8 on the break = you win the rack; scratch = Ghost wins it.</p>`;
+  else if (breakPhase) rule = `<p class="instructions ruleLine" data-rule="break"><b>Rack ${rackNo} · Break:</b> full 15-ball rack, you break. Balls made stay down. 8 on the break = you win the rack. Scratch on the break: take ball in hand and run out, no penalty.</p>`;
   else if (pro) rule = `<p class="instructions ruleLine" data-rule="eight"><b>Rack ${rackNo} · Run-out:</b> table open — pick solids or stripes, ball in hand anywhere. Run your 7 in any order, then the 8 in a called pocket. Miss, scratch, or 8 early / wrong pocket = Ghost wins.</p>`;
   else rule = `<p class="instructions ruleLine" data-rule="eight"><b>Rack ${rackNo}:</b> ${esc(eightRule(g.level, g.group))}</p>`;
   let bar;
@@ -246,7 +248,7 @@ export function renderGhostMatch(state) {
     bar = `<div class="breakMade"><span>Made on the break <small>(optional)</small></span><button type="button" class="spBtn" data-action="ghost-bmade" data-v="-1" aria-label="Fewer">−</button><b data-bmade>${g.breakMade || 0}</b><button type="button" class="spBtn" data-action="ghost-bmade" data-v="1" aria-label="More">+</button></div>
       <button type="button" class="rb s3 wide" data-action="ghost-break" data-v="ok"><b>BALL IN HAND ›</b><small>BREAK DONE · RUN OUT</small></button>
       <button type="button" class="rb pot" data-action="ghost-break" data-v="eight"><b>8 ON BREAK</b><small>YOU WIN THE RACK</small></button>
-      <button type="button" class="rb miss" data-action="ghost-break" data-v="scratch"><b>BREAK SCRATCH</b><small>GHOST WINS</small></button>`;
+      <button type="button" class="rb alt" data-action="ghost-break" data-v="scratch"><b>SCRATCHED ON BREAK</b><small>BALL IN HAND · KEEP GOING</small></button>`;
   } else if (eight) {
     bar = `<button type="button" class="rb s3" data-action="ghost-rack" data-v="W"><b>RUNOUT</b><small>GROUP + 8 IN CALLED POCKET</small></button><button type="button" class="rb miss" data-action="ghost-rack" data-v="L"><b>MISS / SCRATCH</b><small>OR 8 EARLY · GHOST WINS</small></button>`;
   } else {
@@ -259,7 +261,7 @@ export function renderGhostMatch(state) {
       <div class="ghostScore"><div><b data-you>${g.you}</b><span>YOU</span></div><em>—</em><div><b data-ghost>${g.ghost}</b><span>GHOST</span></div></div>
       ${over ? `<div class="resultPanel ${won ? 'pass' : 'fail'} inline" data-result="${won ? 'pass' : 'fail'}"><h1>${won ? 'YOU WIN' : 'GHOST WINS'} ${g.you}–${g.ghost}</h1><p class="muted">Match saved to history. Tapped the wrong button? UNDO LAST RACK reopens the match.</p><div class="resultBtns"><button type="button" class="bigBtn" data-action="ghost-again">REMATCH</button><button type="button" class="bigBtn alt" data-action="go" data-href="#ghost">GHOST HOME</button></div></div>`
         : rule}
-      <div class="racklog">${g.log.map((x, i) => rackChip(g, x, i)).join('')}${pro && g.phase === 'run' && !over ? `<span class="pend">R${rackNo} BREAK${g.breakMade ? ` · ${g.breakMade} MADE` : ''} ✓</span>` : ''}</div>
+      <div class="racklog">${g.log.map((x, i) => rackChip(g, x, i)).join('')}${pro && g.phase === 'run' && !over ? `<span class="pend">R${rackNo} BREAK${g.breakMade ? ` · ${g.breakMade} MADE` : ''}${g.breakScratch ? ' · SCRATCH, BALL IN HAND' : ''} ✓</span>` : ''}</div>
     </div>
     <div class="resultBar ghostBar${breakPhase ? ' breakBar' : ''}">
       ${bar}
