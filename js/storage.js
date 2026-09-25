@@ -1,10 +1,15 @@
 /**
  * Pool IQ persistence — versioned localStorage + light IndexedDB helpers.
- * Key: poolIQStateV3 (migrates from poolIQStateV2 when present).
+ * Key: poolIQStateV4. Migrates from poolIQStateV3 (left intact as a backup) and poolIQStateV2.
+ * V4 adds: games (arcade stage records), speedCal (speed-scale calibration), bosses, settings.coaching,
+ * rankFloor (preserves a migrated user's rank), ghostUnlockFloor, activeSession, activeGhost, drillArchive.
  */
-export const STORAGE_KEY = 'poolIQStateV3';
+import { defaultCalibration } from './games/speed.js';
+
+export const STORAGE_KEY = 'poolIQStateV4';
+export const V3_KEY = 'poolIQStateV3';
 export const LEGACY_KEY = 'poolIQStateV2';
-export const STORAGE_VERSION = 3;
+export const STORAGE_VERSION = 4;
 
 export const SKILL_NAMES = [
   'Shot Making',
@@ -31,7 +36,7 @@ export const RANK_NAMES = [
 ];
 
 function defaultSkills() {
-  return Object.fromEntries(SKILL_NAMES.map((n) => [n, 30]));
+  return Object.fromEntries(SKILL_NAMES.map((n) => [n, 0]));
 }
 
 export function defaultState() {
@@ -39,12 +44,20 @@ export function defaultState() {
     version: STORAGE_VERSION,
     xp: 0,
     rankIndex: 0,
-    results: {}, // drillId -> { best, last, tries, passed, sessions: [{date, score, max, passed, attempts}] }
+    rankFloor: 0,
+    results: {}, // drillId -> { best, last, tries, passed, sessions } (only for drills that exist)
+    drillArchive: {}, // results for drill ids that no longer exist (kept harmlessly, never read by career)
     ghostMatches: [],
     skills: defaultSkills(),
-    promotionAttempts: {}, // testId -> { passed, bestStages, tries, lastDate }
+    games: {}, // gameId -> { stages: {stageId: record}, pb: {}, sessions: [] }
+    bosses: {}, // bossId -> { passed, tries, history }
+    speedCal: defaultCalibration(),
+    promotionAttempts: {},
     unlockedGhostBalls: 3,
-    settings: { units: 'imperial' }
+    ghostUnlockFloor: 3,
+    activeSession: null,
+    activeGhost: null,
+    settings: { units: 'imperial', coaching: 'auto' }
   };
 }
 
@@ -66,51 +79,70 @@ function migrateV2(raw) {
     : [];
   const wins = base.ghostMatches.filter((m) => m.won).length;
   base.unlockedGhostBalls = Math.min(9, 3 + Math.floor(wins / 2));
-  if (raw.skills && typeof raw.skills === 'object') {
-    for (const n of SKILL_NAMES) {
-      if (raw.skills[n] != null) base.skills[n] = Math.max(1, Math.min(99, Number(raw.skills[n]) || 30));
-      else if (n === 'Speed Control' && raw.skills['Cue-Ball Control'] != null) {
-        base.skills[n] = Math.max(1, Math.min(99, Number(raw.skills['Cue-Ball Control']) || 30));
-      }
-    }
-  }
-  if (raw.results && typeof raw.results === 'object') {
-    for (const [id, r] of Object.entries(raw.results)) {
-      base.results[id] = {
-        best: r.best || 0,
-        last: r.last || 0,
-        tries: r.tries || 0,
-        passed: !!r.passed,
-        sessions: r.sessions || []
-      };
-    }
-  }
-  // Rank from old heuristic as soft start; career.js will re-validate
-  const passed = Object.values(base.results).filter((r) => r.passed).length;
+  if (raw.results && typeof raw.results === 'object') base.results = { ...raw.results };
+  const passed = Object.values(base.results).filter((r) => r && r.passed).length;
   base.rankIndex = Math.min(9, Math.floor(passed / 2) + Math.floor(wins / 3));
   return base;
 }
 
+/** Upgrade any V3-shaped object to V4 without losing progress. */
+export function migrateToV4(parsed) {
+  const base = defaultState();
+  if (!parsed || typeof parsed !== 'object') return base;
+  const legacyRank = Math.max(0, Math.min(9, Number(parsed.rankIndex) || 0));
+  const legacyGhost = Math.max(3, Math.min(9, Number(parsed.unlockedGhostBalls) || 3));
+  const out = {
+    ...base,
+    ...parsed,
+    version: STORAGE_VERSION,
+    rankIndex: legacyRank,
+    rankFloor: Math.max(Number(parsed.rankFloor) || 0, parsed.version === 4 ? Number(parsed.rankFloor) || 0 : legacyRank),
+    ghostUnlockFloor: Math.max(Number(parsed.ghostUnlockFloor) || 3, parsed.version === 4 ? 3 : legacyGhost),
+    skills: { ...base.skills, ...(parsed.skills || {}) },
+    results: parsed.results && typeof parsed.results === 'object' ? parsed.results : {},
+    drillArchive: parsed.drillArchive || {},
+    ghostMatches: Array.isArray(parsed.ghostMatches) ? parsed.ghostMatches : [],
+    games: parsed.games && typeof parsed.games === 'object' ? parsed.games : {},
+    bosses: parsed.bosses && typeof parsed.bosses === 'object' ? parsed.bosses : {},
+    speedCal: { ...defaultCalibration(), ...(parsed.speedCal || {}) },
+    promotionAttempts: parsed.promotionAttempts || {},
+    settings: { ...base.settings, ...(parsed.settings || {}) }
+  };
+  return out;
+}
+
+/**
+ * Move results for drill ids that are not in the current library into drillArchive,
+ * so deleted drills can never break career/skills code. Pure.
+ */
+export function archiveUnknownDrills(state, knownIds) {
+  const known = new Set(knownIds);
+  const results = {};
+  const drillArchive = { ...(state.drillArchive || {}) };
+  let moved = 0;
+  for (const [id, r] of Object.entries(state.results || {})) {
+    if (known.has(id)) results[id] = r;
+    else {
+      drillArchive[id] = r;
+      moved++;
+    }
+  }
+  return moved ? { ...state, results, drillArchive } : state;
+}
+
 export function loadState() {
   try {
-    const v3 = localStorage.getItem(STORAGE_KEY);
+    const v4 = localStorage.getItem(STORAGE_KEY);
+    if (v4) return migrateToV4(JSON.parse(v4));
+    const v3 = localStorage.getItem(V3_KEY);
     if (v3) {
-      const parsed = JSON.parse(v3);
-      const base = defaultState();
-      return {
-        ...base,
-        ...parsed,
-        version: STORAGE_VERSION,
-        skills: { ...base.skills, ...(parsed.skills || {}) },
-        results: parsed.results || {},
-        ghostMatches: parsed.ghostMatches || [],
-        promotionAttempts: parsed.promotionAttempts || {},
-        settings: { ...base.settings, ...(parsed.settings || {}) }
-      };
+      const migrated = migrateToV4(JSON.parse(v3));
+      saveState(migrated);
+      return migrated;
     }
     const v2 = localStorage.getItem(LEGACY_KEY);
     if (v2) {
-      const migrated = migrateV2(JSON.parse(v2));
+      const migrated = migrateToV4(migrateV2(JSON.parse(v2)));
       saveState(migrated);
       return migrated;
     }
@@ -128,7 +160,7 @@ export function saveState(state) {
 
 export function resetState() {
   localStorage.removeItem(STORAGE_KEY);
-  // Keep v2 so user can re-migrate if desired? Spec says reset demo — clear both.
+  localStorage.removeItem(V3_KEY);
   localStorage.removeItem(LEGACY_KEY);
   return defaultState();
 }
@@ -154,8 +186,8 @@ export function sessionPassed(score, passNeed) {
 
 export function applyDrillSession(state, drill, attemptValues) {
   const score = attemptValues.reduce((a, b) => a + b, 0);
-  const max = drill.attempts;
-  const passedNow = sessionPassed(score, drill.passNeed);
+  const max = drill.attempts || drill.attemptCount || attemptValues.length;
+  const passedNow = sessionPassed(score, drill.passNeed ?? drill.passingRequirement?.made ?? max);
   const old = state.results[drill.id] || {
     best: 0,
     last: 0,
@@ -169,7 +201,8 @@ export function applyDrillSession(state, drill, attemptValues) {
     score,
     max,
     passed: passedNow,
-    attempts: attemptValues.slice()
+    attempts: attemptValues.slice(),
+    resultSource: 'manual'
   };
   const next = {
     ...state,
@@ -185,15 +218,6 @@ export function applyDrillSession(state, drill, attemptValues) {
     },
     xp: state.xp + (firstPass ? drill.xp || 100 : passedNow ? 25 : 5)
   };
-  if (firstPass && drill.skillEffects) {
-    const skills = { ...next.skills };
-    for (const [skill, delta] of Object.entries(drill.skillEffects)) {
-      if (skills[skill] != null) {
-        skills[skill] = Math.max(1, Math.min(99, skills[skill] + delta));
-      }
-    }
-    next.skills = skills;
-  }
   return { state: next, score, passed: passedNow, firstPass };
 }
 

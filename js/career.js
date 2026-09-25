@@ -1,259 +1,145 @@
 /**
- * Career ranks, requirements, promotion tests.
- * Rank-ups ONLY from saved results meeting requirements — no click-through.
+ * Career ranks — concrete achievements read from saved results only.
+ * Requirement types: gameLevel {game, level}, ghost {balls, race}, stars {total}, pb {game, key, value}, boss {rank}.
+ * When every non-boss requirement for the next rank is met, that rank's Boss Battle unlocks.
+ * Beating the boss promotes. XP never promotes. rankFloor preserves ranks earned before V4.
  */
 import { RANK_NAMES } from './storage.js';
-import { getDrillById } from './drills.js';
+import { gameLevel, ghostBeaten, totalStars, gameState, nextOpenStage, isGameUnlocked, unlockLabel } from './games/engine.js';
+import { getGame, bossForRank, stageSpecs } from './games/registry.js';
 
 export { RANK_NAMES };
 
-/**
- * Each rank (except Rookie index 0) defines requirements to REACH that rank
- * from the previous one.
- */
+const L = (game, level) => ({ type: 'gameLevel', game, level });
+const GH = (balls, race) => ({ type: 'ghost', balls, race });
+const BOSS = (rank) => ({ type: 'boss', rank });
+
 export const RANK_REQUIREMENTS = [
-  { rankIndex: 0, name: 'Rookie', requirements: [] },
-  {
-    rankIndex: 1,
-    name: 'Club Player',
-    requirements: [
-      { type: 'drill', drillId: 'sm-straight-1', label: 'Pass Center-Table Straight' },
-      { type: 'drill', drillId: 'stop-1', label: 'Pass Stop Shot Foundation' },
-      { type: 'drill', drillId: 'sm-hanging-1', label: 'Pass Hanging Ball Drill' }
-    ]
-  },
-  {
-    rankIndex: 2,
-    name: 'Shooter',
-    requirements: [
-      { type: 'drill', drillId: 'follow-1', label: 'Pass Natural Follow Zone' },
-      { type: 'drill', drillId: 'draw-1', label: 'Pass Short Draw Zone' },
-      { type: 'drill', drillId: 'cut-1', label: 'Pass Quarter-Ball Cuts' },
-      { type: 'ghost', balls: 3, wins: 1, label: 'Win 1× 3-Ball Ghost match' }
-    ]
-  },
-  {
-    rankIndex: 3,
-    name: 'Competitor',
-    requirements: [
-      { type: 'drill', drillId: 'speed-2', label: 'Pass Soft Pocket Speed' },
-      { type: 'drill', drillId: 'cbpos-1', label: 'Pass One-Zone Shape' },
-      { type: 'drill', drillId: 'pattern-1', label: 'Pass Two-Ball Pattern' },
-      { type: 'promotion', testId: 'promo-competitor', label: 'Pass Competitor Promotion Test' }
-    ]
-  },
-  {
-    rankIndex: 4,
-    name: 'Advanced',
-    requirements: [
-      { type: 'drill', drillId: 'stun-1', label: 'Pass Stun Across Line' },
-      { type: 'drill', drillId: 'bank-1', label: 'Pass Cross-Corner Bank' },
-      { type: 'drill', drillId: 'kick-1', label: 'Pass One-Rail Kick Contact' },
-      { type: 'ghost', balls: 5, wins: 1, label: 'Win 1× 5-Ball Ghost match' }
-    ]
-  },
-  {
-    rankIndex: 5,
-    name: 'Expert',
-    requirements: [
-      { type: 'drill', drillId: 'safe-1', label: 'Pass Distance Safety' },
-      { type: 'drill', drillId: 'pattern-2', label: 'Pass Three-Ball Sequence Map' },
-      { type: 'drill', drillId: 'run-1', label: 'Pass Three-Ball Runout' },
-      { type: 'promotion', testId: 'promo-expert', label: 'Pass Expert Promotion Test' }
-    ]
-  },
-  {
-    rankIndex: 6,
-    name: 'Master',
-    requirements: [
-      { type: 'drill', drillId: 'draw-3', label: 'Pass Power Draw Window' },
-      { type: 'drill', drillId: 'bank-2', label: 'Pass Cross-Side Bank' },
-      { type: 'drill', drillId: 'run-2', label: 'Pass Five-Ball Runout' },
-      { type: 'ghost', balls: 7, wins: 1, label: 'Win 1× 7-Ball Ghost match' }
-    ]
-  },
-  {
-    rankIndex: 7,
-    name: 'Elite',
-    requirements: [
-      { type: 'drill', drillId: 'kick-2', label: 'Pass Two-Rail Kick Line' },
-      { type: 'drill', drillId: 'safe-3', label: 'Pass Two-Way Shot Safety' },
-      { type: 'drill', drillId: 'cbpos-keyball', label: 'Pass Key-Ball Window' },
-      { type: 'promotion', testId: 'promo-elite', label: 'Pass Elite Promotion Test' }
-    ]
-  },
-  {
-    rankIndex: 8,
-    name: 'Pro',
-    requirements: [
-      { type: 'drill', drillId: 'bank-3', label: 'Pass Short Rail Bank' },
-      { type: 'drill', drillId: 'run-3', label: 'Pass Pressure 8 Finish' },
-      { type: 'ghost', balls: 9, wins: 1, label: 'Win 1× 9-Ball Ghost match' },
-      { type: 'ghostWinsTotal', wins: 5, label: 'Earn 5 Ghost match wins total' }
-    ]
-  },
-  {
-    rankIndex: 9,
-    name: 'Champion',
-    requirements: [
-      { type: 'drill', drillId: 'run-bi-h-clear', label: 'Pass BIH Clear Ladder' },
-      { type: 'drill', drillId: 'kick-3', label: 'Pass Kick to Pocket' },
-      { type: 'ghostWinsTotal', wins: 10, label: 'Earn 10 Ghost match wins total' },
-      { type: 'promotion', testId: 'promo-champion', label: 'Pass Champion Promotion Test' }
-    ]
-  }
+  { rank: 0, name: 'Rookie', requirements: [] },
+  { rank: 1, name: 'Club Player', requirements: [L('landing', 2), L('sniper', 2), L('speed', 2), GH(3, 3), BOSS(1)] },
+  { rank: 2, name: 'Shooter', requirements: [L('landing', 3), L('stun', 2), L('draw', 2), L('follow', 2), L('sniper', 3), L('bank', 1), GH(3, 5), BOSS(2)] },
+  { rank: 3, name: 'Competitor', requirements: [L('landing', 4), L('draw', 3), L('follow', 3), L('stun', 3), L('speed', 4), L('bank', 3), L('kick', 2), GH(4, 3), BOSS(3)] },
+  { rank: 4, name: 'Advanced', requirements: [L('landing', 5), L('draw', 4), L('follow', 4), L('stun', 4), L('bank', 4), L('kick', 3), L('train', 3), L('safety', 2), L('sniper', 5), GH(4, 5), BOSS(4)] },
+  { rank: 5, name: 'Expert', requirements: [GH(5, 5), L('bank', 6), L('kick', 5), L('landing', 7), L('draw', 6), L('follow', 6), L('stun', 6), L('train', 7), L('safety', 5), BOSS(5)] },
+  { rank: 6, name: 'Master', requirements: [GH(6, 5), L('landing', 8), L('draw', 7), L('follow', 7), L('stun', 7), L('speed', 7), L('bank', 7), L('kick', 6), L('train', 7), L('carom', 4), L('pattern', 3), L('rail', 3), BOSS(6)] },
+  { rank: 7, name: 'Elite', requirements: [GH(7, 7), L('landing', 9), L('draw', 8), L('follow', 8), L('stun', 8), L('speed', 8), L('bank', 8), L('kick', 7), L('train', 8), L('safety', 6), L('carom', 5), L('pattern', 4), L('rail', 4), L('sniper', 7), BOSS(7)] },
+  { rank: 8, name: 'Pro', requirements: [GH(8, 7), L('landing', 10), L('draw', 9), L('stun', 9), L('speed', 9), L('kick', 8), L('carom', 6), L('pattern', 5), L('rail', 5), L('sniper', 8), { type: 'pb', game: 'bank', key: 'endlessBest', value: 1000, label: 'Bank Vault Endless: 1,000 points' }, BOSS(8)] },
+  { rank: 9, name: 'Champion', requirements: [GH(9, 9), L('kick', 9), L('carom', 7), L('rail', 6), { type: 'pb', game: 'train', key: 'perfectRuns', value: 3, label: 'Position Train: 3 perfect runs' }, { type: 'stars', total: 240, label: 'Earn 240 Arcade stars' }, BOSS(9)] }
 ];
 
-/** Multi-stage promotion tests */
-export const PROMOTION_TESTS = {
-  'promo-competitor': {
-    id: 'promo-competitor',
-    name: 'Competitor Promotion Test',
-    targetRank: 3,
-    stages: [
-      { id: 'c1', name: 'Shot Making Gate', drillId: 'sm-straight-2', attempts: 8, passNeed: 6, scoringType: 'binary' },
-      { id: 'c2', name: 'Stop Control Gate', drillId: 'stop-2', attempts: 8, passNeed: 5, scoringType: 'position' },
-      { id: 'c3', name: 'Follow Shape Gate', drillId: 'follow-2', attempts: 8, passNeed: 5, scoringType: 'position' }
-    ]
-  },
-  'promo-expert': {
-    id: 'promo-expert',
-    name: 'Expert Promotion Test',
-    targetRank: 5,
-    stages: [
-      { id: 'e1', name: 'Cut Accuracy', drillId: 'cut-2', attempts: 8, passNeed: 6, scoringType: 'binary' },
-      { id: 'e2', name: 'Draw Control', drillId: 'draw-2', attempts: 8, passNeed: 5, scoringType: 'position' },
-      { id: 'e3', name: 'Pattern Sense', drillId: 'pattern-2', attempts: 6, passNeed: 4, scoringType: 'position' }
-    ]
-  },
-  'promo-elite': {
-    id: 'promo-elite',
-    name: 'Elite Promotion Test',
-    targetRank: 7,
-    stages: [
-      { id: 'el1', name: 'Banks', drillId: 'bank-2', attempts: 8, passNeed: 4, scoringType: 'binary' },
-      { id: 'el2', name: 'Kicks', drillId: 'kick-2', attempts: 6, passNeed: 3, scoringType: 'binary' },
-      { id: 'el3', name: 'Runout', drillId: 'run-2', attempts: 4, passNeed: 2, scoringType: 'binary' }
-    ]
-  },
-  'promo-champion': {
-    id: 'promo-champion',
-    name: 'Champion Promotion Test',
-    targetRank: 9,
-    stages: [
-      { id: 'ch1', name: 'Power Draw', drillId: 'draw-3', attempts: 6, passNeed: 4, scoringType: 'position' },
-      { id: 'ch2', name: 'Safety IQ', drillId: 'safe-3', attempts: 6, passNeed: 4, scoringType: 'position' },
-      { id: 'ch3', name: 'Clear Ladder', drillId: 'run-bi-h-clear', attempts: 3, passNeed: 2, scoringType: 'binary' }
-    ]
-  }
-};
-
 export function ghostWins(state, balls = null) {
-  return (state.ghostMatches || []).filter(
-    (m) => m.won && (balls == null || m.balls === balls)
-  ).length;
+  return (state.ghostMatches || []).filter((m) => m.won && (balls == null || m.balls === balls)).length;
+}
+
+export function requirementLabel(req) {
+  if (req.label) return req.label;
+  if (req.type === 'gameLevel') return `${getGame(req.game)?.name || req.game} Level ${req.level}`;
+  if (req.type === 'ghost') return `Defeat the ${req.balls}-Ball Ghost (race to ${req.race})`;
+  if (req.type === 'boss') return `Boss Battle: beat ${bossForRank(req.rank)?.name || 'the boss'}`;
+  if (req.type === 'stars') return `Earn ${req.total} Arcade stars`;
+  return 'Requirement';
+}
+
+export function requirementProgress(req, state) {
+  if (req.type === 'gameLevel') return { have: gameLevel(state, req.game), need: req.level };
+  if (req.type === 'ghost') return { have: ghostBeaten(state, req.balls, req.race) ? 1 : 0, need: 1 };
+  if (req.type === 'boss') return { have: state.bosses?.[bossForRank(req.rank)?.id]?.passed ? 1 : 0, need: 1 };
+  if (req.type === 'stars') return { have: totalStars(state), need: req.total };
+  if (req.type === 'pb') return { have: gameState(state, req.game).pb?.[req.key] || 0, need: req.value };
+  return { have: 0, need: 1 };
 }
 
 export function checkRequirement(req, state) {
-  if (req.type === 'drill') return !!state.results[req.drillId]?.passed;
-  if (req.type === 'ghost') return ghostWins(state, req.balls) >= (req.wins || 1);
-  if (req.type === 'ghostWinsTotal') return ghostWins(state) >= (req.wins || 1);
-  if (req.type === 'promotion') return !!state.promotionAttempts?.[req.testId]?.passed;
-  return false;
+  const p = requirementProgress(req, state);
+  return p.have >= p.need;
 }
 
-export function requirementsMet(rankIndex, state) {
-  const def = RANK_REQUIREMENTS[rankIndex];
-  if (!def) return false;
-  if (!def.requirements.length) return true;
-  return def.requirements.every((r) => checkRequirement(r, state));
+/** Where the player should go to work on a requirement */
+export function requirementLink(req, state) {
+  if (req.type === 'gameLevel') {
+    if (!isGameUnlocked(state, req.game)) {
+      const u = getGame(req.game)?.unlock;
+      if (u?.game) {
+        const st = nextOpenStage(state, u.game);
+        return { href: st ? `#play/${u.game}/${st.id}` : `#game/${u.game}`, text: `Unlock via ${unlockLabel(req.game)}` };
+      }
+      return { href: '#arcade', text: 'Unlock in Arcade' };
+    }
+    const st = nextOpenStage(state, req.game);
+    return st ? { href: `#play/${req.game}/${st.id}`, text: `${getGame(req.game).name} · ${st.name}` } : { href: `#game/${req.game}`, text: getGame(req.game).name };
+  }
+  if (req.type === 'ghost') return { href: `#ghost/${req.balls}/${req.race}`, text: `${req.balls}-Ball Ghost · race to ${req.race}` };
+  if (req.type === 'boss') {
+    const b = bossForRank(req.rank);
+    return { href: `#boss/${b.id}`, text: b.name };
+  }
+  if (req.type === 'pb') return { href: req.game === 'bank' ? '#play/bank/endless' : `#game/${req.game}`, text: getGame(req.game)?.name };
+  return { href: '#arcade', text: 'Arcade' };
 }
 
 export function requirementChecklist(rankIndex, state) {
   const def = RANK_REQUIREMENTS[rankIndex];
   if (!def) return [];
-  return def.requirements.map((r) => ({
-    ...r,
-    met: checkRequirement(r, state),
-    drill: r.drillId ? getDrillById(r.drillId) : null
-  }));
+  return def.requirements.map((r) => ({ ...r, label: requirementLabel(r), met: checkRequirement(r, state), progress: requirementProgress(r, state), link: requirementLink(r, state) }));
 }
 
-/** Highest rank earned (0..9). Must unlock sequentially. */
+export function nonBossMet(rankIndex, state) {
+  const def = RANK_REQUIREMENTS[rankIndex];
+  if (!def) return false;
+  return def.requirements.filter((r) => r.type !== 'boss').every((r) => checkRequirement(r, state));
+}
+
+export function requirementsMet(rankIndex, state) {
+  const def = RANK_REQUIREMENTS[rankIndex];
+  return !!def && def.requirements.every((r) => checkRequirement(r, state));
+}
+
+/** Boss for rank r is playable when you hold rank r-1 and every other requirement is met */
+export function isBossUnlocked(state, boss) {
+  return (state.rankIndex || 0) === boss.rank - 1 && nonBossMet(boss.rank, state);
+}
+
+/** Highest rank earned: starts at rankFloor, then climbs while each rank's boss has been beaten. */
 export function computeEarnedRankIndex(state) {
-  let earned = 0;
-  for (let i = 1; i < RANK_REQUIREMENTS.length; i++) {
-    if (requirementsMet(i, state) && earned === i - 1) earned = i;
+  let earned = Math.max(0, Math.min(9, state.rankFloor || 0));
+  for (let i = earned + 1; i < RANK_REQUIREMENTS.length; i++) {
+    if (requirementsMet(i, state)) earned = i;
     else break;
   }
-  return Math.max(earned, 0);
+  return earned;
 }
 
 export function syncRank(state) {
   return { ...state, rankIndex: computeEarnedRankIndex(state) };
 }
 
-export function canAttemptPromotion(testId, state) {
-  const test = PROMOTION_TESTS[testId];
-  if (!test) return false;
-  if (state.rankIndex !== test.targetRank - 1) return false;
-  const def = RANK_REQUIREMENTS[test.targetRank];
-  const others = def.requirements.filter((r) => !(r.type === 'promotion' && r.testId === testId));
-  return others.every((r) => checkRequirement(r, state));
-}
-
-export function evaluatePromotion(testId, stageScores, state) {
-  const test = PROMOTION_TESTS[testId];
-  if (!test) return { passed: false, weakStages: [], state };
-  const stageResults = test.stages.map((stage, i) => {
-    const score = stageScores[i] ?? 0;
-    const passed = score >= stage.passNeed;
-    return { stage, score, passed };
-  });
-  const passed = stageResults.every((s) => s.passed);
-  const weakStages = stageResults.filter((s) => !s.passed).map((s) => s.stage.name);
-  const prev = state.promotionAttempts?.[testId] || { tries: 0, passed: false };
-  const nextAttempts = {
-    ...state.promotionAttempts,
-    [testId]: {
-      passed: prev.passed || passed,
-      tries: prev.tries + 1,
-      lastDate: new Date().toISOString(),
-      lastStages: stageResults.map((s) => ({
-        id: s.stage.id,
-        score: s.score,
-        passNeed: s.stage.passNeed,
-        passed: s.passed
-      })),
-      bestStages: stageResults.map((s, i) => {
-        const oldBest = prev.bestStages?.[i]?.score ?? 0;
-        return {
-          id: s.stage.id,
-          score: Math.max(oldBest, s.score),
-          passed: prev.bestStages?.[i]?.passed || s.passed
-        };
-      })
-    }
-  };
-  let next = { ...state, promotionAttempts: nextAttempts };
-  if (passed) {
-    next.xp = (next.xp || 0) + 250;
-    next = syncRank(next);
-  }
-  return { passed, weakStages, stageResults, state: next };
-}
-
 export function nextRankInfo(state) {
   const idx = state.rankIndex || 0;
-  if (idx >= 9) {
-    return { current: RANK_NAMES[9], next: null, checklist: [], progress: 1 };
-  }
+  if (idx >= 9) return { current: RANK_NAMES[9], next: null, checklist: [], progress: 1 };
   const checklist = requirementChecklist(idx + 1, state);
   const met = checklist.filter((c) => c.met).length;
-  return {
-    current: RANK_NAMES[idx],
-    next: RANK_NAMES[idx + 1],
-    checklist,
-    progress: checklist.length ? met / checklist.length : 1
-  };
+  return { current: RANK_NAMES[idx], next: RANK_NAMES[idx + 1], checklist, progress: checklist.length ? met / checklist.length : 1 };
+}
+
+/** The single next thing to do on the Career path */
+export function nextUp(state) {
+  const info = nextRankInfo(state);
+  if (!info.next) return { done: true, title: 'Champion', text: 'Every rank earned. Replay the Arcade for personal bests.', href: '#arcade' };
+  const open = info.checklist.filter((c) => !c.met);
+  const nonBoss = open.filter((c) => c.type !== 'boss');
+  const item = nonBoss[0] || open[0];
+  if (!item) return { done: true, title: info.next, text: 'Promotion ready.', href: '#career' };
+  if (item.type === 'boss') {
+    const b = bossForRank(item.rank);
+    return { title: `Boss Battle unlocked: ${b.name}`, text: `Every requirement for ${info.next} is met. Beat the boss to promote.`, href: `#boss/${b.id}`, req: item, rank: info.next };
+  }
+  const p = item.progress;
+  let detail = '';
+  if (item.type === 'gameLevel') {
+    const st = nextOpenStage(state, item.game);
+    detail = st ? `Next stage: ${st.name} (level ${p.have + 1} of ${stageSpecs(item.game).length}).` : '';
+    if (!isGameUnlocked(state, item.game)) detail = `${getGame(item.game).name} is locked — ${unlockLabel(item.game)} opens it.`;
+  } else if (item.type === 'ghost') detail = 'Start the match from the Ghost screen; the race length must be at least this long.';
+  else if (item.type === 'stars' || item.type === 'pb') detail = `${p.have} / ${p.need}`;
+  return { title: item.label, text: detail, href: item.link.href, linkText: item.link.text, req: item, rank: info.next, remaining: open.length };
 }

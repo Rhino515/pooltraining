@@ -1,0 +1,38 @@
+/** SAFETY LOCK — hide the cue ball, park the object ball, leave nothing. Scored 0–3 stars per attempt by clear criteria. */
+export default {
+  id: 'safety',
+  name: 'Safety Lock',
+  icon: '⛨',
+  tagline: 'Rate every safety honestly: failed · playable ★ · tough ★★ · locked ★★★.',
+  primarySkill: 'Safeties',
+  kind: 'safety',
+  skillEffects: { Safeties: 1, 'Speed Control': 0.5, 'Cue-Ball Control': 0.3 },
+  scoring: { mode: 'stars', attempts: 5, pass: { stars: 8 } },
+  unlock: { game: 'kick', level: 1, label: 'Kick Escape Level 1' },
+  stages: [
+    { id: 'sl-1', name: 'Hide Behind the 5', difficulty: 3, objective: 'hide', cue: [30, 24], ob: [1, 46, 26], obZone: [84, 34], cueZone: [42, 17], k: 0, travel: 8, autoBlock: [[5, 0.18]],
+      goalText: 'Send the 1 to the foot end and tuck the cue ball behind the 5.',
+      instructions: 'Thick hit on the 1 so it runs up-table; the cue ball drifts down and stops behind the 5 so there is no direct line.',
+      criteria: ['Foul, or the 1 is left with an easy pot', 'Playable: a long cut or a bank is still available', 'Tough: only a thin edge of the 1 is visible past the 5', 'Locked: the 5 fully blocks the 1 — opponent must kick'] },
+    { id: 'sl-2', name: 'Long-Distance Safe', difficulty: 4, objective: 'distance', cue: [72, 18], ob: [2, 82, 24], obZone: [91, 30], cueZone: [12, 18], k: 0.2, travel: 110,
+      goalText: 'Leave the 2 near the foot rail and send the cue ball two rails back to the head end.',
+      instructions: 'Distance is a safety too: a thin hit leaves the 2 near the foot rail while the cue ball travels back to the head end.',
+      criteria: ['Foul, or the cue ball stops mid-table', 'Playable: cue ball past the side pockets', 'Tough: cue ball behind the head string, 2 on the foot rail', 'Locked: both balls frozen or within a ball of their rails, full table apart'] },
+    { id: 'sl-3', name: 'Rail Freeze', difficulty: 5, objective: 'rail', cue: [40, 34], ob: [3, 56, 20], obZone: [66, 6.3], cueZone: [60, 43], k: -0.5, travel: 20.5,
+      goalText: 'Freeze the 3 on the top rail and leave the cue ball on the bottom rail.',
+      instructions: 'Rail safeties leave the opponent bridging off the cushion with the object ball glued to the far rail.',
+      criteria: ['Foul, or no ball reaches a rail after contact', 'Playable: 3 more than a ball off the rail', 'Tough: 3 within half a ball of the rail', 'Locked: 3 frozen AND cue ball frozen on the opposite rail'] },
+    { id: 'sl-4', name: 'Two-Way Contain', difficulty: 6, objective: 'contain', cue: [24, 36], ob: [4, 44, 30], obZone: [64, 7], cueZone: [44, 44], k: -1, travel: 11, autoBlock: [[7, 0.15]],
+      goalText: 'Send the 4 to the top rail and hold the cue ball behind the 7.',
+      instructions: 'A containing safety keeps the cue ball in a small area while the object ball goes where the opponent cannot use it.',
+      criteria: ['Foul, or a direct shot left on the 4', 'Playable: a long thin cut remains', 'Tough: only a bank or kick-style shot remains', 'Locked: the 7 hides the whole 4'] },
+    { id: 'sl-5', name: 'Thin-Hit Hook', difficulty: 7, objective: 'hide', cue: [20, 16], ob: [6, 50, 12], obZone: [60, 7], cueZone: [76, 39], k: 0.8, travel: 40, autoBlock: [[2, 0.25, -3], [8, 0.25, 3]],
+      goalText: 'Clip the 6 thin along the top rail and roll the cue ball behind the 2 and 8.',
+      instructions: 'A thin hit barely moves the 6, while the cue ball keeps its pace and crosses the table into the pocket of blockers.',
+      criteria: ['Foul, or missed the 6', 'Playable: the 6 can be cut at a steep angle', 'Tough: only a bank on the 6', 'Locked: both blockers screen the 6'] },
+    { id: 'sl-6', name: 'Full Lock-Up', difficulty: 8, objective: 'lock', cue: [56, 38], ob: [9, 70, 32], obZone: [90, 12], cueZone: [68, 43], k: -1, travel: 13.5, autoBlock: [[5, 0.22, 3], [3, 0.3, 8.5]],
+      goalText: 'Drive the 9 to the top-right area and freeze the cue ball behind the 3 and 5.',
+      instructions: 'The ultimate safety: the cue ball snuggles behind a cluster so tightly that even a kick is hard.',
+      criteria: ['Foul, or the 9 left open', 'Playable: partial view of the 9', 'Tough: 9 hidden but an easy one-rail kick exists', 'Locked: 9 hidden and every one-rail kick is blocked or long'] }
+  ]
+};

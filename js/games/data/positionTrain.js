@@ -1,0 +1,38 @@
+/** POSITION TRAIN — multi-ball runs. Each ball has its landing zone; multiplier ×1 → ×5. */
+export default {
+  id: 'train',
+  name: 'Position Train',
+  icon: '⛓',
+  tagline: 'Chain the zones: every hit raises the multiplier up to ×5. PERFECT RUN = every ball, every zone.',
+  primarySkill: 'Position Play',
+  kind: 'train',
+  skillEffects: { 'Position Play': 1, 'Pattern Play': 0.5, 'Cue-Ball Control': 0.4 },
+  scoring: { mode: 'train', attempts: 3, pass: { runs: 1, zones: 2 } },
+  unlock: { game: 'landing', level: 3, label: 'Landing Zone Level 3' },
+  stages: [
+    { id: 'pt-1', name: 'Three-Car Local', difficulty: 3, cue: [30, 30], pass: { runs: 1, zones: 1 },
+      steps: [{ ob: [1, 44, 20], pocket: 'TL', family: 'any' }, { ob: [2, 64, 30], pocket: 'BR', family: 'any' }, { ob: [3, 80, 14], pocket: 'TR' }],
+      instructions: 'Three balls, two zones. Pocket in order 1-2-3 and land each zone for the next ball.' },
+    { id: 'pt-2', name: 'Side-Pocket Shuttle', difficulty: 4, cue: [24, 24], pass: { runs: 1, zones: 2 },
+      steps: [{ ob: [1, 40, 12], pocket: 'TM', family: 'any' }, { ob: [2, 58, 38], pocket: 'BM', family: 'any' }, { ob: [3, 30, 36], pocket: 'BL' }],
+      instructions: 'Both side pockets, then a corner. Keep the cue ball near the middle of the table.' },
+    { id: 'pt-3', name: 'Four-Car Freight', difficulty: 5, cue: [20, 25], pass: { runs: 1, zones: 2 },
+      steps: [{ ob: [1, 34, 34], pocket: 'BL', family: 'any' }, { ob: [2, 54, 16], pocket: 'TR', family: 'any' }, { ob: [3, 76, 32], pocket: 'BR', family: 'any' }, { ob: [4, 82, 20], pocket: 'TR' }],
+      instructions: 'Four balls working up the table. Two zones minimum to pass.' },
+    { id: 'pt-4', name: 'Crossing Lines', difficulty: 6, cue: [50, 25], pass: { runs: 1, zones: 3 },
+      steps: [{ ob: [1, 64, 36], pocket: 'BR', family: 'any' }, { ob: [2, 36, 14], pocket: 'TL', family: 'any' }, { ob: [3, 66, 12], pocket: 'TR', family: 'any' }, { ob: [4, 30, 38], pocket: 'BL' }],
+      instructions: 'The route crosses the table twice. Three zones to pass.' },
+    { id: 'pt-5', name: 'Five-Car Express', difficulty: 7, cue: [22, 30], pass: { runs: 1, zones: 3 },
+      steps: [{ ob: [1, 30, 18], pocket: 'TL', family: 'any' }, { ob: [2, 48, 36], pocket: 'BM', family: 'any' }, { ob: [3, 70, 22], pocket: 'TR', family: 'any' }, { ob: [4, 82, 38], pocket: 'BR', family: 'any' }, { ob: [5, 60, 12], pocket: 'TM' }],
+      instructions: 'Five balls: corner, side, corner, corner, side. Three zones to pass.' },
+    { id: 'pt-6', name: 'Rail Yard', difficulty: 8, cue: [50, 30], pass: { runs: 1, zones: 4 },
+      steps: [{ ob: [1, 70, 42], pocket: 'BR', family: 'any' }, { ob: [2, 88, 20], pocket: 'TR', family: 'any' }, { ob: [3, 40, 8], pocket: 'TL', family: 'any' }, { ob: [4, 20, 40], pocket: 'BL', family: 'any' }, { ob: [5, 52, 40], pocket: 'BM' }],
+      instructions: 'Balls near the cushions make every zone harder to reach. Four zones to pass.' },
+    { id: 'pt-7', name: 'Six-Car Limited', difficulty: 9, cue: [24, 24], pass: { runs: 1, zones: 4 },
+      steps: [{ ob: [1, 36, 32], pocket: 'BL', family: 'any' }, { ob: [2, 30, 12], pocket: 'TL', family: 'any' }, { ob: [3, 52, 17], pocket: 'TM', family: 'any' }, { ob: [4, 72, 34], pocket: 'BR', family: 'any' }, { ob: [5, 86, 14], pocket: 'TR', family: 'any' }, { ob: [6, 60, 40], pocket: 'BM' }],
+      instructions: 'Six balls, all six pockets. Four zones to pass.' },
+    { id: 'pt-8', name: 'Perfect Timetable', difficulty: 10, cue: [70, 25], pass: { runs: 1, zones: 5 },
+      steps: [{ ob: [1, 78, 38], pocket: 'BR', family: 'any' }, { ob: [2, 80, 14], pocket: 'TR', family: 'any' }, { ob: [3, 44, 30], pocket: 'BL', family: 'any' }, { ob: [4, 24, 14], pocket: 'TL', family: 'any' }, { ob: [5, 40, 42], pocket: 'BM', family: 'any' }, { ob: [6, 52, 12], pocket: 'TM' }],
+      instructions: 'The final train: six balls and every zone — a PERFECT RUN is the real goal.' }
+  ]
+};

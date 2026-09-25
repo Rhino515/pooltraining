@@ -93,3 +93,25 @@ export function bindAnalyzeHandlers(root) {
     closeBtn.addEventListener('click', () => panel.classList.add('hidden'));
   }
 }
+
+/**
+ * Result-source adapter — the hook camera verification will plug into later.
+ * Today every attempt is scored manually and stored with resultSource: 'manual'.
+ * A future camera adapter implements the same interface and is registered with registerResultAdapter().
+ */
+const manualAdapter = {
+  id: 'manual',
+  available: () => true,
+  /** @returns {Promise<{outcome:object, resultSource:string, confidence:number|null}>} */
+  async verifyAttempt(_challenge, outcome) {
+    return { outcome, resultSource: 'manual', confidence: null };
+  }
+};
+let activeAdapter = manualAdapter;
+export function registerResultAdapter(adapter) {
+  if (adapter && typeof adapter.verifyAttempt === 'function') activeAdapter = adapter;
+  return activeAdapter;
+}
+export function getResultAdapter() {
+  return activeAdapter;
+}

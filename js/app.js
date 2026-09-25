@@ -1,352 +1,215 @@
 /**
- * Pool IQ — router / boot
+ * Pool IQ — hash router / boot.
+ * Routes: #home #career #drills #analyze #arcade #profile (#stats alias) #settings
+ *         #ghost[/balls/race] #ghostmatch #game/<id> #play/<game>/<stage> #boss/<id> #bossplay/<id>
  */
-import { loadState, saveState, resetState } from './storage.js';
-import {
-  syncRank,
-  evaluatePromotion,
-  PROMOTION_TESTS,
-  canAttemptPromotion
-} from './career.js';
-import { drills, getDrillById, isDrillUnlocked } from './drills.js';
-import {
-  startTraining,
-  closeTraining,
-  recordBinary,
-  recordPosition,
-  finishTraining,
-  renderTrainingHTML,
-  renderDrillCard,
-  getActiveTraining
-} from './training.js';
-import {
-  renderGhostLobby,
-  renderGhostHTML,
-  renderRacePicker,
-  startGhost,
-  closeGhost,
-  ghostRack,
-  undoLastRack,
-  saveGhostMatch,
-  getGhostSession
-} from './ghost.js';
-import { renderHome, renderStats, renderCareerPage, renderDrillsPage } from './dashboard.js';
+import { loadState, saveState, resetState, archiveUnknownDrills } from './storage.js';
+import { syncRank } from './career.js';
+import { withSkills } from './skills.js';
+import { drills, getDrillById } from './drills.js';
+import { renderHome, renderCareerPage, renderDrillsPage, renderArcade, renderGameLobby, renderBossPage, renderProfile, renderSettings } from './dashboard.js';
 import { renderAnalyzePage, bindAnalyzeHandlers } from './analyze.js';
+import { renderGhostLobby, renderGhostMatch, newGhostSession, applyRack, applyUndo, maxUnlockedBalls, matchOver } from './ghost.js';
+import { createPlayScreen } from './ui/play.js';
+import { openSheet, closeSheet, toast } from './ui/sheet.js';
+import { getGame, getBoss, getStage } from './games/registry.js';
+import { isStageUnlocked, isEndlessUnlocked, isGameUnlocked } from './games/engine.js';
+import { isBossUnlocked } from './career.js';
 
-let state = syncRank(loadState());
-let page = 'home';
-let promoSession = null; // { testId, stageIndex, stageScores[] }
+function derive(s) {
+  return syncRank(withSkills(s));
+}
 
-function persist(next) {
-  state = syncRank(next);
+let state = derive(archiveUnknownDrills(loadState(), drills.map((d) => d.id)));
+saveState(state);
+
+let screen = null; // active play screen (has render/onAction)
+let route = { name: 'home', args: [] };
+let ghostPreset = { balls: 3, race: 5 };
+let drillFilter = 'All';
+const view = () => document.getElementById('view');
+
+function commit(next, { silent = false } = {}) {
+  state = silent ? next : derive(next);
   saveState(state);
   return state;
 }
 
-function $(sel, root = document) {
-  return root.querySelector(sel);
-}
-
-function render() {
-  const home = $('#home');
-  const career = $('#career');
-  const drillsPage = $('#drills');
-  const analyze = $('#analyze');
-  const ghost = $('#ghost');
-  const stats = $('#stats');
-
-  if (home) home.innerHTML = renderHome(state);
-  if (career) career.innerHTML = renderCareerPage(state);
-  if (drillsPage) {
-    drillsPage.innerHTML = renderDrillsPage(state);
-    paintDrillList('all');
+const ctx = {
+  getState: () => state,
+  commit,
+  go: (h) => navigate(h),
+  get root() {
+    return view();
   }
-  if (analyze) {
-    analyze.innerHTML = renderAnalyzePage();
-    bindAnalyzeHandlers(analyze);
-  }
-  if (ghost) ghost.innerHTML = renderGhostLobby(state);
-  if (stats) stats.innerHTML = renderStats(state);
+};
 
-  document.querySelectorAll('nav button').forEach((b) => {
-    b.classList.toggle('active', b.dataset.page === page);
-  });
-  document.querySelectorAll('.page').forEach((p) => {
-    p.classList.toggle('active', p.id === page);
-  });
+function navigate(hash) {
+  if (location.hash === hash) renderRoute();
+  else location.hash = hash;
 }
 
-function paintDrillList(cat) {
-  const list = $('#drillList');
-  if (!list) return;
-  const items = cat === 'all' ? drills : drills.filter((d) => d.category === cat);
-  list.innerHTML = items.map((d) => renderDrillCard(d, state)).join('');
+function parseHash() {
+  const h = (location.hash || '#home').slice(1);
+  const [name, ...args] = h.split('/');
+  return { name: name || 'home', args };
 }
 
-function showPage(id) {
-  page = id;
-  document.querySelectorAll('.page').forEach((p) => p.classList.toggle('active', p.id === id));
-  document.querySelectorAll('nav button').forEach((b) => {
-    b.classList.toggle('active', b.dataset.page === id);
-  });
-  window.scrollTo?.(0, 0);
-  if (id === 'home') $('#home').innerHTML = renderHome(state);
-  if (id === 'career') $('#career').innerHTML = renderCareerPage(state);
-  if (id === 'drills') {
-    $('#drills').innerHTML = renderDrillsPage(state);
-    paintDrillList('all');
-  }
-  if (id === 'ghost') $('#ghost').innerHTML = renderGhostLobby(state);
-  if (id === 'stats') $('#stats').innerHTML = renderStats(state);
-  if (id === 'analyze') {
-    $('#analyze').innerHTML = renderAnalyzePage();
-    bindAnalyzeHandlers($('#analyze'));
-  }
+const NAV_FOR = { home: 'home', career: 'career', drills: 'drills', analyze: 'analyze', arcade: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
+
+function setChrome(playing, navName) {
+  document.body.classList.toggle('playing', playing);
+  document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('active', b.dataset.page === navName));
 }
 
-function openDrillModal(drillId) {
-  const drill = getDrillById(drillId);
-  if (!drill) return;
-  if (!isDrillUnlocked(drill, state)) return;
-  startTraining(drill, { mode: 'drill' });
-  const modal = $('#drillModal');
-  const body = $('#drillModalBody');
-  body.innerHTML = renderTrainingHTML(state);
-  modal.classList.add('show');
+function renderRoute() {
+  closeSheet();
+  route = parseHash();
+  const { name, args } = route;
+  screen = null;
+  const v = view();
+  let playing = false;
+  if (name === 'play' && args[0]) {
+    const [gameId, stageId] = args;
+    const ok = gameId === 'drills' ? !!getDrillById(stageId) : stageId === 'endless' ? isEndlessUnlocked(state, gameId) : !!getStage(gameId, stageId) && isStageUnlocked(state, gameId, stageId);
+    if (!ok) {
+      toast(gameId !== 'drills' && getGame(gameId) && !isGameUnlocked(state, gameId) ? 'That game is still locked' : 'That stage is locked — pass the previous stage first');
+      v.innerHTML = gameId === 'drills' ? renderDrillsPage(state, drillFilter) : renderGameLobby(state, gameId);
+    } else {
+      screen = createPlayScreen(ctx, { gameId, stageId });
+      screen.render();
+      playing = true;
+    }
+  } else if (name === 'bossplay' && args[0]) {
+    const b = getBoss(args[0]);
+    if (b && (isBossUnlocked(state, b) || state.bosses?.[b.id]?.passed)) {
+      screen = createPlayScreen(ctx, { bossId: b.id });
+      screen.render();
+      playing = true;
+    } else v.innerHTML = renderBossPage(state, args[0]);
+  } else if (name === 'boss') v.innerHTML = renderBossPage(state, args[0]);
+  else if (name === 'game') v.innerHTML = args[0] === 'ghost' ? renderGhostLobby(state, ghostPreset) : renderGameLobby(state, args[0]);
+  else if (name === 'career') v.innerHTML = renderCareerPage(state);
+  else if (name === 'drills') v.innerHTML = renderDrillsPage(state, drillFilter);
+  else if (name === 'analyze') {
+    v.innerHTML = renderAnalyzePage();
+    bindAnalyzeHandlers(v);
+  } else if (name === 'arcade') v.innerHTML = renderArcade(state);
+  else if (name === 'profile' || name === 'stats') v.innerHTML = renderProfile(state);
+  else if (name === 'settings') v.innerHTML = renderSettings(state);
+  else if (name === 'ghost') {
+    if (args[0]) ghostPreset = { balls: Math.min(Number(args[0]) || 3, maxUnlockedBalls(state)), race: Number(args[1]) || 5 };
+    v.innerHTML = renderGhostLobby(state, ghostPreset);
+  } else if (name === 'ghostmatch') {
+    v.innerHTML = renderGhostMatch(state);
+    playing = !!state.activeGhost;
+  } else v.innerHTML = renderHome(state);
+  setChrome(playing, NAV_FOR[name] || 'home');
+  if (!playing) window.scrollTo(0, 0);
+  else window.scrollTo(0, 0);
 }
 
-function refreshDrillModal() {
-  const body = $('#drillModalBody');
-  if (body && getActiveTraining()) body.innerHTML = renderTrainingHTML(state);
+function rerender() {
+  if (screen) screen.render();
+  else renderRoute();
 }
 
-function openGhostModal() {
-  const modal = $('#ghostModal');
-  const body = $('#ghostModalBody');
-  body.innerHTML = renderGhostHTML(state);
-  modal.classList.add('show');
-}
-
-function refreshGhostModal() {
-  const body = $('#ghostModalBody');
-  if (body && getGhostSession()) body.innerHTML = renderGhostHTML(state);
-}
-
-function startPromotion(testId) {
-  const test = PROMOTION_TESTS[testId];
-  if (!test) return;
-  if (!canAttemptPromotion(testId, state)) {
-    alert('Finish the other requirements for this rank before taking the promotion test.');
+// ------------------------------------------------------------------------------ actions
+function handleAction(action, el, e) {
+  if (action === 'go') {
+    navigate(el.dataset.href);
     return;
   }
-  promoSession = { testId, stageIndex: 0, stageScores: [] };
-  launchPromoStage();
-}
-
-function launchPromoStage() {
-  const test = PROMOTION_TESTS[promoSession.testId];
-  const stage = test.stages[promoSession.stageIndex];
-  const drill = getDrillById(stage.drillId);
-  if (!drill) return;
-  startTraining(
-    {
-      ...drill,
-      name: `${test.name} · ${stage.name}`,
-      purpose: `Promotion stage ${promoSession.stageIndex + 1} of ${test.stages.length}`,
-      scoringType: stage.scoringType || drill.scoringType
-    },
-    {
-      mode: 'promo-stage',
-      attemptOverride: stage.attempts,
-      passOverride: stage.passNeed,
-      onComplete: ({ score }) => {
-        promoSession.stageScores[promoSession.stageIndex] = score;
-      }
-    }
-  );
-  const modal = $('#drillModal');
-  const body = $('#drillModalBody');
-  body.innerHTML =
-    renderTrainingHTML(state) +
-    `<p class="promoNote muted">Promotion stage ${promoSession.stageIndex + 1} / ${test.stages.length}</p>`;
-  modal.classList.add('show');
-}
-
-function afterPromoStageSaved(score) {
-  const test = PROMOTION_TESTS[promoSession.testId];
-  promoSession.stageScores[promoSession.stageIndex] = score;
-  promoSession.stageIndex += 1;
-  if (promoSession.stageIndex < test.stages.length) {
-    launchPromoStage();
+  if (action === 'sheet-close') {
+    closeSheet();
     return;
   }
-  const result = evaluatePromotion(promoSession.testId, promoSession.stageScores, state);
-  persist(result.state);
-  closeTraining();
-  $('#drillModal').classList.remove('show');
-  const weak = result.weakStages?.length
-    ? `Weak stages: ${result.weakStages.join(', ')}`
-    : 'All stages cleared.';
-  alert(result.passed ? `PROMOTION PASSED — ranked up!\n${weak}` : `PROMOTION FAILED\n${weak}`);
-  promoSession = null;
-  showPage('career');
-}
-
-function boot() {
-  document.addEventListener('click', (e) => {
-    const t = e.target.closest('button, [data-page-jump], .chip');
-    if (!t) return;
-
-    if (t.dataset.page) {
-      showPage(t.dataset.page);
-      return;
+  if (screen && screen.onAction(action, el, e)) return;
+  switch (action) {
+    case 'locked-stage':
+      toast('Locked — pass the previous stage first');
+      break;
+    case 'drill-filter':
+      drillFilter = el.dataset.v;
+      renderRoute();
+      break;
+    case 'ghost-balls':
+      ghostPreset.balls = Number(el.dataset.v);
+      renderRoute();
+      break;
+    case 'ghost-race':
+      ghostPreset.race = Number(el.dataset.v);
+      renderRoute();
+      break;
+    case 'ghost-start': {
+      const balls = Math.min(ghostPreset.balls, maxUnlockedBalls(state));
+      commit({ ...state, activeGhost: newGhostSession(balls, ghostPreset.race) }, { silent: true });
+      navigate('#ghostmatch');
+      break;
     }
-    if (t.dataset.pageJump) {
-      showPage(t.dataset.pageJump);
-      return;
+    case 'ghost-again': {
+      const g = state.activeGhost;
+      commit({ ...state, activeGhost: newGhostSession(g.balls, g.race) }, { silent: true });
+      renderRoute();
+      break;
     }
-
-    if (t.classList.contains('chip') && t.dataset.cat) {
-      document.querySelectorAll('.chip').forEach((c) => c.classList.remove('active'));
-      t.classList.add('active');
-      paintDrillList(t.dataset.cat);
-      return;
+    case 'ghost-rack': {
+      const out = applyRack(state, state.activeGhost, el.dataset.v);
+      commit(out.state);
+      if (out.ended) toast(out.match.won ? 'Match won — saved' : 'Ghost wins — match saved');
+      renderRoute();
+      break;
     }
-
-    if (t.dataset.start) {
-      openDrillModal(t.dataset.start);
-      return;
+    case 'ghost-undo': {
+      const out = applyUndo(state, state.activeGhost);
+      commit(out.state);
+      toast('Last rack undone');
+      renderRoute();
+      break;
     }
-
-    if (t.dataset.promo) {
-      startPromotion(t.dataset.promo);
-      return;
-    }
-
-    if (t.dataset.ghostStart) {
-      const balls = Number(t.dataset.ghostStart);
-      const picker = $('#ghostRacePicker');
-      const body = $('#ghostRaceBody');
-      if (picker && body) {
-        body.innerHTML = renderRacePicker(balls);
-        picker.classList.add('show');
-      }
-      return;
-    }
-
-    if (t.dataset.race) {
-      const balls = Number(t.dataset.balls);
-      const race = Number(t.dataset.race);
-      $('#ghostRacePicker')?.classList.remove('show');
-      startGhost({ balls, race });
-      openGhostModal();
-      return;
-    }
-
-    if (t.dataset.action === 'close-race') {
-      $('#ghostRacePicker')?.classList.remove('show');
-      return;
-    }
-
-    if (t.dataset.action === 'close') {
-      closeTraining();
-      promoSession = null;
-      $('#drillModal').classList.remove('show');
-      render();
-      showPage(page);
-      return;
-    }
-    if (t.dataset.action === 'miss') {
-      recordBinary(false);
-      refreshDrillModal();
-      return;
-    }
-    if (t.dataset.action === 'hit') {
-      recordBinary(true);
-      refreshDrillModal();
-      return;
-    }
-    if (t.dataset.outcome) {
-      recordPosition(t.dataset.outcome);
-      refreshDrillModal();
-      return;
-    }
-    if (t.dataset.action === 'save') {
-      const active = getActiveTraining();
-      if (!active) return;
-      if (active.mode === 'promo-stage') {
-        const { score } = finishTraining(state);
-        afterPromoStageSaved(score);
-        return;
-      }
-      const { state: next } = finishTraining(state);
-      persist(next);
-      refreshDrillModal();
-      return;
-    }
-
-    if (t.dataset.action === 'close-ghost') {
-      closeGhost();
-      $('#ghostModal').classList.remove('show');
-      showPage('ghost');
-      return;
-    }
-    if (t.dataset.ghost === 'W') {
-      ghostRack('W');
-      refreshGhostModal();
-      return;
-    }
-    if (t.dataset.ghost === 'L') {
-      ghostRack('L');
-      refreshGhostModal();
-      return;
-    }
-    if (t.dataset.ghost === 'undo') {
-      undoLastRack();
-      refreshGhostModal();
-      return;
-    }
-    if (t.dataset.ghost === 'save') {
-      const { state: next } = saveGhostMatch(state);
-      persist(next);
-      closeGhost();
-      $('#ghostModal').classList.remove('show');
-      showPage('ghost');
-      return;
-    }
-  });
-
-  $('#resetBtn')?.addEventListener('click', () => {
-    if (confirm('Reset all Pool IQ progress (v3)?')) {
-      state = resetState();
+    case 'set-coach':
+      commit({ ...state, settings: { ...state.settings, coaching: el.dataset.v } });
+      renderRoute();
+      break;
+    case 'set-table':
+      commit({ ...state, speedCal: { ...state.speedCal, tableSize: Number(el.dataset.v) } });
+      renderRoute();
+      break;
+    case 'set-cloth':
+      commit({ ...state, speedCal: { ...state.speedCal, cloth: el.dataset.v } });
+      renderRoute();
+      break;
+    case 'reset-all':
+      openSheet(`<h2 class="sheetTitle">Reset all progress?</h2><p class="muted">This clears stages, Ghost matches, bosses, calibration and rank on this device.</p><button type="button" class="bigBtn danger" data-action="reset-confirm">YES, RESET</button><button type="button" class="bigBtn alt" data-action="sheet-close">CANCEL</button>`, { id: 'reset' });
+      break;
+    case 'reset-confirm':
+      state = derive(resetState());
       saveState(state);
-      location.reload();
-    }
-  });
-
-  persist(state);
-  render();
-  showPage('home');
-
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
-  }
-
-  window.PoolIQ = {
-    getState: () => state,
-    drills,
-    getDrillById,
-    persist,
-    syncRank
-  };
-}
-
-if (typeof document !== 'undefined') {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot);
-  } else {
-    boot();
+      closeSheet();
+      navigate('#home');
+      break;
+    default:
+      break;
   }
 }
 
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-action]');
+  if (el && !el.disabled) {
+    e.preventDefault();
+    handleAction(el.dataset.action, el, e);
+    return;
+  }
+  if (screen && screen.onTableTap && e.target.closest('.playTable')) {
+    screen.onTableTap(e.target);
+  }
+});
+
+window.addEventListener('hashchange', renderRoute);
+renderRoute();
+window.addEventListener('load', () => {
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
+});
+
+window.PoolIQ = { getState: () => state, drills, getDrillById, commit, navigate, rerender };
 export { drills, getDrillById };

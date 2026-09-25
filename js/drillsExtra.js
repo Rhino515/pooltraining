@@ -1,5 +1,5 @@
 /**
- * Extra drills pack — merged into drills.js.
- * Kept empty so a single curriculum source stays authoritative.
+ * Extra drills — add your own drill specs here (see the template in drills.js).
+ * Intentionally empty: no sample drills ship with Pool IQ.
  */
 export const extraDrills = [];

@@ -20,35 +20,20 @@
       <span class="brand">POOL <b>IQ</b></span>
       <small>TRAIN • ANALYZE • LEVEL UP</small>
     </div>
-    <button id="resetBtn" class="ghost" type="button">Reset</button>
+    <button id="settingsBtn" class="ghost" type="button" data-action="go" data-href="#settings" aria-label="Settings">⚙ Settings</button>
   </header>
 
   <main>
-    <section id="home" class="page active"></section>
-    <section id="career" class="page"></section>
-    <section id="drills" class="page"></section>
-    <section id="analyze" class="page"></section>
-    <section id="ghost" class="page"></section>
-    <section id="stats" class="page"></section>
+    <section id="view" class="page active" aria-live="polite"></section>
   </main>
 
-  <div id="drillModal" class="modal" aria-hidden="true">
-    <div id="drillModalBody" class="modalBody card"></div>
-  </div>
-  <div id="ghostModal" class="modal" aria-hidden="true">
-    <div id="ghostModalBody" class="modalBody card"></div>
-  </div>
-  <div id="ghostRacePicker" class="modal" aria-hidden="true">
-    <div id="ghostRaceBody" class="modalBody card"></div>
-  </div>
-
   <nav>
-    <button type="button" data-page="home" class="active">⌂<span>Home</span></button>
-    <button type="button" data-page="career">♜<span>Career</span></button>
-    <button type="button" data-page="drills">◎<span>Drills</span></button>
-    <button type="button" data-page="analyze" class="scan">◉<span>Analyze</span></button>
-    <button type="button" data-page="ghost">♚<span>Ghost</span></button>
-    <button type="button" data-page="stats">▥<span>Stats</span></button>
+    <button type="button" data-page="home" data-action="go" data-href="#home" class="active">⌂<span>Home</span></button>
+    <button type="button" data-page="career" data-action="go" data-href="#career">♜<span>Career</span></button>
+    <button type="button" data-page="drills" data-action="go" data-href="#drills">◎<span>Drills</span></button>
+    <button type="button" data-page="analyze" data-action="go" data-href="#analyze" class="scan">◉<span>Analyze</span></button>
+    <button type="button" data-page="arcade" data-action="go" data-href="#arcade">🎯<span>Arcade</span></button>
+    <button type="button" data-page="profile" data-action="go" data-href="#profile">▥<span>Profile</span></button>
   </nav>
 </div>
 <script type="module" src="./js/app.js"></script>

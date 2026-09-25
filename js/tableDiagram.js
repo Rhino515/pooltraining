@@ -311,6 +311,13 @@ export function renderTableDiagram(spec = {}, options = {}) {
     <marker id="ghostAimArrow" markerWidth="4.5" markerHeight="4.5" refX="3.2" refY="2.25" orient="auto">
       <path d="M0,0 L4.5,2.25 L0,4.5 Z" fill="#ffc75b"/>
     </marker>
+    <marker id="cueArrow" markerWidth="4" markerHeight="4" refX="2.6" refY="2" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L4,2 L0,4 Z" fill="#f2fdff"/>
+    </marker>
+    <marker id="obArrow" markerWidth="4" markerHeight="4" refX="2.6" refY="2" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L4,2 L0,4 Z" fill="#ffd34d"/>
+    </marker>
+    <clipPath id="feltClip"><rect x="2.2" y="2.2" width="95.6" height="45.6" rx="1.6" ry="1.6"/></clipPath>
   </defs>`;
 
   // Outer rail
@@ -349,7 +356,7 @@ export function renderTableDiagram(spec = {}, options = {}) {
         <animate attributeName="opacity" values="0.55;1;0.55" dur="2s" repeatCount="indefinite"/>
       </circle>`;
       if (!compact) {
-        svg += `<text x="${p.x}" y="${p.y > 25 ? p.y - 4.2 : p.y + 5.2}" text-anchor="middle" fill="#55e5ff" font-size="2.2" font-weight="700" font-family="system-ui,sans-serif">TARGET</text>`;
+        svg += `<text x="${Math.max(6.5, Math.min(93.5, p.x))}" y="${p.y > 25 ? p.y - 4.2 : p.y + 5.2}" text-anchor="middle" fill="#55e5ff" font-size="2.2" font-weight="700" font-family="system-ui,sans-serif">TARGET</text>`;
       }
     }
   }
@@ -405,6 +412,8 @@ export function renderTableDiagram(spec = {}, options = {}) {
     });
   }
 
+  if (spec.extraUnder) svg += spec.extraUnder;
+
   // Balls
   for (const b of balls) {
     const id = b.id != null ? b.id : b[0];
@@ -415,7 +424,10 @@ export function renderTableDiagram(spec = {}, options = {}) {
     const fill = isCue ? BALL_COLORS.cue : BALL_COLORS[num] || '#94a3b8';
     const stroke = isCue ? '#94a3b8' : num === 8 ? '#e5e7eb' : '#ffffffaa';
     const textFill = isCue ? 'transparent' : num === 8 ? '#fff' : '#05111b';
-    svg += `<g filter="url(#ballShadow)">`;
+    if (b.blocker) {
+      svg += `<circle class="blocker-ring" cx="${x}" cy="${y}" r="${ballR + 1.1}" fill="#ff4d6d22" stroke="#ff5d73" stroke-width="0.5" stroke-dasharray="1 0.6"/>`;
+    }
+    svg += `<g class="ball ${isCue ? 'cue-ball' : 'obj-ball'}${b.blocker ? ' blocker' : ''}" data-n="${isCue ? 'cue' : num}" filter="url(#ballShadow)">`;
     svg += `<circle cx="${x}" cy="${y}" r="${ballR}" fill="${fill}" stroke="${stroke}" stroke-width="0.35"/>`;
     if (!isCue) {
       // stripe hint for 9–15
@@ -431,6 +443,7 @@ export function renderTableDiagram(spec = {}, options = {}) {
     svg += `</g>`;
   }
 
+  if (spec.extraOver) svg += spec.extraOver;
   svg += `</svg>`;
   return svg;
 }
