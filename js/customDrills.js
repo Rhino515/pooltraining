@@ -15,7 +15,7 @@ import { validateLayout, label as ballLabel } from './sim/layouts.js';
 import { aimInfo, fullnessLabel, shortFullness, POCKET_NAMES } from './games/geometry.js';
 import { railsText, railsShort, contactText, englishText, techniqueName } from './games/text.js';
 import { speedMeaning, formatSpeed } from './games/speed.js';
-import { SKILL_NAMES } from './storage.js';
+import { SKILL_NAMES, dataWritten } from './storage.js';
 
 export const CUSTOM_KEY = 'poolIQCustomDrillsV1';
 export const EXPORT_FORMAT = 'pool-iq-drills';
@@ -309,6 +309,7 @@ export function loadCustomDrills() {
 export function saveCustomDrills(list) {
   try {
     ls()?.setItem(CUSTOM_KEY, JSON.stringify({ version: 1, drills: list }));
+    dataWritten(CUSTOM_KEY);
     return true;
   } catch {
     return false;

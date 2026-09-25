@@ -45,6 +45,13 @@ export function toast(msg) {
 }
 /** Keep toasts clear of the fixed score / playback bar so they never cover a button */
 function placeToast(el) {
+  // with a bottom sheet open, show it at the top so it never covers the sheet's text or buttons
+  if (document.querySelector('#sheet.show')) {
+    el.style.top = 'calc(env(safe-area-inset-top) + 14px)';
+    el.style.bottom = 'auto';
+    return;
+  }
+  el.style.top = '';
   const bars = [...document.querySelectorAll('.resultBar, .simBar')].filter((b) => b.offsetParent !== null || getComputedStyle(b).position === 'fixed');
   const top = bars.reduce((m, b) => Math.min(m, b.getBoundingClientRect().top), Infinity);
   el.style.bottom = Number.isFinite(top) && top < innerHeight ? `${Math.round(innerHeight - top + 12)}px` : '';

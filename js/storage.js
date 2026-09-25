@@ -61,7 +61,7 @@ export function defaultState() {
   };
 }
 
-function migrateV2(raw) {
+export function migrateV2(raw) {
   const base = defaultState();
   if (!raw || typeof raw !== 'object') return base;
   base.xp = Number(raw.xp) || 0;
@@ -155,6 +155,7 @@ export function loadState() {
 export function saveState(state) {
   const toSave = { ...state, version: STORAGE_VERSION };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+  dataWritten(STORAGE_KEY);
   return toSave;
 }
 
@@ -162,7 +163,27 @@ export function resetState() {
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem(V3_KEY);
   localStorage.removeItem(LEGACY_KEY);
+  dataWritten(STORAGE_KEY);
   return defaultState();
+}
+
+/**
+ * Write hook: every module that persists data calls dataWritten(key) after writing localStorage,
+ * so the IndexedDB mirror (js/vault.js) can copy it. No-op until the app installs a hook.
+ */
+let writeHook = null;
+export function onDataWrite(fn) {
+  writeHook = fn;
+}
+export function dataWritten(key) {
+  try { if (writeHook) writeHook(key); } catch (e) { console.warn('Pool IQ mirror hook failed', e); }
+}
+/** localStorage set/remove + mirror notification (for small keys like drafts and presets) */
+export function lsSet(key, value) {
+  try { localStorage.setItem(key, value); dataWritten(key); return true; } catch { return false; }
+}
+export function lsRemove(key) {
+  try { localStorage.removeItem(key); dataWritten(key); return true; } catch { return false; }
 }
 
 /** Pure scoring helpers — also used by verification tests */
@@ -240,12 +261,15 @@ export function ghostRackResult(session, result) {
   return { ...session, log, you, ghost };
 }
 
-// IndexedDB helper for optional large session blobs (future camera frames)
+// IndexedDB helpers: the redundant mirror + rolling snapshots (js/vault.js) and future large blobs.
 const IDB_NAME = 'poolIQ_idb';
 const IDB_STORE = 'blobs';
+let dbPromise = null;
 
-export function idbPut(key, value) {
-  return new Promise((resolve, reject) => {
+function openDB() {
+  if (dbPromise) return dbPromise;
+  dbPromise = new Promise((resolve, reject) => {
+    if (typeof indexedDB === 'undefined' || !indexedDB) { reject(new Error('IndexedDB not available')); return; }
     const req = indexedDB.open(IDB_NAME, 1);
     req.onupgradeneeded = () => {
       const db = req.result;
@@ -253,29 +277,47 @@ export function idbPut(key, value) {
     };
     req.onsuccess = () => {
       const db = req.result;
-      const tx = db.transaction(IDB_STORE, 'readwrite');
-      tx.objectStore(IDB_STORE).put(value, key);
-      tx.oncomplete = () => resolve(true);
-      tx.onerror = () => reject(tx.error);
+      db.onversionchange = () => { db.close(); dbPromise = null; };
+      db.onclose = () => { dbPromise = null; };
+      resolve(db);
     };
     req.onerror = () => reject(req.error);
+    req.onblocked = () => reject(new Error('IndexedDB blocked'));
+  });
+  dbPromise.catch(() => { dbPromise = null; });
+  return dbPromise;
+}
+
+export async function idbPut(key, value) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(value, key);
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error || new Error('IndexedDB write aborted'));
   });
 }
 
-export function idbGet(key) {
+export async function idbGet(key) {
+  const db = await openDB();
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(IDB_NAME, 1);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
-    };
-    req.onsuccess = () => {
-      const db = req.result;
-      const tx = db.transaction(IDB_STORE, 'readonly');
-      const g = tx.objectStore(IDB_STORE).get(key);
-      g.onsuccess = () => resolve(g.result);
-      g.onerror = () => reject(g.error);
-    };
-    req.onerror = () => reject(req.error);
+    const tx = db.transaction(IDB_STORE, 'readonly');
+    const g = tx.objectStore(IDB_STORE).get(key);
+    g.onsuccess = () => resolve(g.result);
+    g.onerror = () => reject(g.error);
   });
 }
+
+export async function idbDelete(key) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).delete(key);
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/** Adapter used by the vault: {get, put, del} — tests swap in an in-memory version */
+export const idbAdapter = { get: idbGet, put: idbPut, del: idbDelete };

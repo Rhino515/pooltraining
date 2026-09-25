@@ -793,7 +793,7 @@ let state = storage.defaultState();
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
   const missing = walk(path.join(root, 'js')).filter((f) => f.endsWith('.js')).map((f) => './' + path.relative(root, f)).filter((f) => !sw.includes(`'${f}'`));
-  assert(/pool-iq-v8/.test(sw), 'service worker cache is pool-iq-v8');
+  assert(/pool-iq-v9/.test(sw), 'service worker cache is pool-iq-v9');
   assertAll('service worker precaches every JS module (incl. simulator + Create Drill)', missing.map((m) => `missing ${m}`));
   const wordN = { one: 1, two: 2, three: 3, four: 4 };
   const probs = [];
@@ -888,6 +888,218 @@ let state = storage.defaultState();
   }
   if (L.eightGhostLayout(7, 3, true).length !== 16) probs.push('pro layout is not a full rack');
   assertAll('8-Ball Ghost simulator layouts: your group + the 8 (legal), Pro = full 15-ball rack', probs);
+}
+
+// ---------------------------------------------------------------- data safety: IndexedDB mirror, snapshots, backup file
+{
+  const V = await import(js('vault.js'));
+  const CDm = await import(js('customDrills.js'));
+  const LIBm = await import(js('sim/library.js'));
+  const fs = await import('fs');
+  const src = (f) => fs.readFileSync(path.join(root, f), 'utf8');
+  const memKV = (init = {}) => { const m = new Map(Object.entries(init)); return { m, getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k), clear: () => m.clear() }; };
+  const memIDB = () => { const m = new Map(); return { m, get: async (k) => (m.has(k) ? structuredClone(m.get(k)) : undefined), put: async (k, v) => { m.set(k, structuredClone(v)); return true; }, del: async (k) => m.delete(k) }; };
+  let clock = 1_800_000_000_000;
+  const now = () => clock;
+  const dataOf = (kv) => Object.fromEntries(V.DATA_KEYS.filter((k) => kv.getItem(k) != null).map((k) => [k, JSON.parse(kv.getItem(k))]));
+  const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  // a realistic save: career progress + custom drill + simulator shots + ghost preset
+  const richState = () => {
+    const s0 = storage.defaultState();
+    s0.xp = 640; s0.rankIndex = 2;
+    s0.games = { landing: { stages: { 'lz-1': { passed: true, tries: 4, bestScore: 500, bestStars: 2, history: [] } }, pb: {}, sessions: [] } };
+    s0.ghostMatches = [{ id: 'g1', balls: 3, you: 5, ghost: 2, race: 5, won: true, log: ['W'], date: '2026-09-01T10:00:00Z' }];
+    return s0;
+  };
+  const seed = (kv) => {
+    kv.setItem(V.KEYS.state, JSON.stringify(richState()));
+    kv.setItem(V.KEYS.custom, JSON.stringify({ version: 1, drills: [{ id: 'cd-abc', name: 'My Stop Shot', ballPositions: [{ n: 1, x: 50, y: 25 }], cueBallPosition: { x: 25, y: 25 }, scoringRules: { mode: 'binary' } }] }));
+    kv.setItem(V.KEYS.sim, JSON.stringify({ version: 1, current: null, shots: [{ id: 's1', name: 'Draw back', balls: [{ id: 'cue', x: 1, y: 1 }], shot: { speed: 3 } }, { id: 's2', name: 'Bank', balls: [], shot: {} }], collections: [{ id: 'default', name: 'My Shots' }], settings: {}, targetBest: 7 }));
+    kv.setItem(V.KEYS.ghostPreset, JSON.stringify({ balls: 5, race: 7, mode: 'eight', level: 'pro', group: 3 }));
+  };
+
+  // every persisted key the app uses is covered, and every localStorage writer notifies the mirror
+  const keyConsts = new Set();
+  const writers = [];
+  const walk = (d) => { for (const f of fs.readdirSync(d, { withFileTypes: true })) { const p2 = path.join(d, f.name); if (f.isDirectory()) walk(p2); else if (f.name.endsWith('.js')) { const t = fs.readFileSync(p2, 'utf8'); for (const m of t.matchAll(/['"](poolIQ[A-Za-z0-9]+)['"]/g)) keyConsts.add(m[1]); if (/localStorage\.setItem\(/.test(t) || /\?\.setItem\(/.test(t)) writers.push([path.relative(root, p2), t]); } } };
+  walk(path.join(root, 'js'));
+  const uncovered = [...keyConsts].filter((k) => !V.DATA_KEYS.includes(k) && k !== V.META_KEY && k !== 'poolIQFlash');
+  assertAll(`every persisted localStorage key is mirrored + backed up (${V.DATA_KEYS.length} data keys: ${V.DATA_KEYS.join(', ')})`, uncovered.map((k) => `not covered: ${k}`));
+  assert(V.KEYS.custom === CDm.CUSTOM_KEY && V.KEYS.sim === LIBm.SIM_KEY && /WIP_KEY = 'poolIQDrillWip'/.test(src('js/ui/drillBuilder.js')) && /DRAFT_KEY = 'poolIQDrillDraft'/.test(src('js/ui/simulator.js')) && /GHOST_PRESET_KEY = 'poolIQGhostPreset'/.test(src('js/app.js')), 'vault key list matches the owning modules (custom drills, simulator, drafts, ghost preset)');
+  assertAll('every module that writes localStorage notifies the mirror (dataWritten / lsSet)', writers.filter(([f, t]) => !/vault\.js$/.test(f) && !/dataWritten\(/.test(t)).map(([f]) => f));
+  assert(!/localStorage\.setItem\(/.test(src('js/ui/drillBuilder.js')) && !/localStorage\.setItem\(/.test(src('js/ui/simulator.js')) && /lsSet\(GHOST_PRESET_KEY/.test(src('js/app.js')), 'drafts + ghost preset go through lsSet (mirrored)');
+  {
+    let hits = 0;
+    storage.onDataWrite(() => hits++);
+    storage.saveState(storage.defaultState());
+    CDm.saveCustomDrills([]);
+    LIBm.saveSim(LIBm.loadSim());
+    storage.lsSet('poolIQDrillWip', '{}');
+    storage.lsRemove('poolIQDrillWip');
+    storage.onDataWrite(null);
+    assert(hits === 5, `saveState / saveCustomDrills / saveSim / lsSet / lsRemove all fire the mirror hook (${hits}/5)`);
+  }
+
+  // mirror write
+  let kv = memKV(); let idb = memIDB();
+  let vault = V.createVault({ kv, idb, now, debounceMs: 5 });
+  seed(kv); vault.touch();
+  await vault.flush();
+  let mir = idb.m.get(V.MIRROR_KEY);
+  assert(mir && eq(Object.keys(mir.keys).sort(), V.DATA_KEYS.filter((k) => kv.getItem(k) != null).sort()) && V.DATA_KEYS.every((k) => (mir.keys[k] ?? null) === kv.getItem(k)) && mir.savedAt === V.readMeta(kv).savedAt, 'every save is mirrored to IndexedDB (all keys, same savedAt)');
+  await new Promise((r) => setTimeout(r, 20));
+  kv.setItem(V.KEYS.ghostPreset, JSON.stringify({ balls: 9 })); clock += 1000; vault.touch();
+  await new Promise((r) => setTimeout(r, 40));
+  assert(JSON.parse(idb.m.get(V.MIRROR_KEY).keys[V.KEYS.ghostPreset]).balls === 9, 'debounced mirror picks up later writes automatically');
+  kv.setItem(V.KEYS.ghostPreset, JSON.stringify({ balls: 5, race: 7, mode: 'eight', level: 'pro', group: 3 })); clock += 1000; vault.touch(); await vault.flush();
+  const original = dataOf(kv);
+
+  // localStorage wiped → restored from IndexedDB
+  kv.clear();
+  vault = V.createVault({ kv, idb, now });
+  let rec = await vault.reconcile();
+  assert(rec.pick === 'remote' && rec.reason === 'local missing' && eq(dataOf(kv), original), 'localStorage wiped → everything restored from the IndexedDB mirror (career, custom drills, sim shots, preset)');
+  // main save corrupted → restored
+  kv.setItem(V.KEYS.state, '{"xp": 12, broken');
+  rec = await V.createVault({ kv, idb, now }).reconcile();
+  assert(rec.pick === 'remote' && rec.reason === 'local corrupt' && eq(dataOf(kv), original), 'corrupted main save → good copy restored from IndexedDB');
+  // one secondary key corrupted → just that key repaired
+  kv.setItem(V.KEYS.sim, 'not json{');
+  rec = await V.createVault({ kv, idb, now }).reconcile();
+  assert(rec.pick === 'local' && rec.repaired.includes(V.KEYS.sim) && eq(dataOf(kv), original), 'a single corrupted key (simulator library) is repaired from the mirror');
+  // IndexedDB wiped → rebuilt from localStorage (vice versa)
+  idb.m.clear();
+  rec = await V.createVault({ kv, idb, now }).reconcile();
+  assert(rec.pick === 'local' && eq(JSON.parse(idb.m.get(V.MIRROR_KEY).keys[V.KEYS.state]), original[V.KEYS.state]), 'IndexedDB missing → mirror rebuilt from localStorage');
+  // newer wins (both directions)
+  {
+    const m = idb.m.get(V.MIRROR_KEY);
+    const newer = structuredClone(m);
+    const st2 = JSON.parse(newer.keys[V.KEYS.state]); st2.xp = 999; newer.keys[V.KEYS.state] = JSON.stringify(st2); newer.savedAt = V.readMeta(kv).savedAt + 5000;
+    idb.m.set(V.MIRROR_KEY, newer);
+    rec = await V.createVault({ kv, idb, now }).reconcile();
+    assert(rec.pick === 'remote' && rec.reason === 'mirror newer' && JSON.parse(kv.getItem(V.KEYS.state)).xp === 999, 'newer-wins: an IndexedDB copy newer than localStorage is restored');
+    const st3 = JSON.parse(kv.getItem(V.KEYS.state)); st3.xp = 1234; kv.setItem(V.KEYS.state, JSON.stringify(st3));
+    clock += 60000; V.writeMeta(kv, { ...V.readMeta(kv), savedAt: clock });
+    rec = await V.createVault({ kv, idb, now }).reconcile();
+    assert(rec.pick === 'local' && JSON.parse(idb.m.get(V.MIRROR_KEY).keys[V.KEYS.state]).xp === 1234, 'newer-wins: newer localStorage stays and updates the mirror');
+  }
+  // never overwrite a good copy with an empty/default one
+  {
+    const good = structuredClone(idb.m.get(V.MIRROR_KEY));
+    kv.clear();
+    kv.setItem(V.KEYS.state, JSON.stringify(storage.defaultState()));
+    clock += 60000; V.writeMeta(kv, { seq: 1, savedAt: clock });
+    assert(V.choose(V.localBundle(kv), good).pick === 'remote', 'choose(): a newer but EMPTY localStorage never beats a good mirror');
+    vault = V.createVault({ kv, idb, now });
+    const r1 = await vault.mirror();
+    assert(r1.skipped === 'guard' && JSON.parse(idb.m.get(V.MIRROR_KEY).keys[V.KEYS.state]).xp === 1234, 'mirror guard: an empty/default state never overwrites the good IndexedDB copy');
+    rec = await vault.reconcile();
+    assert(rec.pick === 'remote' && JSON.parse(kv.getItem(V.KEYS.state)).xp === 1234, 'boot with an empty localStorage → good data restored');
+    // a deliberate reset IS allowed to mirror an empty state
+    vault.markIntent(); clock += 1000;
+    kv.setItem(V.KEYS.state, JSON.stringify(storage.defaultState())); vault.touch();
+    const r2 = await vault.flush();
+    assert(r2.ok && JSON.parse(idb.m.get(V.MIRROR_KEY).keys[V.KEYS.state]).xp === 0 && V.choose(V.localBundle(kv), good).pick === 'local', 'deliberate reset (markIntent) may replace the mirror and wins over older data');
+    assert(V.choose({ keys: {}, savedAt: 0 }, null).pick === 'local' && V.choose({ keys: { [V.KEYS.state]: '{bad' } }, { keys: { [V.KEYS.state]: '{bad' } }).pick === 'local', 'choose(): nothing valid anywhere → keep local (no crash)');
+  }
+  // snapshot rotation (~3 rolling)
+  {
+    kv = memKV(); idb = memIDB(); clock = 1_800_000_000_000;
+    vault = V.createVault({ kv, idb, now, debounceMs: 1 });
+    kv.setItem(V.KEYS.state, JSON.stringify(storage.defaultState())); vault.touch(); await vault.flush();
+    assert((await vault.snapshots()).length === 0, 'no snapshot of an empty/default state');
+    const xps = [];
+    for (let i = 1; i <= 5; i++) {
+      const st4 = richState(); st4.xp = i * 100; xps.push(i * 100);
+      kv.setItem(V.KEYS.state, JSON.stringify(st4)); clock += V.SNAP_EVERY_MS + 1000; vault.touch(); await vault.flush();
+    }
+    let snaps = await vault.snapshots();
+    assert(snaps.length === V.MAX_SNAPSHOTS && eq(snaps.map((x) => JSON.parse(x.keys[V.KEYS.state]).xp), [500, 400, 300]), `snapshots rotate: keeps the newest ${V.MAX_SNAPSHOTS}, newest first (${snaps.map((x) => JSON.parse(x.keys[V.KEYS.state]).xp)})`);
+    clock += 1000; const st5 = richState(); st5.xp = 600; kv.setItem(V.KEYS.state, JSON.stringify(st5)); vault.touch(); await vault.flush();
+    assert((await vault.snapshots())[0].keys[V.KEYS.state].includes('"xp":500'), 'automatic snapshots are spaced out (not one per save)');
+    await vault.snapshot('Before reset');
+    snaps = await vault.snapshots();
+    assert(snaps[0].reason === 'Before reset' && snaps[0].summary.xp === 600 && snaps.length === 3, 'manual snapshot ("Before reset") goes on top with a summary');
+    // restoring a snapshot snapshots the current data first (undoable)
+    const target = snaps[2];
+    await vault.replaceAll(target.keys, 'Before snapshot restore');
+    snaps = await vault.snapshots();
+    assert(JSON.parse(kv.getItem(V.KEYS.state)).xp === JSON.parse(target.keys[V.KEYS.state]).xp && snaps[0].reason === 'Before snapshot restore' && snaps[0].summary.xp === 600 && JSON.parse(idb.m.get(V.MIRROR_KEY).keys[V.KEYS.state]).xp === JSON.parse(target.keys[V.KEYS.state]).xp, 'restore previous snapshot: data replaced, mirror updated, and the replaced data kept as a snapshot');
+  }
+  // backup export → import round trip
+  {
+    kv = memKV(); idb = memIDB(); seed(kv);
+    kv.setItem(V.KEYS.drillWip, JSON.stringify({ editId: null, b: { title: 'wip' } }));
+    const orig = dataOf(kv);
+    const file = V.buildBackup(kv, { now: Date.UTC(2026, 8, 25, 18) });
+    const text = JSON.stringify(file, null, 2);
+    assert(file.format === 'pool-iq-backup' && file.schema === V.BACKUP_SCHEMA && file.appVersion === V.APP_VERSION && file.exportedAt === '2026-09-25T18:00:00.000Z' && eq(Object.keys(file.keys).sort(), Object.keys(orig).sort()), 'backup file: format, schema version, app version, timestamp and every key');
+    assert(/^PoolIQ-backup-\d{4}-\d{2}-\d{2}\.json$/.test(V.backupFilename(new Date(2026, 8, 5))) && V.backupFilename(new Date(2026, 8, 5)) === 'PoolIQ-backup-2026-09-05.json', 'backup file name PoolIQ-backup-YYYY-MM-DD.json');
+    const parsed = V.parseBackup(text);
+    assert(parsed.summary.sessions === 4 && parsed.summary.matches === 1 && parsed.summary.drills === 1 && parsed.summary.shots === 2 && parsed.summary.rank === 'Shooter' && parsed.exportedAt === file.exportedAt, `restore summary: sessions, games, drills, shots, rank, date (${V.summaryLine(parsed.summary)})`);
+    const kv2 = memKV(); const idb2 = memIDB();
+    const other = storage.defaultState(); other.xp = 50; other.ghostMatches = [{ id: 'x', won: false }];
+    kv2.setItem(V.KEYS.state, JSON.stringify(other));
+    const v2 = V.createVault({ kv: kv2, idb: idb2, now });
+    await v2.replaceAll(parsed.keys, 'Before restore');
+    assert(eq(dataOf(kv2), orig), 'export → import round trip restores every key identically (career, custom drills, sim shots, preset, draft)');
+    const snaps2 = await v2.snapshots();
+    assert(snaps2.length === 1 && snaps2[0].reason === 'Before restore' && JSON.parse(snaps2[0].keys[V.KEYS.state]).xp === 50, 'restore auto-snapshots the data it replaces (undoable)');
+    assert(eq(JSON.parse(idb2.m.get(V.MIRROR_KEY).keys[V.KEYS.custom]), orig[V.KEYS.custom]), 'restored data is mirrored to IndexedDB immediately');
+    // restoring through the real loader: custom drills + sim shots readable by their modules
+    for (const k of V.DATA_KEYS) localStorage.removeItem(k);
+    for (const [k, v] of Object.entries(parsed.keys)) localStorage.setItem(k, v);
+    const loaded = storage.loadState();
+    assert(loaded.xp === 640 && loaded.ghostMatches.length === 1 && CDm.loadCustomDrills().length === 1 && LIBm.loadSim().shots.length === 2 && LIBm.loadSim().targetBest === 7, 'restored backup loads through the normal loaders (state, Create Drill library, simulator library)');
+    for (const k of V.DATA_KEYS) localStorage.removeItem(k);
+  }
+  // old-version backups migrate; invalid files are rejected
+  {
+    const v3 = { version: 3, xp: 900, rankIndex: 4, unlockedGhostBalls: 6, results: {}, ghostMatches: [{ id: 'o', won: true }], skills: {} };
+    const p3 = V.parseBackup(JSON.stringify(v3));
+    const st6 = V.stateFromKeys(p3.keys);
+    assert(p3.legacy && p3.keys[V.KEYS.v3] && st6.version === 4 && st6.xp === 900 && st6.rankFloor === 4 && st6.ghostUnlockFloor === 6 && p3.summary.rank === 'Advanced', 'an old V3 save file is accepted and migrated to V4 (rank + Ghost unlocks preserved)');
+    const v2 = { xp: 300, ghostMatches: [{ balls: 3, you: 5, ghost: 1, won: true }], results: { a: { passed: true } } };
+    const p2 = V.parseBackup(JSON.stringify(v2));
+    assert(V.stateFromKeys(p2.keys).xp === 300 && p2.summary.matches === 1, 'an unversioned (V2-era) save file is accepted and migrated');
+    const old = { format: 'pool-iq-backup', schema: 0, exportedAt: '2026-01-02T03:04:05Z', keys: { poolIQStateV3: JSON.stringify(v3), poolIQSimV1: JSON.stringify({ shots: [{ id: 'z' }] }), someFutureKey: { a: 1 } } };
+    const p0 = V.parseBackup(JSON.stringify(old));
+    assert(p0.summary.xp === 900 && p0.summary.shots === 1 && !('someFutureKey' in p0.keys), 'older backup schema (string values, V3 state) is migrated; unknown keys ignored');
+    const bad = [['not json at all', /not valid JSON/], ['[1,2]', /not a Pool IQ backup/], ['{"hello":1}', /not a Pool IQ backup/], [JSON.stringify({ format: 'pool-iq-drills', drills: [] }), /drill export/], [JSON.stringify({ format: 'pool-iq-backup', schema: 1 }), /damaged/], [JSON.stringify({ format: 'pool-iq-backup', schema: 1, keys: {} }), /empty/], [JSON.stringify({ format: 'pool-iq-backup', schema: 1, keys: { poolIQStateV4: 'garbage' } }), /damaged/], [JSON.stringify({ format: 'pool-iq-backup', schema: 1, keys: { poolIQStateV4: [1] } }), /damaged/]];
+    const probs = [];
+    for (const [t, re] of bad) { try { V.parseBackup(t); probs.push(`accepted: ${t.slice(0, 40)}`); } catch (e) { if (!re.test(e.message)) probs.push(`wrong message for ${t.slice(0, 30)}: ${e.message}`); } }
+    assertAll('invalid backup files are rejected with a clear message (not JSON, wrong shape, drill export, no data, damaged state)', probs);
+    let bom = null; try { bom = V.parseBackup('\uFEFF' + JSON.stringify(V.buildBackup(memKV({ poolIQStateV4: JSON.stringify(richState()) })))); } catch { bom = null; }
+    assert(bom && bom.summary.xp === 640, 'backup with a UTF-8 BOM (edited on Windows) still restores');
+  }
+  // reminder
+  {
+    const D = 86400000; const T = Date.UTC(2026, 8, 25);
+    const busy = { activity: 5 };
+    assert(V.daysAgoText(0, T) === 'never' && V.daysAgoText(T - 3600000, T) === 'today' && V.daysAgoText(T - D - 1, T) === 'yesterday' && V.daysAgoText(T - 9 * D, T) === '9 days ago', 'last-backup text: never / today / yesterday / N days ago');
+    assert(V.nudgeDue({}, busy, T) && !V.nudgeDue({}, { activity: 1 }, T) && !V.nudgeDue({ lastBackupAt: T - 3 * D }, busy, T) && V.nudgeDue({ lastBackupAt: T - 8 * D }, busy, T) && !V.nudgeDue({ nudgeDismissedAt: T - D }, busy, T) && V.nudgeDue({ nudgeDismissedAt: T - 8 * D }, busy, T), 'Home nudge only with real progress, >7 days since backup, and not dismissed this week');
+  }
+  // Android install: manifest + icons
+  {
+    const man = JSON.parse(src('manifest.json'));
+    const pngSize = (f) => { const b = fs.readFileSync(path.join(root, f)); return b.toString('ascii', 1, 4) === 'PNG' ? [b.readUInt32BE(16), b.readUInt32BE(20)] : null; };
+    const icons = man.icons || [];
+    const has = (size, purpose) => icons.find((i) => i.sizes === size && (i.purpose || 'any').split(' ').includes(purpose) && i.type === 'image/png');
+    const probs = [];
+    for (const [size, purpose] of [['192x192', 'any'], ['512x512', 'any'], ['192x192', 'maskable'], ['512x512', 'maskable']]) {
+      const ic = has(size, purpose);
+      if (!ic) { probs.push(`no ${purpose} ${size} icon`); continue; }
+      const dim = pngSize(ic.src.replace(/^\.\//, ''));
+      if (!dim || `${dim[0]}x${dim[1]}` !== size) probs.push(`${ic.src} is ${dim}`);
+    }
+    if (!(man.name && man.short_name && man.start_url === './' && man.scope === './' && man.display === 'standalone' && /^#/.test(man.theme_color) && /^#/.test(man.background_color) && man.id)) probs.push('name/short_name/id/start_url/scope/display/colours incomplete');
+    if (man.prefer_related_applications) probs.push('prefer_related_applications must be false');
+    const sw2 = src('sw.js');
+    for (const ic of icons) if (!sw2.includes(ic.src)) probs.push(`sw does not precache ${ic.src}`);
+    if (!/apple-touch-icon\.png/.test(src('index.html')) || !sw2.includes('./icons/apple-touch-icon.png')) probs.push('apple-touch-icon missing');
+    assertAll('manifest complete for Android Chrome install (start_url/scope ./ = /pooltraining/, standalone, colours, 192+512 any + maskable PNGs, precached)', probs);
+  }
 }
 
 console.log('\n--- Summary ---');

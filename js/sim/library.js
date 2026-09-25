@@ -2,6 +2,8 @@
  * Shot Simulator persistence: current table, saved shots, collections, settings, Target Game best.
  * localStorage key poolIQSimV1 (separate from the main career save so nothing there is touched).
  */
+import { dataWritten } from '../storage.js';
+
 export const SIM_KEY = 'poolIQSimV1';
 export const DEFAULT_SETTINGS = {
   tangent: true, // show the stun tangent line and object-ball line while aiming
@@ -34,7 +36,7 @@ export function loadSim() {
   };
 }
 export function saveSim(d) {
-  try { store()?.setItem(SIM_KEY, JSON.stringify(d)); return true; } catch { return false; }
+  try { store()?.setItem(SIM_KEY, JSON.stringify(d)); dataWritten(SIM_KEY); return true; } catch { return false; }
 }
 const uid = (p) => `${p}${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`;
 

@@ -822,6 +822,221 @@ await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile
   check(errors.length === errBefore, `Ghost rules / 8-Ball Ghost: zero console errors (${errors.length - errBefore})`);
 }
 
+// ------------------------------------------------------------------------------------------ data safety: mirror, backup, restore, reset, install
+{
+  const errBefore = errors.length;
+  const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36';
+  const dl = path.join(SHOTS || '/tmp', `downloads-${Date.now()}`);
+  fs.mkdirSync(dl, { recursive: true });
+  const cdp = await page.createCDPSession();
+  await cdp.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: dl });
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+  const ready = () => page.waitForFunction(() => document.documentElement.dataset.ready === '1', { timeout: 8000 });
+  const lsData = () => page.evaluate(() => { const o = {}; for (const k of window.PoolIQ.V.DATA_KEYS) { const v = localStorage.getItem(k); if (v != null) o[k] = JSON.parse(v); } return o; });
+  const norm = (o) => JSON.stringify(o, (k, v) => (v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b))) : v));
+  const flush = () => page.evaluate(() => window.PoolIQ.vault.flush());
+  const reload = async () => { await page.reload({ waitUntil: 'networkidle0' }); await ready(); await sleep(150); };
+  const shotClean = async (name) => { await page.evaluate(() => document.getElementById('toast')?.classList.remove('show')); await shot(name); };
+  const withNav = async (sel) => { await Promise.all([page.waitForNavigation({ waitUntil: 'networkidle0' }), page.$eval(sel, (el) => el.click())]); await ready(); await sleep(200); };
+
+  // play something: a Ghost rack
+  await inject('s.activeGhost = null; return s;', '#ghost/3/5');
+  await ready();
+  await tap('[data-action="ghost-mode"][data-v="rotation"]');
+  await tap('[data-action="ghost-start"]');
+  await tap('[data-action="ghost-rack"][data-v="W"]');
+  await flush();
+  const played = await lsData();
+  check(played.poolIQStateV4.activeGhost?.log?.length === 1 && played.poolIQCustomDrillsV1?.drills?.length >= 1, 'played a Ghost rack (plus custom drills from earlier) — data to protect');
+  const mirrored = await page.evaluate(async () => { const m = await window.PoolIQ.vault.getMirror(); return m && Object.fromEntries(Object.entries(m.keys).map(([k, v]) => [k, JSON.parse(v)])); });
+  check(mirrored && norm(mirrored) === norm(played), 'every key is mirrored to IndexedDB');
+
+  // wipe localStorage → reload → restored from IndexedDB
+  await page.evaluate(() => localStorage.clear());
+  await reload();
+  let boot = await page.evaluate(() => window.PoolIQ.boot);
+  let after = await lsData();
+  check(boot?.pick === 'remote' && boot.reason === 'local missing', `localStorage wiped → boot restores from IndexedDB (${boot?.reason})`);
+  check(after.poolIQStateV4?.activeGhost?.log?.length === 1 && norm(after.poolIQCustomDrillsV1) === norm(played.poolIQCustomDrillsV1) && norm(after.poolIQSimV1) === norm(played.poolIQSimV1) && after.poolIQStateV4.xp === played.poolIQStateV4.xp && after.poolIQStateV4.ghostMatches.length === played.poolIQStateV4.ghostMatches.length, 'wiped data is back: Ghost match in progress, XP, match history, custom drills, simulator library');
+  check(/restored from the on-device safety copy/.test(await text('#toast')), 'user is told the data was restored');
+  // corrupt the main save → reload → restored
+  await page.evaluate(() => localStorage.setItem('poolIQStateV4', '{"xp": 5, oops'));
+  await reload();
+  boot = await page.evaluate(() => window.PoolIQ.boot);
+  after = await lsData();
+  check(boot?.pick === 'remote' && boot.reason === 'local corrupt' && after.poolIQStateV4.xp === played.poolIQStateV4.xp, 'corrupted save → restored from IndexedDB on reload');
+
+  // Settings: storage status
+  await go('#settings');
+  await sleep(500);
+  const ds = await page.evaluate(() => ({ persist: document.querySelector('[data-persist]')?.dataset.persist, est: document.querySelector('[data-estimate]')?.innerText, mir: document.querySelector('[data-mirror]')?.dataset.mirror, last: document.querySelector('[data-lastbackup]')?.innerText, first: document.querySelector('#view .settingsCard')?.dataset.card, note: document.querySelector('.dataCard .tip')?.innerText }));
+  check(['on', 'off', 'unsupported'].includes(ds.persist) && /\d/.test(ds.est) && ds.mir === 'on' && ds.last === 'never' && ds.first === 'backup', `Settings shows protected storage (${ds.persist}), usage (${ds.est}), safety copy on, last backup never`);
+  check(/Home Screen icon/.test(ds.note) && /separate storage/.test(ds.note), 'Settings note: on iPhone open from the Home Screen icon (Safari tab = separate storage)');
+  await shotClean('50-settings-backup');
+
+  // Back Up Now → download (no Web Share with files in desktop Chrome)
+  await tap('[data-action="backup-now"]');
+  let file = null;
+  for (let i = 0; i < 30 && !file; i++) { await sleep(200); file = fs.readdirSync(dl).find((f) => /^PoolIQ-backup-\d{4}-\d{2}-\d{2}\.json$/.test(f)); }
+  const backup = file ? JSON.parse(fs.readFileSync(path.join(dl, file), 'utf8')) : null;
+  const nowData = await lsData();
+  check(!!backup && backup.format === 'pool-iq-backup' && backup.schema >= 1 && backup.appVersion && backup.exportedAt && norm(backup.keys) === norm(nowData), `Back Up Now produces ${file || 'NO FILE'} with schema, app version, timestamp and every key`);
+  await sleep(300);
+  check((await text('[data-lastbackup]')) === 'today', 'last backup updates to "today"');
+  // Web Share with files (iPhone share sheet / Android share) when available
+  await page.evaluate(() => {
+    navigator.canShare = (d) => !!(d && d.files && d.files.length);
+    navigator.share = async (d) => { window.__shared = { name: d.files[0].name, type: d.files[0].type, text: await d.files[0].text() }; };
+  });
+  await go('#home'); await go('#settings');
+  check(await exists('[data-action="backup-download"]'), 'with Web Share available, a "Download file instead" option is offered');
+  await tap('[data-action="backup-now"]');
+  await sleep(300);
+  const shared = await page.evaluate(() => window.__shared);
+  check(shared && /^PoolIQ-backup-\d{4}-\d{2}-\d{2}\.json$/.test(shared.name) && shared.type === 'application/json' && JSON.parse(shared.text).format === 'pool-iq-backup', 'Back Up Now uses the share sheet with the JSON file when files can be shared');
+  await page.evaluate(() => { navigator.share = async () => { const e = new Error('cancel'); e.name = 'AbortError'; throw e; }; });
+  await tap('[data-action="backup-now"]');
+  await sleep(250);
+  check(/cancelled/.test(await text('#toast')), 'cancelled share is reported (not counted as a backup)');
+  await page.evaluate(() => { delete navigator.canShare; delete navigator.share; });
+
+  // change data, then restore the backup
+  await go('#ghostmatch');
+  await tap('[data-action="ghost-rack"][data-v="L"]');
+  await flush();
+  const changed = await lsData();
+  check(changed.poolIQStateV4.activeGhost.log.length === 2, 'data changed after the backup (another rack)');
+  await go('#settings');
+  await (await page.$('input[data-restore-input]')).uploadFile(path.join(dl, file));
+  await page.waitForSelector('#sheet[data-kind="restore"]', { timeout: 4000 });
+  const sumTxt = await text('#sheet');
+  check(/Restore this backup/.test(sumTxt) && /SESSIONS/.test(sumTxt) && /GHOST GAMES/.test(sumTxt) && /MY DRILLS/.test(sumTxt) && /SAVED SHOTS/.test(sumTxt) && /RANK/.test(sumTxt) && /saved /.test(sumTxt) && /replaces/.test(sumTxt), 'Restore shows a summary (rank, sessions, games, drills, shots, date) and warns it replaces data');
+  await shotClean('51-restore-summary');
+  await withNav('#sheet [data-action="restore-do"]');
+  const restored = await lsData();
+  check(norm(restored.poolIQCustomDrillsV1) === norm(backup.keys.poolIQCustomDrillsV1) && norm(restored.poolIQSimV1) === norm(backup.keys.poolIQSimV1) && restored.poolIQStateV4.activeGhost.log.length === 1 && restored.poolIQStateV4.xp === backup.keys.poolIQStateV4.xp && restored.poolIQStateV4.ghostMatches.length === backup.keys.poolIQStateV4.ghostMatches.length, 'Restore (replace) brings back exactly the backed-up data');
+  check(/Backup restored/.test(await text('#toast')), 'toast confirms the restore after reload');
+  // invalid file is rejected, nothing changes
+  const badPath = path.join(dl, 'not-a-backup.json');
+  fs.writeFileSync(badPath, '{"hello": "world"}');
+  await go('#settings');
+  await (await page.$('input[data-restore-input]')).uploadFile(badPath);
+  await page.waitForSelector('#sheet[data-kind="restore-error"]', { timeout: 4000 });
+  check(/not a Pool IQ backup/.test(await text('#sheet')) && norm(await lsData()) === norm(restored), 'an invalid file is rejected with a message and nothing changes');
+  await tap('#sheet [data-action="sheet-close"]');
+
+  // Restore previous snapshot (undo the restore)
+  await tap('[data-action="snap-list"]');
+  await page.waitForSelector('#sheet[data-kind="snapshots"] .snapRow', { timeout: 4000 });
+  const snapTxt = await text('#sheet');
+  check(/Before restore/.test(snapTxt) && (await page.$$('#sheet .snapRow')).length <= 3, `snapshot list shows the auto-snapshot taken before the restore (${(await page.$$('#sheet .snapRow')).length} kept)`);
+  await shotClean('52-snapshots');
+  const beforeRestoreId = await page.$$eval('#sheet .snapRow', (rows) => rows.find((r) => /Before restore/.test(r.innerText))?.dataset.snap);
+  await tap(`#sheet [data-action="snap-pick"][data-id="${beforeRestoreId}"]`);
+  check(/replaces/.test(await text('#sheet')) && (await exists('#sheet [data-action="snap-restore-do"]')), 'snapshot restore asks for confirmation');
+  await withNav('#sheet [data-action="snap-restore-do"]');
+  check((await lsData()).poolIQStateV4.activeGhost.log.length === 2, 'restoring the "Before restore" snapshot undoes the restore');
+
+  // RESET ALL PROGRESS: snapshot + two-step typed confirm, and it stays reset after reload
+  await go('#settings');
+  await tap('[data-action="reset-all"]');
+  check(/STEP 1 OF 2/.test(await text('#sheet')) && /snapshot/.test(await text('#sheet')), 'reset step 1 explains the snapshot');
+  await tap('#sheet [data-action="reset-step2"]');
+  check(await page.$eval('#resetGo', (b) => b.disabled), 'reset step 2: button disabled until RESET is typed');
+  await page.type('#resetType', 'res');
+  check(await page.$eval('#resetGo', (b) => b.disabled), 'reset: partial text keeps it disabled');
+  await page.type('#resetType', 'et');
+  check(!(await page.$eval('#resetGo', (b) => b.disabled)), 'reset: typing RESET (any case) enables it');
+  await shotClean('53-reset-confirm');
+  const xpBeforeReset = (await lsData()).poolIQStateV4.xp;
+  await tap('#resetGo');
+  await sleep(600);
+  let rs = await lsData();
+  check(rs.poolIQStateV4.xp === 0 && rs.poolIQStateV4.ghostMatches.length === 0 && rs.poolIQCustomDrillsV1.drills.length >= 1, 'reset clears progress (custom drills kept)');
+  await reload();
+  rs = await lsData();
+  check(rs.poolIQStateV4.xp === 0 && (await page.evaluate(() => window.PoolIQ.boot.pick)) === 'local', 'a deliberate reset is NOT undone by the IndexedDB mirror on reload');
+  const snaps = await page.evaluate(async () => (await window.PoolIQ.vault.snapshots()).map((x) => ({ id: x.id, reason: x.reason, xp: x.summary.xp })));
+  check(snaps[0]?.reason === 'Before reset' && snaps[0].xp === xpBeforeReset && snaps.length <= 3, 'reset took a "Before reset" snapshot first (≤3 kept)');
+  await go('#settings');
+  await tap('[data-action="snap-list"]');
+  await page.waitForSelector('#sheet .snapRow');
+  await tap(`#sheet [data-action="snap-pick"][data-id="${snaps[0].id}"]`);
+  await withNav('#sheet [data-action="snap-restore-do"]');
+  check((await lsData()).poolIQStateV4.xp === xpBeforeReset, 'reset undone from the snapshot');
+
+  // Home nudge: >7 days since backup with progress; dismissible
+  await page.evaluate(() => { const m = JSON.parse(localStorage.getItem('poolIQMetaV1') || '{}'); m.lastBackupAt = Date.now() - 10 * 86400000; delete m.nudgeDismissedAt; localStorage.setItem('poolIQMetaV1', JSON.stringify(m)); });
+  await go('#settings'); await go('#home');
+  check(/10 days ago/.test(await text('.backupNudge')), 'Home shows a small backup nudge after 7+ days ("10 days ago")');
+  await shotClean('54-home-nudge');
+  await tap('.backupNudge [data-action="nudge-dismiss"]');
+  check(!(await exists('.backupNudge')), 'nudge dismisses');
+  await reload();
+  await go('#home');
+  check(!(await exists('.backupNudge')) && !(await exists('#sheet.show')), 'dismissed nudge stays away; no modal nag');
+
+  // Install: iPhone Safari → Add to Home Screen steps
+  await go('#settings');
+  check((await page.$eval('[data-card="install"]', (e) => e.dataset.install)) === 'ios', 'iPhone Safari tab: install card offers Add to Home Screen');
+  await tap('[data-card="install"] [data-action="install-app"]');
+  check(/Share/.test(await text('#sheet')) && /Add to Home Screen/.test(await text('#sheet')) && (await exists('#sheet [data-install-steps="ios"]')), 'iPhone: install shows Share → Add to Home Screen steps');
+  await tap('#sheet [data-action="sheet-close"]');
+
+  // Android Chrome sizes + beforeinstallprompt
+  await page.setUserAgent(ANDROID_UA);
+  for (const [w, h] of [[412, 915], [360, 800]]) {
+    await page.setViewport({ width: w, height: h, deviceScaleFactor: w === 412 ? 2.625 : 3, isMobile: true, hasTouch: true });
+    await page.evaluate(() => history.replaceState(null, '', '#settings'));
+    await reload();
+    await sleep(300);
+    const lay = await page.evaluate(() => {
+      const btns = [...document.querySelectorAll('.dataCard .bigBtn, [data-card="install"] .bigBtn')].map((b) => b.getBoundingClientRect());
+      return { overflow: document.documentElement.scrollWidth > innerWidth + 1, minH: Math.min(...btns.map((r) => r.height)), install: document.querySelector('[data-card="install"]')?.dataset.install, tip: document.querySelector('.dataCard .tip')?.innerText || '' };
+    });
+    check(!lay.overflow && lay.minH >= 44 && ['manual', 'prompt'].includes(lay.install) && /Downloads/.test(lay.tip), `Android ${w}×${h}: Settings fits (no sideways scroll), big buttons (${Math.round(lay.minH)}px), Android backup tip`);
+    if (w === 412) await shotClean('55-android-settings-412');
+    await page.evaluate(() => { const e = new Event('beforeinstallprompt'); e.prompt = async () => { window.__prompted = (window.__prompted || 0) + 1; }; e.userChoice = Promise.resolve({ outcome: 'accepted' }); window.dispatchEvent(e); });
+    await sleep(200);
+    check((await page.$eval('[data-card="install"]', (e) => e.dataset.install)) === 'prompt' && /INSTALL APP/.test(await text('[data-card="install"]')), `Android ${w}×${h}: beforeinstallprompt turns on the INSTALL APP button`);
+    await go('#home');
+    check(await exists('.installNudge [data-action="install-app"]'), `Android ${w}×${h}: Home offers Install`);
+    await tap('.installNudge [data-action="install-app"]');
+    await sleep(200);
+    check((await page.evaluate(() => window.__prompted)) === 1, `Android ${w}×${h}: INSTALL calls the browser install prompt`);
+    // score screens: no scrolling (Beginner coaching shows the full recipe — the tallest layout)
+    await go('#settings');
+    await tap('[data-action="set-coach"][data-v="beginner"]');
+    await go('#play/landing/lz-1');
+    const sc = await page.evaluate(() => ({ bar: Math.round(document.querySelector('.resultBar')?.getBoundingClientRect().bottom || 9e9), sh: document.documentElement.scrollHeight, ih: innerHeight, coach: document.querySelector('.playScreen')?.dataset.coach }));
+    check(sc.bar <= sc.ih + 1 && sc.sh <= sc.ih + 2, `Android ${w}×${h}: stage score screen fits without scrolling (${sc.coach}: bar ${sc.bar}, page ${sc.sh}/${sc.ih})`);
+    await go('#settings');
+    await tap('[data-action="set-coach"][data-v="auto"]');
+    await go('#ghostmatch');
+    const gm = await page.evaluate(() => ({ fit: (document.querySelector('.resultBar')?.getBoundingClientRect().bottom || 9e9) <= innerHeight + 1, noScroll: document.documentElement.scrollHeight <= innerHeight + 2 }));
+    check(gm.fit && gm.noScroll, `Android ${w}×${h}: Ghost score screen fits without scrolling`);
+    if (w === 360) await shotClean('56-android-ghost-360');
+  }
+  // installed (display-mode standalone): install UI hidden
+  await page.emulateMediaFeatures([{ name: 'display-mode', value: 'standalone' }]).catch(() => {});
+  let standalone = await page.evaluate(() => matchMedia('(display-mode: standalone)').matches);
+  if (!standalone) await page.evaluateOnNewDocument(() => { Object.defineProperty(navigator, 'standalone', { get: () => true }); });
+  await page.evaluate(() => history.replaceState(null, '', '#settings'));
+  await reload();
+  check((await page.$eval('[data-card="install"]', (e) => e.dataset.install)) === 'installed' && !(await exists('[data-card="install"] [data-action="install-app"]')), `installed app (standalone${standalone ? ' media' : ' flag'}): Install button hidden`);
+  await go('#home');
+  check(!(await exists('.installNudge')), 'installed app: no install card on Home');
+  await page.emulateMediaFeatures([]).catch(() => {});
+  // iPhone 375×667 Settings
+  await page.setUserAgent(IPHONE_UA);
+  await page.setViewport({ width: 375, height: 667, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  await go('#settings');
+  const small = await page.evaluate(() => ({ overflow: document.documentElement.scrollWidth > innerWidth + 1, minH: Math.min(...[...document.querySelectorAll('.dataCard .bigBtn')].map((b) => b.getBoundingClientRect().height)) }));
+  check(!small.overflow && small.minH >= 44, '375×667: Settings backup card fits with big buttons');
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+  check(errors.length === errBefore, `data safety: zero console errors (${errors.length - errBefore})`);
+}
+
 // ------------------------------------------------------------------------------------------ service worker + offline
 const swOk = await page.evaluate(async () => {
   if (!('serviceWorker' in navigator)) return false;
@@ -830,7 +1045,7 @@ const swOk = await page.evaluate(async () => {
 });
 check(swOk, 'service worker registered and active');
 const cacheName = await page.evaluate(async () => (await caches.keys()).join(','));
-check(/pool-iq-v8/.test(cacheName) && !/pool-iq-v7/.test(cacheName), `cache bumped to v8 (${cacheName})`);
+check(/pool-iq-v9/.test(cacheName) && !/pool-iq-v8/.test(cacheName), `cache bumped to v9 (${cacheName})`);
 await page.setOfflineMode(true);
 await page.goto(BASE + 'index.html#arcade', { waitUntil: 'domcontentloaded' });
 await sleep(800);

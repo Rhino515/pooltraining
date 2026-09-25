@@ -24,7 +24,14 @@ function nextUpCard(state) {
   </div>`;
 }
 
-export function renderHome(state) {
+function homeExtrasHTML(x = {}) {
+  let out = '';
+  if (x.nudge) out += `<div class="card nudgeCard backupNudge" data-nudge="backup"><span class="nudgeIcon">⛨</span><span class="nudgeText"><b>Back up your progress</b><small>Last backup: ${esc(x.nudge.lastText)}. One tap saves a file you can restore on any phone.</small></span><button type="button" class="miniAct nudgeGo" data-action="backup-now">BACK UP</button><button type="button" class="nudgeX" data-action="nudge-dismiss" aria-label="Dismiss backup reminder">×</button></div>`;
+  if (x.install) out += `<div class="card nudgeCard installNudge" data-nudge="install"><span class="nudgeIcon">⤓</span><span class="nudgeText"><b>Install Pool IQ</b><small>${x.install === 'ios' ? 'Share → Add to Home Screen: full-screen, offline, safer storage.' : 'Full-screen, works offline, safer storage.'}</small></span><button type="button" class="miniAct nudgeGo" data-action="install-app">INSTALL</button><button type="button" class="nudgeX" data-action="install-dismiss" aria-label="Dismiss install tip">×</button></div>`;
+  return out;
+}
+
+export function renderHome(state, extras = {}) {
   const info = nextRankInfo(state);
   const pct = Math.round((info.progress || 0) * 100);
   const weak = weakestSkills(state, 3);
@@ -40,6 +47,7 @@ export function renderHome(state) {
       </div>
       <div class="rankBadge">${(state.rankIndex || 0) + 1}</div>
     </div>
+    ${homeExtrasHTML(extras)}
     ${nextUpCard(state)}
     <button type="button" class="card simPromo" data-action="go" data-href="#sim"><span class="simPromoIcon">◔</span><span class="simPromoText"><span class="eyebrow">NEW</span><b>Shot Simulator</b><small>Set up any layout, shoot it and watch the physics — racks, run-outs, Find a Shot and more.</small></span><span class="simPromoGo">›</span></button>
     <div class="dashActions">
@@ -193,10 +201,11 @@ function drillCard(state, d) {
 }
 
 // ------------------------------------------------------------------------------ settings
-export function renderSettings(state) {
+export function renderSettings(state, info = {}) {
   const cal = state.speedCal || {};
   const coach = state.settings?.coaching || 'auto';
   return `<div class="title"><span class="eyebrow">SETTINGS</span><h1>Settings</h1></div>
+    ${dataCardHTML(info)}
     <div class="card settingsCard">
       <div class="eyebrow">COACHING LEVEL</div>
       <p class="muted small">Auto picks the level from your rating in each game's main skill (now: ${esc(COACH_LABEL[coachingLevel({ ...state, settings: { coaching: 'auto' } }, { primarySkill: 'Position Play' })])} for position games).</p>
@@ -210,5 +219,31 @@ export function renderSettings(state) {
       <p class="muted small">SPEED n ≈ n lengths of total cue-ball travel from an end rail. ${esc(clothNote(cal))}</p>
       <button type="button" class="bigBtn alt" data-action="go" data-href="#play/speed/sp-cal">RUN SPEED CALIBRATION</button>
     </div>
-    <div class="card settingsCard"><div class="eyebrow">DATA</div><p class="muted small">Progress is stored on this device (localStorage key poolIQStateV4).</p><button type="button" class="bigBtn danger" data-action="reset-all">RESET ALL PROGRESS</button></div>`;
+    ${installCardHTML(info)}
+    <div class="card settingsCard dangerCard"><div class="eyebrow">DANGER ZONE</div><p class="muted small">Clears stages, Ghost matches, bosses, calibration and rank. A snapshot is taken first, so it can be undone from “Restore previous snapshot”.</p><button type="button" class="bigBtn danger" data-action="reset-all">RESET ALL PROGRESS</button></div>`;
+}
+
+const PERSIST_LABEL = { on: 'ON ✓', off: 'OFF', unsupported: 'not supported', checking: 'checking…' };
+function dataCardHTML(info = {}) {
+  const p = info.persist || 'checking';
+  return `<div class="card settingsCard dataCard" data-card="backup">
+      <div class="eyebrow">PROTECT YOUR HISTORY</div>
+      <div class="kv"><span>Protected storage</span><b data-persist="${esc(p)}" class="${p === 'on' ? 'green' : p === 'off' ? 'amber' : ''}">${esc(PERSIST_LABEL[p] || p)}</b></div>
+      <div class="kv"><span>Storage used</span><b data-estimate>…</b></div>
+      <div class="kv"><span>Safety copy (IndexedDB)</span><b data-mirror>…</b></div>
+      <div class="kv"><span>Last backup</span><b data-lastbackup="${info.lastBackupAt || 0}" class="${info.backupStale ? 'amber' : 'green'}">${esc(info.lastBackupText || 'never')}</b></div>
+      <p class="muted small">Everything — career, sessions, Ghost matches, custom drills, saved shots and settings — is saved on this device and copied to a second store automatically. A backup file keeps it safe if the phone is lost, reset or the app is deleted.</p>
+      <button type="button" class="bigBtn" data-action="backup-now">BACK UP NOW</button>
+      ${info.canShare ? '<button type="button" class="bigBtn alt" data-action="backup-download">DOWNLOAD FILE INSTEAD</button>' : ''}
+      <label class="bigBtn alt fileBtn" data-restore-label>RESTORE FROM BACKUP<input type="file" accept=".json,application/json,text/plain" data-restore-input aria-label="Choose a Pool IQ backup file"/></label>
+      <button type="button" class="bigBtn alt" data-action="snap-list">RESTORE PREVIOUS SNAPSHOT <small data-snapcount></small></button>
+      <p class="muted small tip">${info.ios ? '<b>iPhone:</b> always open Pool IQ from its Home Screen icon — a Safari tab keeps separate storage, so history made there won’t show in the app. “Back Up Now” → <b>Save to Files</b> (iCloud Drive) keeps a copy off the phone.' : info.android ? '<b>Android:</b> “Back Up Now” saves the file to <b>Downloads</b> (or share it to Google Drive). Installing the app keeps storage safer. <b>iPhone:</b> open Pool IQ from its Home Screen icon — a Safari tab keeps separate storage.' : '<b>iPhone:</b> open Pool IQ from its Home Screen icon — a Safari tab keeps separate storage. <b>Android:</b> backups go to Downloads or Google Drive.'}</p>
+    </div>`;
+}
+function installCardHTML(info = {}) {
+  const m = info.install || 'manual';
+  if (m === 'installed') return `<div class="card settingsCard" data-card="install" data-install="installed"><div class="eyebrow">APP</div><p class="small"><b class="green">✓ Installed</b> — Pool IQ is running as an app.</p></div>`;
+  const label = m === 'ios' ? 'ADD TO HOME SCREEN' : 'INSTALL APP';
+  const note = m === 'prompt' ? 'Installs Pool IQ like a normal app: full-screen, offline, and safer storage.' : m === 'ios' ? 'In Safari: Share → Add to Home Screen. Then open Pool IQ from the icon.' : 'Install from your browser menu for a full-screen, offline app with safer storage.';
+  return `<div class="card settingsCard" data-card="install" data-install="${esc(m)}"><div class="eyebrow">INSTALL APP</div><p class="muted small">${esc(note)}</p><button type="button" class="bigBtn alt" data-action="install-app">${label}</button></div>`;
 }

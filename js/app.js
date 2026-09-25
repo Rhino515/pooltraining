@@ -4,7 +4,9 @@
  *         #ghost[/balls/race] #ghostmatch #game/<id> #play/<game>/<stage> #boss/<id> #bossplay/<id>
  *         #sim[/s=<code>|/target] (Shot Simulator) #drillnew[/fromsim] #drilledit/<id> (Create Drill)
  */
-import { loadState, saveState, resetState, archiveUnknownDrills } from './storage.js';
+import { loadState, saveState, resetState, archiveUnknownDrills, onDataWrite, lsSet, idbAdapter } from './storage.js';
+import * as V from './vault.js';
+import { initInstall, installMode, promptInstall, installSheetHTML, isIOS, isAndroid } from './install.js';
 import { syncRank } from './career.js';
 import { withSkills } from './skills.js';
 import { drills, getDrillById, allDrills } from './drills.js';
@@ -25,15 +27,17 @@ function derive(s) {
   return syncRank(withSkills(s));
 }
 
-let state = derive(archiveUnknownDrills(loadState(), allDrills().map((d) => d.id)));
-saveState(state);
+let state = null; // set in boot() after the storage vault has reconciled localStorage with IndexedDB
+const vault = V.createVault({ kv: localStorage, idb: idbAdapter });
+const FLASH_KEY = 'poolIQFlash';
+const DAY = 86400000;
 
 let screen = null; // active play screen (has render/onAction)
 let route = { name: 'home', args: [] };
 const GHOST_PRESET_KEY = 'poolIQGhostPreset';
 let ghostPreset = { balls: 3, race: 5, mode: 'rotation', level: 'beginner', group: 3 };
-try { ghostPreset = { ...ghostPreset, ...JSON.parse(localStorage.getItem(GHOST_PRESET_KEY) || '{}') }; } catch { /* ignore */ }
-function saveGhostPreset() { try { localStorage.setItem(GHOST_PRESET_KEY, JSON.stringify(ghostPreset)); } catch { /* ignore */ } }
+function loadGhostPreset() { try { ghostPreset = { ...ghostPreset, ...JSON.parse(localStorage.getItem(GHOST_PRESET_KEY) || '{}') }; } catch { /* ignore */ } }
+function saveGhostPreset() { lsSet(GHOST_PRESET_KEY, JSON.stringify(ghostPreset)); }
 let drillFilter = 'All';
 const view = () => document.getElementById('view');
 
@@ -120,7 +124,10 @@ function renderRoute() {
     bindAnalyzeHandlers(v);
   } else if (name === 'arcade') v.innerHTML = renderArcade(state);
   else if (name === 'profile' || name === 'stats') v.innerHTML = renderProfile(state);
-  else if (name === 'settings') v.innerHTML = renderSettings(state);
+  else if (name === 'settings') {
+    v.innerHTML = renderSettings(state, settingsInfo());
+    fillSettings();
+  }
   else if (name === 'ghost') {
     if (args[0] === 'eight') ghostPreset = { ...ghostPreset, mode: 'eight' };
     else if (args[0]) ghostPreset = { ...ghostPreset, mode: 'rotation', balls: Math.min(Number(args[0]) || 3, maxUnlockedBalls(state)), race: Number(args[1]) || 5 };
@@ -128,7 +135,7 @@ function renderRoute() {
   } else if (name === 'ghostmatch') {
     v.innerHTML = renderGhostMatch(state);
     playing = !!state.activeGhost;
-  } else v.innerHTML = renderHome(state);
+  } else v.innerHTML = renderHome(state, homeExtras());
   setChrome(playing, NAV_FOR[name] || 'home');
   if (!playing) window.scrollTo(0, 0);
   else window.scrollTo(0, 0);
@@ -319,13 +326,64 @@ function handleAction(action, el, e) {
       renderRoute();
       break;
     case 'reset-all':
-      openSheet(`<h2 class="sheetTitle">Reset all progress?</h2><p class="muted">This clears stages, Ghost matches, bosses, calibration and rank on this device.</p><button type="button" class="bigBtn danger" data-action="reset-confirm">YES, RESET</button><button type="button" class="bigBtn alt" data-action="sheet-close">CANCEL</button>`, { id: 'reset' });
+      openSheet(`<div class="eyebrow">STEP 1 OF 2</div><h2 class="sheetTitle">Reset all progress?</h2><p class="muted">This clears stages, Ghost matches, bosses, calibration and rank on this device. Custom drills and saved simulator shots are kept.</p><div class="warnBox">A snapshot of your current data is saved first — you can undo this from Settings → <b>Restore previous snapshot</b>. For a copy off this phone, tap <b>Back Up Now</b> first.</div><button type="button" class="bigBtn danger" data-action="reset-step2">CONTINUE</button><button type="button" class="bigBtn alt" data-action="sheet-close">CANCEL</button>`, { id: 'reset' });
       break;
-    case 'reset-confirm':
-      state = derive(resetState());
-      saveState(state);
-      closeSheet();
-      navigate('#home');
+    case 'reset-step2':
+      openSheet(`<div class="eyebrow">STEP 2 OF 2</div><h2 class="sheetTitle">Type RESET to confirm</h2><p class="muted small">This can't be undone except from a snapshot or backup.</p><input id="resetType" class="typeConfirm" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="RESET" aria-label="Type RESET to confirm"/><button type="button" id="resetGo" class="bigBtn danger" data-action="reset-confirm" disabled>RESET EVERYTHING</button><button type="button" class="bigBtn alt" data-action="sheet-close">CANCEL</button>`, { id: 'reset2' });
+      break;
+    case 'reset-confirm': {
+      if ((document.getElementById('resetType')?.value || '').trim().toUpperCase() !== 'RESET') break;
+      el.disabled = true;
+      (async () => {
+        await vault.snapshot('Before reset');
+        vault.markIntent();
+        state = derive(resetState());
+        saveState(state);
+        await vault.flush().catch(() => {});
+        closeSheet();
+        navigate('#home');
+        toast('Progress reset — a snapshot was saved in Settings');
+      })();
+      break;
+    }
+    case 'backup-now':
+      backupNow(false);
+      break;
+    case 'backup-download':
+      backupNow(true);
+      break;
+    case 'nudge-dismiss':
+      V.writeMeta(localStorage, { ...V.readMeta(localStorage), nudgeDismissedAt: Date.now() });
+      renderRoute();
+      break;
+    case 'install-dismiss':
+      V.writeMeta(localStorage, { ...V.readMeta(localStorage), installDismissedAt: Date.now() });
+      renderRoute();
+      break;
+    case 'install-app':
+      if (installMode() === 'prompt') {
+        promptInstall().then((r) => { toast(r === 'accepted' ? 'Installing Pool IQ…' : 'Install cancelled'); if (route.name === 'home' || route.name === 'settings') renderRoute(); });
+      } else openSheet(installSheetHTML(), { id: 'install' });
+      break;
+    case 'snap-list':
+      showSnapshots();
+      break;
+    case 'snap-pick': {
+      const snap = snapCache.find((x) => x.id === el.dataset.id);
+      if (snap) openSheet(`<div class="eyebrow">RESTORE SNAPSHOT</div><h2 class="sheetTitle">Go back to ${escHTML(fmtWhen(snap.takenAt))}?</h2>${summaryGridHTML(snap.summary)}<div class="warnBox">This <b>replaces</b> your current data with the snapshot. Your current data is snapshotted first, so this can be undone too.</div><button type="button" class="bigBtn danger" data-action="snap-restore-do" data-id="${escHTML(snap.id)}">RESTORE THIS SNAPSHOT</button><button type="button" class="bigBtn alt" data-action="sheet-close">CANCEL</button>`, { id: 'snap-confirm' });
+      break;
+    }
+    case 'snap-restore-do': {
+      const snap = snapCache.find((x) => x.id === el.dataset.id);
+      if (!snap) break;
+      el.disabled = true;
+      replaceAndReload(snap.keys, 'Before snapshot restore', `Snapshot from ${fmtWhen(snap.takenAt)} restored`);
+      break;
+    }
+    case 'restore-do':
+      if (!pendingRestore) break;
+      el.disabled = true;
+      replaceAndReload(pendingRestore.keys, 'Before restore', 'Backup restored — your previous data is saved as a snapshot');
       break;
     default:
       break;
@@ -333,6 +391,7 @@ function handleAction(action, el, e) {
 }
 
 document.addEventListener('click', (e) => {
+  if (!state) return; // still booting (vault reconcile)
   const el = e.target.closest('[data-action]');
   if (el && !el.disabled) {
     e.preventDefault();
@@ -356,11 +415,179 @@ function downloadFile(name, text) {
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }
 
-window.addEventListener('hashchange', renderRoute);
-renderRoute();
+// ------------------------------------------------------------------------------ data safety
+let snapCache = [];
+let pendingRestore = null;
+const fmtWhen = (t) => { const d = new Date(t); return `${d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })} ${d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`; };
+function fmtBytes(n) {
+  if (!Number.isFinite(n)) return '?';
+  if (n < 1024) return `${n} B`;
+  if (n < 1048576) return `${(n / 1024).toFixed(n < 10240 ? 1 : 0)} KB`;
+  if (n < 1073741824) return `${(n / 1048576).toFixed(1)} MB`;
+  return `${(n / 1073741824).toFixed(1)} GB`;
+}
+function canShareFiles() {
+  try { return !!(navigator.canShare && navigator.share && navigator.canShare({ files: [new File(['{}'], 'PoolIQ-backup.json', { type: 'application/json' })] })); } catch { return false; }
+}
+function homeExtras() {
+  const meta = V.readMeta(localStorage);
+  const sum = V.summarize(V.localBundle(localStorage).keys);
+  const mode = installMode();
+  return {
+    nudge: V.nudgeDue(meta, sum) ? { lastText: V.daysAgoText(meta.lastBackupAt) } : null,
+    install: (mode === 'prompt' || mode === 'ios') && !(meta.installDismissedAt && Date.now() - meta.installDismissedAt < 30 * DAY) ? mode : null
+  };
+}
+function settingsInfo() {
+  const meta = V.readMeta(localStorage);
+  return {
+    persist: meta.persist?.state || 'checking',
+    lastBackupAt: meta.lastBackupAt || 0,
+    lastBackupText: V.daysAgoText(meta.lastBackupAt),
+    backupStale: !meta.lastBackupAt || Date.now() - meta.lastBackupAt > V.NUDGE_DAYS * DAY,
+    install: installMode(),
+    canShare: canShareFiles(),
+    ios: isIOS(),
+    android: isAndroid()
+  };
+}
+const PERSIST_TEXT = { on: 'ON ✓', off: 'OFF', unsupported: 'not supported' };
+function setPersist(st) {
+  V.writeMeta(localStorage, { ...V.readMeta(localStorage), persist: { state: st, at: Date.now() } });
+  const el = document.querySelector('[data-persist]');
+  if (el) { el.dataset.persist = st; el.textContent = PERSIST_TEXT[st]; el.className = st === 'on' ? 'green' : st === 'off' ? 'amber' : ''; }
+  return st;
+}
+/** navigator.storage.persist(): asks the browser not to evict our storage (Chrome/Android grant it silently for engaged or installed apps; Safari 17+) */
+async function checkPersist(request) {
+  const S = navigator.storage;
+  if (!S || typeof S.persist !== 'function' || typeof S.persisted !== 'function') return setPersist('unsupported');
+  let on = false;
+  try { on = await S.persisted(); } catch { on = false; }
+  if (!on && request) { try { on = await S.persist(); } catch { on = false; } }
+  return setPersist(on ? 'on' : 'off');
+}
+async function fillSettings() {
+  checkPersist(false);
+  const est = document.querySelector('[data-estimate]');
+  if (est) {
+    try {
+      const e = navigator.storage?.estimate ? await navigator.storage.estimate() : null;
+      est.textContent = e && Number.isFinite(e.usage) ? `${fmtBytes(e.usage)}${e.quota ? ` of ${fmtBytes(e.quota)}` : ''}` : 'not available';
+    } catch { est.textContent = 'not available'; }
+  }
+  await vault.flush().catch(() => {}); // make sure the safety copy reflects the latest save before reporting it
+  const [mir, snaps] = await Promise.all([vault.getMirror(), vault.snapshots()]);
+  const m = document.querySelector('[data-mirror]');
+  if (m) {
+    const ok = V.health(mir).valid;
+    m.textContent = ok ? `on · updated ${mir.mirroredAt && Date.now() - mir.mirroredAt < 60000 ? 'just now' : fmtWhen(mir.mirroredAt || mir.savedAt)}` : 'not available';
+    m.className = ok ? 'green' : 'amber';
+    m.dataset.mirror = ok ? 'on' : 'off';
+  }
+  const sc = document.querySelector('[data-snapcount]');
+  if (sc) { sc.textContent = `(${snaps.length})`; sc.dataset.snapcount = String(snaps.length); }
+}
+function summaryGridHTML(s) {
+  return `<div class="summaryGrid" data-summary><div class="rankCell"><b>${escHTML(s.rank)}</b><span>RANK · ${s.xp} XP</span></div><div><b>${s.sessions}</b><span>SESSIONS</span></div><div><b>${s.matches}</b><span>GHOST GAMES</span></div><div><b>${s.drills}</b><span>MY DRILLS</span></div><div><b>${s.shots}</b><span>SAVED SHOTS</span></div></div>`;
+}
+function backupPayload(now = new Date()) {
+  const obj = V.buildBackup(localStorage, { now: now.getTime() });
+  return { name: V.backupFilename(now), text: JSON.stringify(obj, null, 2), obj };
+}
+function markBackedUp(how) {
+  V.writeMeta(localStorage, { ...V.readMeta(localStorage), lastBackupAt: Date.now(), lastBackupHow: how });
+  vault.schedule();
+  if (route.name === 'settings' || route.name === 'home') renderRoute();
+}
+/** One JSON file with everything: iPhone share sheet (Save to Files / iCloud Drive), Android share or Downloads, else a download */
+function backupNow(forceDownload) {
+  const { name, text } = backupPayload();
+  const file = typeof File === 'function' ? new File([text], name, { type: 'application/json' }) : null;
+  let share = false;
+  try { share = !forceDownload && !!file && !!navigator.share && !!navigator.canShare && navigator.canShare({ files: [file] }); } catch { share = false; }
+  if (share) {
+    navigator.share({ files: [file], title: 'Pool IQ backup', text: `Pool IQ backup · ${new Date().toLocaleDateString()}` })
+      .then(() => { markBackedUp('share'); toast('Backup saved'); })
+      .catch((err) => {
+        if (err && err.name === 'AbortError') { toast('Backup not saved — share was cancelled'); return; }
+        downloadFile(name, text);
+        markBackedUp('download');
+        toast(`Backup downloaded: ${name}`);
+      });
+    return;
+  }
+  downloadFile(name, text);
+  markBackedUp('download');
+  toast(`Backup downloaded: ${name}`);
+}
+async function showSnapshots() {
+  snapCache = await vault.snapshots();
+  const rows = snapCache.map((s) => `<div class="snapRow" data-snap="${escHTML(s.id)}"><div><b>${escHTML(fmtWhen(s.takenAt))}</b><small>${escHTML(s.reason)} · ${escHTML(V.summaryLine(s.summary || V.summarize(s.keys)))}</small></div><button type="button" class="miniAct" data-action="snap-pick" data-id="${escHTML(s.id)}">RESTORE</button></div>`).join('');
+  openSheet(`<div class="eyebrow">SNAPSHOTS ON THIS DEVICE</div><h2 class="sheetTitle">Restore previous snapshot</h2><p class="muted small">Pool IQ keeps the last ${V.MAX_SNAPSHOTS} snapshots: one every few hours of use, plus one right before any reset or restore.</p>${rows || '<p class="muted" data-snap-empty>No snapshots yet — one is taken automatically once you have some progress.</p>'}<button type="button" class="bigBtn alt" data-action="sheet-close">CLOSE</button>`, { id: 'snapshots' });
+}
+async function replaceAndReload(keys, reason, flash) {
+  try {
+    await vault.replaceAll(keys, reason);
+    try { sessionStorage.setItem(FLASH_KEY, flash); } catch { /* ignore */ }
+    location.reload();
+  } catch (err) {
+    toast(`Restore failed: ${err.message || err}`);
+  }
+}
+document.addEventListener('change', async (e) => {
+  const inp = e.target && e.target.closest ? e.target.closest('[data-restore-input]') : null;
+  if (!inp) return;
+  const file = inp.files && inp.files[0];
+  inp.value = '';
+  if (!file) return;
+  try {
+    if (file.size > 25 * 1048576) throw new Error('That file is too large to be a Pool IQ backup.');
+    const parsed = V.parseBackup(await file.text());
+    pendingRestore = parsed;
+    const when = parsed.exportedAt ? fmtWhen(Date.parse(parsed.exportedAt)) : 'unknown date';
+    openSheet(`<div class="eyebrow">RESTORE FROM BACKUP</div><h2 class="sheetTitle">Restore this backup?</h2><p class="muted small" data-restore-file>${escHTML(file.name)} · saved ${escHTML(when)}${parsed.appVersion ? ` · Pool IQ v${escHTML(parsed.appVersion)}` : ''}${parsed.legacy ? ' · older save format (will be upgraded)' : ''}${parsed.newer ? ' · made by a newer Pool IQ' : ''}</p>${summaryGridHTML(parsed.summary)}<div class="warnBox">This <b>replaces</b> everything on this device with the backup. Your current data is snapshotted first — undo any time from Settings → <b>Restore previous snapshot</b>.</div><button type="button" class="bigBtn danger" data-action="restore-do">RESTORE (REPLACE MY DATA)</button><button type="button" class="bigBtn alt" data-action="sheet-close">CANCEL</button>`, { id: 'restore' });
+  } catch (err) {
+    pendingRestore = null;
+    openSheet(`<div class="eyebrow">RESTORE FROM BACKUP</div><h2 class="sheetTitle">Can't use that file</h2><p class="muted" data-restore-error>${escHTML(err.message || 'That file is not a Pool IQ backup.')}</p><p class="muted small">Pick a file named like PoolIQ-backup-YYYY-MM-DD.json. Nothing on this device was changed.</p><button type="button" class="bigBtn alt" data-action="sheet-close">OK</button>`, { id: 'restore-error' });
+  }
+});
+document.addEventListener('input', (e) => {
+  if (e.target && e.target.id === 'resetType') {
+    const b = document.getElementById('resetGo');
+    if (b) b.disabled = e.target.value.trim().toUpperCase() !== 'RESET';
+  }
+});
+
+// ------------------------------------------------------------------------------ boot
+async function boot() {
+  let rec = null;
+  try { rec = await vault.reconcile(); } catch (e) { console.warn('Pool IQ vault reconcile failed', e); }
+  onDataWrite(() => vault.touch());
+  refreshCustomDrills();
+  state = derive(archiveUnknownDrills(loadState(), allDrills().map((d) => d.id)));
+  saveState(state);
+  loadGhostPreset();
+  initInstall(() => { if ((route.name === 'home' || route.name === 'settings') && !document.querySelector('#sheet.show')) renderRoute(); });
+  window.addEventListener('hashchange', renderRoute);
+  renderRoute();
+  document.documentElement.dataset.ready = '1';
+  window.PoolIQ.boot = rec;
+  let flash = null;
+  try { flash = sessionStorage.getItem(FLASH_KEY); sessionStorage.removeItem(FLASH_KEY); } catch { /* ignore */ }
+  if (flash) toast(flash);
+  else if (rec && rec.pick === 'remote' && V.isMeaningful(V.localBundle(localStorage).keys)) toast('Your data was restored from the on-device safety copy');
+  checkPersist(true).then((st) => {
+    if (st === 'off') window.addEventListener('pointerdown', () => checkPersist(true), { once: true, passive: true });
+  });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') vault.flush().catch(() => {}); });
+  window.addEventListener('pagehide', () => { vault.flush().catch(() => {}); });
+}
+
 window.addEventListener('load', () => {
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
 });
 
-window.PoolIQ = { getState: () => state, drills, getDrillById, allDrills, commit, navigate, rerender, get screen() { return screen; } };
+window.PoolIQ = { getState: () => state, drills, getDrillById, allDrills, commit, navigate, rerender, vault, V, backupPayload, installMode, get screen() { return screen; } };
+boot();
 export { drills, getDrillById };

@@ -36,6 +36,7 @@ To deploy, copy the folder to any static host (for example GitHub Pages). All as
 | Shot Simulator | `js/sim/physics.js` (deterministic ball physics), `js/sim/layouts.js` (racks, random layouts, snap, validation), `js/sim/solver.js` (throw-compensated aim, Find a Shot, shape zones, Target Game), `js/sim/share.js` (URL/JSON share format), `js/sim/library.js` (saved shots + settings), `js/ui/simulator.js` (screen) |
 | Create Drill | `js/customDrills.js` (builder model, validation, simulated route, challenge builder, storage, import/export), `js/ui/drillBuilder.js` (screen) |
 | Storage | `js/storage.js`: `localStorage` key `poolIQStateV4`, migrated from V3/V2. Old keys are left intact. |
+| Data safety | `js/vault.js` + `js/install.js`: IndexedDB mirror of every key, reconcile on load, 3 rolling snapshots, JSON backup/restore, backup reminder, protected storage, Install App. |
 
 ### Games
 
@@ -280,9 +281,10 @@ It checks:
   - skills (unplayed drills never lower ratings; played ones count), rank unaffected
   - export/import/duplicate/delete
 - Ghost: order-rule text for 3- and 9-ball (setup, in-game, sheet); 8-Ball Ghost presets/custom count, scoring, undo, XP, general-vs-N-ball career credit, skills; Pro break flow + house rules (8 on the break wins, break scratch = ball in hand, no penalty) + undo; simulator layouts
-- service worker precaches every module (v8)
+- data safety: every persisted key is mirrored (and every writer notifies the mirror); localStorage wiped / corrupted → restored from IndexedDB; single corrupt key repaired; newer-wins both ways; an empty/default state never overwrites a good copy (a deliberate reset may); snapshot rotation (3 kept, spaced out, none of empty data); backup export → import round trip restores every key identically (career, custom drills, sim shots, preset, draft) and snapshots what it replaces; old V3/V2 saves and older backup schemas migrate; invalid files rejected; reminder rules; Android manifest + icons
+- service worker precaches every module (v9)
 
-### e2e (real Chrome, iPhone 390×844, touch)
+### e2e (real Chrome, iPhone 390×844 / 375×667 and Android Chrome 412×915 / 360×800, touch)
 
 ```bash
 # 1. serve the app
@@ -326,11 +328,29 @@ It covers:
   - edit in place, duplicate, delete with confirm
   - no scrolling on score screens at both sizes
 - Ghost: order rule visible for 3-ball and 9-ball; 8-Ball Ghost custom count remembered after reload, scored and saved, undo; Pro break → ball in hand → run-out, SCRATCHED ON BREAK → ball in hand (no Ghost point) + undo, break log saved, no stale toast over the buttons; Set up in Shot Simulator; no scrolling at 390×844 and 375×667
-- service worker (cache v8) and offline reload
+- data safety: play a rack → wipe localStorage → reload → everything restored from IndexedDB (also after corrupting the save); Settings shows protected storage / usage / safety copy / last backup; Back Up Now downloads `PoolIQ-backup-YYYY-MM-DD.json` with every key (and uses the share sheet when files can be shared; a cancelled share isn't counted); Restore from Backup shows the summary and restores exactly; invalid file rejected; Restore previous snapshot undoes a restore; RESET ALL PROGRESS is two-step + typed, takes a snapshot, isn't undone by the mirror, and can be undone from the snapshot; Home backup nudge after 7+ days, dismissible; Install: iPhone steps, Android `beforeinstallprompt` → INSTALL APP, hidden when standalone; Android 412×915 and 360×800 Settings + score screens without scrolling
+- service worker (cache v9) and offline reload
 
 ## Storage
 
 - `localStorage` key `poolIQStateV4`. It migrates from `poolIQStateV3` and `poolIQStateV2`, and the old keys are left intact as backups.
 - The in-progress session (`activeSession`) and Ghost match (`activeGhost`) are saved after every tap, so a reload resumes play.
 - Shot Simulator: `poolIQSimV1` (current table, saved shots, collections, settings, Target Game best). Create Drill: `poolIQCustomDrillsV1` (custom drills), `poolIQDrillWip` (unsaved builder work), `poolIQDrillDraft` (simulator → drill hand-off). These are new keys, so existing saves are untouched.
-- IndexedDB helpers (`idbPut`/`idbGet`) are reserved for future camera captures.
+- Ghost setup: `poolIQGhostPreset`. Vault bookkeeping (save sequence, last backup, dismissed tips, protected-storage result): `poolIQMetaV1`.
+- IndexedDB (`poolIQ_idb` / `blobs`, helpers `idbPut`/`idbGet`/`idbDelete` in `js/storage.js`) holds the safety copy and snapshots — see Data safety below.
+
+## Data safety (`js/vault.js`, Settings → Protect your history)
+
+History must never be lost, on iPhone or Android.
+
+- **Every key is mirrored.** All eight data keys (`poolIQStateV4`, legacy `poolIQStateV3`/`V2`, `poolIQCustomDrillsV1`, `poolIQSimV1`, `poolIQGhostPreset`, `poolIQDrillWip`, `poolIQDrillDraft`) are copied to IndexedDB (`mirror:current`) shortly after every save and when the app is hidden/closed. Each write bumps a save sequence + `savedAt` timestamp in `poolIQMetaV1`.
+- **On load** the app picks the good copy before anything renders: missing or corrupt localStorage → restored from IndexedDB (and a corrupt single key is repaired); a missing IndexedDB copy is rebuilt from localStorage; otherwise the newer `savedAt` wins. A good copy is **never** replaced by an empty/default state — only a deliberate RESET or restore may do that.
+- **Snapshots:** the last 3 are kept in IndexedDB (`mirror:snapshots`): one automatically at most every 6 hours of use, plus one right before any reset or restore. Settings → **Restore previous snapshot** (with confirm; the replaced data becomes a snapshot too).
+- **Backup file:** Settings → **Back Up Now** makes one `PoolIQ-backup-YYYY-MM-DD.json` (`format: "pool-iq-backup"`, `schema`, `appVersion`, `exportedAt`, `summary`, `keys`). It uses the Web Share API with the file when the browser allows it (iPhone share sheet → Save to Files / iCloud Drive), otherwise a download (Android Chrome → Downloads, then share to Drive if you like). A **Download file instead** button appears when sharing is available.
+- **Restore from Backup** reads a `.json`, validates it, shows rank / sessions / Ghost games / custom drills / saved shots / date, and replaces everything only after **Restore (replace my data)**. Current data is snapshotted first. Old saves (bare V2/V3/V4 state files, older backup schemas) go through the normal migration.
+- **Protected storage:** `navigator.storage.persist()` is requested at start-up (and again on the first tap if refused); Settings shows ON / OFF / not supported and `navigator.storage.estimate()` usage.
+- **Reminder:** Settings shows “Last backup: never / N days ago”; Home shows a small dismissible card when there's real progress (3+ sessions, matches, drills or shots) and no backup for 7+ days. No modal.
+- **RESET ALL PROGRESS** is two steps plus typing `RESET`, and takes a snapshot first.
+- **Install:** manifest has `id`, `start_url`/`scope` `./` (= `/pooltraining/` on GitHub Pages), `display: standalone`, theme/background colours, 192 + 512 `any` and `maskable` PNGs, plus a 180 px `apple-touch-icon`. Settings (and Home, dismissible) offer **Install App**: Android/Chrome uses `beforeinstallprompt`; iPhone Safari shows Share → Add to Home Screen steps; hidden when running installed.
+
+**Limits:** there is no cloud sync — the backup file is the off-device copy. Deleting the app / home-screen icon, “Clear website data”, or a factory reset wipes both localStorage and IndexedDB, and a Safari tab and the Home Screen app keep separate storage on iPhone. Safari may also clear storage of a site you haven't opened in a while if it isn't added to the Home Screen.

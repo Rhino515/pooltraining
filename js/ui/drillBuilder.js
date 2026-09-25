@@ -19,6 +19,7 @@ import * as CD from '../customDrills.js';
 import * as L from '../sim/layouts.js';
 import { R } from '../sim/physics.js';
 import { DRAFT_KEY } from './simulator.js';
+import { lsSet, lsRemove } from '../storage.js';
 import { openSheet, closeSheet, toast } from './sheet.js';
 
 const f2 = (v) => Math.round(v * 100) / 100;
@@ -112,7 +113,7 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
       };
     }
     ui.msgs = CD.validateBuilder(b, ui.route);
-    try { localStorage.setItem(WIP_KEY, JSON.stringify({ editId, b })); } catch { /* ignore */ }
+    lsSet(WIP_KEY, JSON.stringify({ editId, b }));
   }
   const sizes = () => CD.ZONE_SIZES[b.zoneSize] || CD.ZONE_SIZES.M;
 
@@ -243,7 +244,7 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
     const txt = { 'db-title': 'title', 'db-instructions': 'instructions', 'db-goal': 'goal', 'db-why': 'why' };
     for (const [id, k] of Object.entries(txt)) {
       const el = root.querySelector(`#${id}`);
-      if (el) el.addEventListener('input', () => { b[k] = el.value; ui.dirty = true; refreshMsgs(); try { localStorage.setItem(WIP_KEY, JSON.stringify({ editId, b })); } catch { /* ignore */ } });
+      if (el) el.addEventListener('input', () => { b[k] = el.value; ui.dirty = true; refreshMsgs(); lsSet(WIP_KEY, JSON.stringify({ editId, b })); });
     }
     for (const [id, k] of [['db-category', 'category'], ['db-skill', 'skill']]) {
       const el = root.querySelector(`#${id}`);
@@ -374,7 +375,7 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
     const ch = CD.buildCustomDrill({ ...b, created: prev?.created }, { id: editId || null, route: ui.route });
     CD.upsertCustomDrill(ch);
     refreshCustomDrills();
-    try { localStorage.removeItem(WIP_KEY); localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+    lsRemove(WIP_KEY); lsRemove(DRAFT_KEY);
     ui.dirty = false;
     closeSheet();
     toast(editId ? `Saved changes to “${ch.name}”` : `“${ch.name}” added to your drill library`);
@@ -410,7 +411,7 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
         return true;
       case 'db-exit-do':
         ui.dirty = false;
-        try { localStorage.removeItem(WIP_KEY); } catch { /* ignore */ }
+        lsRemove(WIP_KEY);
         closeSheet();
         ctx.go('#drills');
         return true;

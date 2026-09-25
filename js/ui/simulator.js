@@ -19,6 +19,7 @@ import { contactText } from '../games/text.js';
 import { speedMeaning, personalFactor } from '../games/speed.js';
 import { esc } from '../games/recipe.js';
 import { openSheet, closeSheet, toast, stars } from './sheet.js';
+import { lsSet } from '../storage.js';
 
 const R = P.R;
 const f2 = (v) => Math.round(v * 100) / 100;
@@ -1004,7 +1005,7 @@ export function createSimScreen(ctx, args = []) {
       speed: Math.max(0.5, Math.min(5, Math.round(st.shot.speed * 2) / 2)),
       fromSim: true
     };
-    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch { /* ignore */ }
+    lsSet(DRAFT_KEY, JSON.stringify(draft));
     closeSheet();
     ctx.go('#drillnew/fromsim');
   }

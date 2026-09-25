@@ -1,4 +1,4 @@
-const CACHE = 'pool-iq-v8';
+const CACHE = 'pool-iq-v9';
 const ASSETS = [
   './',
   './index.html',
@@ -6,6 +6,9 @@ const ASSETS = [
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
+  './icons/maskable-192.png',
+  './icons/maskable-512.png',
+  './icons/apple-touch-icon.png',
   './js/analyze.js',
   './js/app.js',
   './js/career.js',
@@ -40,6 +43,7 @@ const ASSETS = [
   './js/games/stageTable.js',
   './js/games/text.js',
   './js/ghost.js',
+  './js/install.js',
   './js/sim/layouts.js',
   './js/sim/library.js',
   './js/sim/physics.js',
@@ -48,6 +52,7 @@ const ASSETS = [
   './js/skills.js',
   './js/storage.js',
   './js/tableDiagram.js',
+  './js/vault.js',
   './js/ui/drillBuilder.js',
   './js/ui/play.js',
   './js/ui/sheet.js',
