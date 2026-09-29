@@ -1,4 +1,4 @@
-const CACHE = 'pool-iq-v13';
+const CACHE = 'pool-iq-v14';
 const ASSETS = [
   './',
   './index.html',
@@ -84,6 +84,13 @@ const ASSETS = [
   './js/progression/sessions.js',
   './js/progression/skillLevels.js',
   './js/sim/layouts.js',
+  './js/sim/tableCal.js',
+  './js/sim/speedTables.js',
+  './js/sim/drag.js',
+  './js/sim/scan.js',
+  './js/sim/view3d.js',
+  './js/sim/runout.js',
+  './js/sim/randomShot.js',
   './js/sim/library.js',
   './js/sim/physics.js',
   './js/sim/preview.js',
@@ -119,7 +126,7 @@ self.addEventListener('activate', (e) => {
 });
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
-  // v13: other origins (the Supabase account API + avatar photos) go straight to the network, never via this cache
+  // v14: other origins (the Supabase account API + avatar photos) go straight to the network, never via this cache
   if (new URL(e.request.url).origin !== location.origin) return;
   e.respondWith(
     caches.match(e.request, { ignoreSearch: true }).then((cached) =>

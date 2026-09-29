@@ -18,8 +18,11 @@ const f = (v) => Math.round(v * 100) / 100;
 const isCueId = (id) => id === 'cue';
 
 /** Run the preview simulation for a layout + shot ({aim, V|speed, vTips, hTips}) — identical inputs to shoot() */
-export function runPreview(layout, shot) {
-  return simulate(layout, shot, { maxTime: 40, frameDt: PREVIEW_FRAME_DT, maxSteps: PREVIEW_MAX_STEPS });
+export function runPreview(layout, shot, opt = {}) {
+  const table = opt.table || shot?.table;
+  const simOpt = { maxTime: 40, frameDt: PREVIEW_FRAME_DT, maxSteps: PREVIEW_MAX_STEPS };
+  if (table && table.lengthIn && Math.abs(table.lengthIn - 100) > 1e-6) simOpt.table = table;
+  return simulate(layout, shot, simOpt);
 }
 
 /** Where a cushion contact label sits: on the cushion nose next to the contact */

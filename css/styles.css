@@ -1314,3 +1314,66 @@ h2.chTitle{font-variant-caps:all-small-caps;font-size:clamp(25px,6.6vw,36px);lin
 .cmpCol .cmpGrid b{font-size:14px}
 .cmpCol .cmpGrid span{font-size:8.5px;letter-spacing:.4px}
 .newTag{color:var(--gold);border-color:#6a5420;font-size:9.5px;padding:1px 6px}
+
+/* —— v14 Shot Simulator: fit the phone, table size, tools, fullscreen, scan —— */
+html.sim-dragging,html.sim-dragging body{overflow:hidden;height:100%;touch-action:none}
+body:has(.simScreen){overflow:hidden}
+body:has(.simScreen) #app{height:100dvh;min-height:0;padding-bottom:0;display:flex;flex-direction:column}
+body:has(.simScreen) main{flex:1;min-height:0;padding:0;display:flex;flex-direction:column;overflow:hidden}
+body:has(.simScreen) #view.page.active{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.simScreen{flex:1;min-height:0;width:100%;display:flex;flex-direction:column;overflow:hidden;padding-bottom:calc(158px + env(safe-area-inset-bottom))}
+.simScreen[data-mode="play"]{padding-bottom:calc(230px + env(safe-area-inset-bottom))}
+.simTable{flex:1 1 auto;min-height:64px;display:flex;align-items:center}
+.simTable .table-diagram{max-height:100%;width:100%}
+#simSetup{flex:none}
+.simPanel{flex:none;max-height:48%;overflow:auto}
+.tableSize{display:grid;grid-template-columns:auto repeat(3,1fr);gap:6px;align-items:center;padding:4px 10px 0}
+.tsLabel{font-size:11px;font-weight:800;letter-spacing:.8px;color:var(--muted)}
+.tsBtn{min-height:44px;border-radius:12px;border:1px solid var(--line);background:#101c2b;color:var(--text);font-weight:800;font-size:13px;padding:0 6px}
+.tsBtn.on{border-color:#0a9dff;color:var(--cyan);background:#0f2238}
+.simTools{display:flex;flex-wrap:wrap;gap:6px}
+.simTools button{flex:1 1 30%;min-height:44px;border-radius:12px;border:1px solid var(--line);background:#101c2b;color:var(--cyan);font-weight:800;font-size:12px;padding:8px 6px;letter-spacing:.2px}
+.simBar.full{grid-template-columns:auto 1fr}
+body:has(.simScreen) .simBar{position:fixed;z-index:12;bottom:calc(76px + env(safe-area-inset-bottom))}
+body.sim-full .simBar{bottom:0}
+body.sim-full .simScreen{padding-bottom:calc(78px + env(safe-area-inset-bottom))}
+body.sim-full .simScreen[data-mode="play"]{padding-bottom:calc(150px + env(safe-area-inset-bottom))}
+.exitFull{margin:0;min-height:56px}
+.sim3d{width:100%;height:100%;display:block;background:#041018;touch-action:none;border-radius:12px}
+.simScreen.is-3d .simTable{align-items:stretch}
+.view3dExit{position:absolute;top:8px;right:8px;z-index:4;min-height:44px;padding:0 12px;border-radius:12px;border:1px solid #1f5f99;background:#050b14ee;color:var(--cyan);font-weight:800}
+.scanBox{display:flex;flex-direction:column;gap:8px}
+.scanHint,.scanPlace,.runNote,.runStep{margin:0;font-size:13px;line-height:1.35}
+.scanPlace{font-weight:800;color:var(--gold)}
+.runStep{font-weight:700}
+.scanPhoto{position:relative;touch-action:none;background:#000;border-radius:12px;overflow:hidden}
+.scanPhoto img,.scanRef{display:block;width:100%;max-height:34vh;object-fit:contain;background:#000;border-radius:12px}
+.scanHandle{position:absolute;width:44px;height:44px;margin-left:-22px;margin-top:-22px;border-radius:50%;border:3px solid #f6c453;background:#f6c45366;padding:0}
+.simScreen[data-scan="corners"] .simTable,.simScreen[data-scan="corners"] #simSetup{display:none}
+.simScreen[data-scan="corners"] .simPanel{flex:1;max-height:none}
+.simScreen[data-scan="corners"] .scanPhoto img{max-height:52vh}
+.srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+body.sim-full header,body.sim-full nav{display:none}
+body.sim-full #app{height:100dvh;padding:0}
+body.sim-full .simScreen{height:100dvh}
+@media (orientation:landscape) and (max-height:520px){
+  body:has(.simScreen) header{display:none}
+  body:has(.simScreen) #app{height:calc(100dvh - 56px)}
+  body:has(.simScreen) .simBar{bottom:0}
+  body.sim-full #app{height:100dvh}
+  .simScreen{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(200px,.85fr);grid-template-rows:auto minmax(0,1fr) auto;padding-bottom:calc(8px + env(safe-area-inset-bottom));height:100dvh}
+  .simHead,.simScreen .simHead{grid-column:1 / -1}
+  .simTable{grid-column:1;grid-row:2 / 4;min-height:0}
+  #simSetup{grid-column:2;grid-row:2;align-self:start}
+  .simPanel{grid-column:2;grid-row:3;max-height:none;overflow:auto}
+  #simBarWrap{grid-column:2;grid-row:4}
+  .simScreen .simBar{position:fixed;left:0;right:0;bottom:0;max-width:none}
+  .simTip svg{width:44px;height:44px}
+  .simTools button{flex:1 1 46%;min-height:40px;font-size:11px}
+  .tableSize{grid-template-columns:1fr 1fr 1fr;padding:4px}
+  .tsLabel{grid-column:1 / -1}
+  body:has(.simScreen) nav{height:56px}
+}
+@media (orientation:landscape) and (max-height:520px){
+  body.sim-full nav{display:none}
+}

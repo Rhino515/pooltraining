@@ -23,6 +23,12 @@ import { speedDiagramSVG } from '../games/speedDiagram.js';
 import * as PV from '../sim/preview.js';
 import { openSheet, closeSheet, toast, stars } from './sheet.js';
 import { lsSet } from '../storage.js';
+import * as TC from '../sim/tableCal.js';
+import { offsetDragPoint } from '../sim/drag.js';
+import { SCAN_PLACE_LABEL, detectBalls, perspectiveWarp, defaultCorners } from '../sim/scan.js';
+import { drawTable3D } from '../sim/view3d.js';
+import { planRunout, groupChoices } from '../sim/runout.js';
+import { SHOT_TYPES, POCKET_CHOICES, generateShot, wayLabel } from '../sim/randomShot.js';
 
 const R = P.R;
 const f2 = (v) => Math.round(v * 100) / 100;
@@ -52,6 +58,14 @@ function defaultLayout() {
 export function createSimScreen(ctx, args = []) {
   const store = LIB.loadSim();
   const set = store.settings;
+  if (set.tableFt == null) set.tableFt = TC.DEFAULT_FT;
+  function tableSpec() { return TC.spec(set.tableFt); }
+  function rad() { return TC.diagramRadius(tableSpec()); }
+  function simOpt(extra = {}) {
+    const o = { ...extra };
+    if (!TC.isNine(tableSpec())) o.table = tableSpec();
+    return o;
+  }
   const cur = store.current && Array.isArray(store.current.balls) ? store.current : defaultLayout();
   const st = {
     balls: clone(cur.balls),
@@ -73,7 +87,13 @@ export function createSimScreen(ctx, args = []) {
     shape: false,
     findTarget: cur.findTarget || null,
     placing: null, // 'find' when waiting for a target tap
-    game: null
+    game: null,
+    full: false,
+    view3d: false,
+    yaw: 0,
+    pitch: 0,
+    scan: null,
+    runout: null
   };
   let past = [];
   let future = [];
@@ -121,13 +141,13 @@ export function createSimScreen(ctx, args = []) {
       const f = personalFactor(ctx.getState().speedCal, s);
       if (f) s = s / f;
     }
-    return P.speedToV0(s);
+    return P.speedToV0(s, tableSpec());
   }
   function prediction() {
     const cue = cueBall();
     if (!cue) return null;
     // the line shows where the cue ball actually travels: stick aim + squirt from side spin
-    return P.predictContact(layout(), st.shot.aim + (Number(st.shot.hTips) || 0) * P.SQUIRT_DEG_PER_TIP);
+    return P.predictContact(layout(), st.shot.aim + (Number(st.shot.hTips) || 0) * P.SQUIRT_DEG_PER_TIP, rad());
   }
   function aimInfoFor(pred) {
     const cue = cueBall();
@@ -136,7 +156,7 @@ export function createSimScreen(ctx, args = []) {
     const frac = fullnessWord(a.fullness);
     const sideWord = a.side === 'right' ? 'Right' : a.side === 'left' ? 'Left' : '';
     const label = frac === 'Full' ? 'Full' : `${sideWord} ${frac}`;
-    return { ...a, ob: { n: pred.ball.id, x: pred.ball.x, y: pred.ball.y }, ghost: pred.ghost, from: cue, frac, label, deg: Math.round(a.theta), plain: `${label} hit`, ballR: R };
+    return { ...a, ob: { n: pred.ball.id, x: pred.ball.x, y: pred.ball.y }, ghost: pred.ghost, from: cue, frac, label, deg: Math.round(a.theta), plain: `${label} hit`, ballR: rad() };
   }
 
   // ------------------------------------------------------------------ v11.1 full-path aim preview
@@ -144,12 +164,12 @@ export function createSimScreen(ctx, args = []) {
   let pvCache = { key: '', res: null, paths: [] };
   let pvTimer = 0;
   let pvLastRun = 0;
-  const fullPathOn = () => set.fullPath !== false && !st.game && st.mode === 'edit';
+  const fullPathOn = () => set.fullPath !== false && !st.game && st.mode === 'edit' && !st.runout && !st.scan && !st.view3d;
   function previewShot() {
-    return { aim: st.shot.aim, V: effectiveV(), vTips: st.shot.vTips, hTips: st.shot.hTips };
+    return { aim: st.shot.aim, V: effectiveV(), vTips: st.shot.vTips, hTips: st.shot.hTips, table: tableSpec() };
   }
   function previewKey() {
-    return JSON.stringify([layout(), previewShot()]);
+    return JSON.stringify([layout(), previewShot(), tableSpec().ft]);
   }
   function previewData() {
     if (!fullPathOn() || !cueBall()) return null;
@@ -194,7 +214,7 @@ export function createSimScreen(ctx, args = []) {
     if (pred?.type === 'ball') {
       const g = pred.ghost;
       s += `<line class="aim-line" x1="${f2(cue.x)}" y1="${f2(cue.y)}" x2="${f2(g.x)}" y2="${f2(g.y)}" stroke="#f4fbff" stroke-width="0.32" stroke-dasharray="1 0.6" opacity="0.9"/>`;
-      s += `<circle class="aim-ghost" cx="${f2(g.x)}" cy="${f2(g.y)}" r="${R}" fill="#ffffff22" stroke="#f4fbff" stroke-width="0.2" stroke-dasharray="0.45 0.3"/>`;
+      s += `<circle class="aim-ghost" cx="${f2(g.x)}" cy="${f2(g.y)}" r="${rad()}" fill="#ffffff22" stroke="#f4fbff" stroke-width="0.2" stroke-dasharray="0.45 0.3"/>`;
       if (set.tangent) {
         const ob = pred.ball;
         const L1 = 14;
@@ -205,7 +225,7 @@ export function createSimScreen(ctx, args = []) {
       const p = pred.point;
       s += `<line class="aim-line" x1="${f2(cue.x)}" y1="${f2(cue.y)}" x2="${f2(p.x)}" y2="${f2(p.y)}" stroke="#f4fbff" stroke-width="0.32" stroke-dasharray="1 0.6" opacity="${fullPathOn() ? 0.35 : 0.9}"/>`;
       const d = P.aimVector(st.shot.aim);
-      const onX = Math.abs(p.x - R) < 0.01 || Math.abs(p.x - (100 - R)) < 0.01;
+      const onX = Math.abs(p.x - rad()) < 0.05 || Math.abs(p.x - (100 - rad())) < 0.05;
       const r = onX ? { x: -d.x, y: d.y } : { x: d.x, y: -d.y };
       if (!fullPathOn()) s += `<line class="rail-preview" x1="${f2(p.x)}" y1="${f2(p.y)}" x2="${f2(p.x + r.x * 10)}" y2="${f2(p.y + r.y * 10)}" stroke="#f4fbff" stroke-width="0.24" stroke-dasharray="0.5 0.6" opacity="0.5"/>`;
     }
@@ -279,29 +299,29 @@ export function createSimScreen(ctx, args = []) {
     return Math.max(0, Math.min(st.res.frames.length - 1, Math.floor(Math.max(0, st.playT) * 60 + 1e-9)));
   }
   function tableSVG() {
-    const balls = st.balls.map((b) => ({ id: b.id, x: b.x, y: b.y }));
-    const under = `<g id="simZones">${zonesSVG()}</g><g id="simTracks">${st.mode === 'play' ? tracksSVG(frameIndex()) : ''}</g><g id="simUnder">${aimOverlay()}</g>`;
+    const srcBalls = st.runout?.steps?.length ? st.runout.steps[st.runout.i].balls : (st.scan?.phase === 'confirm' ? st.scan.balls : st.balls);
+    const balls = srcBalls.map((b) => ({ id: b.id, x: b.x, y: b.y, stripe: b.stripe }));
+    const under = `<g id="simZones">${zonesSVG()}</g><g id="simTracks">${st.mode === 'play' ? tracksSVG(frameIndex()) : ''}</g><g id="simUnder">${st.runout || st.scan ? '' : aimOverlay()}</g>`;
     let over = `<g id="simPreview">${previewLayer()}</g><g id="simAnno">${st.annotations.map(annoSVG).join('')}</g><g id="simDraft"></g>`;
     if (st.sel != null && st.mode === 'edit') {
-      const b = st.balls.find((q) => q.id === st.sel);
-      if (b) over += `<circle class="sel-ring" cx="${f2(b.x)}" cy="${f2(b.y)}" r="${R + 0.55}" fill="none" stroke="#55e5ff" stroke-width="0.3" pointer-events="none"/>`;
+      const b = srcBalls.find((q) => q.id === st.sel);
+      if (b) over += `<circle class="sel-ring" data-selected="1" cx="${f2(b.x)}" cy="${f2(b.y)}" r="${rad() + 1.15}" fill="none" stroke="#55e5ff" stroke-width="0.7" pointer-events="none"/>`;
     }
-    return renderTableDiagram({ balls, grid: set.grid === 'off' ? false : set.grid === 'half' ? 'half' : true, headString: true, extraUnder: under, extraOver: over }, { className: 'table-diagram sim-svg', id: 'simSvg' });
+    if (st.runout?.steps?.length) {
+      const step = st.runout.steps[Math.min(st.runout.i, st.runout.steps.length - 1)];
+      const pk = POCKETS[step.pocket];
+      if (pk) over += `<circle class="run-pocket" cx="${pk.x}" cy="${pk.y}" r="${pk.r + 1.3}" fill="none" stroke="#ffd34d" stroke-width="0.5" pointer-events="none"/>`;
+      const tb = step.balls.find((b) => String(b.id) === String(step.ball));
+      if (tb) over += `<circle class="run-ball" cx="${f2(tb.x)}" cy="${f2(tb.y)}" r="${f2(rad() + 1.5)}" fill="none" stroke="#ffd34d" stroke-width="0.45" pointer-events="none"/>`;
+      if (step.zone) over += `<circle class="run-zone" cx="${f2(step.zone.x)}" cy="${f2(step.zone.y)}" r="${step.zone.r}" fill="#46e7a022" stroke="#46e7a0" stroke-width="0.3" stroke-dasharray="1.1 0.6" pointer-events="none"/>`;
+      const pv = PV.runPreview(step.balls, { aim: step.aim, V: P.speedToV0(step.speed, tableSpec()), vTips: step.vTips, hTips: step.hTips, table: tableSpec() });
+      over += PV.previewSVG(PV.previewPaths(pv));
+    }
+    return renderTableDiagram({ balls, ballR: rad(), hitR: Math.max(7.2, rad() * 3.4), grid: set.grid === 'off' ? false : set.grid === 'half' ? 'half' : true, headString: true, extraUnder: under, extraOver: over }, { className: 'table-diagram sim-svg', id: 'simSvg' });
   }
 
   // ------------------------------------------------------------------ panel pieces
-  function aimRowHTML() {
-    const pred = prediction();
-    const info = aimInfoFor(pred);
-    const what = pred?.type === 'ball'
-      ? `${info.label} on the ${pred.ball.id} · ${Math.round(pred.cut)}° cut${st.aimPocket && st.aimBall === pred.ball.id ? ` → ${POCKET_WORDS[st.aimPocket]}` : ''}`
-      : pred?.type === 'rail' ? 'Straight to the rail (no ball in line)' : 'Place the cue ball';
-    return `<div class="simAim">
-      <div class="simAimView">${info ? aimViewSVG(info) : aimViewSVG(null)}</div>
-      <div class="simAimText"><span class="eyebrow">AIM</span><b data-aim="${f2(st.shot.aim)}">${f1(st.shot.aim)}°</b><small>${esc(what)}</small>${fullPathOn() ? `<small class="pvSummary" id="pvSummary" data-preview-summary>${esc(previewSummaryText())}</small>` : ''}</div>
-      <div class="nudges"><button type="button" class="nudge" data-action="sim-nudge" data-v="-1" aria-label="Aim −1°">−1°</button><button type="button" class="nudge" data-action="sim-nudge" data-v="-0.1" aria-label="Aim −0.1°">−.1</button><button type="button" class="nudge" data-action="sim-nudge" data-v="0.1" aria-label="Aim +0.1°">+.1</button><button type="button" class="nudge" data-action="sim-nudge" data-v="1" aria-label="Aim +1°">+1°</button></div>
-    </div>`;
-  }
+  function aimRowHTML() { return ''; }
   function tipSpeedHTML() {
     const s = st.shot;
     return `<div class="simTipSpeed">
@@ -309,8 +329,6 @@ export function createSimScreen(ctx, args = []) {
       <div class="simSpeed">
         <div class="spRow"><button type="button" class="spBtn" data-action="sim-speed" data-v="-0.25" aria-label="Slower">−</button><b data-speed="${formatSpeed(s.speed)}">${speedLabel(s.speed)}</b><button type="button" class="spBtn" data-action="sim-speed" data-v="0.25" aria-label="Faster">+</button></div>
         <input type="range" class="spRange" id="simSpeedRange" min="0.3" max="${P.SPEED_MAX}" step="0.05" value="${s.speed}" aria-label="Speed"/>
-        <small class="spMean">${esc(speedMeaning(s.speed))}.${set.useCal ? ' · your calibration' : ''}</small>
-        <div class="spDiagram" id="simSpeedDiagram">${speedDiagramSVG(s.speed)}</div>
       </div>
     </div>`;
   }
@@ -321,8 +339,8 @@ export function createSimScreen(ctx, args = []) {
   }
   function selHTML() {
     const b = st.balls.find((q) => q.id === st.sel);
-    if (!b) return `<div class="simSel hint">Drag balls to move them · drag the felt to aim · tap a ball to aim at it (tap again for the next pocket) · tap the tray to add a ball</div>`;
-    return `<div class="simSel"><span class="selName"><b>${esc(ballWord(b.id))}</b><small>${posText(b)}</small></span>
+    if (!b || st.full) return '';
+    return `<div class="simSel"><span class="selName"><b>${esc(ballWord(b.id))}</b></span>
       <div class="nudgePad"><button type="button" class="nudge" data-action="sim-move" data-dx="-1" data-dy="0" aria-label="Move left">←</button><button type="button" class="nudge" data-action="sim-move" data-dx="0" data-dy="-1" aria-label="Move up">↑</button><button type="button" class="nudge" data-action="sim-move" data-dx="0" data-dy="1" aria-label="Move down">↓</button><button type="button" class="nudge" data-action="sim-move" data-dx="1" data-dy="0" aria-label="Move right">→</button></div>
       <button type="button" class="nudge danger" data-action="sim-remove" aria-label="Remove ball">Remove</button></div>`;
   }
@@ -350,19 +368,30 @@ export function createSimScreen(ctx, args = []) {
     const g = st.game;
     const title = g ? `Target Game · Round ${g.index + 1}/${g.rounds.length}` : 'Shot Simulator';
     const sub = g ? `<span id="simTimer" class="simTimer">${timerText()}</span> · ${g.rounds.reduce((a, r) => a + (r.stars || 0), 0)}★ so far` : 'Physics simulation — an approximation';
-    return `<div class="playHead simHead"><button type="button" class="phBack" data-action="sim-exit" aria-label="Exit">‹</button><div class="phTitle"><b>${esc(title)}</b><small>${sub}</small></div>
+    return `<div class="playHead simHead"><button type="button" class="phBack" data-action="sim-exit" aria-label="Exit">${st.full ? 'EXIT' : '‹'}</button><div class="phTitle"><b>${esc(title)}</b><small>${sub}</small></div>
       <div class="simHeadBtns">${g ? '' : `<button type="button" class="hBtn" data-action="sim-undo" ${past.length ? '' : 'disabled'} aria-label="Undo">↶</button><button type="button" class="hBtn" data-action="sim-redo" ${future.length ? '' : 'disabled'} aria-label="Redo">↷</button>`}<button type="button" class="hBtn act" data-action="sim-actions" aria-label="Actions">${g ? 'Quit' : 'Actions'}</button></div></div>`;
   }
-  function setupHTML() {
-    const items = st.balls.slice().sort((a, b) => (a.id === 'cue' ? -1 : b.id === 'cue' ? 1 : a.id - b.id)).map((b) => `<span class="su-ball" data-ball="${b.id}"><i class="su-dot${b.id === 'cue' ? ' cue' : ''}" style="--c:${b.id === 'cue' ? '#f5f7fa' : BALL_COLORS[b.id]}">${b.id === 'cue' ? '' : b.id}</i>${posText(b)}</span>`).join('');
-    return `<button type="button" class="setupLine" data-action="sim-setup" aria-label="Ball positions in diamonds"><span class="su-label"><b>SETUP</b><small>head · top</small></span><span class="su-items">${items || '<span class="muted">empty table</span>'}</span></button>`;
+  function tableSizeHTML() {
+    const ft = tableSpec().ft;
+    return `<div class="tableSize" id="tableSize" role="group" aria-label="Table size"><span class="tsLabel">TABLE SIZE</span>${[7, 8, 9].map((n) => `<button type="button" class="tsBtn${ft === n ? ' on' : ''}" data-action="sim-size" data-ft="${n}" data-table-ft="${n}" aria-pressed="${ft === n ? 'true' : 'false'}">${n} FT</button>`).join('')}</div>`;
+  }
+  function toolsHTML() {
+    if (st.game || st.full) return '';
+    return `<div class="simTools" role="group" aria-label="Simulator tools"><button type="button" data-action="sim-scan">SCAN TABLE</button><button type="button" data-action="sim-runout">RUNOUT</button><button type="button" data-action="sim-3d">3D VIEW</button><button type="button" data-action="sim-full">FULL SCREEN</button><button type="button" data-action="sim-rand">RANDOM SHOT</button></div>`;
+  }
+  function previewNote() {
+    if (!fullPathOn()) return '';
+    return `<p class="srOnly" id="pvSummary" data-preview-summary>${esc(previewSummaryText())}</p>`;
   }
   function panelHTML() {
     if (st.mode === 'play') return resultHTML();
     const findBar = st.findTarget && !st.game ? `<div class="findBar"><span>🎯 Cue-ball target set</span><button type="button" class="chip" data-action="sim-find-run">Find again</button><button type="button" class="chip" data-action="sim-find-clear">Clear target</button></div>` : '';
     const placing = st.placing === 'find' ? '<div class="placeBanner">Tap the table where the cue ball should finish</div>' : '';
     const gameInfo = st.game ? `<div class="gameInfo">Pocket the ${st.balls.find((b) => b.id !== 'cue')?.id} and stop the cue ball on the target. One shot per round.</div>` : '';
-    return `${placing}${gameInfo}${findBar}${st.tool ? drawToolsHTML() : ''}${aimRowHTML()}${tipSpeedHTML()}${st.game ? '' : selHTML() + trayHTML()}`;
+    if (st.scan?.phase === 'corners') return scanCornerHTML();
+    if (st.scan?.phase === 'confirm') return scanConfirmHTML();
+    if (st.runout) return runoutHTML();
+    return `${placing}${gameInfo}${findBar}${st.tool ? drawToolsHTML() : ''}${previewNote()}${tipSpeedHTML()}${toolsHTML()}${st.game ? '' : selHTML() + trayHTML()}`;
   }
   function barHTML() {
     if (st.mode === 'play') {
@@ -381,21 +410,29 @@ export function createSimScreen(ctx, args = []) {
         <button type="button" class="pbBtn${st.showTracks ? ' on' : ''}" data-action="sim-tracks" aria-label="Show tracks">〰<small>Tracks</small></button>
       </div><div class="pbMain${g ? ' one' : ''}">${main}</div></div>`;
     }
-    return `<div class="simBar"><button type="button" class="toolBtn${st.tool ? ' on' : ''}" data-action="sim-draw" aria-label="Draw on the table">✎<small>Draw</small></button>${st.game ? '' : `<button type="button" class="toolBtn${st.shape ? ' on' : ''}" data-action="sim-shape" aria-label="Shape zone">◭<small>Zone</small></button>`}<button type="button" class="bigBtn shootBtn" data-action="sim-shoot" ${cueBall() ? '' : 'disabled'}>SHOOT ▶</button></div>`;
+    if (st.view3d) return `<div class="simBar"><button type="button" class="bigBtn" data-action="sim-2d">2D TOP VIEW</button></div>`;
+    if (st.scan || st.runout) return '';
+    return `<div class="simBar${st.full ? ' full' : ''}">${st.full ? '<button type="button" class="bigBtn alt exitFull" data-action="sim-full">EXIT FULL SCREEN</button>' : `<button type="button" class="toolBtn${st.tool ? ' on' : ''}" data-action="sim-draw" aria-label="Draw on the table">✎<small>Draw</small></button>${st.game ? '' : `<button type="button" class="toolBtn${st.shape ? ' on' : ''}" data-action="sim-shape" aria-label="Shape zone">◭<small>Zone</small></button>`}`}<button type="button" class="bigBtn shootBtn" data-action="sim-shoot" ${cueBall() ? '' : 'disabled'}>SHOOT ▶</button></div>`;
   }
 
   // ------------------------------------------------------------------ render
   function render() {
     if (destroyed) return;
     const root = ctx.root;
-    root.innerHTML = `<div class="simScreen" data-mode="${st.mode}" data-game="${st.game ? 1 : 0}">
+    document.body.classList.toggle('sim-full', !!st.full);
+    const tableInner = st.view3d
+      ? `<canvas id="sim3d" class="sim3d" aria-label="3D table, behind the cue ball"></canvas><button type="button" class="view3dExit" data-action="sim-2d">2D TOP VIEW</button>`
+      : `${tableSVG()}<div class="dragBubble" id="dragBubble"></div>`;
+    root.innerHTML = `<div class="simScreen${st.full ? ' is-full' : ''}${st.view3d ? ' is-3d' : ''}" data-mode="${st.mode}" data-game="${st.game ? 1 : 0}" data-table-ft="${tableSpec().ft}" data-offset-drag="1" data-scan="${st.scan?.phase || ''}" data-runout="${st.runout ? 1 : 0}">
       <div id="simHeadWrap">${headHTML()}</div>
-      <div class="simTable" id="simTable">${tableSVG()}<div class="dragBubble" id="dragBubble"></div></div>
-      <div id="simSetup">${setupHTML()}</div>
+      <div class="simTable" id="simTable">${tableInner}</div>
+      <div id="simSetup">${st.view3d ? '' : tableSizeHTML()}</div>
       <div class="simPanel" id="simPanel">${panelHTML()}</div>
       <div id="simBarWrap">${barHTML()}</div>
+      <input id="simScanFile" class="srOnly" type="file" accept="image/*" capture="environment" aria-label="Table photo"/>
     </div>`;
     bind();
+    if (st.view3d) requestAnimationFrame(paint3d);
     persist();
   }
   function refresh(parts = 'all') {
@@ -406,12 +443,20 @@ export function createSimScreen(ctx, args = []) {
     scr.dataset.mode = st.mode;
     scr.dataset.game = st.game ? '1' : '0';
     const has = (p) => parts === 'all' || parts.includes(p);
-    if (has('table')) root.querySelector('#simTable').innerHTML = `${tableSVG()}<div class="dragBubble" id="dragBubble"></div>`;
+    if (has('table')) root.querySelector('#simTable').innerHTML = st.view3d ? '<canvas id="sim3d" class="sim3d" aria-label="3D table"></canvas><button type="button" class="view3dExit" data-action="sim-2d">2D TOP VIEW</button>' : `${tableSVG()}<div class="dragBubble" id="dragBubble"></div>`;
     if (has('table') || has('head')) root.querySelector('#simHeadWrap').innerHTML = headHTML();
-    if (has('table') || has('setup')) root.querySelector('#simSetup').innerHTML = setupHTML();
+    if (has('table') || has('setup')) root.querySelector('#simSetup').innerHTML = st.view3d ? '' : tableSizeHTML();
     if (has('panel')) root.querySelector('#simPanel').innerHTML = panelHTML();
     if (has('bar') || has('table')) root.querySelector('#simBarWrap').innerHTML = barHTML();
     bindRange();
+    document.body.classList.toggle('sim-full', !!st.full);
+    scr.classList.toggle('is-full', !!st.full);
+    scr.classList.toggle('is-3d', !!st.view3d);
+    scr.dataset.tableFt = String(tableSpec().ft);
+    scr.dataset.scan = st.scan?.phase || '';
+    scr.dataset.runout = st.runout ? '1' : '0';
+    if (st.view3d && has('table')) requestAnimationFrame(paint3d);
+    if (st.scan?.phase === 'corners') mountCorners();
     persist();
   }
   function overlayOnly() {
@@ -420,23 +465,25 @@ export function createSimScreen(ctx, args = []) {
     schedulePreview();
     const z = ctx.root.querySelector('#simZones');
     if (z) z.innerHTML = zonesSVG();
-    const a = ctx.root.querySelector('.simAim');
-    if (a) a.outerHTML = aimRowHTML();
   }
 
   // ------------------------------------------------------------------ pointer input on the table
-  function toTable(e) {
+  function toTableXY(clientX, clientY) {
     const svg = ctx.root.querySelector('#simSvg');
+    if (!svg) return { x: 0, y: 0 };
     const pt = svg.createSVGPoint();
-    pt.x = e.clientX;
-    pt.y = e.clientY;
+    pt.x = clientX;
+    pt.y = clientY;
     const p = pt.matrixTransform(svg.getScreenCTM().inverse());
     return { x: p.x, y: p.y };
   }
-  function ballAt(p, max = 3.2) {
+  function toTable(e) { return toTableXY(e.clientX, e.clientY); }
+  function activeBalls() { return st.scan?.phase === 'confirm' ? st.scan.balls : st.balls; }
+  function ballAt(p, max) {
+    const limit = max == null ? Math.max(7.5, rad() * 3.3) : max;
     let best = null;
-    let bd = max;
-    for (const b of st.balls) {
+    let bd = limit;
+    for (const b of activeBalls()) {
       const d = Math.hypot(b.x - p.x, b.y - p.y);
       if (d < bd) { bd = d; best = b; }
     }
@@ -447,12 +494,27 @@ export function createSimScreen(ctx, args = []) {
     return null;
   }
   function bind() {
-    const t = ctx.root.querySelector('#simTable');
-    t.addEventListener('pointerdown', onDown);
-    t.addEventListener('pointermove', onMove);
-    t.addEventListener('pointerup', onUp);
-    t.addEventListener('pointercancel', onCancel);
+    const tEl = ctx.root.querySelector('#simTable');
+    tEl.addEventListener('pointerdown', onDown);
+    tEl.addEventListener('pointermove', onMove);
+    tEl.addEventListener('pointerup', onUp);
+    tEl.addEventListener('pointercancel', onCancel);
+    const file = ctx.root.querySelector('#simScanFile');
+    if (file) file.addEventListener('change', () => {
+      const f = file.files && file.files[0];
+      if (!f) return;
+      const url = URL.createObjectURL(f);
+      const img = new Image();
+      img.onload = async () => {
+        await detectBalls(img);
+        st.scan = { phase: 'corners', url, img, corners: defaultCorners(img.naturalWidth, img.naturalHeight) };
+        st.view3d = false;
+        refresh();
+      };
+      img.src = url;
+    });
     bindRange();
+    if (st.scan?.phase === 'corners') mountCorners();
   }
   function bindRange() {
     const r = ctx.root.querySelector('#simSpeedRange');
@@ -499,9 +561,12 @@ export function createSimScreen(ctx, args = []) {
       drag = { kind: 'anno', start: p, cur: p };
       return;
     }
+    if (st.view3d) { drag = { kind: 'orbit', sx: e.clientX, sy: e.clientY, yaw: st.yaw || 0, pitch: st.pitch || 0 }; return; }
+    document.documentElement.classList.add('sim-dragging');
     const b = ballAt(p);
     if (b && !st.game) {
-      drag = { kind: 'ball', id: b.id, ox: b.x - p.x, oy: b.y - p.y, from: { x: b.x, y: b.y }, sx: e.clientX, sy: e.clientY, moved: false };
+      st.sel = b.id;
+      drag = { kind: 'ball', id: b.id, from: { x: b.x, y: b.y }, sx: e.clientX, sy: e.clientY, moved: false };
       return;
     }
     if (b && st.game && b.id !== 'cue') { drag = { kind: 'tapball', id: b.id }; return; }
@@ -515,19 +580,38 @@ export function createSimScreen(ctx, args = []) {
     if (drag.kind === 'ball') {
       if (!drag.moved && movedPx < 5) return;
       drag.moved = true;
-      let q = L.clampToTable({ x: p.x + drag.ox, y: p.y + drag.oy });
-      if (set.snap) q = L.snapPoint(q);
+      const lifted = offsetDragPoint(e.clientX, e.clientY);
+      const lp = toTableXY(lifted.x, lifted.y);
+      let q = L.clampToTable(lp, rad());
+      if (set.snap) q = L.snapPoint(q, L.QUARTER, rad());
       drag.to = q;
       const g = ctx.root.querySelector(`#simSvg g.ball[data-n="${drag.id}"]`);
       if (g) g.setAttribute('transform', `translate(${f2(q.x - drag.from.x)} ${f2(q.y - drag.from.y)})`);
+      let ring = ctx.root.querySelector('#dragRing');
+      if (!ring) {
+        ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        ring.setAttribute('id', 'dragRing');
+        ring.setAttribute('fill', 'none');
+        ring.setAttribute('stroke', '#f6c453');
+        ring.setAttribute('stroke-width', '0.7');
+        ring.setAttribute('pointer-events', 'none');
+        ctx.root.querySelector('#simSvg')?.appendChild(ring);
+      }
+      ring.setAttribute('cx', f2(q.x));
+      ring.setAttribute('cy', f2(q.y));
+      ring.setAttribute('r', f2(rad() + 1.35));
       const bub = ctx.root.querySelector('#dragBubble');
       if (bub) {
         const rect = ctx.root.querySelector('#simTable').getBoundingClientRect();
-        bub.textContent = `${drag.id === 'cue' ? 'Cue' : drag.id} · ${posText(q)}`;
+        bub.textContent = drag.id === 'cue' ? 'Cue' : String(drag.id);
         bub.style.left = `${Math.max(44, Math.min(rect.width - 44, e.clientX - rect.left))}px`;
         bub.style.top = `${Math.max(0, e.clientY - rect.top - 60)}px`;
         bub.classList.add('show');
       }
+    } else if (drag.kind === 'orbit') {
+      st.yaw = Math.max(-0.8, Math.min(0.8, drag.yaw + (e.clientX - drag.sx) * 0.008));
+      st.pitch = Math.max(-6, Math.min(14, drag.pitch + (drag.sy - e.clientY) * 0.05));
+      paint3d();
     } else if (drag.kind === 'aim') {
       if (!drag.moved && movedPx < 5) return;
       drag.moved = true;
@@ -548,11 +632,12 @@ export function createSimScreen(ctx, args = []) {
     if (!drag) return;
     const d = drag;
     drag = null;
+    document.documentElement.classList.remove('sim-dragging');
     const bub = ctx.root.querySelector('#dragBubble');
     if (bub) bub.classList.remove('show');
     const p = toTable(e);
     if (d.kind === 'find') {
-      const q = L.clampToTable(p);
+      const q = L.clampToTable(p, rad());
       st.findTarget = { x: f2(q.x), y: f2(q.y) };
       st.placing = null;
       refresh();
@@ -571,14 +656,16 @@ export function createSimScreen(ctx, args = []) {
     if (d.kind === 'ball') {
       if (!d.moved) {
         st.sel = d.id;
-        if (d.id !== 'cue') aimAtBall(d.id);
+        if (d.id !== 'cue' && st.scan?.phase !== 'confirm') aimAtBall(d.id);
         refresh();
         return;
       }
-      pushUndo();
-      const b = st.balls.find((q) => q.id === d.id);
-      const others = st.balls.filter((q) => q.id !== d.id);
-      const q = L.freeSpot(others, d.to || d.from);
+      if (st.scan?.phase !== 'confirm') pushUndo();
+      const list = activeBalls();
+      const b = list.find((q) => q.id === d.id);
+      if (!b) { refresh(); return; }
+      const others = list.filter((q) => q.id !== d.id);
+      const q = L.freeSpot(others, d.to || d.from, rad());
       b.x = f2(q.x);
       b.y = f2(q.y);
       st.sel = d.id;
@@ -601,6 +688,7 @@ export function createSimScreen(ctx, args = []) {
   }
   function onCancel() {
     drag = null;
+    document.documentElement.classList.remove('sim-dragging');
     refresh(['table']);
   }
 
@@ -635,9 +723,9 @@ export function createSimScreen(ctx, args = []) {
   function shoot() {
     const cue = cueBall();
     if (!cue) { toast('Place the cue ball first'); return; }
-    const errs = L.validateLayout(layout());
+    const errs = L.validateLayout(layout(), { r: rad() });
     if (errs.length) { toast(errs[0]); return; }
-    st.res = P.simulate(layout(), { aim: st.shot.aim, V: effectiveV(), vTips: st.shot.vTips, hTips: st.shot.hTips }, { maxTime: 40 });
+    st.res = P.simulate(layout(), { aim: st.shot.aim, V: effectiveV(), vTips: st.shot.vTips, hTips: st.shot.hTips }, simOpt({ maxTime: 40 }));
     st.mode = 'play';
     st.playT = 0;
     st.playing = true;
@@ -705,7 +793,7 @@ export function createSimScreen(ctx, args = []) {
     const next = r.final.filter((b) => b.on).map((b) => ({ id: b.id, x: f2(b.x), y: f2(b.y) }));
     let msg = 'Next shot — balls left where they stopped';
     if (r.scratch) {
-      const spot = L.freeSpot(next, { x: 25, y: 25 });
+      const spot = L.freeSpot(next, { x: 25, y: 25 }, rad());
       next.push({ id: 'cue', x: f2(spot.x), y: f2(spot.y) });
       msg = 'Scratch — cue ball in hand on the head spot';
     }
@@ -1036,7 +1124,7 @@ export function createSimScreen(ctx, args = []) {
     const obs = st.balls.filter((b) => b.id !== 'cue');
     if (!cue || !obs.length) { toast('Turn into drill needs the cue ball and at least one object ball'); return; }
     const pred = prediction();
-    const r = st.res || P.simulate(layout(), { aim: st.shot.aim, V: effectiveV(), vTips: st.shot.vTips, hTips: st.shot.hTips }, { record: false });
+    const r = st.res || P.simulate(layout(), { aim: st.shot.aim, V: effectiveV(), vTips: st.shot.vTips, hTips: st.shot.hTips }, simOpt({ record: false }));
     let target = pred?.type === 'ball' ? pred.ball.id : st.aimBall ?? obs[0].id;
     let pocket = st.aimBall === target && st.aimPocket ? st.aimPocket : null;
     if (!pocket && !r.pocketed.some((p) => p.id === target)) {
@@ -1087,8 +1175,8 @@ export function createSimScreen(ctx, args = []) {
     if (msg) toast(msg);
   }
   const TABLE_ACTIONS = {
-    'sim-rack': (el) => { const g = Number(el.dataset.g); newLayout(L.rackLayout(g, Date.now()), { aim: 0, speed: 6, vTips: 0, hTips: 0 }, `${L.GAME_NAMES[g]} break`, `${L.GAME_NAMES[g]} racked — aimed at the head ball, SPEED 6`); },
-    'sim-random': (el) => { const g = Number(el.dataset.g); newLayout(L.randomLayout(g, Date.now()), { speed: 2, vTips: 0, hTips: 0 }, `${L.GAME_NAMES[g]} run-out`, `Random ${L.GAME_NAMES[g]} layout — run out from here`); },
+    'sim-rack': (el) => { const g = Number(el.dataset.g); newLayout(L.rackLayout(g, Date.now(), rad()), { aim: 0, speed: 6, vTips: 0, hTips: 0 }, `${L.GAME_NAMES[g]} break`, `${L.GAME_NAMES[g]} racked — aimed at the head ball, SPEED 6`); },
+    'sim-random': (el) => { const g = Number(el.dataset.g); newLayout(L.randomLayout(g, Date.now(), { r: rad() }), { speed: 2, vTips: 0, hTips: 0 }, `${L.GAME_NAMES[g]} run-out`, `Random ${L.GAME_NAMES[g]} layout — run out from here`); },
     'sim-clear': () => { newLayout([], {}, '', 'Table cleared — undo brings it back'); },
     'sim-reset': () => { pushUndo(); restore(startSnap); closeSheet(); refresh(); toast('Back to the starting layout'); },
     'sim-flip': (el) => {
@@ -1105,11 +1193,312 @@ export function createSimScreen(ctx, args = []) {
       refresh();
     }
   };
+
+  function paint3d() {
+    const c = ctx.root.querySelector('#sim3d');
+    if (!c) return;
+    const rect = c.parentElement.getBoundingClientRect();
+    const w = Math.max(180, Math.floor(rect.width));
+    const h = Math.max(160, Math.floor(rect.height || w * 0.55));
+    c.width = w * 2;
+    c.height = h * 2;
+    c.style.width = w + 'px';
+    c.style.height = h + 'px';
+    const g = c.getContext('2d');
+    g.setTransform(2, 0, 0, 2, 0, 0);
+    drawTable3D(g, w, h, { balls: st.balls.map((b) => ({ id: b.id, x: b.x, y: b.y })), ballR: rad(), yaw: st.yaw || 0, pitch: st.pitch || 0 });
+  }
+  function scanCornerHTML() {
+    return `<div class="scanBox" data-scan-box="corners"><p class="scanHint">Drag the 4 corners onto the edges of the table, then straighten. This does not find the balls.</p><div class="scanPhoto" id="scanPhoto"><img id="scanImg" alt="Table photo" src="${st.scan.url}"/></div><div class="simTools"><button type="button" data-action="sim-scan-straight">STRAIGHTEN</button><button type="button" data-action="sim-scan-asis">USE PHOTO</button><button type="button" data-action="sim-scan-cancel">CANCEL</button></div></div>`;
+  }
+  function scanConfirmHTML() {
+    return `<p class="scanPlace" data-scan-label>${esc(SCAN_PLACE_LABEL)}</p><img class="scanRef" alt="Reference photo" src="${st.scan.url}"/><div class="simTools scanEdit"><button type="button" data-action="sim-scan-add">ADD BALL</button><button type="button" data-action="sim-scan-del">DELETE</button><button type="button" data-action="sim-scan-num" data-d="-1">− NO.</button><button type="button" data-action="sim-scan-num" data-d="1">+ NO.</button><button type="button" data-action="sim-scan-stripe">SOLID / STRIPE</button><button type="button" data-action="sim-scan-cue">CUE BALL</button></div><button type="button" class="bigBtn" data-action="sim-scan-confirm">CONFIRM LAYOUT</button><button type="button" class="bigBtn alt" data-action="sim-scan-cancel">CANCEL</button>`;
+  }
+  function runoutHTML() {
+    const plan = st.runout;
+    if (!plan.steps.length) return `<p class="runNote" data-runout-note>${esc(plan.note)}</p><button type="button" class="bigBtn alt" data-action="sim-run-close">CLOSE</button>`;
+    const step = plan.steps[plan.i];
+    return `<p class="runNote" data-runout-note>${esc(plan.note)}</p><p class="runStep" data-run-step="${plan.i + 1}" data-run-count="${plan.steps.length}">${esc(step.text)}</p><div class="simTools"><button type="button" data-action="sim-run-prev" ${plan.i ? '' : 'disabled'}>PREVIOUS SHOT</button><button type="button" data-action="sim-run-next" ${plan.i < plan.steps.length - 1 ? '' : 'disabled'}>NEXT SHOT</button><button type="button" data-action="sim-run-close">CLOSE</button></div>`;
+  }
+  function mountCorners() {
+    const img = ctx.root.querySelector('#scanImg');
+    const box = ctx.root.querySelector('#scanPhoto');
+    if (!img || !box || !st.scan) return;
+    const draw = () => {
+      box.querySelectorAll('.scanHandle').forEach((n) => n.remove());
+      const iw = img.naturalWidth || img.width;
+      const ih = img.naturalHeight || img.height;
+      const r = img.getBoundingClientRect();
+      const b = box.getBoundingClientRect();
+      const scale = Math.min(r.width / iw, r.height / ih) || 1;
+      const dw = iw * scale;
+      const dh = ih * scale;
+      const ox = r.left - b.left + (r.width - dw) / 2;
+      const oy = r.top - b.top + (r.height - dh) / 2;
+      st.scan.corners.forEach((c, i) => {
+        const h = document.createElement('button');
+        h.type = 'button';
+        h.className = 'scanHandle';
+        h.dataset.corner = String(i);
+        h.style.left = `${ox + (c.x / iw) * dw}px`;
+        h.style.top = `${oy + (c.y / ih) * dh}px`;
+        h.setAttribute('aria-label', `Corner ${i + 1}`);
+        box.appendChild(h);
+      });
+      box.dataset.iw = String(iw);
+      box.dataset.ih = String(ih);
+      box.dataset.ox = String(ox);
+      box.dataset.oy = String(oy);
+      box.dataset.dw = String(dw);
+      box.dataset.dh = String(dh);
+    };
+    if (img.complete && img.naturalWidth) draw();
+    else img.addEventListener('load', draw, { once: true });
+    if (box.dataset.cornersBound) return;
+    box.dataset.cornersBound = '1';
+    let hold = null;
+    box.addEventListener('pointerdown', (e) => {
+      const h = e.target.closest?.('.scanHandle');
+      if (!h) return;
+      e.preventDefault();
+      e.stopPropagation();
+      hold = h;
+      try { box.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+    });
+    box.addEventListener('pointermove', (e) => {
+      if (!hold || !st.scan) return;
+      e.preventDefault();
+      const b = box.getBoundingClientRect();
+      const iw = +box.dataset.iw || 1;
+      const ih = +box.dataset.ih || 1;
+      const x = ((e.clientX - b.left - (+box.dataset.ox || 0)) / (+box.dataset.dw || 1)) * iw;
+      const y = ((e.clientY - b.top - (+box.dataset.oy || 0)) / (+box.dataset.dh || 1)) * ih;
+      const i = +hold.dataset.corner;
+      st.scan.corners[i] = { x: Math.max(0, Math.min(iw, x)), y: Math.max(0, Math.min(ih, y)) };
+      hold.style.left = `${e.clientX - b.left}px`;
+      hold.style.top = `${e.clientY - b.top}px`;
+    });
+    const up = () => { hold = null; };
+    box.addEventListener('pointerup', up);
+    box.addEventListener('pointercancel', up);
+  }
+  function beginConfirm(url) {
+    st.scan.phase = 'confirm';
+    st.scan.url = url;
+    st.scan.balls = [{ id: 'cue', x: 25, y: 25 }];
+    st.sel = 'cue';
+    refresh();
+  }
+  function openRunout(game, group) {
+    const plan = planRunout(st.balls, { game, group, table: tableSpec() });
+    plan.i = 0;
+    st.runout = plan;
+    st.view3d = false;
+    closeSheet();
+    refresh();
+  }
+  function askRunout() {
+    const both = groupChoices(st.balls);
+    openSheet(`<div class="eyebrow">RUNOUT</div><h2 class="sheetTitle">What game?</h2><div class="actGrid"><button type="button" class="actBtn" data-action="sim-run-game" data-g="8">8-BALL</button><button type="button" class="actBtn" data-action="sim-run-game" data-g="9">9-BALL</button><button type="button" class="actBtn" data-action="sim-run-game" data-g="10">10-BALL</button></div>`, { id: 'runout' });
+    st._groups = both;
+  }
+  function randomSheet() {
+    const type = st.randType || 'straight';
+    const pocket = st.randPocket || 'ANY';
+    openSheet(`<div class="eyebrow">RANDOM SHOT</div><h2 class="sheetTitle">What kind of shot?</h2><div class="chips">${SHOT_TYPES.map((tp) => `<button type="button" class="chip${type === tp.id ? ' active' : ''}" data-action="sim-rand-type" data-v="${tp.id}">${esc(tp.label)}</button>`).join('')}</div><p class="muted small">Pocket</p><div class="chips">${POCKET_CHOICES.map((pk) => `<button type="button" class="chip${pocket === pk ? ' active' : ''}" data-action="sim-rand-pocket" data-v="${pk}">${pk === 'ANY' ? 'Any pocket' : pk}</button>`).join('')}</div><button type="button" class="bigBtn" data-action="sim-rand-go">GENERATE</button>`, { id: 'random' });
+  }
+
   function onAction(a, el, e) {
     if (!a.startsWith('sim-') && !a.startsWith('lib-')) return false;
     if (TABLE_ACTIONS[a]) { if (st.game) return true; TABLE_ACTIONS[a](el); return true; }
     const inPlay = st.mode === 'play';
     switch (a) {
+
+      case 'sim-size': {
+        const ft = Number(el.dataset.ft);
+        if (![7, 8, 9].includes(ft) || ft === tableSpec().ft) return true;
+        set.tableFt = ft;
+        st.balls = st.balls.map((b) => ({ ...b, ...L.clampToTable(b, rad()) }));
+        for (let i = 0; i < st.balls.length; i++) {
+          if (st.balls.some((o, j) => j < i && Math.hypot(o.x - st.balls[i].x, o.y - st.balls[i].y) < rad() * 2)) {
+            const spot = L.freeSpot(st.balls.filter((_, j) => j !== i), st.balls[i], rad());
+            st.balls[i].x = f2(spot.x); st.balls[i].y = f2(spot.y);
+          }
+        }
+        LIB.saveSim(store);
+        refresh();
+        return true;
+      }
+      case 'sim-full':
+        st.full = !st.full;
+        if (!st.full) st.view3d = false;
+        refresh();
+        return true;
+      case 'sim-3d':
+        st.view3d = true;
+        st.yaw = 0;
+        st.pitch = 0;
+        refresh();
+        return true;
+      case 'sim-2d':
+        st.view3d = false;
+        refresh();
+        return true;
+      case 'sim-scan': {
+        const input = ctx.root.querySelector('#simScanFile');
+        if (input) { input.value = ''; input.click(); }
+        return true;
+      }
+      case 'sim-scan-cancel':
+        if (st.scan?.url?.startsWith('blob:')) URL.revokeObjectURL(st.scan.url);
+        st.scan = null;
+        refresh();
+        return true;
+      case 'sim-scan-asis':
+        beginConfirm(st.scan.url);
+        return true;
+      case 'sim-scan-straight': {
+        const canvas = perspectiveWarp(st.scan.img, st.scan.corners, 640);
+        if (!canvas) { toast('Drag the 4 corners onto the table first'); return true; }
+        beginConfirm(canvas.toDataURL('image/jpeg', 0.86));
+        return true;
+      }
+      case 'sim-scan-add': {
+        const ids = new Set(st.scan.balls.map((b) => String(b.id)));
+        let id = 'cue';
+        if (ids.has('cue')) {
+          id = 1;
+          while (ids.has(String(id)) && id <= 15) id++;
+          if (id > 15) { toast('All 15 balls are on the table'); return true; }
+        }
+        const spot = L.freeSpot(st.scan.balls, { x: 50, y: 25 }, rad());
+        st.scan.balls.push({ id, x: f2(spot.x), y: f2(spot.y), stripe: Number(id) >= 9 });
+        st.sel = id;
+        refresh();
+        return true;
+      }
+      case 'sim-scan-del': {
+        const id = st.sel;
+        if (id == null) return true;
+        st.scan.balls = st.scan.balls.filter((b) => b.id !== id);
+        st.sel = st.scan.balls[0]?.id ?? null;
+        refresh();
+        return true;
+      }
+      case 'sim-scan-num': {
+        const b = st.scan.balls.find((q) => q.id === st.sel);
+        if (!b || b.id === 'cue') return true;
+        let n = Number(b.id) + Number(el.dataset.d);
+        if (n < 1) n = 15;
+        if (n > 15) n = 1;
+        if (st.scan.balls.some((q) => q !== b && String(q.id) === String(n))) { toast('That number is already on the table'); return true; }
+        b.id = n;
+        if (b.stripe == null) b.stripe = n >= 9;
+        st.sel = n;
+        refresh();
+        return true;
+      }
+      case 'sim-scan-stripe': {
+        const b = st.scan.balls.find((q) => q.id === st.sel);
+        if (!b || b.id === 'cue') return true;
+        b.stripe = !(b.stripe != null ? b.stripe : Number(b.id) >= 9);
+        refresh();
+        return true;
+      }
+      case 'sim-scan-cue': {
+        const b = st.scan.balls.find((q) => q.id === st.sel);
+        if (!b) return true;
+        if (st.scan.balls.some((q) => q !== b && q.id === 'cue')) {
+          const old = st.scan.balls.find((q) => q.id === 'cue');
+          old.id = b.id === 'cue' ? 1 : b.id;
+        }
+        b.id = 'cue';
+        b.stripe = false;
+        st.sel = 'cue';
+        refresh();
+        return true;
+      }
+      case 'sim-scan-confirm':
+        pushUndo();
+        st.balls = st.scan.balls.map((b) => ({ id: b.id, x: f2(b.x), y: f2(b.y), ...(b.stripe ? { stripe: true } : {}) }));
+        st.scan = null;
+        st.sel = null;
+        refresh();
+        toast('Layout set');
+        return true;
+      case 'sim-runout':
+        if (!cueBall()) { toast('Place the cue ball first'); return true; }
+        askRunout();
+        return true;
+      case 'sim-run-game': {
+        const g = Number(el.dataset.g);
+        if (g === 8 && st._groups?.solids && st._groups?.stripes) {
+          openSheet(`<div class="eyebrow">8-BALL</div><h2 class="sheetTitle">Solids or stripes?</h2><div class="actGrid"><button type="button" class="actBtn" data-action="sim-run-group" data-g="solids">SOLIDS</button><button type="button" class="actBtn" data-action="sim-run-group" data-g="stripes">STRIPES</button></div>`, { id: 'runout' });
+          return true;
+        }
+        openRunout(g, g === 8 ? (st._groups?.stripes && !st._groups?.solids ? 'stripes' : 'solids') : null);
+        return true;
+      }
+      case 'sim-run-group':
+        openRunout(8, el.dataset.g);
+        return true;
+      case 'sim-run-prev':
+        if (st.runout && st.runout.i > 0) { st.runout.i--; refresh(); }
+        return true;
+      case 'sim-run-next':
+        if (st.runout && st.runout.i < st.runout.steps.length - 1) { st.runout.i++; refresh(); }
+        return true;
+      case 'sim-run-close':
+        st.runout = null;
+        refresh();
+        return true;
+      case 'sim-rand':
+        st.randType = st.randType || 'straight';
+        st.randPocket = st.randPocket || 'ANY';
+        randomSheet();
+        return true;
+      case 'sim-rand-type':
+        st.randType = el.dataset.v;
+        randomSheet();
+        return true;
+      case 'sim-rand-pocket':
+        st.randPocket = el.dataset.v;
+        randomSheet();
+        return true;
+      case 'sim-rand-go': {
+        closeSheet();
+        toast('Looking for a shot the simulator can make…');
+        const tries = st.randType === 'kick4' ? 70 : st.randType === 'kick3' ? 50 : 40;
+        const gen = generateShot({ type: st.randType, pocket: st.randPocket || 'ANY', seed: (Date.now() ^ (Math.random() * 1e9)) >>> 0, table: tableSpec(), tries });
+        if (!gen.ok) {
+          openSheet(`<div class="eyebrow">RANDOM SHOT</div><h2 class="sheetTitle">No shot found</h2><p class="muted">None of the ${gen.tried} tries made that shot on this table. Nothing was placed.</p><button type="button" class="bigBtn" data-action="sim-rand-go">GENERATE AGAIN</button><button type="button" class="bigBtn alt" data-action="sheet-close">CLOSE</button>`, { id: 'random' });
+          return true;
+        }
+        pushUndo();
+        st.balls = gen.balls.map((b) => ({ ...b }));
+        const w0 = gen.ways[0];
+        st.shot.aim = w0.aim;
+        st.shot.speed = w0.speed;
+        st.shot.vTips = w0.vTips;
+        st.shot.hTips = w0.hTips;
+        st.randWays = gen.ways;
+        st.randPocketMade = gen.pocket;
+        st.sel = null;
+        refresh();
+        openSheet(`<div class="eyebrow">RANDOM SHOT · ${esc(gen.pocket)}</div><h2 class="sheetTitle">${gen.ways.length} way${gen.ways.length === 1 ? '' : 's'}</h2><p class="muted small">Same layout. Each line is a tip and speed the simulator makes.</p><div class="findList">${gen.ways.map((w, i) => `<button type="button" class="findItem${i === 0 ? ' best' : ''}" data-action="sim-rand-apply" data-i="${i}"><b>${esc(wayLabel(w))}</b></button>`).join('')}</div>`, { id: 'random' });
+        return true;
+      }
+      case 'sim-rand-apply': {
+        const w = st.randWays?.[Number(el.dataset.i)];
+        if (!w) return true;
+        st.shot.aim = w.aim;
+        st.shot.speed = w.speed;
+        st.shot.vTips = w.vTips;
+        st.shot.hTips = w.hTips;
+        closeSheet();
+        refresh();
+        return true;
+      }
       case 'sim-exit':
         if (st.game) { quitGame(); return true; }
         ctx.go('#home');
@@ -1206,7 +1595,7 @@ export function createSimScreen(ctx, args = []) {
         const id = el.dataset.id === 'cue' ? 'cue' : Number(el.dataset.id);
         if (st.balls.some((b) => b.id === id)) { st.sel = id; refresh(['table', 'panel']); return true; }
         pushUndo();
-        const spot = L.freeSpot(st.balls, id === 'cue' ? { x: 25, y: 25 } : { x: 50 + ((id * 7) % 30) - 15, y: 25 + ((id * 5) % 16) - 8 });
+        const spot = L.freeSpot(st.balls, id === 'cue' ? { x: 25, y: 25 } : { x: 50 + ((id * 7) % 30) - 15, y: 25 + ((id * 5) % 16) - 8 }, rad());
         st.balls.push({ id, x: f2(spot.x), y: f2(spot.y) });
         st.sel = id;
         refresh();
@@ -1217,9 +1606,9 @@ export function createSimScreen(ctx, args = []) {
         if (!b) return true;
         pushUndo('move');
         const step = set.snap ? L.QUARTER : 0.25;
-        let q = L.clampToTable({ x: b.x + Number(el.dataset.dx) * step, y: b.y + Number(el.dataset.dy) * step });
-        if (set.snap) q = L.snapPoint(q);
-        if (st.balls.some((o) => o !== b && Math.hypot(o.x - q.x, o.y - q.y) < 2 * R - 0.001)) { toast('Blocked by another ball'); return true; }
+        let q = L.clampToTable({ x: b.x + Number(el.dataset.dx) * step, y: b.y + Number(el.dataset.dy) * step }, rad());
+        if (set.snap) q = L.snapPoint(q, L.QUARTER, rad());
+        if (st.balls.some((o) => o !== b && Math.hypot(o.x - q.x, o.y - q.y) < 2 * rad() - 0.001)) { toast('Blocked by another ball'); return true; }
         b.x = f2(q.x);
         b.y = f2(q.y);
         relaim();
@@ -1343,6 +1732,8 @@ export function createSimScreen(ctx, args = []) {
 
   function destroy() {
     destroyed = true;
+    document.body.classList.remove('sim-full');
+    document.documentElement.classList.remove('sim-dragging');
     closeTipPicker();
     clearTimeout(pvTimer);
     cancelAnimationFrame(raf);
@@ -1359,8 +1750,8 @@ export function createSimScreen(ctx, args = []) {
         history.replaceState(null, '', '#sim');
         const pro = args[1] === 'pro';
         const g = pro ? 7 : Math.max(1, Math.min(7, Number(args[1]) || 3));
-        if (pro) newLayout(L.eightGhostLayout(7, Date.now(), true), { aim: 0, speed: 6, vTips: 0, hTips: 0 }, '8-Ball Ghost · Pro break', '15-ball rack — break, then ball in hand');
-        else newLayout(L.eightGhostLayout(g, Date.now()), { speed: 2, vTips: 0, hTips: 0 }, `8-Ball Ghost · ${g} + 8`, `Ball in hand: run your ${g} in any order, then the 8`);
+        if (pro) newLayout(L.eightGhostLayout(7, Date.now(), true, rad()), { aim: 0, speed: 6, vTips: 0, hTips: 0 }, '8-Ball Ghost · Pro break', '15-ball rack — break, then ball in hand');
+        else newLayout(L.eightGhostLayout(g, Date.now(), false, rad()), { speed: 2, vTips: 0, hTips: 0 }, `8-Ball Ghost · ${g} + 8`, `Ball in hand: run your ${g} in any order, then the 8`);
       }
     },
     onAction,

@@ -157,9 +157,11 @@ export async function runAccounts({ browser, page, BASE, check, sleep, shot, err
   const attach = async (pg) => {
     await pg.setRequestInterception(true);
     pg.on('request', async (req) => {
-      if (req.isInterceptResolutionHandled()) return;
-      if (new URL(req.url()).host !== HOST) { req.continue(); return; }
-      req.respond(mock.handle(req));
+      try {
+        if (req.isInterceptResolutionHandled()) return;
+        if (new URL(req.url()).host !== HOST) { await req.continue(); return; }
+        await req.respond(mock.handle(req));
+      } catch { /* interception already turned off */ }
     });
   };
   const detach = async (pg) => { await pg.setRequestInterception(false); };

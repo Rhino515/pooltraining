@@ -796,7 +796,7 @@ let state = storage.defaultState();
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
   const missing = walk(path.join(root, 'js')).filter((f) => f.endsWith('.js')).map((f) => './' + path.relative(root, f)).filter((f) => !sw.includes(`'${f}'`));
-  assert(/'pool-iq-v13'/.test(sw), 'service worker cache is pool-iq-v13');
+  assert(/'pool-iq-v14'/.test(sw), 'service worker cache is pool-iq-v14');
   assertAll('service worker precaches every JS module (incl. simulator + Create Drill)', missing.map((m) => `missing ${m}`));
   const wordN = { one: 1, two: 2, three: 3, four: 4 };
   const probs = [];
@@ -1793,7 +1793,7 @@ let state = storage.defaultState();
   const pb2 = VLT.parseBackup(JSON.stringify(newBackup));
   assert(pb2.keys.poolIQFriendsV1 && pb2.summary.pvp === fd.matches.length && pb2.summary.friends > 0, 'vault: v11 backup summary counts friends + friend matches');
   assert(!VLT.parseBackup(JSON.stringify({ ...newBackup, keys: { ...newBackup.keys, poolIQFriendsV1: { nope: 1 } } })).keys.poolIQFriendsV1, 'vault: a damaged friends key is dropped (rest restores)');
-  assert(VLT.APP_VERSION === '13', 'vault: APP_VERSION is 13');
+  assert(VLT.APP_VERSION === '14', 'vault: APP_VERSION is 14');
   // docs exist
   for (const f of ['docs/RANKING_AND_XP.md', 'docs/SKILL_GATES_AND_PROMOTIONS.md', 'docs/FRIENDS_AND_TOURNAMENTS.md', 'docs/DEV_MODE.md']) assert(fs.existsSync(path.join(root, f)), `doc present: ${f}`);
   store.clear();
@@ -2037,7 +2037,7 @@ let state = storage.defaultState();
   const dash = src('js/dashboard.js');
   const friends = src('js/ui/friends.js');
   const vendor = src('js/vendor/supabase.js');
-  assert(/'pool-iq-v13'/.test(sw) && !/'pool-iq-v12'/.test(sw), 'v13: service worker cache is pool-iq-v13');
+  assert(/'pool-iq-v14'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw), 'v14: service worker cache is pool-iq-v14');
   assert(sw.includes(`'./js/vendor/supabase.js'`) && sw.includes(`'./js/cloud/controller.js'`) && sw.includes(`'./js/ui/account.js'`), 'v13: sw precaches the bundled supabase-js and the cloud modules');
   assert(/supabase-js\/2\.117\.2/.test(vendor) && /createClient/.test(vendor) && !/cdn\.jsdelivr|unpkg\.com|esm\.sh/.test(idx + sw), 'v13: official supabase-js v2 UMD build is bundled locally (no CDN)');
   assert(/nqfwlpfyccbqetcyjijf/.test(cfg) && /sb_publishable_/.test(cfg) && !/sb_secret_|service_role|sbp_[0-9a-f]{10}/.test(cfg + sql + docs), 'v13: config carries the project ref + publishable key only (no secrets anywhere)');
@@ -2082,6 +2082,74 @@ let state = storage.defaultState();
   assert(out.format === 'pool-iq-public-stats' && typeof out.stars === 'number' && out.pvp && out.pvp.wins === 2, 'v13: public stats export includes stars and the opt-in friend-match record');
   const out2 = prof.publicStats(st, prof.defaultProfile(), 1700000000000);
   assert(!out2.pvp, 'v13: friend-match record is absent unless opted in');
+}
+
+
+// ---------------------------------------------------------------- v14: simulator simplification, table size, scan, runout, 3D, random shot, icons
+{
+  const fs = await import('fs');
+  const sim = fs.readFileSync(path.join(root, 'js/ui/simulator.js'), 'utf8');
+  const idx = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+  assert(!/data-action="sim-nudge"/.test(sim), 'v14: aim degree nudge buttons are gone');
+  assert(!/id="simSpeedDiagram"/.test(sim) && !/class="spMean"/.test(sim), 'v14: speed mini-diagram and route sentence are not rendered');
+  assert(!sim.includes('data-aim='), 'v14: aim degree readout is not rendered');
+  assert(/TABLE SIZE/.test(sim) && /data-action="sim-size"/.test(sim), 'v14: table size control is on the simulator');
+  assert(/offsetDragPoint/.test(sim) && /data-offset-drag/.test(sim), 'v14: offset-drag hook is wired');
+  assert(/SCAN_PLACE_LABEL/.test(sim) && /Place the balls to match your photo/.test(fs.readFileSync(path.join(root, 'js/sim/scan.js'), 'utf8')), 'v14: scan confirm uses the place-balls label');
+  assert(!/detected \d|balls detected|auto-detect/i.test(sim), 'v14: simulator does not claim detection');
+  assert(/data-action="sim-runout"/.test(sim) && /data-action="sim-3d"/.test(sim) && /data-action="sim-full"/.test(sim) && /data-action="sim-rand"/.test(sim), 'v14: runout, 3D, full screen and random shot buttons exist');
+  const arcade = idx.match(/data-page="arcade"[\s\S]*?<\/button>/)[0];
+  assert(!/M7\.4 6\.6/.test(arcade) && /<rect /.test(arcade), 'v14: Table Games icon is a pool table, not the controller');
+  for (const f of ['icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-192.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-32.png', 'icons/favicon.svg']) {
+    assert(fs.existsSync(path.join(root, f)) && fs.statSync(path.join(root, f)).size > 400, `v14: icon file ${f}`);
+  }
+  assert(/pool-iq-v14/.test(sw) && sw.includes('./js/sim/tableCal.js') && sw.includes('./js/sim/randomShot.js'), 'v14: cache and new modules are precached');
+
+  const TC = await import(js('sim/tableCal.js'));
+  const P = await import(js('sim/physics.js'));
+  const LIB = await import(js('sim/library.js'));
+  const RO = await import(js('sim/runout.js'));
+  const RS = await import(js('sim/randomShot.js'));
+  const V3 = await import(js('sim/view3d.js'));
+  const SC = await import(js('sim/scan.js'));
+  assert(TC.spec(7).lengthIn === 78 && TC.spec(7).widthIn === 39 && TC.spec(8).lengthIn === 88 && TC.spec(9).lengthIn === 100, 'v14: playing surfaces are 78×39, 88×44, 100×50');
+  assert(TC.DEFAULT_FT === 8 && LIB.DEFAULT_SETTINGS.tableFt === 8, 'v14: default table is 8 ft');
+  const saved = LIB.loadSim();
+  saved.settings.tableFt = 7;
+  LIB.saveSim(saved);
+  assert(LIB.loadSim().settings.tableFt === 7, 'v14: table size persists in the sim settings');
+  const cue = [{ id: 'cue', x: 20, y: 25 }];
+  const travel = (ft) => {
+    const table = TC.spec(ft);
+    const opt = TC.isNine(table) ? { record: false, maxTime: 12 } : { record: false, maxTime: 12, table };
+    const res = P.simulate(cue, { aim: 0, V: P.speedToV0(2, table), vTips: 0, hTips: 0 }, opt);
+    return res.distance.cue;
+  };
+  const d7 = travel(7); const d8 = travel(8); const d9 = travel(9);
+  assert(d7 > 50 && d8 > d7 + 5 && d9 > d8 + 5, `v14: SPEED 2 travels farther in inches on a longer table (${d7.toFixed(1)} / ${d8.toFixed(1)} / ${d9.toFixed(1)})`);
+  const det = await SC.detectBalls(null);
+  assert(det.available === false && det.balls == null && det.label === 'Place the balls to match your photo', 'v14: detector hook does not invent balls');
+  const plan = RO.planRunout([{ id: 'cue', x: 30, y: 30 }, { id: 1, x: 70, y: 22 }], { game: 9, table: TC.spec(8) });
+  assert(Array.isArray(plan.steps) && plan.steps.length >= 1 && plan.steps[0].pocket && plan.steps[0].text, `v14: runout returns a physics step (${plan.steps[0]?.text || plan.note})`);
+  const balls = [{ id: 'cue', x: 25, y: 30 }, { id: 1, x: 60, y: 20 }];
+  const before = JSON.stringify(balls);
+  const ctx = new Proxy({}, { get: () => () => {}, set: () => true });
+  V3.drawTable3D(ctx, 300, 160, { balls, ballR: TC.diagramRadius(TC.spec(8)), yaw: 0.2, pitch: 2 });
+  assert(JSON.stringify(balls) === before && V3.cameraBehind(balls[0], 0, 0).x !== balls[0].x, 'v14: 3D draw reads the same positions and does not move them');
+  const gen = RS.generateShot({ type: 'straight', pocket: 'ANY', seed: 3, table: TC.spec(8), tries: 24 });
+  assert(gen.ok && gen.ways.length >= 1, `v14: random straight shot is one the physics makes (${gen.ok ? gen.ways.length + ' ways' : 'none'})`);
+  if (gen.ok) {
+    const spec = RS.SHOT_TYPES.find((s) => s.id === 'straight');
+    const bad = gen.ways.filter((w) => {
+      const table = TC.spec(8);
+      const res = P.simulate(gen.balls, { aim: w.aim, V: P.speedToV0(w.speed, table), vTips: w.vTips, hTips: w.hTips }, { record: false, maxTime: 12, table });
+      return !RS.shotMeets(res, { pocket: gen.pocket, obRails: spec.obRails, cueRails: spec.cueRails });
+    });
+    assert(bad.length === 0, `v14: every listed way pockets (${bad.length} misses)`);
+  }
+  const miss = RS.generateShot({ type: 'kick4', pocket: 'TL', seed: 1, table: TC.spec(8), tries: 0 });
+  assert(miss.ok === true || (miss.ok === false && !miss.balls), 'v14: a failed random search does not return a layout');
 }
 
 console.log('\n--- Summary ---');

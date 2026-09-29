@@ -34,7 +34,7 @@ export const MAX_SNAPSHOTS = 3;
 export const SNAP_EVERY_MS = 6 * 3600 * 1000; // automatic rolling snapshot at most every 6 h
 export const BACKUP_FORMAT = 'pool-iq-backup';
 export const BACKUP_SCHEMA = 1;
-export const APP_VERSION = '13';
+export const APP_VERSION = '14';
 export const NUDGE_DAYS = 7;
 const DAY = 86400000;
 

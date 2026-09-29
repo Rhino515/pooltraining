@@ -15,6 +15,18 @@ Pool IQ is a mobile-first PWA for practising billiards on a real table. You play
 
 All content is original. Pass/fail is only ever computed from the results you record. The app has no self-report "I passed" buttons.
 
+## What's new in v14 (changelog)
+
+Shot Simulator simplification. Playing-surface sizes (ball stays 2.25 in): 7 ft is 78×39 in, 8 ft is 88×44 in (the default), 9 ft is 100×50 in. Only the size changes the physics for now; cloth and cushion response can be added on the same calibration module.
+
+- Aim-degree readout, degree nudge buttons, the cue-ball route paragraph, the small speed diagram, and the SETUP coordinate line are off the simulator screen.
+- TABLE SIZE sticks in the existing simulator settings.
+- Dragging a ball draws it above the finger.
+- SCAN TABLE is a photo plus a confirm screen. There is no ball detector in this static app, so the screen says "Place the balls to match your photo".
+- RUNOUT, a behind-the-cue-ball 3D view of the same positions, full screen, and a random-shot generator that only shows shots the physics pockets.
+- Table Games nav icon is a pool table. The app icon is the POOL IQ wordmark.
+- Cache `pool-iq-v14`, app version 14.
+
 ## What's new in v13 (changelog)
 
 **Free online accounts** for a small group of friends, on Supabase's free tier. The app is still the static GitHub

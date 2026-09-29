@@ -483,13 +483,16 @@ await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile
     grid: document.querySelectorAll('#simSvg .diamond-grid line').length,
     balls: document.querySelectorAll('#simSvg g.ball').length,
     r: [...document.querySelectorAll('#simSvg g.ball circle.ball-body')].map((c) => +c.getAttribute('r')),
-    setup: document.querySelectorAll('#simSetup .su-ball').length,
-    aimView: !!document.querySelector('.simAim svg'),
+    ft: document.querySelector('.simScreen')?.dataset.tableFt,
+    sizes: [...document.querySelectorAll('[data-action="sim-size"]')].map((b) => b.dataset.ft).join(','),
+    aim: !!document.querySelector('.simAim, [data-action="sim-nudge"]'),
     shoot: document.querySelector('.shootBtn')?.getBoundingClientRect().height || 0,
     sh: document.documentElement.scrollWidth, vw: innerWidth,
+    drag: document.querySelector('.simScreen')?.dataset.offsetDrag,
   }));
-  check(simInfo.grid >= 10 && simInfo.balls >= 2 && simInfo.r.every((r) => r === 1.125) && simInfo.setup === simInfo.balls, `simulator: true-scale balls on the diamond grid with SETUP readout (${simInfo.balls} balls, ${simInfo.grid} grid lines)`);
-  check(simInfo.aimView && simInfo.shoot >= 50 && simInfo.sh <= simInfo.vw, `simulator: Aim View, big SHOOT button (${Math.round(simInfo.shoot)}px), no sideways scroll`);
+  const r8 = 1.125 / 0.88;
+  check(simInfo.grid >= 10 && simInfo.balls >= 2 && simInfo.ft === '8' && simInfo.sizes === '7,8,9' && simInfo.r.every((r) => Math.abs(r - r8) < 0.03), `simulator: 8 ft table, diamond grid, ball radius follows the bed (${simInfo.r.join(',')})`);
+  check(!simInfo.aim && simInfo.drag === '1' && simInfo.shoot >= 44 && simInfo.sh <= simInfo.vw, `simulator: no aim-degree controls, offset drag on, big SHOOT (${Math.round(simInfo.shoot)}px), no sideways scroll`);
   const tablePt = (x, y) => page.evaluate((x, y) => { const svg = document.querySelector('#simSvg'); const p = svg.createSVGPoint(); p.x = x; p.y = y; const q = p.matrixTransform(svg.getScreenCTM()); return { x: q.x, y: q.y }; }, x, y);
   const simSt = () => page.evaluate(() => { const s = window.PoolIQ.screen; const st = s.state; return { balls: st.balls, shot: st.shot, mode: st.mode, undo: s.undoDepth, redo: s.redoDepth, res: st.res ? { dur: st.res.duration, pocketed: st.res.pocketed } : null, playT: st.playT, playing: st.playing }; });
   // drag the cue ball with a touch-style drag
@@ -506,7 +509,9 @@ await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile
   await sleep(200);
   let s1 = await simSt();
   const cue1 = s1.balls.find((b) => b.id === 'cue');
-  check(Math.hypot(cue1.x - cue0.x - 6.25, cue1.y - cue0.y - 6.25) < 0.8 && (await page.evaluate(() => scrollY)) === scroll0, `drag moves the cue ball (${cue0.x},${cue0.y} → ${cue1.x},${cue1.y}) without scrolling the page`);
+  const lifted = await page.evaluate((x, y) => { const svg = document.querySelector('#simSvg'); const p = svg.createSVGPoint(); p.x = x; p.y = y - 72; const q = p.matrixTransform(svg.getScreenCTM().inverse()); return { x: q.x, y: q.y }; }, bpt.x, bpt.y);
+  const finger = await page.evaluate((x, y) => { const svg = document.querySelector('#simSvg'); const p = svg.createSVGPoint(); p.x = x; p.y = y; const q = p.matrixTransform(svg.getScreenCTM().inverse()); return { x: q.x, y: q.y }; }, bpt.x, bpt.y);
+  check(Math.hypot(cue1.x - cue0.x, cue1.y - cue0.y) > 1 && cue1.y < finger.y - 0.4 && (await page.evaluate(() => scrollY)) === scroll0, `offset drag lifts the cue ball above the finger (${cue0.x},${cue0.y} → ${cue1.x},${cue1.y}; finger ${finger.y.toFixed(1)}, lift target ${lifted.y.toFixed(1)}) without scrolling`);
   check(!!bubble && /Cue/.test(bubble), `drag shows a live position bubble ("${bubble}")`);
   check(s1.undo > s0.undo, 'ball move is undoable');
   await tap('[data-action="sim-undo"]');
@@ -521,11 +526,15 @@ await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile
   await page.mouse.click(obp.x, obp.y);
   await sleep(200);
   const aim1 = (await simSt()).shot.aim;
-  const aimTxt = await text('.simAim');
-  check(/cut|straight/i.test(aimTxt) && (await exists('#simUnder .aim-ghost')), `tapping a ball aims at it with a ghost ball ("${aimTxt.replace(/\s+/g, ' ').slice(0, 60)}")`);
-  await tap('[data-action="sim-nudge"][data-v="1"]');
+  check((await exists('#simUnder .aim-ghost')) && (await page.$$('[data-action="sim-nudge"]')).length === 0, 'tapping a ball aims at it with a ghost ball, and the degree buttons are gone');
+  const felt = await tablePt(12, 40);
+  await page.mouse.move(felt.x, felt.y);
+  await page.mouse.down();
+  await page.mouse.move(felt.x + 48, felt.y - 24);
+  await page.mouse.up();
+  await sleep(150);
   const aim2 = (await simSt()).shot.aim;
-  check(Math.abs(aim2 - aim1) > 0.05, `nudge fine-tunes the aim (${aim1} → ${aim2})`);
+  check(Math.abs(aim2 - aim1) > 0.05, `dragging the felt changes the aim (${aim1} → ${aim2})`);
   await page.mouse.click(obp.x, obp.y);
   await sleep(150);
   await page.mouse.click(obp.x, obp.y);
@@ -623,8 +632,8 @@ await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile
   await shot('25-sim-375');
   await tap('.shootBtn');
   await page.waitForFunction(() => { const st = window.PoolIQ.screen.state; return st.res && !st.playing; }, { timeout: 20000 }).catch(() => {});
-  const pb2 = await page.evaluate(() => { const r = [...document.querySelectorAll('.simBar.play button')].map((b) => b.getBoundingClientRect()); return { onScreen: r.every((q) => q.bottom <= innerHeight + 1), minH: Math.min(...r.map((q) => q.height)) }; });
-  check(pb2.onScreen && pb2.minH >= 44, `375×667: playback controls on screen, ≥44px (${Math.round(pb2.minH)}px)`);
+  const pb2 = await page.evaluate(() => { const r = [...document.querySelectorAll('.simBar.play button')].map((b) => b.getBoundingClientRect()); return { onScreen: r.every((q) => q.bottom <= innerHeight + 1), minH: r.length ? Math.min(...r.map((q) => q.height)) : 0, n: r.length, mode: document.querySelector('.simScreen')?.dataset.mode || '' }; });
+  check(pb2.onScreen && pb2.minH >= 44, `375×667: playback controls on screen, ≥44px (${Math.round(pb2.minH)}px, ${pb2.n} buttons, mode ${pb2.mode})`);
   await shot('26-sim-375-played');
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
   check(errors.length === errBefore, `simulator: zero console errors (${errors.length - errBefore})`);
@@ -1790,6 +1799,7 @@ await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile
   const simSt = () => page.evaluate(() => { const st = window.PoolIQ.screen.state; return { balls: st.balls, shot: st.shot, mode: st.mode, game: !!st.game, res: st.res ? { dur: st.res.duration, final: st.res.final } : null, playT: st.playT, playing: st.playing }; });
   const simLink = (balls, shot) => page.evaluate(async (balls, shot) => '#sim/s=' + (await import('./js/sim/share.js')).encodeState({ balls, shot, annotations: [] }), balls, shot);
   async function openSim(balls, shot) {
+    await page.evaluate(() => { let d = {}; try { d = JSON.parse(localStorage.getItem('poolIQSimV1') || '{}'); } catch { d = {}; } d.settings = { ...(d.settings || {}), tableFt: 9 }; localStorage.setItem('poolIQSimV1', JSON.stringify(d)); });
     await go('#home');
     await go(await simLink(balls, shot));
     await page.waitForSelector('.simScreen[data-mode="edit"] #simSvg', { timeout: 5000 }).catch(() => {});
@@ -1862,8 +1872,8 @@ await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile
   check(pv.tags.includes('POCKET') && pv.ends.some((e) => e.ball === '1' && e.end === 'pocket' && e.pocket === 'TR') && pv.tags.some((t) => t === 'STOP'), `preview end markers: POCKET on the 1 (TR), STOP for the cue ball (${pv.tags.join(', ')})`);
   check(pv.stub === 0 && /pocket/i.test(pv.summary), `preview replaces the old first-rail stub; summary "${pv.summary}"`);
   check(pv.labelFont >= 7, `rail numbers are readable on a phone (${pv.labelFont.toFixed(1)} px tall)`);
-  const spMean = await page.evaluate(() => ({ m: document.querySelector('.simSpeed .spMean')?.textContent || '', d: document.querySelector('#simSpeedDiagram svg')?.dataset.speedDiagram, tip: document.querySelector('.simTip [data-tip-clock]')?.textContent }));
-  check(spMean.m.startsWith(M.m7.slice(0, 30)) && spMean.d === '7.00', 'simulator speed readout: plain meaning + mini diagram for SPEED 7.00');
+  const spMean = await page.evaluate(() => ({ m: document.querySelector('.simSpeed .spMean')?.textContent || '', d: !!document.querySelector('#simSpeedDiagram'), tip: document.querySelector('.simTip [data-tip-clock]')?.textContent, sum: document.querySelector('#pvSummary')?.textContent || '' }));
+  check(!spMean.m && !spMean.d && /pocket|rail|cue/i.test(spMean.sum), 'simulator: route paragraph and mini speed diagram are gone; preview summary stays for the path');
   check(spMean.tip === 'Center', `simulator tip clock: "Center" for a centre hit (${spMean.tip})`);
   await shot('v111-02-sim-speed7-preview');
   // preview == SHOOT
@@ -1898,7 +1908,12 @@ await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile
   await sleep(300);
   const p1 = await pvInfo();
   check(p1.label === 'SPEED 6.75' && p1.pts && p1.pts !== p0, `preview redraws live when SPEED changes (7.00 → ${p1.label})`);
-  await tap('[data-action="sim-nudge"][data-v="1"]');
+  const cueNow = (await simSt()).balls.find((b) => b.id === 'cue');
+  const ap = await page.evaluate((x, y) => { const svg = document.querySelector('#simSvg'); const p = svg.createSVGPoint(); p.x = x; p.y = y; const q = p.matrixTransform(svg.getScreenCTM()); return { x: q.x, y: q.y }; }, cueNow.x + 15, cueNow.y + 6);
+  await page.mouse.move(ap.x, ap.y);
+  await page.mouse.down();
+  await page.mouse.move(ap.x + 50, ap.y + 18);
+  await page.mouse.up();
   await sleep(300);
   const p2 = (await pvInfo()).pts;
   check(p2 && p2 !== p1.pts, 'preview redraws live when the aim changes');
@@ -1909,8 +1924,8 @@ await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile
   check(tipC.c === "1:30 o'clock" && tipC.under, `simulator tip clock under the tip text ("${tipC.t}" → "${tipC.c}")`);
   await shot('v111-03-tip-clock-sim');
   // smooth: many rapid changes are throttled (no long tasks piling up)
-  const tRapid = await page.evaluate(async () => { const t0 = performance.now(); for (let i = 0; i < 12; i++) document.querySelector('[data-action="sim-nudge"][data-v="0.1"]').click(); await new Promise((r) => setTimeout(r, 400)); return performance.now() - t0; });
-  check(tRapid < 2500 && (await exists('#simPreview .pv-path.pv-cue')), `12 rapid aim nudges stay responsive (${Math.round(tRapid)} ms incl. 400 ms settle)`);
+  const tRapid = await page.evaluate(async () => { const t0 = performance.now(); const up = document.querySelector('[data-action="sim-speed"][data-v="0.25"]'); const dn = document.querySelector('[data-action="sim-speed"][data-v="-0.25"]'); for (let i = 0; i < 12; i++) (i % 2 ? dn : up).click(); await new Promise((r) => setTimeout(r, 400)); return performance.now() - t0; });
+  check(tRapid < 2500 && (await exists('#simPreview .pv-path.pv-cue')), `12 rapid speed changes stay responsive (${Math.round(tRapid)} ms incl. 400 ms settle)`);
   // tip picker pop-up: open, drag (touch + mouse), live values + preview, miscue limit, Center, Done, tap outside — 4 sizes
   const pickInfo = () => page.evaluate(() => {
     const p = document.querySelector('#tipPicker');
@@ -2078,6 +2093,58 @@ await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
 }
 
+// ------------------------------------------------------------------------------------------ v14 simulator tools
+{
+  const errBefore = errors.length;
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  await page.evaluate(() => { document.querySelectorAll('.sheetWrap').forEach((e) => e.classList.remove('show')); localStorage.removeItem('poolIQSimV1'); });
+  await go('#sim');
+  await sleep(250);
+  await shot('v14-sim-clean');
+  const gone = await page.evaluate(() => ({
+    aim: !!document.querySelector('.simAim, [data-action="sim-nudge"], #simSpeedDiagram, .spMean'),
+    setup: document.querySelectorAll('#simSetup .su-ball').length,
+    scan: !!document.querySelector('[data-action="sim-scan"]'),
+    cap: document.querySelector('#simScanFile')?.getAttribute('capture'),
+    run: !!document.querySelector('[data-action="sim-runout"]'),
+    view: !!document.querySelector('[data-action="sim-3d"]'),
+    full: !!document.querySelector('[data-action="sim-full"]'),
+    rand: !!document.querySelector('[data-action="sim-rand"]'),
+    ico: document.querySelector('nav [data-page="arcade"] svg')?.innerHTML || ''
+  }));
+  check(!gone.aim && gone.setup === 0 && gone.scan && gone.cap === 'environment' && gone.run && gone.view && gone.full && gone.rand, 'v14: cleaned simulator still has scan, runout, 3D, full screen and random shot');
+  check(!/M7\.4 6\.6/.test(gone.ico) && /rect/.test(gone.ico), 'v14: Table Games nav icon is a table, not the controller');
+  const before = await page.evaluate(() => window.PoolIQ.screen.state.balls.map((b) => ({ ...b })));
+  await tap('[data-action="sim-3d"]');
+  await sleep(200);
+  const d3 = await page.evaluate(() => ({ c: !!document.querySelector('#sim3d'), balls: window.PoolIQ.screen.state.balls.map((b) => b.x + ',' + b.y).join('|') }));
+  check(d3.c && d3.balls === before.map((b) => b.x + ',' + b.y).join('|'), 'v14: 3D view uses the same ball positions');
+  await tap('[data-action="sim-2d"]');
+  await sleep(150);
+  const back = await page.evaluate(() => ({ svg: !!document.querySelector('#simSvg'), balls: window.PoolIQ.screen.state.balls.map((b) => b.x + ',' + b.y).join('|') }));
+  check(back.svg && back.balls === before.map((b) => b.x + ',' + b.y).join('|'), 'v14: 2D TOP VIEW returns without moving balls');
+  await tap('[data-action="sim-full"]');
+  await sleep(150);
+  const fs = await page.evaluate(() => ({ on: document.body.classList.contains('sim-full'), exit: /EXIT/.test(document.body.innerText) }));
+  check(fs.on && fs.exit, 'v14: full screen hides the app chrome and shows EXIT');
+  await shot('v14-fullscreen');
+  await tap('[data-action="sim-full"]');
+  await tap('[data-action="sim-runout"]');
+  await sleep(200);
+  const games = await page.evaluate(() => [...document.querySelectorAll('[data-action="sim-run-game"]')].map((b) => b.dataset.g).join(','));
+  check(games === '8,9,10', 'v14: runout asks 8-ball, 9-ball, 10-ball');
+  await shot('v14-runout');
+  await page.evaluate(() => document.querySelector('.sheetWrap')?.classList.remove('show'));
+  await tap('[data-action="sim-rand"]');
+  await sleep(200);
+  const types = await page.evaluate(() => [...document.querySelectorAll('[data-action="sim-rand-type"]')].map((b) => b.dataset.v).join(','));
+  check(types === 'straight,bank1,bank2,kick1,kick2,kick3,kick4', `v14: random shot types match the physics (${types})`);
+  await shot('v14-random');
+  await page.evaluate(() => document.querySelector('.sheetWrap')?.classList.remove('show'));
+  check(errors.length === errBefore, `v14 screens: zero console errors (${errors.length - errBefore})`);
+  if (errors.length > errBefore) console.log(errors.slice(errBefore).join('\\n'));
+}
+
 // ------------------------------------------------------------------------------------------ service worker + offline
 const swOk = await page.evaluate(async () => {
   if (!('serviceWorker' in navigator)) return false;
@@ -2086,7 +2153,7 @@ const swOk = await page.evaluate(async () => {
 });
 check(swOk, 'service worker registered and active');
 const cacheName = await page.evaluate(async () => (await caches.keys()).join(','));
-check(/pool-iq-v13/.test(cacheName) && !/pool-iq-v10|pool-iq-v11|pool-iq-v12/.test(cacheName), `cache bumped to pool-iq-v13 (${cacheName})`);
+check(/pool-iq-v14/.test(cacheName) && !/pool-iq-v10|pool-iq-v11|pool-iq-v12|pool-iq-v13/.test(cacheName), `cache bumped to pool-iq-v14 (${cacheName})`);
 check(await page.evaluate(async () => !!(await caches.match('./js/vendor/supabase.js'))), 'v13: the supabase-js file is precached for offline use');
 await page.setOfflineMode(true);
 await page.goto(BASE + 'index.html#arcade', { waitUntil: 'domcontentloaded' });

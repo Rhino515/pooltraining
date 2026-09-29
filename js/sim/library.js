@@ -14,7 +14,8 @@ export const DEFAULT_SETTINGS = {
   findMode: 'precise', // Find a Shot: 'fast' | 'precise'
   playback: 1, // animation speed
   useCal: false, // scale SPEED with my speed calibration
-  fullPath: true // v11.1: live full-path aim preview (real physics, every rail, POCKET / STOP marker)
+  fullPath: true, // v11.1: live full-path aim preview (real physics, every rail, POCKET / STOP marker)
+  tableFt: 8 // v14: playing-surface size (7 / 8 / 9). 8 ft is the default
 };
 
 function blank() {

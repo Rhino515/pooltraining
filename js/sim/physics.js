@@ -22,6 +22,7 @@
  *  - Deterministic: fixed rules, adaptive step based on the fastest ball (≤ 0.12 R per step → no tunnelling).
  */
 import { BALL_RADIUS, POCKETS } from '../tableDiagram.js';
+import { SPEED_7, SPEED_8 } from './speedTables.js';
 
 export const R = BALL_RADIUS; // 1.125 in
 export const G = 386.09; // in/s²
@@ -58,7 +59,7 @@ function facingDir(along, outward, angDeg) {
   const a = (angDeg * Math.PI) / 180;
   return { x: Math.cos(a) * along.x + Math.sin(a) * outward.x, y: Math.cos(a) * along.y + Math.sin(a) * outward.y };
 }
-function buildSegments() {
+function buildSegments(W = 100, H = 50) {
   const segs = [];
   const seg = (ax, ay, bx, by, kind, rail) => segs.push({ ax, ay, bx, by, kind, rail });
   const fac = (jx, jy, along, outward, ang, rail) => {
@@ -66,20 +67,21 @@ function buildSegments() {
     seg(jx, jy, jx + d.x * FACING_LEN, jy + d.y * FACING_LEN, 'jaw', rail);
   };
   const C = CORNER_JAW;
-  const S = SIDE_JAW;
-  // long rails (top y=0, bottom y=50), split by the side pockets
-  for (const [y, out, rail] of [[0, { x: 0, y: -1 }, 'top'], [50, { x: 0, y: 1 }, 'bottom']]) {
-    seg(C, y, 50 - S, y, 'rail', rail);
-    seg(50 + S, y, 100 - C, y, 'rail', rail);
+  const Sjaw = SIDE_JAW;
+  const mid = W / 2;
+  // long rails (top y=0, bottom y=H), split by the side pockets. Jaw sizes stay in inches.
+  for (const [y, out, rail] of [[0, { x: 0, y: -1 }, 'top'], [H, { x: 0, y: 1 }, 'bottom']]) {
+    seg(C, y, mid - Sjaw, y, 'rail', rail);
+    seg(mid + Sjaw, y, W - C, y, 'rail', rail);
     fac(C, y, { x: 1, y: 0 }, out, 142, rail); // corner facings point back toward the corner
-    fac(100 - C, y, { x: -1, y: 0 }, out, 142, rail);
-    fac(50 - S, y, { x: -1, y: 0 }, out, 104, rail); // side facings
-    fac(50 + S, y, { x: 1, y: 0 }, out, 104, rail);
+    fac(W - C, y, { x: -1, y: 0 }, out, 142, rail);
+    fac(mid - Sjaw, y, { x: -1, y: 0 }, out, 104, rail); // side facings
+    fac(mid + Sjaw, y, { x: 1, y: 0 }, out, 104, rail);
   }
-  for (const [x, out, rail] of [[0, { x: -1, y: 0 }, 'left'], [100, { x: 1, y: 0 }, 'right']]) {
-    seg(x, C, x, 50 - C, 'rail', rail);
+  for (const [x, out, rail] of [[0, { x: -1, y: 0 }, 'left'], [W, { x: 1, y: 0 }, 'right']]) {
+    seg(x, C, x, H - C, 'rail', rail);
     fac(x, C, { x: 0, y: 1 }, out, 142, rail);
-    fac(x, 50 - C, { x: 0, y: -1 }, out, 142, rail);
+    fac(x, H - C, { x: 0, y: -1 }, out, 142, rail);
   }
   return segs;
 }
@@ -115,7 +117,10 @@ function slip(b) {
 }
 
 /** Advance one ball's velocity/spin by cloth friction over dt; returns the distance-weighted average velocity */
-function frictionStep(b, dt) {
+function frictionStep(b, dt, cloth) {
+  const muSlide = cloth?.muSlide ?? MU_SLIDE;
+  const muRoll = cloth?.muRoll ?? MU_ROLL;
+  const muSpin = cloth?.muSpin ?? MU_SPIN;
   const v0x = b.vx;
   const v0y = b.vy;
   let t = dt;
@@ -123,11 +128,11 @@ function frictionStep(b, dt) {
   const us = hyp(u.x, u.y);
   if (us > 1e-9) {
     b.rolling = false;
-    const tRoll = (2 * us) / (7 * MU_SLIDE * G);
+    const tRoll = (2 * us) / (7 * muSlide * G);
     const ts = Math.min(t, tRoll);
     const ux = u.x / us;
     const uy = u.y / us;
-    const a = MU_SLIDE * G;
+    const a = muSlide * G;
     b.vx -= a * ux * ts;
     b.vy -= a * uy * ts;
     const al = (5 * a) / (2 * R);
@@ -143,7 +148,7 @@ function frictionStep(b, dt) {
   } else b.rolling = true;
   if (t > 0 && b.rolling) {
     const v = hyp(b.vx, b.vy);
-    const dv = MU_ROLL * G * t;
+    const dv = muRoll * G * t;
     if (v <= dv) {
       b.vx = 0;
       b.vy = 0;
@@ -156,7 +161,7 @@ function frictionStep(b, dt) {
   }
   // side spin decays on its own
   if (b.wz) {
-    const dz = ((5 * MU_SPIN * G) / (2 * R)) * dt;
+    const dz = ((5 * muSpin * G) / (2 * R)) * dt;
     b.wz = Math.abs(b.wz) <= dz ? 0 : b.wz - Math.sign(b.wz) * dz;
   }
   if (b.rolling && b.vx * b.vx + b.vy * b.vy < STOP_V * STOP_V) {
@@ -213,10 +218,11 @@ function collideBalls(bi, bj) {
 }
 
 /** Resolve a cushion/jaw impact; n = unit normal from the contact point to the ball centre */
-function collideCushion(b, nx, ny) {
+function collideCushion(b, nx, ny, cloth) {
+  const muCushion = cloth?.muCushion ?? MU_CUSHION;
   const vn = -(b.vx * nx + b.vy * ny);
   if (vn <= 0) return 0;
-  const e = cushionE(vn);
+  const e = typeof cloth?.cushionE === 'function' ? cloth.cushionE(vn) : cushionE(vn);
   const Jn = (1 + e) * vn;
   // contact at r = −R n: slip = v + ω × (−R n)
   let sx = b.vx - R * (-b.wz * ny);
@@ -229,7 +235,7 @@ function collideCushion(b, nx, ny) {
   b.vx += Jn * nx;
   b.vy += Jn * ny;
   if (s > 1e-9) {
-    const Jt = Math.min(MU_CUSHION * Jn, s / 3.5);
+    const Jt = Math.min(muCushion * Jn, s / 3.5);
     const jx = (-Jt * sx) / s;
     const jy = (-Jt * sy) / s;
     const jz = (-Jt * sz) / s;
@@ -295,8 +301,62 @@ export const aimFromVector = (dx, dy) => { let a = (Math.atan2(-dy, dx) * 180) /
  * @param {{maxTime?:number, frameDt?:number, record?:boolean, stopAfterFirstHit?:boolean, initial?:object, maxSteps?:number}} opt
  *   frameDt / record only change what is recorded, never the physics, so a preview run and the real shot agree.
  */
+const geomCache = new Map();
+/** Inch-space rails and pockets for a playing surface that is not the original 100×50. Jaw sizes stay in inches. */
+export function tableGeom(spec) {
+  const W = spec.lengthIn;
+  const H = spec.widthIn;
+  const key = W + 'x' + H;
+  if (geomCache.has(key)) return geomCache.get(key);
+  const S = W / 100;
+  const pockets = Object.entries(POCKETS).map(([k, pk]) => ({ key: k, x: pk.x * S, y: pk.y * S, dropR: k === 'TM' || k === 'BM' ? 1.05 : 1.6 }));
+  const g = { W, H, S, segments: buildSegments(W, H), pockets };
+  geomCache.set(key, g);
+  return g;
+}
+function clothFrom(spec) {
+  if (!spec) return null;
+  const keys = ['muSlide', 'muRoll', 'muSpin', 'muCushion', 'cushionE'];
+  if (!keys.some((k) => spec[k] != null)) return null;
+  return {
+    muSlide: spec.muSlide ?? MU_SLIDE,
+    muRoll: spec.muRoll ?? MU_ROLL,
+    muSpin: spec.muSpin ?? MU_SPIN,
+    muCushion: spec.muCushion ?? MU_CUSHION,
+    cushionE: spec.cushionE
+  };
+}
+/** Map a sized-table result (inch space) back onto the 100×50 diagram. Distance stays in inches. */
+function toDiagram(res, S) {
+  const s = (v) => v / S;
+  const mut = (p) => { if (p) { p.x = s(p.x); p.y = s(p.y); } return p; };
+  for (const fr of res.frames) fr.p = fr.p.map((p) => (p ? [s(p[0]), s(p[1])] : null));
+  for (const e of res.events) {
+    if (e.x != null) { e.x = s(e.x); e.y = s(e.y); }
+    mut(e.pa); mut(e.pb);
+  }
+  const fh = res.firstHit;
+  if (fh) {
+    if (fh.x != null) { fh.x = s(fh.x); fh.y = s(fh.y); }
+    mut(fh.cueAt);
+    // pa/pb are the same objects as on the ball event, already scaled in place
+  }
+  for (const f of res.final) { f.x = s(f.x); f.y = s(f.y); }
+  return res;
+}
+
 export function simulate(layout, shot, opt = {}) {
-  const balls = makeBalls(layout);
+  const spec = opt.table;
+  const sized = !!(spec && spec.lengthIn && Math.abs(spec.lengthIn - 100) > 1e-6);
+  const S = sized ? spec.lengthIn / 100 : 1;
+  const TW = sized ? spec.lengthIn : 100;
+  const TH = sized ? spec.widthIn : 50;
+  const geom = sized ? tableGeom(spec) : null;
+  const segs = geom ? geom.segments : SEGMENTS;
+  const pocks = geom ? geom.pockets : PHYS_POCKETS;
+  const cloth = clothFrom(spec);
+  const src = sized ? layout.map((b) => ({ ...b, x: b.x * S, y: b.y * S })) : layout;
+  const balls = makeBalls(src);
   const cue = balls.find((b) => b.id === 'cue');
   const maxTime = opt.maxTime || 40;
   const frameDt = opt.frameDt || 1 / 60;
@@ -310,7 +370,7 @@ export function simulate(layout, shot, opt = {}) {
       if (b) Object.assign(b, st, { rolling: false });
     }
   } else if (cue && shot) {
-    const V = shot.V != null ? shot.V : speedToV0(shot.speed ?? 2);
+    const V = shot.V != null ? shot.V : speedToV0(shot.speed ?? 2, spec);
     Object.assign(cue, strike(shot.aim || 0, V, shot.vTips || 0, shot.hTips || 0), { rolling: false });
   }
   const snap = (t) => {
@@ -342,8 +402,8 @@ export function simulate(layout, shot, opt = {}) {
     // 1) cloth friction + move
     for (const b of balls) {
       if (!b.on) continue;
-      if (b.vx === 0 && b.vy === 0 && b.rolling) { if (b.wz) frictionStep(b, dt); continue; }
-      const va = frictionStep(b, dt);
+      if (b.vx === 0 && b.vy === 0 && b.rolling) { if (b.wz) frictionStep(b, dt, cloth); continue; }
+      const va = frictionStep(b, dt, cloth);
       b.x += va.x * dt;
       b.y += va.y * dt;
       dist.set(b.id, dist.get(b.id) + hyp(va.x, va.y) * dt);
@@ -394,8 +454,8 @@ export function simulate(layout, shot, opt = {}) {
     // 3) cushions and jaws
     for (const b of balls) {
       if (!b.on || (b.vx === 0 && b.vy === 0)) continue;
-      if (b.x > R + 0.4 && b.x < 100 - R - 0.4 && b.y > R + 0.4 && b.y < 50 - R - 0.4) continue;
-      for (const s of SEGMENTS) {
+      if (b.x > R + 0.4 && b.x < TW - R - 0.4 && b.y > R + 0.4 && b.y < TH - R - 0.4) continue;
+      for (const s of segs) {
         const c = closestOnSeg(b.x, b.y, s);
         let nx = b.x - c.x;
         let ny = b.y - c.y;
@@ -408,7 +468,7 @@ export function simulate(layout, shot, opt = {}) {
         // back off along v to the touch point, resolve, move forward the same time
         const back = Math.min(dt * 2, (R - d) / vn);
         b.x -= b.vx * back; b.y -= b.vy * back;
-        const v = collideCushion(b, nx, ny);
+        const v = collideCushion(b, nx, ny, cloth);
         b.x += b.vx * back; b.y += b.vy * back;
         if (v > 0) events.push({ t: t + dt - back, type: s.kind === 'jaw' ? 'jaw' : 'cushion', ball: b.id, rail: s.rail, x: c.x + nx * R, y: c.y + ny * R, v });
       }
@@ -417,11 +477,11 @@ export function simulate(layout, shot, opt = {}) {
     for (const b of balls) {
       if (!b.on || (b.vx === 0 && b.vy === 0)) continue;
       let pk = null;
-      for (const p of PHYS_POCKETS) if (hyp(b.x - p.x, b.y - p.y) < p.dropR) { pk = p; break; }
-      if (!pk && (b.x < -0.25 || b.x > 100.25 || b.y < -0.25 || b.y > 50.25)) {
+      for (const p of pocks) if (hyp(b.x - p.x, b.y - p.y) < p.dropR) { pk = p; break; }
+      if (!pk && (b.x < -0.25 || b.x > TW + 0.25 || b.y < -0.25 || b.y > TH + 0.25)) {
         // deep in a pocket throat (only reachable through a mouth) → drops in the nearest pocket
-        const behind = Math.max(-b.x, b.x - 100, -b.y, b.y - 50);
-        if (behind > 1.2) pk = PHYS_POCKETS.reduce((a, p) => (hyp(b.x - p.x, b.y - p.y) < hyp(b.x - a.x, b.y - a.y) ? p : a));
+        const behind = Math.max(-b.x, b.x - TW, -b.y, b.y - TH);
+        if (behind > 1.2) pk = pocks.reduce((a, p) => (hyp(b.x - p.x, b.y - p.y) < hyp(b.x - a.x, b.y - a.y) ? p : a));
       }
       if (pk) {
         b.on = false;
@@ -440,7 +500,7 @@ export function simulate(layout, shot, opt = {}) {
   for (const b of balls) if (b.on && b.rolling && hyp(b.vx, b.vy) <= STOP_V) { b.vx = b.vy = 0; b.wx = b.wy = 0; }
   if (record) snap(t);
   const final = balls.map((b) => ({ id: b.id, x: b.x, y: b.y, on: b.on, pocket: b.pocket, vx: b.vx, vy: b.vy }));
-  return {
+  const out = {
     ids: balls.map((b) => b.id),
     frames,
     energy,
@@ -454,6 +514,7 @@ export function simulate(layout, shot, opt = {}) {
     scratch: !!(cue && !cue.on),
     truncated
   };
+  return sized ? toDiagram(out, S) : out;
 }
 
 // ------------------------------------------------------------------ SPEED scale
@@ -464,10 +525,17 @@ export const LAG_START_X = 12.5;
  * (the first diamond, rolling along the length; rail rebounds and their losses included).
  * SPEED n = n lengths of total travel from the start spot, so this is the calibration reference.
  */
-export function lagLengths(V, startX = LAG_START_X) {
-  const r = simulate([{ id: 'cue', x: startX, y: 25 }], { aim: 0, V }, { record: false, maxTime: 60 });
-  return r.distance.cue / LEN_UNITS;
+export function lagLengths(V, startX = LAG_START_X, table) {
+  const sized = table && table.lengthIn && Math.abs(table.lengthIn - 100) > 1e-6;
+  if (!sized) {
+    const r = simulate([{ id: 'cue', x: startX, y: 25 }], { aim: 0, V }, { record: false, maxTime: 60 });
+    return r.distance.cue / LEN_UNITS;
+  }
+  const r = simulate([{ id: 'cue', x: 12.5, y: 25 }], { aim: 0, V }, { record: false, maxTime: 60, table });
+  return r.distance.cue / (table.lengthIn - 2 * R);
 }
+/** Cue-ball launch speeds for SPEED 0…8 on the 7 ft and 8 ft beds. Generated by scripts/gen-speed-table.mjs. */
+
 /** Precomputed by scripts/gen-speed-table.mjs: [table lengths, cue-ball launch speed in/s] */
 const SPEED_TABLE = [[0,0],[0.25,19.228],[0.5,27.192],[0.75,33.304],[1,41.232],[1.25,50.636],[1.5,58.635],[1.75,65.77],[2,75.907],[2.25,88.861],[2.5,100.533],[2.75,111.243],[3,126.922],[3.25,147.641],[3.5,166.097],[3.75,175.66],[4,190.75],[4.25,212.55],[4.5,234.458],[4.75,248.803],[5,267.712],[5.25,296.659],[5.5,328.069],[5.75,349.496],[6,379.268],[6.25,415.721],[6.5,455.711],[6.75,483.038],[7,521.434],[7.25,568.815],[7.5,620.893],[7.75,656.888],[8,707.085]];
 let speedTable = null;
@@ -489,8 +557,33 @@ export function buildSpeedTable() {
   return out;
 }
 /** Cue-ball launch speed (in/s) for Pool IQ SPEED s (s table lengths of total center-ball travel from the start spot) */
-export function speedToV0(s) {
+function speedTableFor(table) {
+  const ft = table && Number(table.ft);
+  if (ft === 7) return SPEED_7;
+  if (ft === 8) return SPEED_8;
   if (!speedTable) speedTable = SPEED_TABLE || buildSpeedTable();
+  return speedTable;
+}
+export function buildSpeedTableFor(table) {
+  // V for lengths 0.25…8 on `table` (inch playing surface). Used to fill speedTables.js.
+  const out = [[0, 0]];
+  let lo = 0;
+  const len = (V) => lagLengths(V, LAG_START_X, table);
+  for (let L = 0.25; L <= 8.001; L += 0.25) {
+    let a = lo;
+    let b = Math.max(lo * 1.6, 30);
+    while (len(b) < L) b *= 1.45;
+    for (let i = 0; i < 26; i++) {
+      const m = (a + b) / 2;
+      if (len(m) < L) a = m; else b = m;
+    }
+    lo = (a + b) / 2;
+    out.push([Math.round(L * 100) / 100, Math.round(lo * 1000) / 1000]);
+  }
+  return out;
+}
+export function speedToV0(s, table) {
+  const speedTable = speedTableFor(table);
   const v = Math.max(0, Math.min(8, Number(s) || 0));
   const i = Math.min(speedTable.length - 2, Math.floor(v / 0.25));
   const [l0, v0] = speedTable[i];
@@ -498,8 +591,8 @@ export function speedToV0(s) {
   return v0 + ((v - l0) / (l1 - l0)) * (v1 - v0);
 }
 /** Inverse: SPEED number for a launch speed */
-export function v0ToSpeed(V) {
-  if (!speedTable) speedTable = SPEED_TABLE || buildSpeedTable();
+export function v0ToSpeed(V, table) {
+  const speedTable = speedTableFor(table);
   for (let i = 0; i < speedTable.length - 1; i++) {
     const [l0, v0] = speedTable[i];
     const [l1, v1] = speedTable[i + 1];
@@ -512,7 +605,8 @@ export const LENGTH_UNITS = LEN_UNITS;
 
 // ------------------------------------------------------------------ prediction helpers
 /** First ball the cue ball would touch travelling straight along the aim (no curve), or the cushion point */
-export function predictContact(layout, aimDeg) {
+export function predictContact(layout, aimDeg, opt) {
+  const Rd = typeof opt === 'number' ? opt : (opt?.r || R);
   const cue = layout.find((b) => isCue(b.id));
   if (!cue) return null;
   const d = aimVector(aimDeg);
@@ -524,8 +618,8 @@ export function predictContact(layout, aimDeg) {
     const along = ox * d.x + oy * d.y;
     if (along <= 0) continue;
     const perp2 = ox * ox + oy * oy - along * along;
-    if (perp2 >= 4 * R * R) continue;
-    const s = along - Math.sqrt(4 * R * R - perp2);
+    if (perp2 >= 4 * Rd * Rd) continue;
+    const s = along - Math.sqrt(4 * Rd * Rd - perp2);
     if (s < -1e-6) continue;
     if (!best || s < best.s) best = { s, ball: b, ghost: { x: cue.x + d.x * s, y: cue.y + d.y * s } };
   }
@@ -541,10 +635,10 @@ export function predictContact(layout, aimDeg) {
   }
   // cushion hit point (ball centre on the cushion line)
   let s = Infinity;
-  if (d.x > 1e-9) s = Math.min(s, (100 - R - cue.x) / d.x);
-  if (d.x < -1e-9) s = Math.min(s, (R - cue.x) / d.x);
-  if (d.y > 1e-9) s = Math.min(s, (50 - R - cue.y) / d.y);
-  if (d.y < -1e-9) s = Math.min(s, (R - cue.y) / d.y);
+  if (d.x > 1e-9) s = Math.min(s, (100 - Rd - cue.x) / d.x);
+  if (d.x < -1e-9) s = Math.min(s, (Rd - cue.x) / d.x);
+  if (d.y > 1e-9) s = Math.min(s, (50 - Rd - cue.y) / d.y);
+  if (d.y < -1e-9) s = Math.min(s, (Rd - cue.y) / d.y);
   return { type: 'rail', s, point: { x: cue.x + d.x * s, y: cue.y + d.y * s } };
 }
 
@@ -553,12 +647,13 @@ export function aimAt(cue, p) {
   return aimFromVector(p.x - cue.x, p.y - cue.y);
 }
 /** Ghost-ball aim for ob → pocket (no throw compensation) */
-export function ghostAim(cue, ob, pocketKey) {
+export function ghostAim(cue, ob, pocketKey, opt) {
+  const Rd = typeof opt === 'number' ? opt : (opt?.r || R);
   const pk = PHYS_POCKETS.find((p) => p.key === pocketKey);
   const dx = pk.x - ob.x;
   const dy = pk.y - ob.y;
   const l = hyp(dx, dy) || 1;
-  const ghost = { x: ob.x - (dx / l) * 2 * R, y: ob.y - (dy / l) * 2 * R };
+  const ghost = { x: ob.x - (dx / l) * 2 * Rd, y: ob.y - (dy / l) * 2 * Rd };
   return { aim: aimAt(cue, ghost), ghost };
 }
 

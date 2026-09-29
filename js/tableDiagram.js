@@ -335,7 +335,7 @@ export function renderTableDiagram(spec = {}, options = {}) {
   const headString = spec.headString !== false;
   const className = options.className || 'table-diagram';
   const compact = !!options.compact;
-  const ballR = BALL_RADIUS; // true scale everywhere (compact only drops labels)
+  const ballR = spec.ballR || BALL_RADIUS; // true scale; the simulator passes a size-adjusted radius
   const pocket = resolvePocket(spec.targetPocket || spec.target);
   const { cue, ob } = findCueAndOb(balls);
 
@@ -515,7 +515,7 @@ export function renderTableDiagram(spec = {}, options = {}) {
   if (spec.extraUnder) svg += spec.extraUnder;
 
   // Balls (true scale; crisp dark outline so they read on the grid; larger invisible hit area for taps)
-  const HIT_R = 3.2;
+  const HIT_R = spec.hitR || 3.2;
   for (const b of balls) {
     const id = b.id != null ? b.id : b[0];
     const x = b.x != null ? b.x : b[1];
@@ -529,7 +529,8 @@ export function renderTableDiagram(spec = {}, options = {}) {
     svg += `<g class="ball ${isCue ? 'cue-ball' : 'obj-ball'}${b.blocker ? ' blocker' : ''}" data-n="${isCue ? 'cue' : num}">`;
     svg += `<circle class="ball-hit" cx="${x}" cy="${y}" r="${HIT_R}" fill="#000" fill-opacity="0" pointer-events="all"/>`;
     svg += `<g filter="url(#ballShadow)">`;
-    if (!isCue && num >= 9) {
+    const striped = !isCue && (b.stripe != null ? !!b.stripe : num >= 9);
+    if (striped) {
       svg += `<circle cx="${x}" cy="${y}" r="${ballR}" fill="#f8fafc"/>`;
       const k = (v) => Math.round(v * 1000) / 1000;
       svg += `<path d="M${k(x - ballR * 0.87)} ${k(y - ballR * 0.5)} L${k(x + ballR * 0.87)} ${k(y - ballR * 0.5)} A${ballR} ${ballR} 0 0 1 ${k(x + ballR * 0.87)} ${k(y + ballR * 0.5)} L${k(x - ballR * 0.87)} ${k(y + ballR * 0.5)} A${ballR} ${ballR} 0 0 1 ${k(x - ballR * 0.87)} ${k(y - ballR * 0.5)} Z" fill="${fill}"/>`;
