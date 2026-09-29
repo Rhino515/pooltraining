@@ -310,16 +310,19 @@ export function createSimScreen(ctx, args = []) {
     if (st.runout?.steps?.length) {
       const step = st.runout.steps[Math.min(st.runout.i, st.runout.steps.length - 1)];
       const pk = POCKETS[step.pocket];
-      const cueB = step.balls.find((b) => b.id === 'cue');
-      const tb = step.balls.find((b) => String(b.id) === String(step.ball));
-      if (step.ghost && cueB) over += `<line class="run-cue-ghost" x1="${f2(cueB.x)}" y1="${f2(cueB.y)}" x2="${f2(step.ghost.x)}" y2="${f2(step.ghost.y)}" stroke="#ffc75b" stroke-width="0.38" stroke-dasharray="1.15 0.7" pointer-events="none"/>`;
-      if (step.ghost) over += `<circle class="run-ghost" cx="${f2(step.ghost.x)}" cy="${f2(step.ghost.y)}" r="${f2(rad())}" fill="none" stroke="#f4fbff" stroke-width="0.38" stroke-dasharray="0.85 0.55" pointer-events="none"/>`;
-      if (step.ghost && tb) {
-        over += `<circle class="run-overlap" cx="${f2((step.ghost.x + tb.x) / 2)}" cy="${f2((step.ghost.y + tb.y) / 2)}" r="${f2(rad() * 0.42)}" fill="#55e5ff" opacity="0.9" pointer-events="none"/>`;
-        if (pk) over += `<line class="run-ob-pocket" x1="${f2(tb.x)}" y1="${f2(tb.y)}" x2="${f2(pk.x)}" y2="${f2(pk.y)}" stroke="#55e5ff" stroke-width="0.36" stroke-dasharray="1.15 0.7" pointer-events="none"/>`;
-      }
       if (pk) over += `<circle class="run-pocket" cx="${pk.x}" cy="${pk.y}" r="${pk.r + 1.3}" fill="none" stroke="#ffd34d" stroke-width="0.5" pointer-events="none"/>`;
+      const tb = step.balls.find((b) => String(b.id) === String(step.ball));
       if (tb) over += `<circle class="run-ball" cx="${f2(tb.x)}" cy="${f2(tb.y)}" r="${f2(rad() + 1.5)}" fill="none" stroke="#ffd34d" stroke-width="0.45" pointer-events="none"/>`;
+      const cue = step.balls.find((b) => b.id === 'cue');
+      const ghost = step.ghost || (tb && pk ? { x: tb.x - ((pk.x - tb.x) / (Math.hypot(pk.x - tb.x, pk.y - tb.y) || 1)) * 2 * rad(), y: tb.y - ((pk.y - tb.y) / (Math.hypot(pk.x - tb.x, pk.y - tb.y) || 1)) * 2 * rad() } : null);
+      if (cue && ghost) {
+        over += `<line class="run-ghost-aim" x1="${f2(cue.x)}" y1="${f2(cue.y)}" x2="${f2(ghost.x)}" y2="${f2(ghost.y)}" stroke="#ffc75b" stroke-width="0.36" stroke-dasharray="0.9 0.5" pointer-events="none"/>`;
+        over += `<circle class="run-ghost" cx="${f2(ghost.x)}" cy="${f2(ghost.y)}" r="${f2(rad())}" fill="#ffffff28" stroke="#cff9ff" stroke-width="0.22" stroke-dasharray="0.5 0.35" pointer-events="none"/>`;
+        if (tb) {
+          over += `<circle class="run-overlap" cx="${f2((ghost.x + tb.x) / 2)}" cy="${f2((ghost.y + tb.y) / 2)}" r="${f2(rad() * 0.55)}" fill="#55e5ff22" pointer-events="none"/>`;
+          if (pk) over += `<line class="run-ob" x1="${f2(tb.x)}" y1="${f2(tb.y)}" x2="${f2(pk.x)}" y2="${f2(pk.y)}" stroke="#55e5ff" stroke-width="0.28" stroke-dasharray="0.8 0.5" pointer-events="none"/>`;
+        }
+      }
       if (step.zone) over += `<circle class="run-zone" cx="${f2(step.zone.x)}" cy="${f2(step.zone.y)}" r="${step.zone.r}" fill="#46e7a022" stroke="#46e7a0" stroke-width="0.3" stroke-dasharray="1.1 0.6" pointer-events="none"/>`;
       const pv = PV.runPreview(step.balls, { aim: step.aim, V: P.speedToV0(step.speed, tableSpec()), vTips: step.vTips, hTips: step.hTips, table: tableSpec() });
       over += PV.previewSVG(PV.previewPaths(pv));
@@ -1227,24 +1230,31 @@ export function createSimScreen(ctx, args = []) {
   function scanConfirmHTML() {
     return `<p class="scanPlace" data-scan-label>${esc(SCAN_PLACE_LABEL)}</p><img class="scanRef" alt="Reference photo" src="${st.scan.url}"/><div class="simTools scanEdit"><button type="button" data-action="sim-scan-add">ADD BALL</button><button type="button" data-action="sim-scan-del">DELETE</button><button type="button" data-action="sim-scan-num" data-d="-1">− NO.</button><button type="button" data-action="sim-scan-num" data-d="1">+ NO.</button><button type="button" data-action="sim-scan-stripe">SOLID / STRIPE</button><button type="button" data-action="sim-scan-cue">CUE BALL</button></div><button type="button" class="bigBtn" data-action="sim-scan-confirm">CONFIRM LAYOUT</button><button type="button" class="bigBtn alt" data-action="sim-scan-cancel">CANCEL</button>`;
   }
-  function runAimBlock(step) {
-    const cue = step.balls?.find((b) => b.id === 'cue');
-    const ob = step.balls?.find((b) => String(b.id) === String(step.ball));
-    if (!cue || !ob || !step.ghost) return '';
-    const ballR = rad();
-    const a = aimFromPoints(cue, step.ghost, ob, ballR);
-    const frac = fullnessWord(step.fullness ?? a.fullness);
-    const deg = Math.round(Number.isFinite(step.cut) ? step.cut : a.theta);
-    const info = { ...a, ob: { n: ob.id }, ballR, label: step.cutLabel || frac, deg, plain: step.cutLabel || frac, side: step.hitSide || a.side };
-    return `<div class="runAim"><div class="runAimView">${aimViewSVG(info)}</div><p class="runCut">${esc(frac)} · ${deg}°</p></div>`;
+  function runoutAimInfo(step) {
+    if (!step || step.breakout) return null;
+    const cue = step.balls.find((b) => b.id === 'cue');
+    const ob = step.balls.find((b) => String(b.id) === String(step.ball));
+    const ghost = step.ghost;
+    if (!cue || !ob || !ghost) return null;
+    const a = aimFromPoints(cue, ghost, ob, rad());
+    const frac = fullnessWord(a.fullness);
+    const sideWord = a.side === 'right' ? 'Right' : a.side === 'left' ? 'Left' : '';
+    const label = frac === 'Full' ? 'Full' : `${sideWord} ${frac}`;
+    return { ...a, ob: { n: ob.id, x: ob.x, y: ob.y }, ghost, from: cue, frac, label, deg: Math.round(a.theta), plain: `${label} hit`, ballR: rad() };
   }
   function runoutHTML() {
     const plan = st.runout;
-    const opts = plan.options || [];
-    const chips = opts.length > 1 ? `<div class="chips runPick">${opts.map((o, i) => `<button type="button" class="chip${i === plan.pick ? ' active' : ''}" data-action="sim-run-pick" data-i="${i}">${esc(o.label)}</button>`).join('')}</div>` : '';
-    if (!plan.steps.length) return `${chips}<p class="runNote" data-runout-note>${esc(plan.note)}</p><button type="button" class="bigBtn alt" data-action="sim-run-close">CLOSE</button>`;
+    if (!plan.steps.length) return `<p class="runNote" data-runout-note>${esc(plan.note)}</p><button type="button" class="bigBtn alt" data-action="sim-run-close">CLOSE</button>`;
     const step = plan.steps[plan.i];
-    return `${chips}<p class="runNote" data-runout-note>${esc(plan.note)}</p>${runAimBlock(step)}<p class="runStep" data-run-step="${plan.i + 1}" data-run-count="${plan.steps.length}">${esc(step.text)}</p><div class="simTools"><button type="button" data-action="sim-run-prev" ${plan.i ? '' : 'disabled'}>PREVIOUS SHOT</button><button type="button" data-action="sim-run-next" ${plan.i < plan.steps.length - 1 ? '' : 'disabled'}>NEXT SHOT</button><button type="button" data-action="sim-run-close">CLOSE</button></div>`;
+    const options = plan.options || [];
+    const chips = options.length > 1
+      ? `<div class="chips runPick" role="group" aria-label="Runout difficulty">${options.map((p, i) => `<button type="button" class="chip${i === plan.pick ? ' active' : ''}" data-action="sim-run-pick" data-i="${i}">${esc(p.label || `Option ${i + 1}`)}</button>`).join('')}</div>`
+      : '';
+    const info = runoutAimInfo(step);
+    const cutBox = `<div class="runAimCard"><div class="runAimView">${aimViewSVG(info, { size: 'gauge' })}</div><p class="runCut">${info ? esc(info.label) + (info.frac === 'Full' ? '' : ` · ${info.deg}° cut`) : 'Ghost / cut'}</p></div>`;
+    const tipBox = `<div class="runAimCard"><div class="runTipView">${cueBallSVG({ vTips: step.vTips, hTips: step.hTips }, { size: 'sm', id: 'runTipBall' })}</div><p class="runCut">${esc(contactText(step.vTips, step.hTips))}</p></div>`;
+    const diagram = `<div class="runAim">${cutBox}${tipBox}</div>`;
+    return `${chips}<p class="runNote" data-runout-note>${esc(plan.note)}</p>${diagram}<p class="runStep" data-run-step="${plan.i + 1}" data-run-count="${plan.steps.length}">${esc(step.text)}</p><div class="simTools"><button type="button" data-action="sim-run-prev" ${plan.i ? '' : 'disabled'}>PREVIOUS SHOT</button><button type="button" data-action="sim-run-next" ${plan.i < plan.steps.length - 1 ? '' : 'disabled'}>NEXT SHOT</button><button type="button" class="bigBtn alt" data-action="sim-run-close">CLOSE</button></div>`;
   }
   function mountCorners() {
     const img = ctx.root.querySelector('#scanImg');
@@ -1317,8 +1327,8 @@ export function createSimScreen(ctx, args = []) {
   }
   function applyRunStep() {
     const plan = st.runout;
-    if (!plan?.steps?.length) return;
-    const step = plan.steps[Math.min(plan.i || 0, plan.steps.length - 1)];
+    const step = plan?.steps?.[plan.i];
+    if (!step) return;
     st.shot.aim = step.aim;
     st.shot.speed = step.speed;
     st.shot.vTips = step.vTips;
@@ -1326,8 +1336,11 @@ export function createSimScreen(ctx, args = []) {
   }
   function openRunout(game, group) {
     const options = planRunoutOptions(st.balls, { game, group, table: tableSpec() });
-    const plan = options[0] || { steps: [], note: 'No balls left to run.', complete: false, label: 'Easy' };
-    st.runout = { ...plan, i: 0, pick: 0, options };
+    const plan = options[0] || { steps: [], note: 'No balls left to run.', game, group };
+    plan.i = 0;
+    plan.options = options;
+    plan.pick = 0;
+    st.runout = plan;
     st.view3d = false;
     applyRunStep();
     closeSheet();
@@ -1478,22 +1491,21 @@ export function createSimScreen(ctx, args = []) {
       case 'sim-run-group':
         openRunout(8, el.dataset.g);
         return true;
+      case 'sim-run-pick': {
+        const i = Number(el.dataset.i);
+        const opt = st.runout?.options?.[i];
+        if (!opt) return true;
+        st.runout = { ...opt, i: 0, options: st.runout.options, pick: i };
+        applyRunStep();
+        refresh();
+        return true;
+      }
       case 'sim-run-prev':
         if (st.runout && st.runout.i > 0) { st.runout.i--; applyRunStep(); refresh(); }
         return true;
       case 'sim-run-next':
         if (st.runout && st.runout.i < st.runout.steps.length - 1) { st.runout.i++; applyRunStep(); refresh(); }
         return true;
-      case 'sim-run-pick': {
-        const options = st.runout?.options;
-        const i = Number(el.dataset.i);
-        const next = options?.[i];
-        if (!next) return true;
-        st.runout = { ...next, i: 0, pick: i, options };
-        applyRunStep();
-        refresh();
-        return true;
-      }
       case 'sim-run-close':
         st.runout = null;
         refresh();

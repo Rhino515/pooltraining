@@ -1347,10 +1347,11 @@ body.sim-full .simScreen[data-mode="play"]{padding-bottom:calc(150px + env(safe-
 .scanPlace{font-weight:800;color:var(--gold)}
 .runStep{font-weight:700}
 .runPick{margin:0 0 8px}
-.runAim{display:flex;align-items:center;gap:12px;margin:8px 0}
-.runAimView{width:92px;height:92px;flex:0 0 92px}
-.runAimView .aim-view{width:92px;height:92px}
-.runCut{margin:0;font-size:13px;font-weight:800;color:#ffc75b}
+.runAim{display:flex;align-items:center;gap:14px;margin:8px 0;flex-wrap:wrap}
+.runAimCard{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:92px}
+.runAimView,.runTipView{width:92px;height:92px;flex:0 0 92px}
+.runAimView .aim-view,.runTipView .cb-diagram{width:92px;height:92px}
+.runCut{margin:0;font-size:12px;font-weight:800;color:#ffc75b;text-align:center}
 .scanPhoto{position:relative;touch-action:none;background:#000;border-radius:12px;overflow:hidden}
 .scanPhoto img,.scanRef{display:block;width:100%;max-height:34vh;object-fit:contain;background:#000;border-radius:12px}
 .scanHandle{position:absolute;width:44px;height:44px;margin-left:-22px;margin-top:-22px;border-radius:50%;border:3px solid #f6c453;background:#f6c45366;padding:0}
