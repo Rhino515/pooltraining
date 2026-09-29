@@ -354,7 +354,7 @@ assert(fieldDupes.length <= Math.ceil(stageCount * 0.1), `route/aim explanations
   assert(!/data-cut=/.test(hid) && hid.includes('Your aim'), 'coaching hides the aim value (no numbers leak)');
   assert(recipe.speedAngle(0.5) === -135 && recipe.speedAngle(5) === 135 && Math.abs(recipe.speedAngle(2.75)) < 1e-9, 'speed dial needle maps SPEED 0.5–5.0 onto −135°…+135°');
   assert(recipe.tipLabel(0, 0) === 'Center' && recipe.tipLabel(1, 0) === 'Top 1 tip' && recipe.tipLabel(-1.5, 0) === 'Draw 1½ tips' && recipe.tipLabel(-0.5, -1) === 'Low Left' && recipe.tipLabel(0, 0.5) === 'Right ½ tip', 'tip labels (Center, Top 1 tip, Draw 1½ tips, Low Left)');
-  const m = recipe.tipGaugeSVG({ vTips: -1, hTips: 0.5 }).match(/class="cb-dot"[^>]*cx="([\d.]+)" cy="([\d.]+)"/);
+  const m = recipe.tipGaugeSVG({ vTips: -1, hTips: 0.5 }).match(/class="cb-dot"[^>]*cx="([\d.]+)"\s+cy="([\d.]+)"/);
   assert(m && Math.abs(+m[1] - (50 + 0.5 * cbd.TIP_UNIT)) < 0.01 && Math.abs(+m[2] - (50 + cbd.TIP_UNIT)) < 0.01, 'tip gauge dot sits at the recipe tips (1 low, ½ right)');
   assert(recipe.recipeCardHTML(lz).includes('aimRow') && !recipe.recipeCardHTML(lz, { hideAim: true }).includes('aimRow'), 'recipe sheet shows the Aim View unless coaching hides aim');
 }
@@ -468,7 +468,10 @@ let state = storage.defaultState();
   assert(after.filter((c) => c.met).length === before + 4, 'career checklist ticks from injected game/ghost results');
   assert(career.syncRank(st).rankIndex === 0, 'requirements alone do not promote (boss required)');
   const boss1 = reg.bossForRank(1);
-  assert(career.isBossUnlocked(st, boss1), 'boss unlocks when every other requirement is met');
+  // v11: the boss is the rank's PROMOTION TEST — it also needs Rank XP full + the Skill Gate cleared
+  assert(!career.isBossUnlocked(st, boss1), 'v11: Promotion Test stays locked without Rank XP / Skill Gate');
+  st = { ...st, prog: { ...(st.prog || {}), v: 1, rankXpBy: { 0: 1000 }, gatesCleared: { 'g-rookie': 1 }, items: {}, tierXp: {}, stats: {}, events: [] } };
+  assert(career.isBossUnlocked(st, boss1), 'boss unlocks when every other requirement is met (incl. v11 Rank XP + gate)');
   // boss: fail
   const b = reg.getBoss(boss1.id);
   let bs = engine.newSession(null, null, { bossId: b.id });
@@ -793,7 +796,7 @@ let state = storage.defaultState();
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
   const missing = walk(path.join(root, 'js')).filter((f) => f.endsWith('.js')).map((f) => './' + path.relative(root, f)).filter((f) => !sw.includes(`'${f}'`));
-  assert(/pool-iq-v10/.test(sw), 'service worker cache is pool-iq-v10');
+  assert(/pool-iq-v11/.test(sw), 'service worker cache is pool-iq-v11');
   assertAll('service worker precaches every JS module (incl. simulator + Create Drill)', missing.map((m) => `missing ${m}`));
   const wordN = { one: 1, two: 2, three: 3, four: 4 };
   const probs = [];
@@ -1140,7 +1143,7 @@ let state = storage.defaultState();
     assert(['drill', 'pack', 'lesson', 'game:gauntlet', 'challenge:diamond', 'challenge:solution'].every((t) => types.includes(t)), `examples cover drill, pack, lesson, gauntlet, diamond + solution challenges (${types.join(', ')})`);
     const tpl = JSON.parse(ex['pooliq-drill-template.pooliq']);
     const missingShot = Object.keys(SC.SHOT_FIELDS).filter((k) => k !== 'objectBallPath' && tpl.shot[k] === undefined);
-    const hdr = ['format', 'schemaVersion', 'contentType', 'id', 'contentVersion', 'title', 'description', 'category', 'difficulty', 'skill', 'attribution', 'careerEligible', 'metadata', 'shot', 'scoringRules', 'xp', 'skillEffects', 'prerequisites'];
+    const hdr = ['format', 'schemaVersion', 'contentType', 'id', 'contentVersion', 'title', 'description', 'category', 'difficulty', 'skill', 'attribution', 'careerEligible', 'metadata', 'shot', 'scoringRules', 'xp', 'skillEffects', 'prerequisites', ...SC.V11_FIELDS];
     const missingTop = hdr.filter((k) => tpl[k] === undefined);
     assert(!missingShot.length && !missingTop.length, `template file demonstrates every drill + shot field (missing: ${[...missingTop, ...missingShot].join(', ') || 'none'})`);
   }
@@ -1493,6 +1496,296 @@ let state = storage.defaultState();
     const play = src('js/ui/play.js');
     assert(/function saveSession\(next\) \{\s*session = next;\s*if \(C\) return;/.test(play) && /if \(C\) return finishContent\(\);/.test(play), 'play screen content sessions are memory-only (no Career commit on attempts or finish)');
   }
+}
+
+// ---------------------------------------------------------------- v11: progression, Drill Rank, friends, profile, DEV MODE
+{
+  const CFG = await import(js('progression/config.js'));
+  const AW = await import(js('progression/award.js'));
+  const RK = await import(js('progression/rank.js'));
+  const SL = await import(js('progression/skillLevels.js'));
+  const CAT = await import(js('progression/catalog.js'));
+  const MIG = await import(js('progression/migrate.js'));
+  const SES = await import(js('progression/sessions.js'));
+  const FM = await import(js('friends/model.js'));
+  const TN = await import(js('friends/tournament.js'));
+  const PRF = await import(js('profile.js'));
+  const DEV = await import(js('dev/dev.js'));
+  const OVR = await import(js('dev/overrides.js'));
+  const SCH = await import(js('content/schema.js'));
+  const VLT = await import(js('vault.js'));
+  const fs = await import('fs');
+  const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
+  const fresh = (extra = {}) => ({ ...storage.defaultState(), prog: { ...AW.emptyProg(), v: CFG.PROGRESSION_VERSION, rankSeen: 0 }, ...extra });
+  const item = (o = {}) => ({ key: 'test:a', source: 'arcade', name: 'Test item', tier: 'beginner', weights: { draw: 1, position: 0.5 }, primary: 'draw', mode: 'success', mastery: { strong: 0.85, mastered: 0.95 }, rankXpEligible: true, drillRank: false, ...o });
+  const DAYMS = 86400000;
+  const T0 = Date.parse('2026-01-05T12:00:00Z');
+
+  // career names + ball structure are config-driven and unchanged
+  assert(JSON.stringify(CFG.RANK_LADDER.names) === JSON.stringify(storage.RANK_NAMES) && CFG.RANK_LADDER.names[9] === 'Champion', 'v11: Career keeps the existing 10 rank names (Rookie … Champion)');
+  assert(CFG.RANK_LADDER.balls.slice(0, 9).every((b, i, a) => b >= 10 && b <= 15 && (i === 0 || b >= a[i - 1])) && CFG.RANK_LADDER.balls[9] === 0, 'v11: ball levels per rank scale up (10 → 15), Champion has none');
+  // ball levels from Rank XP
+  let st = fresh();
+  st.prog.rankXpBy = { 0: 250 };
+  let cs = RK.careerStatus(st);
+  assert(cs.ball === 3 && cs.title === 'Rookie · 3-Ball', `v11: 250 Rank XP in Rookie = ${cs.title}`);
+  st.prog.rankXpBy = { 0: 999 };
+  cs = RK.careerStatus(st);
+  assert(cs.ball === 5 && cs.gateLocked && !cs.gateLocked.atGate, `v11: ball held at the Rookie Skill Gate (5-Ball) until foundations are passed (ball ${cs.ball})`);
+  st.prog.gatesCleared = { 'g-rookie': 1 };
+  cs = RK.careerStatus(st);
+  assert(cs.ball === 10 && !cs.xpFull, 'v11: clearing the gate releases the ball (10-Ball, XP not yet full)');
+  st.prog.rankXpBy = { 0: 1000 };
+  assert(RK.careerStatus(st).xpFull, 'v11: Rank XP full at the last ball');
+  // Rank XP never promotes by itself
+  assert(career.syncRank(st).rankIndex === 0, 'v11: full Rank XP alone does not promote');
+  // first clear / PB / perfect bonuses
+  st = fresh();
+  let r = AW.applyAward(st, { item: item(), ratio: 0.8, passed: true, at: T0 });
+  const base = CFG.XP.base.beginner;
+  assert(r.award.flags.includes('FIRST CLEAR') && r.award.lifetime === Math.round(base * 0.75 + base * CFG.XP.firstClearBonus), `v11: first clear bonus (${r.award.lifetime} XP)`);
+  r = AW.applyAward(r.state, { item: item(), ratio: 0.9, passed: true, at: T0 + 1000 });
+  assert(r.award.flags.includes('PERSONAL BEST') && r.award.lifetime === Math.round(base * 0.9 + base * CFG.XP.pbBonus), `v11: personal best bonus (${r.award.lifetime} XP)`);
+  r = AW.applyAward(r.state, { item: item(), ratio: 1, passed: true, at: T0 + 2000 });
+  assert(r.award.flags.includes('PERFECT') && r.award.stars === 3, 'v11: perfect run flagged, item MASTERED ⭐⭐⭐');
+  // anti-farming: mastered repeats + same-day grinding
+  const rep = AW.applyAward(r.state, { item: item(), ratio: 1, passed: true, at: T0 + 3000 });
+  assert(rep.award.flags.includes('MASTERED REPEAT') && rep.award.rank <= Math.ceil(base * 1.25 * CFG.XP.repeat.mastered * CFG.XP.repeat.sameDayFactor) + 1, `v11: mastered repeat earns little Rank XP (${rep.award.rank})`);
+  let s2 = fresh();
+  const gains = [];
+  for (let i = 0; i < 6; i++) { const x = AW.applyAward(s2, { item: item({ key: 'test:grind' }), ratio: 0.7, passed: true, at: T0 + i * 1000 }); gains.push(x.award.lifetime); s2 = x.state; }
+  assert(gains[4] < gains[2] && gains[5] <= gains[4], `v11: same-day repeats beyond ${CFG.XP.repeat.sameDayFree} earn less (${gains.join(',')})`);
+  const failed = AW.applyAward(fresh(), { item: item({ key: 'test:fail' }), ratio: 0.95, passed: false, at: T0 });
+  assert(failed.award.rank === 0 || failed.award.rank < base, 'v11: a failed session never earns pass-level XP (fail cap)');
+  assert(AW.applyAward(fresh(), { item: item({ key: 'test:zero' }), ratio: 0.1, passed: false, at: T0 }).award.lifetime === CFG.XP.participationLifetime, 'v11: very low performance → participation Lifetime XP only');
+  // tier caps
+  st = fresh();
+  st.prog.tierXp = { beginner: CFG.XP.tierCaps.beginner - 5 };
+  r = AW.applyAward(st, { item: item({ key: 'test:cap' }), ratio: 0.8, passed: true, at: T0 });
+  assert(r.award.rank === 5 && r.award.flags.some((f) => /BEGINNER XP MAXED/.test(f)) && r.award.lifetime > 5, `v11: tier cap limits Rank XP, Lifetime XP still counts (${r.award.rank} rank / ${r.award.lifetime} life)`);
+  assert(RK.careerStatus(r.state).tierCaps.find((t) => t.tier === 'beginner').maxed, 'v11: tier shows MAXED');
+  const custom = AW.applyAward(fresh(), { item: item({ key: 'drill:c1', source: 'custom', tier: 'pro' }), ratio: 0.8, passed: true, at: T0 });
+  assert(custom.state.prog.tierXp.intermediate > 0 && !custom.state.prog.tierXp.pro, 'v11: Create Drill drills count at most as Intermediate for Rank XP');
+  // Champion = max rank: Rank XP stops, Lifetime continues
+  st = fresh({ rankIndex: 9, rankFloor: 9 });
+  cs = RK.careerStatus(st);
+  assert(cs.champion && cs.title === 'Champion · MAX RANK' && cs.balls === 0, 'v11: Champion is MAX RANK (no balls)');
+  r = AW.applyAward(st, { item: item({ key: 'test:champ', tier: 'pro' }), ratio: 1, passed: true, at: T0 });
+  assert(r.award.rank === 0 && r.award.lifetime > 0 && r.award.flags.includes('MAX RANK'), 'v11: at Champion Rank XP stops, Lifetime XP continues');
+  assert(RK.promotionStatus(st).champion && RK.championStats(r.state).lifetimeXp === r.state.prog.lifetimeXp, 'v11: Champion stats (replaces "Master stats")');
+  // overflow carry into the next rank
+  st = fresh();
+  st.prog.rankXpBy = { 0: 990 };
+  r = AW.applyAward(st, { item: item({ key: 'test:over', tier: 'expert' }), ratio: 1, passed: true, at: T0 });
+  assert(r.state.prog.rankXpBy[0] === 1000 && r.state.prog.carry > 0 && r.state.prog.carry <= Math.round(AW.rankTotal(1) * CFG.XP.overflowCarry), `v11: overflow past full Rank XP carries (capped) into the next rank (${r.state.prog.carry})`);
+  const promotedSt = RK.syncProgression({ ...r.state, rankIndex: 1 });
+  assert(promotedSt.prog.rankXpBy[1] === r.state.prog.carry && promotedSt.prog.carry === 0 && promotedSt.prog.events[0].flags.includes('PROMOTED'), 'v11: entering the next rank starts with the carried XP');
+  // multi-skill XP + skill levels
+  st = fresh();
+  const lv0 = SL.computeSkillLevels(st, T0);
+  const d1 = CAT.stageItem('draw', reg.stageSpecs('draw')[0], 0);
+  r = AW.applyAward(st, { item: d1, ratio: 1, passed: true, at: T0 });
+  const lv1 = SL.computeSkillLevels(r.state, T0 + 1);
+  const trained = Object.keys(d1.weights).filter((k) => d1.weights[k] > 0);
+  assert(trained.length >= 2 && trained.every((k) => lv1[k].rating > lv0[k].rating), `v11: one stage raises every skill it trains (${trained.join(', ')})`);
+  assert(Object.keys(lv1).length === 12 && lv1.draw.label.startsWith('Rookie') && /\d+$/.test(lv1.draw.label), `v11: skill level shown as "<rank> <ball>" (${lv1.draw.label})`);
+  assert(lv1.kicks.label === 'Not rated yet', 'v11: unplayed skills are not rated');
+  // mastery thresholds
+  assert(AW.masteryStars({ passes: 1, bestPassed: 0.7, m: { strong: 0.85, mastered: 0.95 } }) === 1 && AW.masteryStars({ passes: 1, bestPassed: 0.86, m: { strong: 0.85, mastered: 0.95 } }) === 2 && AW.masteryStars({ passes: 1, bestPassed: 0.95, m: { strong: 0.85, mastered: 0.95 } }) === 3 && AW.masteryStars({ passes: 0, bestPassed: 1 }) === 0, 'v11: mastery PASSED / STRONG / MASTERED thresholds');
+  // gates latch
+  st = fresh();
+  for (const f of CFG.GATES[0].foundations) {
+    const it = builtinFor(f.skill);
+    st = AW.applyAward(st, { item: it, ratio: 0.8, passed: true, at: T0 }).state;
+  }
+  st = RK.syncProgression(st);
+  assert(!!st.prog.gatesCleared['g-rookie'], 'v11: passing the foundations clears (latches) the Rookie Skill Gate');
+  function builtinFor(skill) { return CAT.builtinItems().find((x) => x.source === 'arcade' && x.tier === 'beginner' && (x.weights[skill] || 0) >= CFG.SKILL_LEVEL.foundationWeight); }
+  // promotion: every item needed
+  st = fresh();
+  let ps = RK.promotionStatus(st);
+  assert(!ps.unlocked && ps.items.some((x) => x.type === 'xp') && ps.items.some((x) => x.type === 'gate') && ps.items.some((x) => x.type === 'career'), 'v11: Promotion Test checklist = Rank XP + Skill Gates + floors/mastery + existing Career requirements');
+  const p5 = CFG.PROMOTION[5];
+  assert(p5.floors.core && p5.mastery.strong > 0, 'v11: later promotions need skill floors + mastery counts');
+  // .pooliq v11 metadata (optional, backward compatible)
+  const doc = { format: 'pooliq', schemaVersion: '1.0', contentType: 'drill', id: 'v11-meta', contentVersion: '1.0', title: 'Meta drill', difficulty: 'advanced', rankXpEligible: true, baseXP: 120, primarySkill: 'draw', secondarySkills: ['position'], mastery: { strong: 0.8, mastered: 0.9 }, shot: { cueBallPosition: { x: 20, y: 25 }, ballPositions: [{ n: 1, x: 50, y: 25 }], targetBall: 1, targetPocket: 'TR', speed: 3 }, scoringRules: { mode: 'success', attempts: 10, pass: { made: 7 } } };
+  const vd = SCH.validatePooliq(JSON.stringify(doc));
+  assert(vd.ok && vd.doc.difficulty === 6 && vd.doc.baseXP === 120 && vd.doc.primarySkill === 'draw', `v11 .pooliq: tier-word difficulty + progression fields accepted (${vd.errors?.slice(1, 3).join(' | ')})`);
+  const ci = CAT.contentItem({ uid: 'cX', doc: vd.doc }, null);
+  assert(ci.tier === 'advanced' && ci.baseXP === 120 && ci.weights.draw === 1 && ci.weights.position === 0.5 && ci.rankXpEligible && ci.drillRank && ci.mastery.strong === 0.8, 'v11: imported drill metadata drives tier, base XP, skill weights, mastery');
+  assert(!SCH.validatePooliq(JSON.stringify({ ...doc, primarySkill: 'juggling' })).ok, 'v11 .pooliq: unknown skill rejected with an error');
+  assert(SCH.validatePooliq(JSON.stringify({ ...doc, rankXpEligible: undefined, baseXP: undefined, primarySkill: undefined, secondarySkills: undefined, mastery: undefined, difficulty: 3 })).ok, 'v11 .pooliq: v10 files without the new fields still validate');
+  assert(!CAT.contentItem({ uid: 'cY', doc: { ...vd.doc, rankXpEligible: undefined, careerEligible: undefined } }, null).rankXpEligible, 'v11: installed content is rank-eligible only when marked rankXpEligible / careerEligible');
+  // Play Test / preview can never award: the sandbox branch returns before the award hook
+  const contentSrc = read('js/ui/content.js');
+  const cplay = contentSrc.slice(contentSrc.indexOf('complete(res) {'));
+  assert(cplay.indexOf('if (r.sandbox)') >= 0 && cplay.indexOf('if (r.sandbox)') < cplay.indexOf('ctx.awardContent') && !/ctx\.commit\(/.test(contentSrc), 'v11: Play Test / preview never reaches the XP hook (and content.js never commits)');
+  // Drill Rank
+  assert(CFG.DRILL_RANK.ranks.map((x) => x.name).join('|') === 'Chalk Rookie|Grinder|Table Regular|Workhorse|Precision Player|Drill Sergeant|Drill Master|Drill Legend', 'Drill Rank: 8 ranks in order');
+  assert(RK.drillRankStatus(fresh()).number === 1, 'Drill Rank: starts at Chalk Rookie');
+  st = fresh();
+  const dItem = (i, tier = 'intermediate') => item({ key: `drill:t${i}`, source: 'drill', tier, drillRank: true, primary: CFG.SKILLS[i % 3].id, weights: { [CFG.SKILLS[i % 3].id]: 1 } });
+  for (let i = 0; i < 4; i++) st = AW.applyAward(st, { item: dItem(i), ratio: 0.8, passed: true, at: T0 + i * DAYMS }).state;
+  const dr1 = RK.drillRankStatus(st);
+  assert(dr1.have.passed === 4 && dr1.have.xp >= CFG.DRILL_RANK.ranks[1].xp && dr1.number === 2 && dr1.name === 'Grinder', `Drill Rank: 4 passed drills + ${dr1.have.xp} Drill XP = Grinder`);
+  assert(RK.drillRankStatus({ ...st, prog: { ...st.prog, drillXp: 99999 } }).number === 2, 'Drill Rank: XP alone is not enough (needs passed / strong / mastered counts)');
+  // anti-farming: mastered drill repeated
+  let fs2 = fresh();
+  fs2 = AW.applyAward(fs2, { item: dItem(9), ratio: 1, passed: true, at: T0 }).state;
+  const farm = [];
+  for (let i = 1; i <= 5; i++) { const x = AW.applyAward(fs2, { item: dItem(9), ratio: 1, passed: true, at: T0 + i * DAYMS }); farm.push(x.award.drill); fs2 = x.state; }
+  assert(farm.every((x) => x <= Math.ceil(CFG.XP.base.intermediate * 1.25 * CFG.XP.repeat.mastered)), `Drill Rank anti-farming: a mastered drill gives little Drill XP on repeats (${farm.join(',')})`);
+  // not affected by Arcade / Ghost / PvP / Play Test
+  let ar = AW.applyAward(fresh(), { item: item({ key: 'arcade:x:y' }), ratio: 1, passed: true, at: T0 }).state;
+  ar = SES.awardGhost(ar, { id: 'g', balls: 5, race: 5, you: 5, ghost: 1, won: true, date: new Date(T0).toISOString(), log: [] }).state;
+  assert(ar.prog.drillXp === 0 && RK.drillRankStatus(ar).have.passed === 0, 'Drill Rank: Arcade stages and Ghost matches never count');
+  const friendsSrc = ['js/friends/model.js', 'js/friends/tournament.js', 'js/ui/friends.js'].map(read).join('\n');
+  assert(!/progression\/(award|sessions|migrate)\.js|ctx\.commit|poolIQStateV4/.test(friendsSrc), 'PvP code never imports XP/award code or writes training state (Career / Drill Rank / skills untouched)');
+  // migration: idempotent, never demotes
+  const legacy = { ...storage.defaultState(), rankIndex: 3, rankFloor: 3, xp: 4200 };
+  const lg = { ...legacy.games, landing: { stages: { 'lz-1': { passed: true, bestStars: 3, tries: 2, history: [{ date: '2025-10-01T10:00:00Z', passed: true, stars: 3, score: 900 }, { date: '2025-10-02T10:00:00Z', passed: false, stars: 0, score: 100 }] } }, pb: {}, sessions: [] } };
+  const m1 = MIG.migrateProgression({ ...legacy, games: lg });
+  assert(MIG.needsMigration({ ...legacy }) && !MIG.needsMigration(m1), 'migration: needed once, then done');
+  assert(MIG.migrateProgression(m1) === m1, 'migration: idempotent (second run is a no-op)');
+  assert(career.syncRank(m1).rankIndex === 3 && m1.prog.rankXpBy[0] === AW.rankTotal(0) && m1.prog.rankXpBy[2] === AW.rankTotal(2) && m1.prog.rankSeen === 3, 'migration: never demotes — lower ranks full, current rank kept');
+  assert(m1.prog.lifetimeXp >= 4200 && m1.prog.legacyXp === 4200 && m1.prog.items['arcade:landing:lz-1']?.passes === 1, 'migration: Lifetime XP ≥ old XP, history replayed into mastery');
+  // friends: players, H2H, stats
+  let fd = FM.emptyFriends();
+  for (const n of ['Ann', 'Bob', 'Cat', 'Dan', 'Eve']) fd = FM.addPlayer(fd, n).d;
+  assert(FM.addPlayer(fd, 'ann').error, 'friends: duplicate names rejected');
+  const [A, B, C, Dd, E] = fd.players.map((p) => p.id);
+  let mm = FM.newMatch({ a: A, b: B, raceTo: 3 });
+  for (const w of [A, B, A, B, A]) mm = FM.rackWon(mm, w);
+  assert(mm.status === 'final' && mm.winner === A && FM.isHillHill(mm), 'friends: live scoring ends at the race, hill-hill detected');
+  mm = FM.bumpStat(mm, A, 'breakAndRuns');
+  fd = FM.saveMatch(fd, mm);
+  const q = FM.finalScore(FM.newMatch({ a: B, b: A, raceTo: 3 }), 3, 1);
+  fd = FM.saveMatch(fd, q.m);
+  assert(FM.finalScore(FM.newMatch({ a: A, b: B, raceTo: 3 }), 4, 1).error && FM.finalScore(FM.newMatch({ a: A, b: B, raceTo: 3 }), 2, 2).error, 'friends: final score must have a winner who reached the race');
+  const h = FM.headToHead(fd, A, B);
+  assert(h.matches === 2 && h.winsA === 1 && h.winsB === 1 && h.hillHill === 1 && h.stats[A].breakAndRuns === 1, 'friends: head-to-head record + advanced stats');
+  const psA = FM.playerStats(fd, A);
+  assert(psA.wins === 1 && psA.losses === 1 && psA.winPct === 50 && psA.streakType === 'L', 'friends: player stats (record, win %, streak)');
+  fd = FM.removePlayer(fd, A);
+  assert(fd.players.find((p) => p.id === A).archived && FM.headToHead(fd, A, B).matches === 2, 'friends: removing a player with history archives them (history kept)');
+  // group session
+  let gs = FM.newSession(fd, { playerIds: [B, C, Dd], raceTo: 3 });
+  assert(!FM.newSession(fd, { playerIds: [B, C] }).session, 'group session: needs 3+ players');
+  fd = gs.d;
+  const gm = FM.finalScore(FM.newMatch({ a: B, b: C, raceTo: 3, sessionId: gs.session.id }), 3, 0).m;
+  fd = FM.saveMatch(fd, gm);
+  const sum = FM.sessionSummary(fd, gs.session.id);
+  assert(sum.table[B].wins === 1 && sum.next && !(sum.next.includes(B) && sum.next.includes(C)), 'group session: table + next pairing suggests players who have not met');
+  // tournaments: single elimination seeding + byes + auto-advance
+  assert(JSON.stringify(TN.seedOrder(8)) === '[1,8,4,5,2,7,3,6]', 'tournament: standard bracket seed order');
+  let tr = TN.createTournament(fd, { format: 'single', playerIds: [B, C, Dd, E, A].filter((x) => x !== A), raceTo: 3 });
+  let tt = tr.tournament;
+  assert(tt.matches.filter((m) => m.round === 1).length === 2 && tt.matches.length === 3, 'tournament: 4 players → 2 semis + final');
+  tr = TN.createTournament(fd, { format: 'single', playerIds: [B, C, Dd], raceTo: 3 });
+  tt = tr.tournament;
+  const byeM = tt.matches.find((m) => m.bye);
+  assert(byeM && byeM.winner === B && tt.matches.find((m) => m.round === 2).a === B, 'tournament: top seed gets the bye and auto-advances');
+  let td = tr.d;
+  for (const m of TN.playableMatches(tt)) { const x = TN.recordResult(td, tt.id, m.id, 3, 1); td = x.d; tt = x.tournament; }
+  for (const m of TN.playableMatches(tt)) { const x = TN.recordResult(td, tt.id, m.id, 1, 3); td = x.d; tt = x.tournament; }
+  assert(tt.status === 'complete' && tt.championId && td.matches.filter((m) => m.tournamentId === tt.id).length === 2, 'tournament: winners advance, champion crowned, results are normal match records');
+  assert(TN.clearResult(td, tt.id, tt.matches.find((m) => m.round === 1 && !m.bye).id).error, 'tournament: a result cannot be cleared once the next round is played');
+  // round robin: everyone once, BYE for odd counts, tiebreakers
+  tr = TN.createTournament(fd, { format: 'roundrobin', playerIds: [B, C, Dd], raceTo: 3 });
+  tt = tr.tournament;
+  const pairs = new Set(tt.matches.map((m) => [m.a, m.b].sort().join(':')));
+  assert(tt.matches.length === 3 && pairs.size === 3 && Math.max(...tt.matches.map((m) => m.round)) === 3, 'round robin: 3 players → 3 rounds, everyone plays everyone once (BYE rotates)');
+  td = tr.d;
+  const res = { [`${B}:${C}`]: [3, 0], [`${C}:${Dd}`]: [3, 1], [`${B}:${Dd}`]: [2, 3] };
+  for (const m of tt.matches) { const k = `${m.a}:${m.b}`; const kr = `${m.b}:${m.a}`; const sc = res[k] || (res[kr] ? [res[kr][1], res[kr][0]] : [3, 0]); const x = TN.recordResult(td, tt.id, m.id, sc[0], sc[1]); td = x.d; tt = x.tournament; }
+  const stn = TN.standings(tt, { [B]: 'Bob', [C]: 'Cat', [Dd]: 'Dan' });
+  assert(stn.every((x) => x.wins === 1) && stn[0].id === B && stn[0].diff === 2, `round robin: 3-way tie broken by head-to-head then rack difference (${stn.map((x) => x.id === B ? 'Bob' : x.id === C ? 'Cat' : 'Dan').join(' > ')})`);
+  assert(tt.status === 'complete' && tt.championId === B, 'round robin: winner decided when all matches are in');
+  assert(JSON.stringify(CFG.PVP.tiebreakers) === JSON.stringify(['wins', 'headToHead', 'gameDiff', 'gamesWon', 'name']), 'round robin: documented tiebreaker order');
+  // local profile
+  store.clear();
+  const pr = PRF.getProfile();
+  assert(/^[0-9a-f-]{36}$/.test(pr.id) && pr.createdAt && pr.updatedAt && PRF.getProfile().id === pr.id, 'profile: stable UUID created once');
+  const up = PRF.updateProfile({ displayName: '  Andrew <b>  ' }, pr.updatedAt + 5);
+  assert(up.profile.displayName === 'Andrew b' && up.profile.updatedAt === pr.updatedAt + 5, 'profile: name cleaned, updatedAt bumps');
+  assert(PRF.updateProfile({ avatar: 'javascript:alert(1)' }).error && PRF.updateProfile({ avatar: 'data:image/png;base64,' + 'A'.repeat(100 * 1024) }).error, 'profile: unsafe / oversized photo rejected');
+  assert(!PRF.updateProfile({ avatar: 'data:image/webp;base64,UklGRg==' }).error && PRF.getProfile().avatar.startsWith('data:image/webp'), 'profile: small image data URL accepted');
+  const pub = PRF.publicStats(m1, PRF.getProfile(), T0);
+  assert(pub.format === 'pool-iq-public-stats' && pub.profileId === pr.id && pub.career.rankIndex === 3 && pub.career.ball != null && Object.keys(pub.skills).length === 12 && pub.drillRank.number >= 1 && pub.devSeeded === false && !('friends' in pub), 'profile: publicStats() is a clean exportable summary (training only, no PvP)');
+  // DEV MODE
+  store.clear();
+  assert(!DEV.hasPasscode() && (await DEV.unlock('1234')).error, 'dev: no passcode yet → cannot unlock');
+  assert((await DEV.setPasscode('12')).error, 'dev: short passcode refused');
+  assert((await DEV.setPasscode('cue-9ball')).ok && DEV.isUnlocked(), 'dev: first use sets the passcode (and unlocks)');
+  const devRec = JSON.parse(store.get(DEV.DEV_KEY));
+  assert(/^[0-9a-f]{64}$/.test(devRec.hash) && /^[0-9a-f]{32}$/.test(devRec.salt) && !JSON.stringify(devRec).includes('cue-9ball') && devRec.hash === await DEV.hashPasscode('cue-9ball', devRec.salt), 'dev: only a salted SHA-256 hash is stored');
+  DEV.lock();
+  assert(!DEV.isUnlocked() && (await DEV.unlock('wrong')).error && !DEV.isUnlocked(), 'dev: LOCK locks; wrong passcode rejected');
+  assert((await DEV.setPasscode('hijack')).error, 'dev: passcode cannot be changed while locked');
+  assert((await DEV.unlock('cue-9ball')).ok && DEV.isUnlocked(), 'dev: correct passcode unlocks');
+  DEV.setAutoLock(5);
+  assert(!DEV.isUnlocked(Date.now() + 6 * 60000), 'dev: auto-lock after idle minutes');
+  await DEV.unlock('cue-9ball');
+  // overrides: applied, source untouched, reset
+  const orig = reg.getStage('landing', 'lz-1');
+  const origCue = JSON.stringify(orig.cueBallPosition);
+  const odoc = DEV.editDocForStage(orig, null);
+  assert(SCH.validatePooliq(JSON.stringify(odoc)).ok, 'dev: built-in stage converts to a valid .pooliq doc for the builder');
+  odoc.title = 'DEV lz-1'; odoc.shot.cueBallPosition = { x: 12, y: 12 };
+  assert(OVR.setOverride(OVR.stageOverrideId('landing', 'lz-1'), odoc).ok, 'dev: override saved in its own key');
+  reg.clearStageCache('landing');
+  const ov1 = reg.getStage('landing', 'lz-1');
+  assert(ov1.name === 'DEV lz-1' && ov1.cueBallPosition.x === 12 && ov1.devOverride && ov1.id === 'lz-1' && ov1.unlocks.length === 1 && reg.stageSpecs('landing')[0].name !== 'DEV lz-1', 'dev: override applied when the stage is built (source definitions untouched)');
+  const pack = DEV.exportOverridesPack();
+  assert(pack.count === 1 && pack.doc.contentType === 'pack' && pack.doc.stages[0].id === 'ov--landing--lz-1' && SCH.validatePooliq(JSON.stringify(pack.doc)).ok, 'dev: overrides export as a valid .pooliq pack');
+  OVR.removeOverride(OVR.stageOverrideId('landing', 'lz-1'));
+  reg.clearStageCache('landing');
+  assert(JSON.stringify(reg.getStage('landing', 'lz-1').cueBallPosition) === origCue && !reg.getStage('landing', 'lz-1').devOverride, 'dev: RESET TO ORIGINAL restores the built-in stage');
+  const imp = DEV.importOverridesPack(JSON.stringify(pack.doc), { stageExists: (g, s2) => !!reg.stageSpecs(g).find((x) => x.id === s2) });
+  reg.clearStageCache('landing');
+  assert(imp.applied === 1 && reg.getStage('landing', 'lz-1').name === 'DEV lz-1', 'dev: overrides pack re-imports');
+  OVR.removeOverride(OVR.stageOverrideId('landing', 'lz-1')); reg.clearStageCache();
+  const kickSpec = reg.stageSpecs('kick')[0];
+  assert(!OVR.isEditableSpec(reg.stageSpecs('train')[0], 'train') && OVR.isEditableSpec(kickSpec, kickSpec.kind || 'kick'), 'dev: only single-shot stages are editable');
+  const marked = DEV.markContentDoc(vd.doc, { careerEligible: true, official: true });
+  assert(marked.careerEligible && marked.metadata.official && SCH.validatePooliq(JSON.stringify(marked)).ok, 'dev: mark imported content official / career-eligible (still valid)');
+  // seeded test state: flagged, excluded, restorable
+  const real = m1;
+  const seeded = DEV.seedProgression(real, { rank: 9 });
+  assert(seeded.rankIndex === 9 && career.syncRank(seeded).rankIndex === 9 && seeded.devSeed && seeded.prog.dev && real.rankIndex === 3 && !real.devSeed, 'dev: seeded Champion test state (flagged DEV, real state untouched)');
+  assert(PRF.publicStats(seeded).devSeeded === true, 'dev: seeded states are flagged in public stats (never synced)');
+  const seededDR = DEV.seedProgression(real, { drillRank: 5 });
+  assert(RK.drillRankStatus(seededDR).number === 5, 'dev: seed Drill Rank 5 → Precision Player');
+  const seed7 = DEV.seedProgression(real, { rank: 4, ball: 7 });
+  assert(RK.careerStatus(seed7).ball === 7 && RK.careerStatus(seed7).rankIndex === 4, 'dev: seed Career rank + ball');
+  // vault stash + snapshot restore round trip (memory IndexedDB)
+  const mem = new Map();
+  const idb = { get: async (k) => mem.get(k), put: async (k, v) => { mem.set(k, v); }, del: async (k) => { mem.delete(k); } };
+  store.clear();
+  store.set(VLT.KEYS.state, JSON.stringify(real));
+  store.set(VLT.KEYS.dev, JSON.stringify(devRec));
+  globalThis.localStorage.key = (i) => [...store.keys()][i];
+  const vt = VLT.createVault({ kv: globalThis.localStorage, idb, debounceMs: 0 });
+  await vt.putStash('dev-real', VLT.localBundle(globalThis.localStorage));
+  store.set(VLT.KEYS.state, JSON.stringify(seeded));
+  const stash = await vt.getStash('dev-real');
+  await vt.replaceAll({ ...stash.keys }, 'Before DEV restore real progress');
+  assert(JSON.parse(store.get(VLT.KEYS.state)).rankIndex === 3 && !JSON.parse(store.get(VLT.KEYS.state)).devSeed && store.get(VLT.KEYS.dev), 'dev: RESTORE MY REAL PROGRESS brings the stashed real data back (passcode kept)');
+  const snaps = await vt.snapshots();
+  assert(snaps[0] && snaps[0].reason === 'Before DEV restore real progress' && JSON.parse(snaps[0].keys[VLT.KEYS.state]).devSeed, 'dev: the test state is snapshotted before the restore');
+  // vault: new keys mirrored / backed up, old backups still restore
+  for (const k of ['poolIQFriendsV1', 'poolIQProfileV1', 'poolIQDevV1', 'poolIQDevOverridesV1']) assert(VLT.DATA_KEYS.includes(k), `vault: ${k} is mirrored, snapshotted and backed up`);
+  const oldBackup = { format: 'pool-iq-backup', schema: 1, appVersion: '10', exportedAt: '2026-06-01T00:00:00Z', keys: { poolIQStateV4: storage.defaultState(), poolIQCustomDrillsV1: { drills: [] } } };
+  const pb = VLT.parseBackup(JSON.stringify(oldBackup));
+  assert(pb.keys.poolIQStateV4 && !pb.keys.poolIQFriendsV1 && pb.appVersion === '10', 'vault: v10 backups (without v11 keys) still restore');
+  const newBackup = { ...oldBackup, appVersion: '11', keys: { ...oldBackup.keys, poolIQFriendsV1: fd, poolIQProfileV1: PRF.defaultProfile(), poolIQDevOverridesV1: { schema: 1, items: {} } } };
+  const pb2 = VLT.parseBackup(JSON.stringify(newBackup));
+  assert(pb2.keys.poolIQFriendsV1 && pb2.summary.pvp === fd.matches.length && pb2.summary.friends > 0, 'vault: v11 backup summary counts friends + friend matches');
+  assert(!VLT.parseBackup(JSON.stringify({ ...newBackup, keys: { ...newBackup.keys, poolIQFriendsV1: { nope: 1 } } })).keys.poolIQFriendsV1, 'vault: a damaged friends key is dropped (rest restores)');
+  assert(VLT.APP_VERSION === '11', 'vault: APP_VERSION is 11');
+  // docs exist
+  for (const f of ['docs/RANKING_AND_XP.md', 'docs/SKILL_GATES_AND_PROMOTIONS.md', 'docs/FRIENDS_AND_TOURNAMENTS.md', 'docs/DEV_MODE.md']) assert(fs.existsSync(path.join(root, f)), `doc present: ${f}`);
+  store.clear();
 }
 
 console.log('\n--- Summary ---');

@@ -25,9 +25,27 @@ import { isStageUnlocked, isEndlessUnlocked, isGameUnlocked } from './games/engi
 import { isBossUnlocked } from './career.js';
 import * as C from './ui/content.js';
 import * as CS from './content/store.js';
+// v11: progression (Career ball levels, Skill Gates, Promotion Tests, Drill Rank), friends/PvP, profile, DEV MODE
+import { syncProgression, careerStatus, promotionStatus, drillRankStatus } from './progression/rank.js';
+import { needsMigration, migrateProgression } from './progression/migrate.js';
+import { applyAward, emptyProg } from './progression/award.js';
+import { PROGRESSION_VERSION } from './progression/config.js';
+import { contentItem, drillItem } from './progression/catalog.js';
+import { computeSkillLevels } from './progression/skillLevels.js';
+import * as PU from './ui/progression.js';
+import * as FU from './ui/friends.js';
+import * as MU from './ui/me.js';
+import * as DU from './ui/dev.js';
+import * as D from './dev/dev.js';
+import * as FM from './friends/model.js';
+import * as FT from './friends/tournament.js';
+import * as PR from './profile.js';
+import { clearStageCache } from './games/registry.js';
 
 function derive(s) {
-  return syncRank(withSkills(s));
+  // fresh / reset saves start on the current progression version (legacy saves are migrated at boot first)
+  const s1 = s.prog ? s : { ...s, prog: { ...emptyProg(), v: PROGRESSION_VERSION, rankSeen: s.rankIndex || 0 } };
+  return syncProgression(syncRank(withSkills(s1)));
 }
 
 let state = null; // set in boot() after the storage vault has reconciled localStorage with IndexedDB
@@ -54,6 +72,9 @@ const ctx = {
   getState: () => state,
   commit,
   go: (h) => navigate(h),
+  rerender: () => rerender(),
+  awardContent: (a) => awardContent(a),
+  devUnlocked: () => D.isUnlocked(),
   get root() {
     return view();
   }
@@ -70,7 +91,7 @@ function parseHash() {
   return { name: name || 'home', args };
 }
 
-const NAV_FOR = { content: 'drills', cimport: 'drills', cview: 'drills', cplay: 'drills', cedit: 'drills', sim: 'sim', drillnew: 'drills', drilledit: 'drills', home: 'home', career: 'career', drills: 'drills', analyze: 'analyze', arcade: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
+const NAV_FOR = { gate: 'career', promo: 'career', champion: 'career', training: 'career', skill: 'profile', skills: 'profile', me: 'profile', drillrank: 'drills', friends: 'arcade', friend: 'arcade', h2h: 'arcade', fmatch: 'arcade', fsession: 'arcade', tourney: 'arcade', tnew: 'arcade', dev: 'profile', devgame: 'profile', devedit: 'profile', devkeys: 'profile', content: 'drills', cimport: 'drills', cview: 'drills', cplay: 'drills', cedit: 'drills', sim: 'sim', drillnew: 'drills', drilledit: 'drills', home: 'home', career: 'career', drills: 'drills', analyze: 'analyze', arcade: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
 
 function setChrome(playing, navName) {
   document.body.classList.toggle('playing', playing);
@@ -153,7 +174,35 @@ function renderRoute() {
         playing = true;
       } else v.innerHTML = C.editListHTML(it.uid);
     }
-  } else if (name === 'boss') v.innerHTML = renderBossPage(state, args[0]);
+  } else if (name === 'devedit') {
+    const opts = DU.devEditOptions(args[0], args[1], devEnv);
+    if (!opts || opts.error) {
+      toast(opts?.error || (D.isUnlocked() ? 'That stage cannot be edited' : 'DEV MODE is locked'));
+      v.innerHTML = D.isUnlocked() ? DU.renderDevGame(args[0]) : DU.renderDev(state);
+    } else {
+      screen = createDrillBuilder(ctx, { content: opts });
+      screen.render();
+      playing = true;
+    }
+  } else if (name === 'gate') v.innerHTML = PU.renderGatePage(state, args[0]);
+  else if (name === 'promo') v.innerHTML = PU.renderPromoPage(state);
+  else if (name === 'skill') v.innerHTML = PU.renderSkillPage(state, args[0]);
+  else if (name === 'skills') v.innerHTML = PU.renderSkillsPage(state);
+  else if (name === 'training') v.innerHTML = PU.renderTrainingPage(state);
+  else if (name === 'champion') v.innerHTML = PU.renderChampionPage(state);
+  else if (name === 'drillrank') v.innerHTML = PU.renderDrillRankPage(state);
+  else if (name === 'friends') v.innerHTML = FU.renderFriends();
+  else if (name === 'friend') v.innerHTML = FU.renderFriend(args[0]);
+  else if (name === 'h2h') v.innerHTML = FU.renderH2H(args[0], args[1]);
+  else if (name === 'fmatch') v.innerHTML = FU.renderMatch(args[0]);
+  else if (name === 'fsession') v.innerHTML = FU.renderSession(args[0]);
+  else if (name === 'tourney') v.innerHTML = FU.renderTourney(args[0]);
+  else if (name === 'tnew') v.innerHTML = FU.renderTourneyNew();
+  else if (name === 'me') v.innerHTML = args[0] === 'stats' ? MU.renderMyStats(state) : MU.renderMe(state);
+  else if (name === 'dev') { v.innerHTML = DU.renderDev(state); DU.fillDev(); }
+  else if (name === 'devgame') v.innerHTML = DU.renderDevGame(args[0]);
+  else if (name === 'devkeys') v.innerHTML = DU.renderDevKeys();
+  else if (name === 'boss') v.innerHTML = renderBossPage(state, args[0]);
   else if (name === 'game') v.innerHTML = args[0] === 'ghost' ? renderGhostLobby(state, ghostPreset) : renderGameLobby(state, args[0]);
   else if (name === 'career') v.innerHTML = renderCareerPage(state);
   else if (name === 'drills') v.innerHTML = renderDrillsPage(state, drillFilter);
@@ -196,6 +245,9 @@ function handleAction(action, el, e) {
   }
   if (screen && screen.onAction(action, el, e)) return;
   if (action.startsWith('c-') && C.contentAction(action, el, e, ctx)) return;
+  if (action.startsWith('fr-') && FU.friendsAction(action, el, ctx)) return;
+  if (action.startsWith('me-') && MU.meAction(action, el, ctx, { downloadFile })) return;
+  if (action.startsWith('dev-') && DU.devAction(action, el, devEnv)) return;
   switch (action) {
     case 'ce-save-meta': {
       const out = C.saveMetaFromForm(el.dataset.uid);
@@ -541,7 +593,7 @@ async function fillSettings() {
   if (sc) { sc.textContent = `(${snaps.length})`; sc.dataset.snapcount = String(snaps.length); }
 }
 function summaryGridHTML(s) {
-  return `<div class="summaryGrid" data-summary><div class="rankCell"><b>${escHTML(s.rank)}</b><span>RANK · ${s.xp} XP</span></div><div><b>${s.sessions}</b><span>SESSIONS</span></div><div><b>${s.matches}</b><span>GHOST GAMES</span></div><div><b>${s.drills}</b><span>MY DRILLS</span></div><div><b>${s.shots}</b><span>SAVED SHOTS</span></div><div><b>${s.content || 0}</b><span>MY CONTENT</span></div></div>`;
+  return `<div class="summaryGrid" data-summary><div class="rankCell"><b>${escHTML(s.rank)}</b><span>RANK · ${s.lifetimeXp ?? s.xp} LIFETIME XP${s.player ? ` · ${escHTML(s.player)}` : ''}</span></div><div><b>${s.sessions}</b><span>SESSIONS</span></div><div><b>${s.matches}</b><span>GHOST GAMES</span></div><div><b>${s.drills}</b><span>MY DRILLS</span></div><div><b>${s.shots}</b><span>SAVED SHOTS</span></div><div><b>${s.content || 0}</b><span>MY CONTENT</span></div><div><b>${s.friends || 0}</b><span>FRIENDS</span></div><div><b>${s.pvp || 0}</b><span>FRIEND MATCHES</span></div></div>`;
 }
 function backupPayload(now = new Date()) {
   const obj = V.buildBackup(localStorage, { now: now.getTime() });
@@ -587,6 +639,19 @@ async function replaceAndReload(keys, reason, flash) {
     toast(`Restore failed: ${err.message || err}`);
   }
 }
+/* v11: profile / friend photos (file input with capture) and DEV overrides import */
+document.addEventListener('change', (e) => {
+  const inp = e.target && e.target.closest ? e.target.closest('[data-avatar-input],[data-dev-import]') : null;
+  if (!inp) return;
+  const file = inp.files && inp.files[0];
+  const kind = inp.dataset.avatarInput;
+  const dev = inp.hasAttribute('data-dev-import');
+  inp.value = '';
+  if (!file) return;
+  if (dev) DU.onDevImportFile(file, devEnv);
+  else if (kind === 'me') MU.onMeAvatarFile(file, () => renderRoute());
+  else FU.onFriendAvatarFile(file);
+});
 /* IMPORT CONTENT: the <input type=file data-content-input> inside the button label (native iOS / Android file picker) */
 document.addEventListener('change', (e) => {
   const inp = e.target && e.target.closest ? e.target.closest('[data-content-input]') : null;
@@ -618,13 +683,83 @@ document.addEventListener('input', (e) => {
   }
 });
 
+// ------------------------------------------------------------------------------ v11 hooks
+/** Installed .pooliq content that is rank-eligible (careerEligible / rankXpEligible) earns XP + mastery. Never
+ *  called for previews / play-tests (ui/content.js sandbox path returns before the hook). */
+function awardContent({ uid, doc, stage, res }) {
+  const it = uid ? CS.getItem(uid) : null;
+  if (!it || !doc || !res) return null;
+  let item = null;
+  if (!stage && doc.contentType === 'drill' && doc.careerEligible === true) {
+    const dr = getDrillById(`pq-${uid}`);
+    if (dr) item = drillItem(dr);
+  }
+  if (!item) item = contentItem(it, stage || null);
+  if (!item.rankXpEligible && !item.drillRank) return null;
+  const sm = res.summary || {};
+  const ratio = sm.made != null && sm.attempts ? sm.made / sm.attempts : sm.stars != null && sm.attempts ? sm.stars / (3 * sm.attempts) : res.passed ? 0.8 : 0.3;
+  const out = applyAward(state, { item, ratio, passed: !!res.passed, score: res.score });
+  commit(out.state);
+  return out.award;
+}
+/** DEV MODE helpers — every change is preceded by a snapshot of the data as it was */
+const devEnv = {
+  snapshot: (label) => vault.snapshotBundle(label, V.localBundle(localStorage)),
+  rerender: () => rerender(),
+  go: (h) => navigate(h),
+  getState: () => state,
+  downloadFile: (n, t) => downloadFile(n, t),
+  afterContentChange: () => { refreshCustomDrills(); commit({ ...state }); },
+  async seed(opts) {
+    if (!D.isUnlocked()) return;
+    const dev = D.loadDev();
+    if (!dev.seeded) await vault.putStash('dev-real', V.localBundle(localStorage)).catch(() => null);
+    await vault.snapshot('Before DEV test state');
+    const next = D.seedProgression(state, opts);
+    D.saveDev({ ...D.loadDev(), seeded: { at: Date.now(), label: next.devSeed.label } });
+    commit(next);
+    toast(`DEV test state: ${next.devSeed.label}`);
+    renderRoute();
+  },
+  async restoreReal() {
+    const stash = await vault.getStash('dev-real');
+    if (!stash || !stash.keys) { toast('No stashed real progress — use Settings → Restore previous snapshot'); return; }
+    const keys = { ...stash.keys };
+    keys[V.KEYS.dev] = JSON.stringify({ ...D.loadDev(), seeded: null });
+    const ovr = localStorage.getItem(V.KEYS.devOverrides);
+    if (ovr) keys[V.KEYS.devOverrides] = ovr;
+    try {
+      await vault.replaceAll(keys, 'Before DEV restore real progress');
+      await vault.dropStash('dev-real');
+      try { sessionStorage.setItem(FLASH_KEY, 'Your real progress is back (the test state was snapshotted)'); } catch { /* ignore */ }
+      location.reload();
+    } catch (err) { toast(`Restore failed: ${err.message || err}`); }
+  },
+  async clearCaches() {
+    devEnv.snapshot('Before DEV clear caches');
+    await vault.flush().catch(() => {});
+    try { if (typeof caches !== 'undefined') for (const k of await caches.keys()) await caches.delete(k); } catch { /* ignore */ }
+    clearStageCache();
+    try { sessionStorage.setItem(FLASH_KEY, 'Caches cleared — app files reloaded'); } catch { /* ignore */ }
+    location.reload();
+  }
+};
+C.setDevCheck(() => D.isUnlocked());
+document.addEventListener('pointerdown', () => D.touch(), { passive: true });
+
 // ------------------------------------------------------------------------------ boot
 async function boot() {
   let rec = null;
   try { rec = await vault.reconcile(); } catch (e) { console.warn('Pool IQ vault reconcile failed', e); }
   onDataWrite(() => vault.touch());
   refreshCustomDrills();
-  state = derive(archiveUnknownDrills(loadState(), allDrills().map((d) => d.id)));
+  let st0 = archiveUnknownDrills(loadState(), allDrills().map((d) => d.id));
+  // v11 progression migration: snapshot first, replay saved history, never demote the Career rank
+  if (needsMigration(st0)) {
+    try { await vault.snapshot('Before v11 progression update'); } catch { /* ignore */ }
+    try { st0 = migrateProgression(st0); } catch (e) { console.warn('Pool IQ v11 migration failed', e); }
+  }
+  state = derive(st0);
   saveState(state);
   loadGhostPreset();
   initInstall(() => { if ((route.name === 'home' || route.name === 'settings') && !document.querySelector('#sheet.show')) renderRoute(); });
@@ -656,6 +791,6 @@ window.addEventListener('load', () => {
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
 });
 
-window.PoolIQ = { getState: () => state, drills, getDrillById, allDrills, commit, navigate, rerender, vault, V, backupPayload, installMode, get screen() { return screen; }, content: { store: CS, getPending: C.getPending, processImport: (text, name) => C.processImport(text, name || 'test.pooliq', ctx) } };
+window.PoolIQ = { prog: { careerStatus, promotionStatus, drillRankStatus, computeSkillLevels, migrateProgression, needsMigration }, friends: { model: FM, tournament: FT }, profile: PR, dev: D, getState: () => state, drills, getDrillById, allDrills, commit, navigate, rerender, vault, V, backupPayload, installMode, get screen() { return screen; }, content: { store: CS, getPending: C.getPending, processImport: (text, name) => C.processImport(text, name || 'test.pooliq', ctx) } };
 boot();
 export { drills, getDrillById };

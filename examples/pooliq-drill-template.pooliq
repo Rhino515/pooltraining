@@ -16,6 +16,27 @@
     "notes": "Attribution is optional. Leave author out when unknown — never guess."
   },
   "careerEligible": false,
+  "rankXpEligible": false,
+  "baseXP": 60,
+  "primarySkill": "position",
+  "secondarySkills": [
+    "draw",
+    "speed"
+  ],
+  "skills": [
+    "position",
+    "draw",
+    "speed"
+  ],
+  "skillWeights": {
+    "position": 1,
+    "draw": 0.6,
+    "speed": 0.4
+  },
+  "mastery": {
+    "strong": 0.8,
+    "mastered": 0.95
+  },
   "metadata": {
     "tags": [
       "template",
@@ -25,7 +46,8 @@
     "updated": "2026-09-25",
     "language": "en",
     "demo": true,
-    "generator": "hand-written"
+    "generator": "hand-written",
+    "official": false
   },
   "shot": {
     "kind": "position",

@@ -20,7 +20,11 @@ export const KEYS = {
   drillWip: 'poolIQDrillWip', // Create Drill work in progress (ui/drillBuilder.js)
   drillDraft: 'poolIQDrillDraft', // Simulator → Create Drill hand-off (ui/simulator.js)
   content: 'poolIQContentV1', // My Content: installed .pooliq drills, packs, lessons, games (content/store.js)
-  contentProgress: 'poolIQContentProgressV1' // My Content personal progress + bests, never Career (content/store.js)
+  contentProgress: 'poolIQContentProgressV1', // My Content personal progress + bests, never Career (content/store.js)
+  friends: 'poolIQFriendsV1', // v11 friends, PvP matches, group sessions, tournaments (friends/model.js)
+  profile: 'poolIQProfileV1', // v11 local player profile: name, photo, stable id (profile.js)
+  dev: 'poolIQDevV1', // v11 DEV MODE passcode hash (salted SHA-256) + settings (dev/dev.js)
+  devOverrides: 'poolIQDevOverridesV1' // v11 DEV MODE local content override layer (dev/overrides.js)
 };
 export const DATA_KEYS = Object.values(KEYS);
 export const META_KEY = 'poolIQMetaV1'; // seq/savedAt, lastBackupAt, nudge + install dismissals, persist result
@@ -30,7 +34,7 @@ export const MAX_SNAPSHOTS = 3;
 export const SNAP_EVERY_MS = 6 * 3600 * 1000; // automatic rolling snapshot at most every 6 h
 export const BACKUP_FORMAT = 'pool-iq-backup';
 export const BACKUP_SCHEMA = 1;
-export const APP_VERSION = '10';
+export const APP_VERSION = '11';
 export const NUDGE_DAYS = 7;
 const DAY = 86400000;
 
@@ -97,7 +101,13 @@ export function summarize(keys) {
   const custom = parseJSON(keys?.[KEYS.custom]);
   const sim = parseJSON(keys?.[KEYS.sim]);
   const content = parseJSON(keys?.[KEYS.content]);
+  const friends = parseJSON(keys?.[KEYS.friends]);
+  const profile = parseJSON(keys?.[KEYS.profile]);
   const out = {
+    lifetimeXp: st ? Math.max(Number(st.prog?.lifetimeXp) || 0, Number(st.xp) || 0) : 0,
+    friends: Array.isArray(friends?.players) ? friends.players.filter((p) => p && !p.archived).length : 0,
+    pvp: Array.isArray(friends?.matches) ? friends.matches.length : 0,
+    player: typeof profile?.displayName === 'string' ? profile.displayName.slice(0, 24) : '',
     sessions,
     matches: st ? (st.ghostMatches || []).length : 0,
     drills: Array.isArray(custom?.drills) ? custom.drills.length : 0,
@@ -108,14 +118,14 @@ export function summarize(keys) {
     calibrated: !!(st && st.speedCal && st.speedCal.results && Object.keys(st.speedCal.results).length)
   };
   out.rank = RANK_NAMES[out.rankIndex];
-  out.activity = out.sessions + out.matches + out.drills + out.shots + out.content;
+  out.activity = out.sessions + out.matches + out.drills + out.shots + out.content + out.pvp + out.friends;
   out.score = out.activity + (out.xp > 0 ? 1 : 0) + (out.calibrated ? 1 : 0);
   return out;
 }
 export const isMeaningful = (keys) => summarize(keys).score > 0;
 export function summaryLine(s) {
   const p = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-  return `${s.rank} · ${p(s.sessions, 'session', 'sessions')} · ${p(s.matches, 'Ghost match', 'Ghost matches')} · ${p(s.drills, 'custom drill', 'custom drills')} · ${p(s.shots, 'saved shot', 'saved shots')}${s.content ? ` · ${p(s.content, 'content item', 'content items')}` : ''}`;
+  return `${s.rank} · ${p(s.sessions, 'session', 'sessions')} · ${p(s.matches, 'Ghost match', 'Ghost matches')} · ${p(s.drills, 'custom drill', 'custom drills')} · ${p(s.shots, 'saved shot', 'saved shots')}${s.content ? ` · ${p(s.content, 'content item', 'content items')}` : ''}${s.pvp ? ` · ${p(s.pvp, 'friend match', 'friend matches')}` : ''}`;
 }
 
 /**
@@ -222,6 +232,21 @@ export function createVault({ kv, idb, now = () => Date.now(), debounceMs = 400 
   function snapshot(reason) {
     return serial(() => putSnapshot(reason, localBundle(kv)).catch(() => null));
   }
+  /** Snapshot a bundle captured earlier (DEV MODE captures the data synchronously BEFORE it changes anything) */
+  function snapshotBundle(reason, bundle) {
+    return serial(() => putSnapshot(reason, bundle).catch(() => null));
+  }
+  /** A named copy outside the rolling snapshot list (DEV MODE "restore my real progress") */
+  async function putStash(name, bundle) {
+    await idb.put(`stash:${name}`, { ...bundle, stashedAt: now() });
+    return true;
+  }
+  async function getStash(name) {
+    try { return (await idb.get(`stash:${name}`)) || null; } catch { return null; }
+  }
+  async function dropStash(name) {
+    try { if (idb.del) await idb.del(`stash:${name}`); else await idb.put(`stash:${name}`, null); } catch { /* ignore */ }
+  }
   /** On load: pick the good copy, repair single corrupt keys, then bring the mirror up to date */
   async function reconcile({ timeoutMs = 2500 } = {}) {
     const local = localBundle(kv);
@@ -255,7 +280,7 @@ export function createVault({ kv, idb, now = () => Date.now(), debounceMs = 400 
     lastSig = '';
     return mirror({ force: true });
   }
-  return { touch, schedule, flush, mirror, reconcile, snapshot, snapshots, replaceAll, markIntent, getMirror, status: () => ({ ...last }) };
+  return { touch, schedule, flush, mirror, reconcile, snapshot, snapshotBundle, putStash, getStash, dropStash, snapshots, replaceAll, markIntent, getMirror, status: () => ({ ...last }) };
 }
 
 // ------------------------------------------------------------------ backup file
@@ -284,7 +309,11 @@ const VALIDATE = {
   [KEYS.drillWip]: isObj,
   [KEYS.drillDraft]: isObj,
   [KEYS.content]: (v) => isObj(v) && Array.isArray(v.items),
-  [KEYS.contentProgress]: isObj
+  [KEYS.contentProgress]: isObj,
+  [KEYS.friends]: (v) => isObj(v) && Array.isArray(v.players) && Array.isArray(v.matches),
+  [KEYS.profile]: (v) => isObj(v) && typeof v.id === 'string',
+  [KEYS.dev]: isObj,
+  [KEYS.devOverrides]: (v) => isObj(v) && isObj(v.items)
 };
 
 /**

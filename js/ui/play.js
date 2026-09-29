@@ -16,6 +16,8 @@ import { openSheet, closeSheet, toast, stars } from './sheet.js';
 import { getDrillById } from '../drills.js';
 import { RANK_NAMES } from '../storage.js';
 import { getResultAdapter } from '../analyze.js';
+import { awardHTML } from './progression.js';
+import { careerStatus } from '../progression/rank.js';
 
 const FMT = { technique: techniqueName, contact: contactText, english: (h) => englishText(h), speed: (s) => (s == null ? '—' : speedLabel(s)) };
 
@@ -278,6 +280,7 @@ export function createPlayScreen(ctx, key) {
         <h1>${r.passed ? 'PASSED' : 'NOT PASSED'}</h1>
         <div class="resultStats"><div><b data-final-score="${r.score}">${r.score}</b><span>SCORE</span></div>${statsMade}</div>
         ${extra.newBest ? '<p class="pb">★ NEW PERSONAL BEST</p>' : ''}
+        ${extra.award ? awardHTML(extra.award) : ''}
         <p class="muted">Needed: ${esc(r.needText || '')} · You: ${esc(r.progressText || '')}</p>
         ${extra.note ? `<p class="sandboxNote" data-sandbox-note>${esc(extra.note)}</p>` : ''}
         <div class="resultBtns">${(extra.buttons || []).map((b) => `<button type="button" class="bigBtn${b.alt ? ' alt' : ''}" data-action="${esc(b.action)}"${b.href ? ` data-href="${esc(b.href)}"` : ''}>${esc(b.label)}</button>`).join('')}<button type="button" class="bigBtn alt" data-action="retry">RETRY</button><button type="button" class="bigBtn alt" data-action="go" data-href="${esc(C.exitHref)}">DONE</button></div></div>`;
@@ -288,11 +291,16 @@ export function createPlayScreen(ctx, key) {
   function finish() {
     if (C) return finishContent();
     state = ctx.getState();
+    const csBefore = careerStatus(state);
     const out = E.finishSession(state, session);
     const r = out.result;
     ui.lastResult = r;
     ctx.commit(out.state);
     const after = ctx.getState();
+    const csAfter = careerStatus(after);
+    const levelUp = csAfter.rankIndex === csBefore.rankIndex && !csAfter.champion && csAfter.ball > csBefore.ball ? `<p class="levelUp" data-level-up="${csAfter.ball}">⬆ LEVEL UP · <b>${esc(csAfter.title)}</b></p>` : '';
+    const gateHit = !csBefore.gateLocked?.gate && csAfter.gateLocked && !csAfter.gateLocked.atGate ? `<p class="gateHit">🔒 ${esc(csAfter.gateLocked.gate.title)} — pass its foundations to keep climbing <button type="button" class="miniAct" data-action="go" data-href="#gate/${esc(csAfter.gateLocked.gate.id)}">OPEN</button></p>` : '';
+    const awardBlock = `${awardHTML(r.award)}${levelUp}${gateHit}`;
     const root = ctx.root;
     let body;
     if (session.bossId) {
@@ -301,6 +309,7 @@ export function createPlayScreen(ctx, key) {
         <div class="eyebrow">BOSS BATTLE · ${esc(boss.name)}</div>
         <h1>${r.passed ? 'BOSS DEFEATED' : 'BOSS WINS'}</h1>
         ${promoted ? `<p class="promo">PROMOTED TO <b>${esc(RANK_NAMES[after.rankIndex].toUpperCase())}</b></p>` : ''}
+        ${awardBlock}
         <div class="bossResults">${r.shots.map((s) => `<div class="brRow ${s.passed ? 'ok' : 'bad'}"><span>${esc(s.shot.title)}</span><small>${esc(s.shot.skill)}</small><b>${s.shot.mode === 'zone' ? `${s.stars}★` : `${s.made}/${s.shot.attempts}`}<small>need ${s.shot.need}${s.shot.mode === 'zone' ? '★' : ''}</small></b></div>`).join('')}</div>
         ${!r.passed ? `<div class="weakBox" data-weak="${esc(r.weakSkills.join('|'))}"><b>Skill areas that cost you:</b> ${r.weakSkills.map((w) => `<span class="chip">${esc(w)}</span>`).join(' ')}</div>` : ''}
         <div class="resultBtns"><button type="button" class="bigBtn" data-action="retry">${r.passed ? 'PLAY AGAIN' : 'RETRY BOSS'}</button><button type="button" class="bigBtn alt" data-action="go" data-href="#career">CAREER</button></div></div>`;
@@ -313,6 +322,7 @@ export function createPlayScreen(ctx, key) {
         ${r.stageStars ? `<div class="bigStars">${stars(r.stageStars)}</div>` : ''}
         <div class="resultStats"><div><b data-final-score="${r.score}">${r.score}</b><span>SCORE</span></div>${r.mode === 'zone' && r.requirePocket ? `<div><b>${r.pockets}/${r.attemptsTotal}</b><span>POCKETED</span></div><div><b>${r.stars}★</b><span>POSITION</span></div>` : ''}${r.mode === 'train' ? `<div><b>×${r.bestMultiplier}</b><span>BEST MULT</span></div><div><b>${r.perfectRuns}</b><span>PERFECT</span></div>` : ''}${r.mode === 'ladder' ? `<div><b>${r.bestRung}/${r.rungs.length}</b><span>RUNGS</span></div>` : ''}${r.mode === 'sniper' ? `<div><b>${r.bestStreak}</b><span>BEST STREAK</span></div>` : ''}</div>
         ${r.newPB ? '<p class="pb">★ NEW PERSONAL BEST</p>' : ''}
+        ${awardBlock}
         ${r.mode === 'calibration' ? calibrationSummary(after.speedCal) : ''}
         ${!session.endless ? `<p class="muted">Needed: ${esc(r.needText)} · You: ${esc(r.progressText)}</p>` : ''}
         ${unlocked}${gamesU}

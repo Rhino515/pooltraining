@@ -321,7 +321,7 @@ function packListHTML(r) {
     <div class="packBar"><i style="width:${pct}%"></i></div>
     <ol class="stageList">${d.stages.map((s, i) => {
       const st = states[i];
-      const playable = r.sandbox || st !== 'locked';
+      const playable = r.sandbox || st !== 'locked' || devCheck();
       const best = prog?.stages?.[s.id]?.best;
       return `<li class="stRow ${st}" data-stage-state="${st}" data-stage="${esc(s.id)}"><button type="button" data-action="${playable ? 'go' : 'c-locked'}" data-href="#cplay/${esc(r.ref)}/${i}"><span class="stNum">${i + 1}.</span><span class="stTitle">${esc(s.title)}<small>${esc(STAGE_TYPE[s.stageType] || typeLabel(s.contentType))} · ${esc(s.contentType === 'game' ? TEMPLATE_NAMES[s.template] : typeLabel(s.contentType))}${best != null ? ` · best ${best}` : ''}</small></span><span class="stIcon" aria-label="${st}">${st === 'done' ? '✓' : st === 'open' ? '🔓' : '🔒'}</span></button></li>`;
     }).join('')}</ol>
@@ -805,6 +805,10 @@ function runnerFor(ctx, env, item, key) {
   return null;
 }
 
+/** DEV MODE (unlocked): pack stage locks are bypassed for testing — set by app.js */
+let devCheck = () => false;
+export function setDevCheck(fn) { if (typeof fn === 'function') devCheck = fn; }
+
 /** #cplay/<ref>[/<stageIdx>] — returns a screen, or { error, redirect } */
 export function createContentPlay(ctx, ref, stageArg) {
   const r = resolve(ref);
@@ -815,7 +819,7 @@ export function createContentPlay(ctx, ref, stageArg) {
   if (d.contentType === 'pack') {
     stageIdx = clamp(Math.floor(Number(stageArg) || 0), 0, d.stages.length - 1);
     item = d.stages[stageIdx];
-    if (!r.sandbox && S.packStageStates(d, S.progressFor(r.uid))[stageIdx] === 'locked') return { error: 'Locked — pass the previous stage first', redirect: `#cview/${r.uid}` };
+    if (!r.sandbox && !(typeof ctx.devUnlocked === 'function' && ctx.devUnlocked()) && S.packStageStates(d, S.progressFor(r.uid))[stageIdx] === 'locked') return { error: 'Locked — pass the previous stage first', redirect: `#cview/${r.uid}` };
   }
   const exitHref = `#cview/${ref}`;
   const env = {
@@ -839,7 +843,9 @@ export function createContentPlay(ctx, ref, stageArg) {
         if (stageIdx < d.stages.length - 1 && states[stageIdx + 1] !== 'locked') buttons.push({ label: 'NEXT STAGE ›', action: 'go', href: `#cplay/${r.uid}/${stageIdx + 1}` });
         buttons.push({ label: 'PACK PROGRESS', action: 'go', href: exitHref, alt: true });
       }
-      return { note: 'Saved to My Content — personal progress only (never Career).', buttons, newBest: out.newBest, best };
+      // v11: rank-eligible installed content earns XP / mastery through the app hook (never for previews / play-tests)
+      const award = typeof ctx.awardContent === 'function' ? ctx.awardContent({ uid: r.uid, doc: d, stage: stageIdx != null ? item : null, res }) : null;
+      return { note: award ? (award.rank || award.drill ? 'Saved to My Content · counts toward your ranks (rank-eligible content).' : 'Saved to My Content · Lifetime XP only.') : 'Saved to My Content — personal progress only (never Career).', buttons, newBest: out.newBest, best, award };
     }
   };
   const runner = runnerFor(ctx, env, item, stageIdx != null ? `st${stageIdx}` : 'root');

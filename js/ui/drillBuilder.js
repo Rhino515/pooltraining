@@ -313,19 +313,19 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
     return `<div class="dbMsgs${ui.showErrors && m.errors.length ? ' show' : ''}" id="dbMsgs">${m.errors.map((e) => `<p class="err">• ${esc(e)}</p>`).join('')}${m.warnings.map((w) => `<p class="warn">⚠ ${esc(w)}</p>`).join('')}</div>`;
   }
   function headHTML() {
-    return `<div class="playHead"><button type="button" class="phBack" data-action="db-exit" aria-label="Back">‹</button><div class="phTitle"><small>${cm ? 'MY CONTENT' : 'DRILLS'}</small><b>${cm ? `Edit · ${esc(cm.item.title || cm.doc.title)}` : editId ? 'Edit Drill' : 'Create Drill'}</b></div><div class="phStatus"><button type="button" class="hBtn act" data-action="db-preview">Preview</button></div></div>`;
+    return `<div class="playHead"><button type="button" class="phBack" data-action="db-exit" aria-label="Back">‹</button><div class="phTitle"><small>${cm ? esc(cm.label || 'MY CONTENT') : 'DRILLS'}</small><b>${cm ? `Edit · ${esc(cm.item.title || cm.doc.title)}` : editId ? 'Edit Drill' : 'Create Drill'}</b></div><div class="phStatus"><button type="button" class="hBtn act" data-action="db-preview">Preview</button></div></div>`;
   }
 
   // ------------------------------------------------------------------ render
   function render() {
     if (destroyed) return;
     build();
-    ctx.root.innerHTML = `<div class="playScreen builderScreen" data-builder="${cm ? 'content' : editId ? 'edit' : 'new'}" data-tool="${ui.tool}">
+    ctx.root.innerHTML = `<div class="playScreen builderScreen" data-builder="${cm ? (cm.onSave ? 'override' : 'content') : editId ? 'edit' : 'new'}" data-tool="${ui.tool}">
       ${headHTML()}
       <div class="playTable builderTable" id="dbTable">${tableSVG()}<div class="dragBubble" id="dragBubble"></div></div>
       <div id="dbSetup">${ui.preview.cueBallPosition ? setupLineHTML(ui.preview) : ''}</div>
       <div class="builderBody" id="dbPanel">${panelHTML()}</div>
-      <div class="resultBar n3 dbBar"><button type="button" class="rb alt" data-action="db-preview"><b>PREVIEW</b></button><button type="button" class="rb alt" data-action="db-export"><b>EXPORT</b><small>.pooliq</small></button><button type="button" class="rb s3" data-action="db-save"><b>${cm ? 'SAVE' : 'SAVE DRILL'}</b>${cm ? '<small>to My Content</small>' : ''}</button></div>
+      <div class="resultBar n3 dbBar"><button type="button" class="rb alt" data-action="db-preview"><b>PREVIEW</b></button><button type="button" class="rb alt" data-action="db-export"><b>EXPORT</b><small>.pooliq</small></button><button type="button" class="rb s3" data-action="db-save"><b>${cm ? 'SAVE' : 'SAVE DRILL'}</b>${cm ? `<small>${cm.onSave ? 'override' : 'to My Content'}</small>` : ''}</button></div>
     </div>`;
     bindTable();
     bindFields();
@@ -544,9 +544,10 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
       <p class="goal">${esc(ch.goal || '')}</p>${passText ? `<p class="muted small">Pass: ${esc(passText)} · Level ${ch.difficulty || b.difficulty}</p>` : ''}
       ${ch.whyExplanation ? `<h3>Why this shot?</h3>${whyHTML(ch)}` : ''}
       ${m.errors.length ? `<div class="dbMsgs show">${m.errors.map((e) => `<p class="err">• ${esc(e)}</p>`).join('')}</div>` : ''}
-      <button type="button" class="bigBtn" data-action="db-save">${cm ? 'SAVE TO MY CONTENT' : 'SAVE DRILL'}</button><button type="button" class="bigBtn alt" data-action="sheet-close">KEEP EDITING</button>`, { id: 'dbpreview' });
+      <button type="button" class="bigBtn" data-action="db-save">${cm ? (cm.onSave ? 'SAVE OVERRIDE' : 'SAVE TO MY CONTENT') : 'SAVE DRILL'}</button><button type="button" class="bigBtn alt" data-action="sheet-close">KEEP EDITING</button>`, { id: 'dbpreview' });
   }
   function exitHref() {
+    if (cm && cm.exitHref) return cm.exitHref;
     return cm ? (isRoot && (cm.doc.contentType === 'drill' || cm.doc.contentType === 'challenge') ? `#cview/${cm.uid}` : `#cedit/${cm.uid}`) : '#drills';
   }
   function showErrors() {
@@ -559,11 +560,12 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
   function saveContent() {
     build();
     if (ui.msgs.errors.length) return showErrors();
-    const out = S.updateItemDoc(cm.uid, contentDoc());
+    // DEV MODE override editing (js/dev/dev.js) saves to the local override layer instead of My Content
+    const out = cm.onSave ? cm.onSave(contentDoc()) : S.updateItemDoc(cm.uid, contentDoc());
     if (out.error) { toast(out.error); return; }
     ui.dirty = false;
     closeSheet();
-    toast(`Saved “${out.item.title}” to My Content`);
+    toast(cm.onSave ? `Saved override for “${out.title}” (DEV MODE)` : `Saved “${out.item.title}” to My Content`);
     ctx.go(exitHref());
   }
   /** EXPORT .pooliq — content mode exports the whole edited document; Create Drill exports this drill */

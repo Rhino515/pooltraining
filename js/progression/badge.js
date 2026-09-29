@@ -1,0 +1,55 @@
+/**
+ * Billiard-ball badges (SVG): the BALL is the level. Solids 1–8, stripes 9–15, standard colors shared with the
+ * table renderer (tableDiagram.js BALL_COLORS). Champion (MAX RANK) = gold-ringed cue ball with a crown.
+ */
+import { BALL_COLORS } from '../tableDiagram.js';
+
+let uid = 0;
+const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+/** ballSVG(7) → a real-looking 7-ball. opts: { size (px), cls, title } */
+export function ballSVG(n, opts = {}) {
+  const size = opts.size || 56;
+  const id = `bb${++uid}`;
+  const num = Math.max(1, Math.min(15, Math.round(Number(n) || 1)));
+  const col = BALL_COLORS[num] || '#94a3b8';
+  const stripe = num >= 9;
+  const body = stripe
+    ? `<circle cx="50" cy="50" r="46" fill="#f8fafc"/><path d="M8 32 H92 A46 46 0 0 1 92 68 H8 A46 46 0 0 1 8 32 Z" fill="${col}"/>`
+    : `<circle cx="50" cy="50" r="46" fill="${col}"/>`;
+  return `<svg class="ballBadge ${opts.cls || ''}" data-ball="${num}" viewBox="0 0 100 100" width="${size}" height="${size}" role="img" aria-label="${esc(opts.title || `${num}-ball`)}"><defs><radialGradient id="${id}s" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".35" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#000" stop-opacity=".45"/></radialGradient></defs>${body}<circle cx="50" cy="50" r="21" fill="#f8fafc"/><text x="50" y="${num >= 10 ? 58 : 59}" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-weight="900" font-size="${num >= 10 ? 23 : 26}" fill="#05111b">${num}</text><circle cx="50" cy="50" r="46" fill="url(#${id}s)"/><circle cx="50" cy="50" r="46" fill="none" stroke="#050b10" stroke-width="2"/></svg>`;
+}
+/** MAX RANK badge (Champion): cue ball, gold ring, crown */
+export function championSVG(opts = {}) {
+  const size = opts.size || 56;
+  const id = `bc${++uid}`;
+  return `<svg class="ballBadge champ ${opts.cls || ''}" data-ball="max" viewBox="0 0 100 100" width="${size}" height="${size}" role="img" aria-label="${esc(opts.title || 'Max rank')}"><defs><radialGradient id="${id}s" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#fff" stop-opacity=".6"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></radialGradient></defs><circle cx="50" cy="50" r="47" fill="none" stroke="#ffc75b" stroke-width="5"/><circle cx="50" cy="50" r="41" fill="#f5f7fa"/><path d="M30 60 L33 38 L42 49 L50 33 L58 49 L67 38 L70 60 Z" fill="#ffc75b" stroke="#8a6a12" stroke-width="2" stroke-linejoin="round"/><rect x="30" y="61" width="40" height="7" rx="2" fill="#ffc75b" stroke="#8a6a12" stroke-width="2"/><circle cx="50" cy="50" r="41" fill="url(#${id}s)"/></svg>`;
+}
+/** Rank badge for a Career level: ball n (or the Champion badge) */
+export function rankBadgeSVG(status, opts = {}) {
+  return status.champion ? championSVG(opts) : ballSVG(status.ball, { title: status.title, ...opts });
+}
+/** Drill Rank badge: a chalk cube with the drill rank number (visually distinct from the Career ball) */
+export function drillBadgeSVG(number, opts = {}) {
+  const size = opts.size || 56;
+  const max = opts.max;
+  return `<svg class="drillBadge ${opts.cls || ''}" data-drillrank="${number}" viewBox="0 0 100 100" width="${size}" height="${size}" role="img" aria-label="${esc(opts.title || `Drill rank ${number}`)}"><path d="M50 6 L90 26 L90 74 L50 94 L10 74 L10 26 Z" fill="${max ? '#3b2f0b' : '#0b2a3d'}" stroke="${max ? '#ffc75b' : '#46e7a0'}" stroke-width="4"/><path d="M50 6 L90 26 L50 46 L10 26 Z" fill="${max ? '#6b5418' : '#12506e'}" opacity=".9"/><text x="50" y="76" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-weight="900" font-size="34" fill="${max ? '#ffc75b' : '#46e7a0'}">${esc(number)}</text></svg>`;
+}
+/** Default avatar: a ball with the player's initials; color from the name */
+export function initialsAvatarSVG(name = '', opts = {}) {
+  const size = opts.size || 56;
+  const words = String(name || '?').trim().split(/\s+/).filter(Boolean);
+  const ini = (words.length > 1 ? words[0][0] + words[words.length - 1][0] : (words[0] || '?').slice(0, 2)).toUpperCase();
+  let h = 0;
+  for (const c of String(name)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const n = (h % 15) + 1;
+  const col = BALL_COLORS[n === 8 ? 2 : n];
+  const stripe = n >= 9;
+  const body = stripe ? `<circle cx="50" cy="50" r="46" fill="#f8fafc"/><path d="M8 32 H92 A46 46 0 0 1 92 68 H8 A46 46 0 0 1 8 32 Z" fill="${col}"/>` : `<circle cx="50" cy="50" r="46" fill="${col}"/>`;
+  return `<svg class="avatarSvg" viewBox="0 0 100 100" width="${size}" height="${size}" role="img" aria-label="${esc(name || 'Player')}">${body}<circle cx="50" cy="50" r="27" fill="#f8fafc"/><text x="50" y="59" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-weight="900" font-size="${ini.length > 1 ? 24 : 28}" fill="#05111b">${esc(ini)}</text><circle cx="50" cy="50" r="46" fill="none" stroke="#050b10" stroke-width="2"/></svg>`;
+}
+/** Avatar: photo data URL (validated) or initials ball */
+export function avatarHTML(p = {}, size = 56, cls = '') {
+  const src = typeof p.avatar === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(p.avatar) ? p.avatar : null;
+  return `<span class="avatar ${cls}" style="width:${size}px;height:${size}px" data-avatar="${src ? 'photo' : 'initials'}">${src ? `<img src="${src}" alt="${esc(p.name || p.displayName || 'Player')}" width="${size}" height="${size}"/>` : initialsAvatarSVG(p.name || p.displayName || '', { size })}</span>`;
+}

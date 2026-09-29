@@ -16,6 +16,7 @@ import pattern from './data/patternPuzzle.js';
 import sniper from './data/pocketSniper.js';
 import rail from './data/railRunner.js';
 import bosses from './data/bosses.js';
+import { getOverride, applyOverride, isEditableSpec, stageOverrideId } from '../dev/overrides.js';
 
 export const GHOST_GAME = {
   id: 'ghost',
@@ -35,6 +36,11 @@ export const GAME_BY_ID = Object.fromEntries(GAMES.map((g) => [g.id, g]));
 export const BOSSES = bosses.list;
 
 const built = {};
+/** Drop built stages (after a DEV MODE override is saved or reset) */
+export function clearStageCache(gameId = null) {
+  if (gameId) delete built[gameId];
+  else for (const k of Object.keys(built)) delete built[k];
+}
 
 export function getGame(id) {
   return GAME_BY_ID[id] || null;
@@ -78,6 +84,9 @@ export function getStages(gameId) {
       ch = buildChallenge(spec, { ...def, game: def.id, kind: spec.kind || def.kind });
       ch.level = i + 1;
       ch.game = def.id;
+      // DEV MODE local override layer (never mutates the source definitions)
+      const ov = isEditableSpec(spec, spec.kind || def.kind) ? getOverride(stageOverrideId(def.id, spec.id)) : null;
+      if (ov) ch = applyOverride(ch, ov);
     }
     ch.prerequisites = i > 0 ? [`${def.id}:${def.stages[i - 1].id}`] : [];
     ch.unlocks = i < def.stages.length - 1 ? [`${def.id}:${def.stages[i + 1].id}`] : def.endless ? [`${def.id}:endless`] : [];

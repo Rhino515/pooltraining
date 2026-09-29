@@ -240,7 +240,14 @@ files['demo-diamond-challenge.pooliq'] = {
       skill: 'Position Play',
       attribution: { author: 'Your name here', sourceName: 'Where the idea came from (optional)', sourceURL: 'https://example.com/', notes: 'Attribution is optional. Leave author out when unknown — never guess.' },
       careerEligible: false,
-      metadata: { tags: ['template', 'demo'], created: '2026-09-25', updated: '2026-09-25', language: 'en', demo: true, generator: 'hand-written' }
+      rankXpEligible: false,
+      baseXP: 60,
+      primarySkill: 'position',
+      secondarySkills: ['draw', 'speed'],
+      skills: ['position', 'draw', 'speed'],
+      skillWeights: { position: 1, draw: 0.6, speed: 0.4 },
+      mastery: { strong: 0.8, mastered: 0.95 },
+      metadata: { tags: ['template', 'demo'], created: '2026-09-25', updated: '2026-09-25', language: 'en', demo: true, generator: 'hand-written', official: false }
     }),
     shot: {
       ...shot,

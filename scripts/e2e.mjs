@@ -368,6 +368,11 @@ await passFirst('sniper', 2);
 await passFirst('speed', 2, '#career');
 const met1 = (await page.$$('[data-met="1"]')).length;
 check(met1 > met0, `career checklist ticks from results (${met0} → ${met1})`);
+// v11: the boss is the Promotion Test — locked until Rank XP is full and the Rookie Skill Gate is cleared
+check(await exists('.promoCard[data-promo="locked"]') && !(await exists('[data-href="#boss/boss-1"][data-action="go"].miniBtn')), 'v11: Promotion Test locked before Rank XP + Skill Gate');
+await inject(`s.prog = s.prog || {}; s.prog.rankXpBy = { ...(s.prog.rankXpBy || {}), 0: 1000 }; s.prog.gatesCleared = { ...(s.prog.gatesCleared || {}), 'g-rookie': Date.now() }; return s;`, '#career');
+check(await exists('.promoCard[data-promo="unlocked"]'), 'v11: Promotion Test unlocks when every promotion requirement is met');
+await shot('v11-promotion-unlocked');
 check(await exists('[data-href="#boss/boss-1"]'), 'boss unlocked once other requirements are met');
 await go('#home');
 check(/Boss Battle unlocked/i.test(await text('#view')), 'home next-up points at the boss');
@@ -1555,6 +1560,227 @@ await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile
   if (errors.length > errBefore) console.log(errors.slice(errBefore).join('\n'));
 }
 
+// ------------------------------------------------------------------------------------------ v11: progression, profile, friends, DEV MODE
+{
+  const errBefore = errors.length;
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const shotV = async (name, full = true) => { if (SHOTS) { await sleep(200); await page.screenshot({ path: path.join(SHOTS, `${name}.png`), fullPage: full }); } };
+  const val = async (sel, v) => { await page.waitForSelector(sel, { timeout: 4000 }); await page.$eval(sel, (el, x) => { el.value = x; el.dispatchEvent(new Event('input', { bubbles: true })); }, v); };
+  const P = (fn, ...a) => page.evaluate(fn, ...a);
+
+  // Career header / Promotion / Skill Gate / Drill Rank / skills
+  await go('#career');
+  check(await exists('.careerHead[data-ball] .ballBadge'), 'v11 career: ball badge header');
+  check(/·\s*\d+-Ball/.test(await text('[data-rank-title]')), `v11 career: rank title shows the ball level (${await text('[data-rank-title]')})`);
+  check(await exists('[data-tier-caps] .tcRow[data-tier="beginner"]'), 'v11 career: tier caps shown');
+  check(await exists('.promoCard[data-promo]'), 'v11 career: Promotion Test card');
+  await shotV('v11-01-career');
+  await go('#promo');
+  check((await page.$$('.checkRow')).length > 3, 'v11 promo: full checklist with ✅/❌ rows');
+  await shotV('v11-02-promotion-locked');
+  await go('#gate/g-club');
+  check(await exists('[data-gate-page="g-club"] .checkRow'), 'v11 gate: Skill Gate screen lists foundations');
+  await shotV('v11-03-skill-gate');
+  await go('#skills');
+  check((await page.$$('.skillRow[data-skill]')).length === 12, 'v11 skills: 12-skill breakdown');
+  await shotV('v11-04-skill-breakdown');
+  await go('#skill/draw');
+  check(await exists('[data-skill-page="draw"]'), 'v11 skill detail page');
+  await go('#training');
+  check(await exists('.recCard .bigBtn[data-href]'), 'v11 recommended training has GO buttons into real content');
+  await shotV('v11-05-recommended');
+  await go('#drills');
+  check(await exists('.drillRankCard[data-drill-rank]'), 'v11 drills: Drill Rank card at the top of the Drills tab');
+  await go('#drillrank');
+  check((await page.$$('.drRow')).length === 8, 'v11 drill rank page lists 8 ranks');
+  await shotV('v11-06-drill-rank');
+  const progA = await P(() => JSON.parse(localStorage.getItem('poolIQStateV4')).prog);
+  check(progA && progA.v >= 1 && progA.lifetimeXp > 0, `v11: progression state saved (lifetime ${progA && progA.lifetimeXp})`);
+
+  // Result screen XP line
+  await go('#play/landing/lz-1');
+  await recordLast(12);
+  check(await exists('.resultPanel [data-award]'), 'v11 result screen shows +XP line');
+  await shotV('v11-07-result-xp', false);
+
+  // Local player profile: name + photo (file input with capture), shown on Profile
+  await go('#me');
+  check(await exists('input[type=file][data-avatar-input="me"][capture]'), 'profile: TAKE PHOTO input uses capture');
+  await val('#meName', 'Andrew');
+  await tap('[data-action="me-save"]');
+  const photo = '/tmp/pooliq-e2e-photo.png';
+  await page.screenshot({ path: photo, clip: { x: 0, y: 0, width: 390, height: 300 } });
+  const inp = await page.$('input[type=file][data-avatar-input="me"]:not([capture])');
+  await inp.uploadFile(photo);
+  await page.waitForFunction(() => { const p = JSON.parse(localStorage.getItem('poolIQProfileV1') || '{}'); return typeof p.avatar === 'string'; }, { timeout: 6000 }).catch(() => {});
+  const prof = await P(() => JSON.parse(localStorage.getItem('poolIQProfileV1') || '{}'));
+  check(prof.displayName === 'Andrew' && /^[0-9a-f-]{36}$/.test(prof.id) && prof.updatedAt > 0, 'profile: name saved with a stable UUID + updatedAt');
+  check(typeof prof.avatar === 'string' && /^data:image\/(webp|jpeg);base64,/.test(prof.avatar) && prof.avatar.length < 90 * 1024, `profile: photo stored as a small data URL (${prof.avatar ? Math.round(prof.avatar.length / 1024) : 0} KB)`);
+  const dim = await P((src) => new Promise((r) => { const i = new Image(); i.onload = () => r([i.naturalWidth, i.naturalHeight]); i.onerror = () => r([0, 0]); i.src = src; }), prof.avatar || '');
+  check(dim[0] === 256 && dim[1] === 256, `profile: photo cropped square + downscaled to 256px (${dim.join('×')})`);
+  await go('#profile');
+  check(await exists('.profileHead [data-avatar="photo"] img') && /Andrew/.test(await text('[data-player-name]')), 'profile header shows photo + name');
+  check(await exists('.profileHead .ballBadge') && await exists('.profileHead .drillBadge'), 'profile header shows Career ball badge + Drill Rank');
+  await shotV('v11-08-profile');
+  await go('#me/stats');
+  const pub = JSON.parse(await text('[data-public-stats] .jsonBox'));
+  check(pub.format === 'pool-iq-public-stats' && pub.profileId === prof.id && pub.career && pub.drillRank && pub.skills, 'profile: exportable public stats summary');
+  const bk = await P(() => window.PoolIQ.backupPayload().obj);
+  check(!!bk.keys?.poolIQProfileV1, 'profile key is included in backups');
+
+  // Friends / PvP
+  const lifeBefore = (await getState()).prog.lifetimeXp;
+  await go('#friends');
+  for (const n of ['Mike', 'Sam', 'Jess']) {
+    await tap('[data-action="fr-add"]');
+    await val('#frName', n);
+    await tap('[data-action="fr-save"]');
+    await sleep(150);
+  }
+  check((await page.$$('.playerRow')).length === 4, 'friends: me + 3 players listed');
+  await shotV('v11-09-friends');
+  const mike = await P(() => JSON.parse(localStorage.getItem('poolIQFriendsV1')).players.find((p) => p.name === 'Mike').id);
+  const meP = await P(() => JSON.parse(localStorage.getItem('poolIQFriendsV1')).players.find((p) => p.isMe).id);
+  check(meP === prof.id, 'friends: the phone owner player uses the profile id');
+  await go(`#friend/${mike}`);
+  await tap('[data-action="fr-match-vs"]');
+  await tap('[data-action="fr-race"][data-v="2"]');
+  await tap('[data-action="fr-start"]');
+  await tap(`[data-action="fr-rack"][data-id="${meP}"]`);
+  await tap(`[data-action="fr-rack"][data-id="${mike}"]`);
+  check(/HILL-HILL/.test(await text('#view')), 'friends: live match shows hill-hill');
+  await tap(`[data-action="fr-rack"][data-id="${meP}"]`);
+  await shotV('v11-10-live-match', false);
+  await tap('[data-action="fr-save-match"]');
+  await sleep(200);
+  check((await text('[data-h2h-a]')) === '1' && (await text('[data-h2h-b]')) === '0', 'friends: head-to-head updates after a match');
+  await shotV('v11-11-h2h');
+  // group session
+  await go('#friends');
+  await tap('[data-action="fr-session-new"]');
+  await tap('#sheet [data-action="fr-race"][data-v="3"]');
+  await tap('[data-action="fr-session-start"]');
+  await sleep(200);
+  check(await exists('[data-session-table]') && await exists('[data-next-pair]'), 'friends: group session with table + next pairing');
+  await tap('[data-action="fr-session-quick"]');
+  await val('#qsA', '3'); await val('#qsB', '1');
+  await tap('[data-action="fr-quick-save"]');
+  await sleep(200);
+  check(/1–0/.test(await text('[data-session-table]')), 'friends: session table counts the result');
+  await shotV('v11-12-group-session');
+  // single elimination (4 players)
+  await go('#tnew');
+  await tap('[data-action="fr-format"][data-v="single"]');
+  await tap('[data-action="fr-race"][data-v="3"]');
+  await tap('[data-action="fr-t-create"]');
+  await sleep(200);
+  check(await exists('[data-bracket] .tMatch'), 'tournament: bracket rendered');
+  for (let k = 0; k < 3; k++) {
+    const b = await page.$('[data-action="fr-t-score"]');
+    if (!b) break;
+    await P(() => document.querySelector('[data-action="fr-t-score"]').click()); await sleep(200);
+    await val('#qsA', '3'); await val('#qsB', String(k));
+    await tap('[data-action="fr-quick-save"]');
+    await sleep(250);
+  }
+  check(await exists('[data-champion]'), 'tournament: single elimination crowns a champion');
+  await shotV('v11-13-bracket');
+  // round robin (3 players → BYE rotation)
+  await go('#tnew');
+  await tap('[data-action="fr-format"][data-v="roundrobin"]');
+  await P(() => { document.querySelectorAll('#pickMany .pickP.active')[0]?.click(); });
+  await tap('[data-action="fr-t-create"]');
+  await sleep(200);
+  let rrN = 0;
+  for (let k = 0; k < 6; k++) {
+    const b = await page.$('[data-action="fr-t-score"]');
+    if (!b) break;
+    await P(() => document.querySelector('[data-action="fr-t-score"]').click()); await sleep(200);
+    await val('#qsA', '3'); await val('#qsB', '2');
+    await tap('[data-action="fr-quick-save"]');
+    await sleep(250); rrN++;
+  }
+  check(rrN === 3 && await exists('[data-standings] .stRowT[data-place="1"]') && await exists('[data-champion]'), `tournament: round robin standings + winner (${rrN} matches)`);
+  await shotV('v11-14-round-robin');
+  const lifeAfter = (await getState()).prog.lifetimeXp;
+  check(lifeAfter === lifeBefore, 'PvP never changes training XP / ranks');
+  const fr = await P(() => JSON.parse(localStorage.getItem('poolIQFriendsV1')));
+  check(fr.matches.length >= 8 && fr.matches.filter((m) => m.tournamentId).length >= 6, `friends: tournament results are normal match records (${fr.matches.length})`);
+
+  // DEV MODE
+  await go('#settings');
+  check(await exists('[data-card="dev"]'), 'settings shows DEV MODE entry');
+  await go('#dev');
+  check(await exists('[data-dev-state="setup"]'), 'dev: first use asks for a passcode');
+  check(/not server security/i.test(await text('#view')), 'dev: honest "convenience lock" notice');
+  await val('#devPass1', 'cue1234'); await val('#devPass2', 'cue1234');
+  await tap('[data-action="dev-set"]');
+  await page.waitForSelector('[data-dev-state="unlocked"]', { timeout: 5000 }).catch(() => {});
+  const devRec = await P(() => JSON.parse(localStorage.getItem('poolIQDevV1') || '{}'));
+  check(/^[0-9a-f]{64}$/.test(devRec.hash || '') && devRec.salt && !JSON.stringify(devRec).includes('cue1234'), 'dev: only a salted SHA-256 hash is stored');
+  await tap('[data-action="dev-lock"]');
+  check(await exists('[data-dev-state="locked"]'), 'dev: LOCK locks');
+  await val('#devPass', 'wrong-code');
+  await tap('[data-action="dev-unlock"]');
+  await sleep(300);
+  check(await exists('[data-dev-state="locked"]'), 'dev: wrong passcode rejected');
+  await val('#devPass', 'cue1234');
+  await tap('[data-action="dev-unlock"]');
+  await page.waitForSelector('[data-dev-state="unlocked"]', { timeout: 5000 }).catch(() => {});
+  check(await exists('[data-dev-state="unlocked"]'), 'dev: correct passcode unlocks');
+  await shotV('v11-15-dev-mode');
+  // override a built-in stage with the builder, then reset
+  await go('#devedit/landing/lz-1');
+  check(await exists('[data-builder="override"]'), 'dev: built-in stage opens in the drill builder (override mode)');
+  await tap('.dbBar [data-action="db-save"]');
+  await sleep(300);
+  const ov = await P(() => JSON.parse(localStorage.getItem('poolIQDevOverridesV1') || '{}'));
+  check(!!ov.items?.['stage:landing:lz-1'], 'dev: override saved in its own key');
+  check(await exists('[data-dev-stage="lz-1"][data-overridden="1"]'), 'dev: stage marked OVERRIDDEN');
+  const exported = await P(async () => (await import('./js/dev/dev.js')).exportOverridesPack());
+  check(exported.count === 1 && exported.doc.contentType === 'pack', 'dev: overrides export as a .pooliq pack');
+  await tap('[data-action="dev-reset"][data-id="stage:landing:lz-1"]');
+  check(await exists('[data-dev-stage="lz-1"][data-overridden="0"]'), 'dev: RESET TO ORIGINAL removes the override');
+  const reimp = await P(async (doc) => { const D = await import('./js/dev/dev.js'); const r = D.importOverridesPack(JSON.stringify(doc)); (await import('./js/games/registry.js')).clearStageCache(); return r.applied; }, exported.doc);
+  check(reimp === 1, 'dev: overrides pack re-imports');
+  await P(async () => { (await import('./js/dev/overrides.js')).removeOverride('stage:landing:lz-1'); (await import('./js/games/registry.js')).clearStageCache(); });
+  // seed a test state (Champion) and restore the real progress
+  const realRank = (await getState()).rankIndex;
+  await go('#dev');
+  await tap('[data-action="dev-seed-rank"][data-v="9"]');
+  await tap('[data-action="dev-seed"][data-what="rank"]');
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem('poolIQStateV4')).rankIndex === 9, { timeout: 6000 }).catch(() => {});
+  const seeded = await getState();
+  check(seeded.rankIndex === 9 && seeded.devSeed, 'dev: seeded Champion test state (flagged DEV)');
+  await go('#champion');
+  check(await exists('[data-champion-stats]') && /MAX RANK/.test(await text('#view')), 'Champion (max rank) stats screen');
+  await shotV('v11-16-champion');
+  await go('#career');
+  await shotV('v11-17-career-champion');
+  await go('#dev');
+  await tap('[data-action="dev-restore-real"]');
+  await page.waitForFunction(() => document.documentElement.dataset.ready === '1' && !JSON.parse(localStorage.getItem('poolIQStateV4')).devSeed, { timeout: 10000 }).catch(() => {});
+  await sleep(400);
+  const restored = await getState();
+  check(restored.rankIndex === realRank && !restored.devSeed, `dev: RESTORE MY REAL PROGRESS brings the real rank back (${restored.rankIndex})`);
+  check(!!(await P(() => localStorage.getItem('poolIQDevV1'))), 'dev: passcode survives the restore');
+
+  // new screens: no sideways scroll at 4 phone sizes
+  for (const [w, h] of [[390, 844], [375, 667], [412, 915], [360, 800]]) {
+    await page.setViewport({ width: w, height: h, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+    const bad = [];
+    for (const r of ['#home', '#career', '#promo', '#gate/g-club', '#skills', '#training', '#champion', '#drillrank', '#drills', '#profile', '#me', '#me/stats', '#friends', '#fmatch/new', '#tnew', `#friend/${mike}`, `#h2h/${meP}/${mike}`, '#dev', '#settings']) {
+      await go(r);
+      const o = await P(() => document.documentElement.scrollWidth - innerWidth);
+      if (o > 1) bad.push(`${r}:${o}`);
+    }
+    check(!bad.length, `v11 screens ${w}×${h}: no sideways scroll ${bad.join(' ')}`);
+  }
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+  check(errors.length === errBefore, `v11 screens: zero console errors (${errors.length - errBefore})`);
+  if (errors.length > errBefore) console.log(errors.slice(errBefore).join('\n'));
+}
+
 // ------------------------------------------------------------------------------------------ service worker + offline
 const swOk = await page.evaluate(async () => {
   if (!('serviceWorker' in navigator)) return false;
@@ -1563,7 +1789,7 @@ const swOk = await page.evaluate(async () => {
 });
 check(swOk, 'service worker registered and active');
 const cacheName = await page.evaluate(async () => (await caches.keys()).join(','));
-check(/pool-iq-v10/.test(cacheName) && !/pool-iq-v9/.test(cacheName), `cache bumped to v10 (${cacheName})`);
+check(/pool-iq-v11/.test(cacheName) && !/pool-iq-v10/.test(cacheName), `cache bumped to v11 (${cacheName})`);
 await page.setOfflineMode(true);
 await page.goto(BASE + 'index.html#arcade', { waitUntil: 'domcontentloaded' });
 await sleep(800);

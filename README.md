@@ -9,7 +9,25 @@ Pool IQ is a mobile-first PWA for practising billiards on a real table. You play
 - A teaching layer on every shot: table diagram, Shot Recipe gauges (Aim View, cue-ball tip, SPEED dial), and a Why This Shot? sheet
 - A faint dashed diamond grid on every table diagram, plus a Setup line giving each ball's position in diamonds
 
+- **v11:** Career ball levels ("Shooter · 7-Ball"), Rank and Lifetime XP, 12 skill levels, Skill Gates, Promotion Tests, a separate Drill Rank, Friends / PvP / tournaments, a local player profile, and a passcode-locked DEV MODE
+
 All content is original. Pass/fail is only ever computed from the results you record. The app has no self-report "I passed" buttons.
+
+## What's new in v11 (changelog)
+
+- **Career ball levels.** Each Career rank (Rookie … Pro) has 10–15 ball levels filled by **Rank XP**, for example *Shooter · 7-Ball*. **Champion** is the max rank: Rank XP stops, Lifetime XP continues, and it has its own stats screen. The rank names, requirements and Boss Battles are unchanged. See [docs/RANKING_AND_XP.md](docs/RANKING_AND_XP.md).
+- **XP formula.** XP depends on difficulty tier and performance, with bonuses for first clears, PBs and perfect sessions. Repeating mastered items or grinding the same item on one day earns less, and each tier has a Rank XP cap (shown as MAXED). **Lifetime XP** is permanent.
+- **Mastery per item:** PASSED ⭐ / STRONG ⭐⭐ / MASTERED ⭐⭐⭐, shown on Arcade stages, drills and content.
+- **12 skill levels** (Straight Cueing … Pattern Play), each shown as "<rank> <ball>". One session trains several skills by weight. Skill Breakdown and Recommended Training screens are included.
+- **Skill Gates** hold your ball inside a rank until foundations are passed. **Promotion Tests** (the rank's Boss Battle) unlock only with full Rank XP, cleared gates, skill floors, mastery counts and the existing Career requirements. See [docs/SKILL_GATES_AND_PROMOTIONS.md](docs/SKILL_GATES_AND_PROMOTIONS.md).
+- **Drill Rank** (Chalk Rookie → Drill Legend) is separate from Career. It is earned only from built-in drills, Create Drill drills and rank-eligible installed `.pooliq` content. It never comes from Play Test, Arcade, Ghost or PvP.
+- **Friends / PvP:** players with photos, live rack-by-rack scoring (hill-hill, undo, advanced stats), quick scores, head-to-head, group sessions, single-elimination brackets (seeding, byes) and round robins (documented tiebreakers). PvP never changes training progress. See [docs/FRIENDS_AND_TOURNAMENTS.md](docs/FRIENDS_AND_TOURNAMENTS.md).
+- **Local player profile** (`#me`): display name, photo (take or choose, cropped to a 256 px square), Career ball badge plus Drill Rank on the Profile header, and a stats page with an exportable **public stats** summary. It is sync-ready (stable UUID, `updatedAt`), but no online features are built.
+- **DEV MODE** (Settings → DEV MODE, passcode stored as a salted SHA-256 hash) has built-in stage overrides, an overrides pack export, unrestricted My Content, mark official/eligible, seeded test progression with restore, cache tools and a storage key viewer. Every action snapshots first. See [docs/DEV_MODE.md](docs/DEV_MODE.md).
+- **`.pooliq` optional fields:** `rankXpEligible`, `baseXP`, `primarySkill`, `secondarySkills`, `skills`, `skillWeights`, `mastery`, `metadata.official`, and tier words for `difficulty`. v10 files are unchanged and still valid.
+- **Migration:** runs automatically and once, with a snapshot first. It replays saved history into XP and mastery and **never demotes**.
+- **Storage:** new keys `poolIQFriendsV1`, `poolIQProfileV1`, `poolIQDevV1` and `poolIQDevOverridesV1` are all mirrored, snapshotted and backed up. Service worker cache `pool-iq-v11`.
+
 
 ## Run locally
 
@@ -25,7 +43,7 @@ To deploy, copy the folder to any static host (for example GitHub Pages). All as
 
 | Area | Files |
 |---|---|
-| Hash router / boot | `js/app.js` (`#home #career #drills #analyze #arcade #profile #settings #ghost #game/<id> #play/<game>/<stage> #boss/<id> #bossplay/<id> #sim #sim/s=<code> #sim/target #drillnew #drilledit/<id> #content #cimport #cview/<ref> #cplay/<ref>[/<stage>] #cedit/<uid>[/<loc>]`) |
+| Hash router / boot | `js/app.js` (`#home #career #drills #analyze #arcade #profile #settings #ghost #gate #promo #skills #skill/<id> #training #champion #drillrank #friends #friend/<id> #h2h/<a>/<b> #fmatch #fsession/<id> #tourney/<id> #tnew #me #me/stats #dev #devgame/<id> #devedit/<game>/<stage> #devkeys #game/<id> #play/<game>/<stage> #boss/<id> #bossplay/<id> #sim #sim/s=<code> #sim/target #drillnew #drilledit/<id> #content #cimport #cview/<ref> #cplay/<ref>[/<stage>] #cedit/<uid>[/<loc>]`) |
 | Challenge data model + geometry | `js/games/geometry.js`, `js/games/builders.js` (position, pot, lag, bank, kick, carom, safety, train) |
 | Game content | `js/games/data/*.js` (one file per game plus `bosses.js`), `js/games/registry.js` |
 | Engine (pure) | `js/games/engine.js`: sessions, scoring modes (zone, lives, kick, train, stars, binary, sniper, ladder, calibration, pattern), unlocks, PBs, bosses |
@@ -35,6 +53,10 @@ To deploy, copy the folder to any static host (for example GitHub Pages). All as
 | Career / skills | `js/career.js` (game levels, Ghost wins, Boss Battles), `js/skills.js` (ratings computed from results) |
 | Shot Simulator | `js/sim/physics.js` (deterministic ball physics), `js/sim/layouts.js` (racks, random layouts, snap, validation), `js/sim/solver.js` (throw-compensated aim, Find a Shot, shape zones, Target Game), `js/sim/share.js` (URL/JSON share format), `js/sim/library.js` (saved shots + settings), `js/ui/simulator.js` (screen) |
 | Create Drill | `js/customDrills.js` (builder model, validation, simulated route, challenge builder, storage, import/export), `js/ui/drillBuilder.js` (screen) |
+| Progression (v11) | `js/progression/config.js` (every number), `award.js` (session XP + mastery), `rank.js` (career / gates / promotion / Drill Rank / training / Champion), `skillLevels.js`, `catalog.js` (item descriptors), `sessions.js`, `migrate.js`, `badge.js` (ball / Drill Rank badges, avatars), `js/ui/progression.js` |
+| Friends / PvP (v11) | `js/friends/model.js` (players, matches, H2H, sessions), `js/friends/tournament.js` (brackets, round robin, standings), `js/ui/friends.js` |
+| Profile (v11) | `js/profile.js` (local profile, photo crop, public stats), `js/ui/me.js` |
+| DEV MODE (v11) | `js/dev/dev.js`, `js/dev/overrides.js`, `js/ui/dev.js` |
 | Storage | `js/storage.js`: `localStorage` key `poolIQStateV4`, migrated from V3/V2. Old keys are left intact. |
 | Data safety | `js/vault.js` + `js/install.js`: IndexedDB mirror of every key, reconcile on load, 3 rolling snapshots, JSON backup/restore, backup reminder, protected storage, Install App. |
 | .pooliq content (v10) | `js/content/schema.js` (strict validator + security), `js/content/convert.js` (shot ⇄ challenge ⇄ builder), `js/content/store.js` (My Content + personal progress), `js/content/templates.js` (game templates, rail answers), `js/ui/content.js` (My Content, import, preview, play test, runners), `js/ui/builderContent.js` (builder ⇄ .pooliq), `js/ui/share.js` (Web Share / download). Format: `POOLIQ_CONTENT_SCHEMA.md`; examples: `examples/*.pooliq` (regenerate with `node scripts/make-examples.mjs`). |
@@ -238,7 +260,14 @@ Before shipping new drills, run `node scripts/verify.mjs`. It applies the same g
 
 ## Career
 
-A rank's requirements are Arcade game levels, Ghost wins and that rank's Boss Battle; some higher ranks also require star totals or PBs. When every non-boss requirement is met, the boss unlocks. Beating the boss is the only way to promote, and XP never promotes by itself.
+A rank's requirements are Arcade game levels, Ghost wins and that rank's Boss Battle; some higher ranks also require star totals or PBs. From v11 the boss is the rank's **Promotion Test**. It unlocks when every non-boss requirement is met **and** the rank's Rank XP is full (top ball, Skill Gates cleared), skill floors are reached and enough items are STRONG/MASTERED. Beating the boss is the only way to promote, and XP never promotes by itself. Details: [docs/RANKING_AND_XP.md](docs/RANKING_AND_XP.md) and [docs/SKILL_GATES_AND_PROMOTIONS.md](docs/SKILL_GATES_AND_PROMOTIONS.md).
+
+## Local player profile (v11)
+
+- `#me` (Profile → EDIT, or Settings → Profile): set a display name and a photo. **TAKE PHOTO** opens the camera (`<input type="file" accept="image/*" capture="user">`) and **CHOOSE PHOTO** opens your library. The image is centre-cropped to a square and downscaled to 256×256 WebP (JPEG fallback) as a data URL of at most ~90 KB. Without a photo the avatar is a ball badge with your initials.
+- The Profile and Career headers show your photo, name, Career ball badge and Drill Rank badge. `#me/stats` shows your training stats plus the **public stats** object, which you can save as a file.
+- Stored in `poolIQProfileV1 = {schema, id (UUID), displayName, avatar, createdAt, updatedAt}`. It is mirrored, snapshotted and backed up. You are the "me" player in Friends, with the same id and photo.
+- **Sync-ready, not synced.** `publicStats()` (`js/profile.js`) returns `{format: 'pool-iq-public-stats', schema, profileId, displayName, generatedAt, profileUpdatedAt, career {rank, ball, title, champion, lifetimeXp}, drillRank, mastery, skills, ghost, devSeeded}`. That is a clean summary a future account service (Supabase/Firebase) could upload for accounts and leaderboards. It has no PvP data, and DEV-seeded states are flagged. No online features and no leaderboards exist in the app.
 
 Ranks earned before V4 are preserved through `rankFloor`. Saved results for drills that no longer exist are moved to `state.drillArchive` at startup and never read again.
 
@@ -293,7 +322,13 @@ It checks:
   - export/import/duplicate/delete
 - Ghost: order-rule text for 3- and 9-ball (setup, in-game, sheet); 8-Ball Ghost presets/custom count, scoring, undo, XP, general-vs-N-ball career credit, skills; Pro break flow + house rules (8 on the break wins, break scratch = ball in hand, no penalty) + undo; simulator layouts
 - data safety: every persisted key is mirrored (and every writer notifies the mirror); localStorage wiped / corrupted → restored from IndexedDB; single corrupt key repaired; newer-wins both ways; an empty/default state never overwrites a good copy (a deliberate reset may); snapshot rotation (3 kept, spaced out, none of empty data); backup export → import round trip restores every key identically (career, custom drills, sim shots, preset, draft) and snapshots what it replaces; old V3/V2 saves and older backup schemas migrate; invalid files rejected; reminder rules; Android manifest + icons
-- service worker precaches every module (v9)
+- service worker precaches every module (cache `pool-iq-v11`)
+- **v11 progression:** ball from Rank XP, gate hold/release, Rank XP never promotes, first clear / PB / perfect bonuses, mastered-repeat and same-day reductions, fail cap, participation, tier caps (MAXED), Create Drill tier limit, Champion (MAX RANK, Rank XP stops, Lifetime continues, stats), overflow carry, multi-skill XP and skill-level rise, "<rank> <ball>" labels, mastery thresholds, gate latching, promotion checklist, `.pooliq` progression metadata (tier words, weights, base XP, unknown-skill error, v10 files still valid), Play Test never awards
+- **Drill Rank:** 8 names, thresholds, XP alone is not enough, mastered-repeat anti-farming, Arcade/Ghost/PvP never count
+- **Migration:** runs once, idempotent, never demotes, Lifetime XP ≥ old XP, history replayed
+- **Friends / tournaments:** duplicates, live scoring, hill-hill, final-score rules, H2H, player stats, archive on remove, group session pairing, seed order, byes, auto-advance, champion, clear rules, round-robin schedule and tiebreakers
+- **Profile:** stable UUID, name cleaning, updatedAt, unsafe/oversized photo rejected, public stats shape
+- **DEV MODE:** salted hash only, lock / wrong / unlock / auto-lock / no change while locked, overrides apply / reset / export / re-import, editable-stage rules, mark official, seeded progression flags, stash + restore real progress with snapshot, vault keys and v10/v11 backups
 
 ### e2e (real Chrome, iPhone 390×844 / 375×667 and Android Chrome 412×915 / 360×800, touch)
 
@@ -341,7 +376,8 @@ It covers:
 - Ghost: order rule visible for 3-ball and 9-ball; 8-Ball Ghost custom count remembered after reload, scored and saved, undo; Pro break → ball in hand → run-out, SCRATCHED ON BREAK → ball in hand (no Ghost point) + undo, break log saved, no stale toast over the buttons; Set up in Shot Simulator; no scrolling at 390×844 and 375×667
 - data safety: play a rack → wipe localStorage → reload → everything restored from IndexedDB (also after corrupting the save); Settings shows protected storage / usage / safety copy / last backup; Back Up Now downloads `PoolIQ-backup-YYYY-MM-DD.json` with every key (and uses the share sheet when files can be shared; a cancelled share isn't counted); Restore from Backup shows the summary and restores exactly; invalid file rejected; Restore previous snapshot undoes a restore; RESET ALL PROGRESS is two-step + typed, takes a snapshot, isn't undone by the mirror, and can be undone from the snapshot; Home backup nudge after 7+ days, dismissible; Install: iPhone steps, Android `beforeinstallprompt` → INSTALL APP, hidden when standalone; Android 412×915 and 360×800 Settings + score screens without scrolling
 - My Content: entry point; accept list; bad, malicious (`<script>`, `onerror=`, `javascript:`, `__proto__`), schema 3.0, oversized and non-JSON files rejected with readable errors; preview (same renderer, recipe, SPEED, attempts, attribution); PLAY TEST isolation (every official key byte-for-byte unchanged); install + reload; conflict CANCEL / KEEP BOTH / REPLACE; installed play → personal progress only; builder edit (touch drag, SPEED, instructions, marker, inputs ≥ 16px); Web Share export + download fallback + lossless re-import; delete with confirm; pack locks + progress %; lesson solve → lock → reveal; gauntlet hearts / game over / PB persistence; diamond answer tap / 0.1 nudge / difference / tolerance; player-solution comparison; Advanced coaching on imported drills; legacy v9 drill export import; backup / mirror include content; every play screen fits without scrolling at 375×667, 412×915 and 360×800
-- service worker (cache v10) and offline reload
+- **v11:** Career ball badge, gate, Promotion Test locked → unlocked, Skill Breakdown, Recommended Training, Drill Rank, result-screen XP lines; profile name + photo upload (256×256) + public stats + backup key; Friends: players, live match to hill-hill, H2H, group session, single-elimination champion, round robin; PvP doesn't change XP; DEV MODE passcode / hash / lock / override save / export / reset / re-import / seed Champion / restore real; no sideways overflow at 4 phone sizes; zero console errors
+- service worker (cache v11) and offline reload
 
 ## Storage
 
@@ -349,6 +385,7 @@ It covers:
 - The in-progress session (`activeSession`) and Ghost match (`activeGhost`) are saved after every tap, so a reload resumes play.
 - Shot Simulator: `poolIQSimV1` (current table, saved shots, collections, settings, Target Game best). Create Drill: `poolIQCustomDrillsV1` (custom drills), `poolIQDrillWip` (unsaved builder work), `poolIQDrillDraft` (simulator → drill hand-off). These are new keys, so existing saves are untouched.
 - My Content (v10): `poolIQContentV1` (installed .pooliq documents) and `poolIQContentProgressV1` (personal bests, pack stage progress). These are new keys; nothing existing is migrated or rewritten.
+- v11: `poolIQStateV4.prog` (progression: Rank/Lifetime/Drill XP, item mastery, gates, events), `poolIQFriendsV1` (players, matches, sessions, tournaments), `poolIQProfileV1` (local profile), `poolIQDevV1` (DEV passcode hash + settings), `poolIQDevOverridesV1` (DEV stage overrides). All are new keys or additive fields.
 - Ghost setup: `poolIQGhostPreset`. Vault bookkeeping (save sequence, last backup, dismissed tips, protected-storage result): `poolIQMetaV1`.
 - IndexedDB (`poolIQ_idb` / `blobs`, helpers `idbPut`/`idbGet`/`idbDelete` in `js/storage.js`) holds the safety copy and snapshots — see Data safety below.
 
@@ -356,7 +393,7 @@ It covers:
 
 History must never be lost, on iPhone or Android.
 
-- **Every key is mirrored.** All ten data keys (`poolIQStateV4`, legacy `poolIQStateV3`/`V2`, `poolIQCustomDrillsV1`, `poolIQSimV1`, `poolIQGhostPreset`, `poolIQDrillWip`, `poolIQDrillDraft`, `poolIQContentV1`, `poolIQContentProgressV1`) are copied to IndexedDB (`mirror:current`) shortly after every save and when the app is hidden/closed. Each write bumps a save sequence + `savedAt` timestamp in `poolIQMetaV1`.
+- **Every key is mirrored.** All data keys (`poolIQStateV4`, legacy `poolIQStateV3`/`V2`, `poolIQCustomDrillsV1`, `poolIQSimV1`, `poolIQGhostPreset`, `poolIQDrillWip`, `poolIQDrillDraft`, `poolIQContentV1`, `poolIQContentProgressV1`, and in v11 `poolIQFriendsV1`, `poolIQProfileV1`, `poolIQDevV1`, `poolIQDevOverridesV1`) are copied to IndexedDB (`mirror:current`) shortly after every save and when the app is hidden/closed. Each write bumps a save sequence + `savedAt` timestamp in `poolIQMetaV1`.
 - **On load** the app picks the good copy before anything renders: missing or corrupt localStorage → restored from IndexedDB (and a corrupt single key is repaired); a missing IndexedDB copy is rebuilt from localStorage; otherwise the newer `savedAt` wins. A good copy is **never** replaced by an empty/default state — only a deliberate RESET or restore may do that.
 - **Snapshots:** the last 3 are kept in IndexedDB (`mirror:snapshots`): one automatically at most every 6 hours of use, plus one right before any reset or restore. Settings → **Restore previous snapshot** (with confirm; the replaced data becomes a snapshot too).
 - **Backup file:** Settings → **Back Up Now** makes one `PoolIQ-backup-YYYY-MM-DD.json` (`format: "pool-iq-backup"`, `schema`, `appVersion`, `exportedAt`, `summary`, `keys`). It uses the Web Share API with the file when the browser allows it (iPhone share sheet → Save to Files / iCloud Drive), otherwise a download (Android Chrome → Downloads, then share to Drive if you like). A **Download file instead** button appears when sharing is available.

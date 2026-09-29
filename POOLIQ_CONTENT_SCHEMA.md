@@ -25,14 +25,27 @@ This document is written so a person *or another AI* can produce valid files. Ex
 | `title` | **yes** | text ≤ 80 | |
 | `description` | no | text ≤ 2000 | |
 | `category` | no | text ≤ 40 | free text, e.g. `"Kicks"`, `"Demo"` |
-| `difficulty` | no | integer 1–10 | |
+| `difficulty` | no | integer 1–10, or a tier word (v11) | `"beginner"` → 2, `"intermediate"` → 4, `"advanced"` → 6, `"expert"` → 8, `"pro"` → 10 (stored as the number). 1–2 Beginner · 3–4 Intermediate · 5–6 Advanced · 7–8 Expert · 9–10 Pro |
 | `skill` | no | one of the skill names below | the main skill trained |
 | `attribution` | no | object | `author` (≤80), `sourceName` (≤120), `sourceURL` (http/https only, ≤500), `notes` (≤600). **Optional. Never claim an author you do not know — leave it out.** |
 | `careerEligible` | no | boolean | drills only — see §12 |
-| `metadata` | no | object | `tags` (≤12 strings ≤30), `created`, `updated` (text ≤40, e.g. `"2026-09-25"`), `language` (≤16), `demo` (bool — shows a DEMO badge), `generator` (≤80, e.g. `"ChatGPT"`) |
+| `rankXpEligible` | no | boolean | v11 — installed content earns Career Rank XP, mastery, skill levels and Drill Rank (see §12). Default: not eligible |
+| `baseXP` | no | integer 0–500 | v11 — XP for a full-performance session (default: by tier — 40 / 60 / 90 / 130 / 180) |
+| `primarySkill` | no | skill id or name | v11 — main skill trained (weight 1) |
+| `secondarySkills` | no | array ≤ 6 of skills | v11 — also trained (weight 0.5 each) |
+| `skills` | no | array ≤ 12 of skills | v11 — skills trained (weight 0.5 each unless `primarySkill`) |
+| `skillWeights` | no | object | v11 — exact weights 0–1, e.g. `{"draw": 1, "position": 0.5}`; overrides the three fields above |
+| `mastery` | no | object | v11 — `{"strong": 0.8, "mastered": 0.9}`: performance share (0.5–1, mastered ≥ strong) for STRONG ⭐⭐ / MASTERED ⭐⭐⭐ |
+| `metadata` | no | object | `tags` (≤12 strings ≤30), `created`, `updated` (text ≤40, e.g. `"2026-09-25"`), `language` (≤16), `demo` (bool — shows a DEMO badge), `generator` (≤80, e.g. `"ChatGPT"`), `official` (bool, v11 — set by DEV MODE) |
 
 Skill names (exact spelling): `Shot Making`, `Cue-Ball Control`, `Position Play`, `Speed Control`, `Banks`, `Kicks`,
 `Safeties`, `Pattern Play`.
+
+v11 skill ids (for `primarySkill` / `secondarySkills` / `skills` / `skillWeights`): `straight`, `shotMaking`, `stop`,
+`follow`, `draw`, `stun`, `speed`, `position`, `banks`, `kicks`, `safeties`, `pattern`. The display names (`"Draw"`,
+`"Straight Cueing"`, `"Shot Making"` …) and the legacy skill names above are accepted too. An unknown skill is an
+error. The v11 fields are allowed on drills, challenges, lessons, games and on each pack stage; all are optional and
+v10 files without them are unchanged.
 
 **Unknown fields are rejected** (with a "did you mean …?" hint) so typos are caught instead of silently ignored.
 
@@ -343,7 +356,11 @@ My Drills. Pool IQ **backup files** are rejected here (restore them from Setting
 - **Installed** content saves its own progress (plays, passed, personal bests, pack stage progress) in My Content only.
   It never changes Career rank.
 - `"careerEligible": true` (drills only) lets an installed drill also appear in the Drills library and count in the
-  normal training history / skill ratings like a Create Drill drill. It still never awards rank. Default: not eligible.
+  normal training history / skill ratings like a Create Drill drill. Default: not eligible.
+- **v11:** installed content marked `"rankXpEligible": true` (or a `careerEligible` drill) earns **Career Rank XP,
+  Lifetime XP, mastery stars, skill levels and Drill Rank** through the normal formula (tier caps, first clear, PB,
+  diminishing repeats — see `docs/RANKING_AND_XP.md`). It can never promote you by itself: promotion is still the
+  Boss Battle. Content that is not eligible keeps its own progress only. **Play Test / preview never earns anything.**
 - Everything installed is saved on the device, mirrored to the on-device safety copy and included in **Settings → Back
   Up** files.
 

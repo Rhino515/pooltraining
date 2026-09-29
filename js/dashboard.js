@@ -10,6 +10,12 @@ import * as E from './games/engine.js';
 import { renderStageTable } from './games/stageTable.js';
 import { esc, speedChip } from './games/recipe.js';
 import { stars } from './ui/sheet.js';
+import { careerHeaderHTML, tierCapsHTML, gateCardHTML, promotionCardHTML, drillRankCardHTML, skillBreakdownHTML, recommendedHTML, profileHeaderHTML, devSeedBannerHTML, starsHTML, masteryOf } from './ui/progression.js';
+import { careerStatus, promotionStatus } from './progression/rank.js';
+import { stageItem, drillItem } from './progression/catalog.js';
+import { RANK_LADDER } from './progression/config.js';
+import { getProfile } from './profile.js';
+import { loadFriends, activePlayers } from './friends/model.js';
 import { COACH_LEVELS, COACH_LABEL, coachingLevel } from './games/coaching.js';
 import { TABLE_SIZES, CLOTH_SPEEDS, CALIBRATION_SPEEDS, speedLabel, formatSpeed, personalFactor, clothNote } from './games/speed.js';
 
@@ -36,27 +42,34 @@ export function renderHome(state, extras = {}) {
   const pct = Math.round((info.progress || 0) * 100);
   const weak = weakestSkills(state, 3);
   const st = ghostStats(state);
-  return `
-    <div class="hero card">
-      <div>
-        <span class="eyebrow">PLAYER CAREER</span>
-        <h1>${esc((info.current || 'Rookie').toUpperCase())}</h1>
-        <p>Turn real-table practice into a progression game.</p>
-        <div class="progress"><i style="width:${pct}%"></i></div>
-        <div class="row"><b>${pct}%</b><span>${info.next ? 'Next: ' + esc(info.next) : 'Max Rank'}</span></div>
-      </div>
-      <div class="rankBadge">${(state.rankIndex || 0) + 1}</div>
-    </div>
+  void info; void pct;
+  return `${devSeedBannerHTML(state)}
+    ${careerHeaderHTML(state)}
     ${homeExtrasHTML(extras)}
     ${nextUpCard(state)}
     <button type="button" class="card simPromo" data-action="go" data-href="#sim"><span class="simPromoIcon">◔</span><span class="simPromoText"><span class="eyebrow">NEW</span><b>Shot Simulator</b><small>Set up any layout, shoot it and watch the physics — racks, run-outs, Find a Shot and more.</small></span><span class="simPromoGo">›</span></button>
     <div class="dashActions">
       <button type="button" class="dashAction card" data-action="go" data-href="#arcade"><span class="icon">🎯</span><b>Arcade</b><span>${GAMES.length} skill games · ${E.totalStars(state)}★ earned</span></button>
       <button type="button" class="dashAction card" data-action="go" data-href="#ghost"><span class="icon">♚</span><b>Ghost</b><span>Up to ${maxUnlockedBalls(state)}-ball · ${st.pct}% wins</span></button>
-      <button type="button" class="dashAction card" data-action="go" data-href="#profile"><span class="icon">▥</span><b>Weakest skills</b><span>${weak.map((w) => `${esc(w.name)} ${w.value}`).join(' · ')}</span></button>
+      <button type="button" class="dashAction card" data-action="go" data-href="#training"><span class="icon">▥</span><b>Recommended</b><span>${esc(weakText(state))}</span></button>
+      <button type="button" class="dashAction card friendsAction" data-action="go" data-href="#friends"><span class="icon">⚔</span><b>Play with Friends</b><span>${esc(friendsText())}</span></button>
     </div>
-    <h2>Skill Ratings</h2>
-    <div class="skills card" id="skills">${skillBarsHTML(state)}</div>`;
+    ${drillRankCardHTML(state, { compact: true })}
+    <h2>Skills</h2>
+    <div class="skills card" id="skills">${skillBreakdownHTML(state)}</div>`;
+}
+
+function weakText(state) {
+  const w = weakestSkills(state, 1)[0];
+  void w;
+  const ps = promotionStatus(state);
+  const open = (ps.open || [])[0];
+  return open ? open.label : 'Train your weakest skills';
+}
+function friendsText() {
+  const d = loadFriends();
+  const n = activePlayers(d).filter((p) => !p.isMe).length;
+  return n ? `${n} friend${n > 1 ? 's' : ''} · ${d.matches.length} match${d.matches.length === 1 ? '' : 'es'}` : 'Head-to-head, groups & tournaments';
 }
 
 // ------------------------------------------------------------------------------ career
@@ -71,16 +84,24 @@ export function renderCareerPage(state) {
     const bossUnlocked = boss && isBossUnlocked(state, boss);
     return `<div class="rank card ${status === 'locked' ? 'locked' : ''} ${status === 'current' ? 'current' : ''}" data-rank="${i}">
       <div class="num">${i + 1}</div>
-      <div><h3>${esc(def.name)}</h3><p>${status === 'earned' ? 'Earned ✓' : `${met}/${list.length} requirements`}</p>
+      <div><h3>${esc(def.name)} <small class="muted rkBalls">${RANK_BALLS_TEXT(i)}</small></h3><p>${status === 'earned' ? 'Earned ✓' : `${met}/${list.length} requirements`}</p>
       ${status === 'current' ? `<ul class="reqList">${list.map((c) => `<li class="${c.met ? 'met' : 'open'}" data-req="${esc(c.type)}:${esc(c.game || c.balls || c.rank || '')}" data-met="${c.met ? 1 : 0}">${c.met ? '✓' : '○'} ${esc(c.label)}${c.type === 'gameLevel' || c.type === 'stars' || c.type === 'pb' ? ` <small>(${c.progress.have}/${c.progress.need})</small>` : ''}${!c.met && c.type !== 'boss' ? ` <button type="button" class="miniBtn" data-action="go" data-href="${esc(c.link.href)}">Go</button>` : ''}${c.type === 'boss' && !c.met ? (bossUnlocked ? ` <button type="button" class="miniBtn" data-action="go" data-href="#boss/${boss.id}">Fight</button>` : ' <small>(unlocks when the rest are met)</small>') : ''}</li>`).join('')}</ul>` : ''}
       </div>
       <div class="status">${status === 'earned' ? 'EARNED' : status === 'current' ? 'IN PROGRESS' : 'LOCKED'}</div>
     </div>`;
   });
-  return `<div class="title"><span class="eyebrow">CAREER MODE</span><h1>${esc(RANK_NAMES[cur])}</h1><p>Concrete achievements unlock each rank's Boss Battle. Beat the boss to promote — XP never promotes by itself.</p></div>
+  const cs = careerStatus(state);
+  return `${devSeedBannerHTML(state)}<div class="title"><span class="eyebrow">CAREER MODE</span><h1>${esc(RANK_NAMES[cur])}</h1><p>Rank XP fills the ball levels inside each rank (the ball is your level). Skill Gates hold the ball until foundations are passed. Beat the rank's Promotion Test (Boss Battle) to promote — XP never promotes by itself.</p></div>
+    ${careerHeaderHTML(state, { link: false })}
+    ${gateCardHTML(state)}
+    ${promotionCardHTML(state)}
     ${nextUpCard(state)}
+    ${tierCapsHTML(state)}
+    <div class="chLinks"><button type="button" class="chip" data-action="go" data-href="#training">Recommended Training</button><button type="button" class="chip" data-action="go" data-href="#skills">Skill Breakdown</button><button type="button" class="chip" data-action="go" data-href="#champion">${cs.champion ? 'Champion Stats' : 'Road to Champion'}</button></div>
     <h2>Ranks</h2><div class="ranklist">${rows.join('')}</div>`;
 }
+
+const RANK_BALLS_TEXT = (i) => { const b = RANK_LADDER.balls[i]; return b ? `· ${b} balls` : '· MAX RANK'; };
 
 // ------------------------------------------------------------------------------ arcade
 function gameCard(state, g) {
@@ -101,6 +122,7 @@ function gameCard(state, g) {
 
 export function renderArcade(state) {
   return `<div class="title"><span class="eyebrow">ARCADE</span><h1>Skill Games</h1><p>Replay any unlocked stage for stars, streaks and personal bests. Every result feeds your skill ratings.</p></div>
+    <button type="button" class="card simPromo friendsPromo" data-action="go" data-href="#friends"><span class="simPromoIcon">⚔</span><span class="simPromoText"><span class="eyebrow">PvP</span><b>Play with Friends</b><small>Score real matches head-to-head, run a group night or a tournament. Separate from your training ranks.</small></span><span class="simPromoGo">›</span></button>
     <div class="arcadeGrid">${GAMES.map((g) => gameCard(state, g)).join('')}</div>`;
 }
 
@@ -117,7 +139,7 @@ export function renderGameLobby(state, gameId) {
     return `<button type="button" class="stageRow card ${open ? '' : 'locked'} ${rec?.passed ? 'passed' : ''}" data-action="${open ? 'go' : 'locked-stage'}" data-href="#play/${gameId}/${s.id}" data-stage="${s.id}" data-open="${open ? 1 : 0}">
       <span class="srNum">${i + 1}</span>
       <span class="srMain"><b>${esc(s.name)}</b><small>${esc((s.instructions || '').slice(0, 90))}${(s.instructions || '').length > 90 ? '…' : ''}</small></span>
-      <span class="srSide">${open ? `${stars(rec?.bestStars || 0)}<small>${rec ? `Best ${rec.bestScore}` : 'New'}</small>` : '<span class="lock">🔒</span>'}</span>
+      <span class="srSide">${open ? `${stars(rec?.bestStars || 0)}<small>${rec ? `Best ${rec.bestScore}` : 'New'}</small>${rec ? starsHTML(masteryOf(state, stageItem(gameId, s, i).key)) : ''}` : '<span class="lock">🔒</span>'}</span>
     </button>`;
   });
   const endless = g.endless ? (E.isEndlessUnlocked(state, gameId) ? `<button type="button" class="stageRow card endless" data-action="go" data-href="#play/${gameId}/endless" data-stage="endless"><span class="srNum">∞</span><span class="srMain"><b>Endless Mode</b><small>Random bank layouts, rising difficulty, 3 lives.</small></span><span class="srSide"><small>Best ${gs.pb?.endlessBest || 0}</small></span></button>` : `<div class="stageRow card locked"><span class="srNum">∞</span><span class="srMain"><b>Endless Mode</b><small>Pass the final stage to unlock.</small></span><span class="srSide lock">🔒</span></div>`) : '';
@@ -148,14 +170,15 @@ export function renderBossPage(state, bossId) {
   const rec = state.bosses?.[bossId];
   const beaten = rec?.passed;
   const active = state.activeSession?.bossId === bossId;
-  return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#career">‹ Career</button><span class="eyebrow">BOSS BATTLE · RANK ${b.rank + 1} ${esc(RANK_NAMES[b.rank].toUpperCase())}</span><h1>${esc(b.name)}</h1><p>${esc(b.intro)}</p></div>
+  return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#career">‹ Career</button><span class="eyebrow">PROMOTION TEST · BOSS BATTLE · RANK ${b.rank + 1} ${esc(RANK_NAMES[b.rank].toUpperCase())}</span><h1>${esc(b.name)}</h1><p>${esc(b.intro)}</p></div>
     <div class="card bossIntro">
       <p class="muted">Pass/fail is computed from your recorded shot results only. ${b.passShots ? `Pass at least ${b.passShots} of ${b.shots.length} stations.` : 'Every station must be passed.'}</p>
       <div class="bossShots">${b.shots.map((s, i) => `<div class="bsRow"><span class="srNum">${i + 1}</span><span><b>${esc(s.title)}</b><small>${esc(s.skill)} · ${s.mode === 'zone' ? `${s.need}★ in ${s.attempts}` : `${s.need} of ${s.attempts}`}</small></span></div>`).join('')}</div>
       ${beaten ? '<p class="green">✓ Defeated</p>' : ''}
       ${rec?.lastWeak?.length && !rec.lastPassed ? `<p class="muted">Last attempt — weak areas: ${rec.lastWeak.map(esc).join(', ')}</p>` : ''}
-      ${unlocked || beaten ? `<button type="button" class="bigBtn" data-action="go" data-href="#bossplay/${b.id}">${active ? 'RESUME BATTLE' : 'START BOSS BATTLE'}</button>` : `<p class="lockNote">🔒 Unlocks when you are ${esc(RANK_NAMES[b.rank - 1])} and every other ${esc(RANK_NAMES[b.rank])} requirement is met.</p>`}
-    </div>`;
+      ${unlocked || beaten ? `<button type="button" class="bigBtn" data-action="go" data-href="#bossplay/${b.id}">${active ? 'RESUME BATTLE' : 'START BOSS BATTLE'}</button>` : `<p class="lockNote">🔒 Unlocks when you are ${esc(RANK_NAMES[b.rank - 1])} and every ${esc(RANK_NAMES[b.rank])} promotion requirement is met.</p>`}
+    </div>
+    ${!unlocked && !beaten && (state.rankIndex || 0) === b.rank - 1 ? promotionCardHTML(state, { full: true }) : ''}`;
 }
 
 // ------------------------------------------------------------------------------ profile
@@ -163,12 +186,17 @@ export function renderProfile(state) {
   const recs = recommendations(state, 3);
   const st = ghostStats(state);
   const passedStages = GAMES.filter((g) => !g.special).reduce((a, g) => a + E.gameLevel(state, g.id), 0);
-  return `<div class="title"><span class="eyebrow">PLAYER PROFILE</span><h1>${esc(RANK_NAMES[state.rankIndex || 0])}</h1><p>Ratings are computed from your saved results: stages passed, stars, success rates, drills, Ghost matches and boss shots — weighted by difficulty and recency.</p></div>
-    <div class="card stats"><div><b>${state.xp || 0}</b><span>XP</span></div><div><b>${passedStages}</b><span>STAGES PASSED</span></div><div><b>${E.totalStars(state)}★</b><span>STARS</span></div></div>
-    <h2>Skill Ratings</h2>
-    <div class="skills card" id="profileSkills">${skillBarsHTML(state)}</div>
+  void recs;
+  const cs = careerStatus(state);
+  return `${devSeedBannerHTML(state)}${profileHeaderHTML(state, getProfile())}
+    ${careerHeaderHTML(state, { compact: true })}
+    ${drillRankCardHTML(state, { compact: true })}
+    <div class="card stats"><div><b>${(state.prog?.lifetimeXp ?? state.xp) || 0}</b><span>LIFETIME XP</span></div><div><b>${passedStages}</b><span>STAGES PASSED</span></div><div><b>${E.totalStars(state)}★</b><span>STARS</span></div></div>
+    <div class="chLinks"><button type="button" class="chip" data-action="go" data-href="#me/stats">My Stats</button><button type="button" class="chip" data-action="go" data-href="#skills">Skill Breakdown</button><button type="button" class="chip" data-action="go" data-href="#champion">${cs.champion ? 'Champion Stats' : 'Road to Champion'}</button><button type="button" class="chip" data-action="go" data-href="#friends">Friends & PvP</button></div>
+    <h2>Skill Breakdown</h2>
+    <div class="skills card" id="profileSkills">${skillBreakdownHTML(state)}</div>
     <h2>Recommended Training</h2>
-    <div class="recList">${recs.map((r) => `<div class="card recCard" data-skill="${esc(r.name)}"><div class="eyebrow">${esc(r.name.toUpperCase())} — CURRENT RATING ${r.value}</div>${r.rec ? `<p>Recommended: <b>${esc(r.rec.text)}</b></p><button type="button" class="bigBtn" data-action="go" data-href="${esc(r.rec.href)}">TRAIN ${esc(r.name.toUpperCase())}</button>` : '<p class="muted">Unlock more games to train this skill.</p>'}</div>`).join('')}</div>
+    <div class="recList">${recommendedHTML(state, 3)}</div>
     <h2>Ghost</h2>
     <div class="card stats"><div><b>${st.pct}%</b><span>WIN RATE</span></div><div><b>${st.won}</b><span>WON</span></div><div><b>${maxUnlockedBalls(state)}</b><span>MAX BALLS</span></div></div>
     <button type="button" class="bigBtn alt" data-action="go" data-href="#settings">SETTINGS & CALIBRATION</button>`;
@@ -178,6 +206,7 @@ export function renderProfile(state) {
 export function renderDrillsPage(state, filter = 'All') {
   const list0 = allDrills();
   const head = `<div class="title drillsTitle"><span class="eyebrow">DRILL LIBRARY</span><h1>Drills</h1></div>
+    ${drillRankCardHTML(state)}
     <div class="drillTools"><div class="drillBig"><button type="button" class="bigBtn createDrill" data-action="drill-create">＋ CREATE DRILL</button><button type="button" class="bigBtn myContentBtn" data-action="go" data-href="#content">▤ MY CONTENT<small>import .pooliq · packs · lessons · games</small></button></div>
     <div class="drillFileBtns"><button type="button" class="chip" data-action="drill-import">⤒ Import drills</button>${list0.some((d) => d.custom) ? '<button type="button" class="chip" data-action="drill-export">⤓ Export all</button>' : ''}</div></div>`;
   if (!list0.length) {
@@ -195,7 +224,8 @@ function drillCard(state, d) {
   const rec = state.games?.drills?.stages?.[d.id];
   const open = isDrillUnlocked(d, state);
   const meta = `${d.custom ? '<span class="tag mine">MY DRILL</span> ' : ''}${d.contentUid ? `<span class="tag imp" data-badge="${d.imported ? 'imported' : 'custom'}">${d.imported ? 'IMPORTED' : 'MY CONTENT'}</span> ` : ''}<span class="tag">${esc(d.category)}</span>${d.difficulty ? ` <span class="tag">Level ${d.difficulty}</span>` : ''}`;
-  const pb = rec ? `<small class="pbLine">Best ${rec.bestScore || 0} pts${rec.bestStars ? ` · ${'★'.repeat(rec.bestStars)}` : ''} · ${rec.tries || 0} session${rec.tries === 1 ? '' : 's'}${rec.passed ? ' · passed ✓' : ''}</small>` : '';
+  const ms = rec ? masteryOf(state, drillItem(d).key) : 0;
+  const pb = rec ? `<small class="pbLine">${starsHTML(ms)} Best ${rec.bestScore || 0} pts${rec.bestStars ? ` · ${'★'.repeat(rec.bestStars)}` : ''} · ${rec.tries || 0} session${rec.tries === 1 ? '' : 's'}${rec.passed ? ' · passed ✓' : ''}</small>` : '';
   const tools = d.custom ? `<div class="drillBtns"><button type="button" class="miniAct" data-action="drill-edit" data-id="${esc(d.id)}">Edit</button><button type="button" class="miniAct" data-action="drill-dup" data-id="${esc(d.id)}">Duplicate</button><button type="button" class="miniAct" data-action="drill-history" data-id="${esc(d.id)}">History</button><button type="button" class="miniAct" data-action="drill-export" data-id="${esc(d.id)}">Export</button><button type="button" class="miniAct danger" data-action="drill-del" data-id="${esc(d.id)}">Delete</button></div>` : d.contentUid ? `<div class="drillBtns"><button type="button" class="miniAct" data-action="go" data-href="#cview/${esc(d.contentUid)}">My Content</button><button type="button" class="miniAct" data-action="go" data-href="#cedit/${esc(d.contentUid)}">Edit</button><button type="button" class="miniAct" data-action="drill-history" data-id="${esc(d.id)}">History</button></div>` : '';
   return `<div class="drill card ${open ? '' : 'locked'}" data-drill="${esc(d.id)}"><div class="diagramWrap mini">${renderStageTable(d, { className: 'table-diagram mini' })}</div>${meta}<h3>${esc(d.name)}</h3><p>${esc(d.goal || d.instructions || '')}</p>${speedChip(d.speed)}${pb}<button type="button" class="${rec?.passed ? 'done' : ''}" data-action="go" data-href="#play/drills/${esc(d.id)}" ${open ? '' : 'disabled'}>${rec?.passed ? 'Passed ✓ — Train again' : 'Train'}</button>${tools}</div>`;
 }
@@ -219,7 +249,9 @@ export function renderSettings(state, info = {}) {
       <p class="muted small">SPEED n ≈ n lengths of total cue-ball travel from an end rail. ${esc(clothNote(cal))}</p>
       <button type="button" class="bigBtn alt" data-action="go" data-href="#play/speed/sp-cal">RUN SPEED CALIBRATION</button>
     </div>
+    <div class="card settingsCard" data-card="profile"><div class="eyebrow">PLAYER PROFILE</div><p class="muted small">Your name and photo on this phone (shown on Profile and in friend matches). Stored only on this device and in your backups.</p><button type="button" class="bigBtn alt" data-action="go" data-href="#me">EDIT PROFILE</button></div>
     ${installCardHTML(info)}
+    <div class="card settingsCard devCard" data-card="dev"><div class="eyebrow">DEV MODE</div><p class="muted small">Passcode-locked test tools for the owner of this phone. A convenience lock on this device — not server security.</p><button type="button" class="bigBtn alt" data-action="go" data-href="#dev">DEV MODE</button></div>
     <div class="card settingsCard dangerCard"><div class="eyebrow">DANGER ZONE</div><p class="muted small">Clears stages, Ghost matches, bosses, calibration and rank. A snapshot is taken first, so it can be undone from “Restore previous snapshot”.</p><button type="button" class="bigBtn danger" data-action="reset-all">RESET ALL PROGRESS</button></div>`;
 }
 

@@ -1,4 +1,4 @@
-const CACHE = 'pool-iq-v10';
+const CACHE = 'pool-iq-v11';
 const ASSETS = [
   './',
   './index.html',
@@ -26,8 +26,12 @@ const ASSETS = [
   './js/content/templates.js',
   './js/customDrills.js',
   './js/dashboard.js',
+  './js/dev/dev.js',
+  './js/dev/overrides.js',
   './js/drills.js',
   './js/drillsExtra.js',
+  './js/friends/model.js',
+  './js/friends/tournament.js',
   './js/games/aimView.js',
   './js/games/builders.js',
   './js/games/coaching.js',
@@ -56,6 +60,15 @@ const ASSETS = [
   './js/games/text.js',
   './js/ghost.js',
   './js/install.js',
+  './js/profile.js',
+  './js/progression/award.js',
+  './js/progression/badge.js',
+  './js/progression/catalog.js',
+  './js/progression/config.js',
+  './js/progression/migrate.js',
+  './js/progression/rank.js',
+  './js/progression/sessions.js',
+  './js/progression/skillLevels.js',
   './js/sim/layouts.js',
   './js/sim/library.js',
   './js/sim/physics.js',
@@ -64,14 +77,18 @@ const ASSETS = [
   './js/skills.js',
   './js/storage.js',
   './js/tableDiagram.js',
-  './js/vault.js',
   './js/ui/builderContent.js',
   './js/ui/content.js',
+  './js/ui/dev.js',
   './js/ui/drillBuilder.js',
+  './js/ui/friends.js',
+  './js/ui/me.js',
   './js/ui/play.js',
+  './js/ui/progression.js',
   './js/ui/share.js',
   './js/ui/sheet.js',
-  './js/ui/simulator.js'
+  './js/ui/simulator.js',
+  './js/vault.js'
 ];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));

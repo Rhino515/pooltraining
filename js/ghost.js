@@ -18,6 +18,9 @@
 import { undoGhostRack as undoRackPure, ghostRackResult } from './storage.js';
 import { maxGhostBalls } from './games/engine.js';
 import { esc } from './games/recipe.js';
+import { awardGhost } from './progression/sessions.js';
+import { awardHTML } from './ui/progression.js';
+import { revertAward } from './progression/award.js';
 
 export const GHOST_BALL_OPTIONS = [3, 4, 5, 6, 7, 8, 9];
 export const RACE_OPTIONS = [3, 5, 7, 9];
@@ -82,9 +85,11 @@ export function applyRack(state, session, result, brk = null) {
   }
   if (!matchOver(s)) return { state: { ...state, activeGhost: s }, session: s, ended: false };
   const m = matchRecord(s);
-  const s2 = { ...s, savedMatchId: m.id };
   const xp = (state.xp || 0) + matchXP(m);
-  return { state: { ...state, xp, ghostMatches: [...(state.ghostMatches || []), m], activeGhost: s2 }, session: s2, ended: true, match: m };
+  // v11 progression award (reverted by UNDO LAST RACK)
+  const aw = awardGhost({ ...state, xp, ghostMatches: [...(state.ghostMatches || []), m] }, m, Date.now());
+  const s2 = { ...s, savedMatchId: m.id, progUndo: aw.award ? aw.award.undo : null, progAward: aw.award ? { lifetime: aw.award.lifetime, rank: aw.award.rank, drill: 0, flags: aw.award.flags, stars: aw.award.stars, prevStars: aw.award.prevStars } : null };
+  return { state: { ...aw.state, activeGhost: s2 }, session: s2, ended: true, match: m, award: aw.award };
 }
 
 /**
@@ -120,14 +125,15 @@ export function applyUndo(state, session) {
     ghostMatches = ghostMatches.filter((x) => x.id !== session.savedMatchId);
     if (m) xp = Math.max(0, xp - matchXP(m));
   }
-  let s = { ...undoRackPure(session), savedMatchId: null };
+  const base = session.savedMatchId && session.progUndo ? revertAward(state, session.progUndo) : state;
+  let s = { ...undoRackPure(session), savedMatchId: null, progUndo: null, progAward: null };
   if (isEight(session)) {
     const breaks = (session.breaks || []).slice(0, -1);
     const last = (session.breaks || [])[session.breaks.length - 1];
     s = { ...s, breaks };
     if (session.level === 'pro') s = { ...s, phase: last && !last.eight ? 'run' : 'break', breakMade: last?.made || 0, breakScratch: !!last?.scratch };
   }
-  return { state: { ...state, ghostMatches, xp, activeGhost: s }, session: s };
+  return { state: { ...base, ghostMatches, xp, activeGhost: s }, session: s };
 }
 
 export function ghostStats(state) {
@@ -259,7 +265,7 @@ export function renderGhostMatch(state) {
     <div class="playHead"><button type="button" class="phBack" data-action="go" data-href="#ghost" aria-label="Back">‹</button><div class="phTitle"><small>GHOST</small><b>${esc(ghostLabel(g))} · Race to ${g.race}</b></div><div class="phStatus"><button type="button" class="rulesBtn" data-action="ghost-rules">RULES</button><span class="score">R${g.log.length + (over ? 0 : 1)}</span></div></div>
     <div class="playBody">
       <div class="ghostScore"><div><b data-you>${g.you}</b><span>YOU</span></div><em>—</em><div><b data-ghost>${g.ghost}</b><span>GHOST</span></div></div>
-      ${over ? `<div class="resultPanel ${won ? 'pass' : 'fail'} inline" data-result="${won ? 'pass' : 'fail'}"><h1>${won ? 'YOU WIN' : 'GHOST WINS'} ${g.you}–${g.ghost}</h1><p class="muted">Match saved to history. Tapped the wrong button? UNDO LAST RACK reopens the match.</p><div class="resultBtns"><button type="button" class="bigBtn" data-action="ghost-again">REMATCH</button><button type="button" class="bigBtn alt" data-action="go" data-href="#ghost">GHOST HOME</button></div></div>`
+      ${over ? `<div class="resultPanel ${won ? 'pass' : 'fail'} inline" data-result="${won ? 'pass' : 'fail'}"><h1>${won ? 'YOU WIN' : 'GHOST WINS'} ${g.you}–${g.ghost}</h1>${awardHTML(g.progAward)}<p class="muted">Match saved to history. Tapped the wrong button? UNDO LAST RACK reopens the match.</p><div class="resultBtns"><button type="button" class="bigBtn" data-action="ghost-again">REMATCH</button><button type="button" class="bigBtn alt" data-action="go" data-href="#ghost">GHOST HOME</button></div></div>`
         : rule}
       <div class="racklog">${g.log.map((x, i) => rackChip(g, x, i)).join('')}${pro && g.phase === 'run' && !over ? `<span class="pend">R${rackNo} BREAK${g.breakMade ? ` · ${g.breakMade} MADE` : ''}${g.breakScratch ? ' · SCRATCH, BALL IN HAND' : ''} ✓</span>` : ''}</div>
     </div>

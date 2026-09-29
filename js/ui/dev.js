@@ -1,0 +1,204 @@
+/**
+ * DEV MODE screens (#dev, #devgame/<id>, #devedit/<game>/<stage>, #devkeys). See docs/DEV_MODE.md.
+ * The lock is a convenience lock on this device — NOT server security. Every action that changes data takes a
+ * snapshot first (env.snapshot captures the data synchronously before the change).
+ */
+import * as D from '../dev/dev.js';
+import * as O from '../dev/overrides.js';
+import { GAMES, getGame, stageSpecs, getStage, clearStageCache } from '../games/registry.js';
+import * as S from '../content/store.js';
+import { APP_VERSION } from '../vault.js';
+import { RANK_LADDER, DRILL_RANK } from '../progression/config.js';
+import { typeLabel } from '../content/schema.js';
+import { openSheet, closeSheet, toast } from './sheet.js';
+
+const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const HONEST = 'DEV MODE is a convenience lock on this device, not server security: anyone with this phone and browser tools can read or change local data. It keeps test tools out of everyday use.';
+const seedSel = { rank: 1, ball: 1, drill: 3 };
+const fmtB = (n) => (n < 1024 ? `${n} B` : `${(n / 1024).toFixed(1)} KB`);
+
+export const devUnlocked = () => D.isUnlocked();
+
+function head(sub) {
+  return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="${sub ? '#dev' : '#settings'}">‹ ${sub ? 'DEV MODE' : 'Settings'}</button><span class="eyebrow devEyebrow">DEV MODE${sub ? ` · ${esc(sub)}` : ''}</span><h1>${sub ? esc(sub) : 'Dev Mode'}</h1></div>`;
+}
+function gate() {
+  if (!D.hasPasscode()) {
+    return `${head()}<div class="card devCard devGate" data-dev-state="setup"><div class="eyebrow">SET A PASSCODE</div><p class="muted small">${HONEST}</p><p class="muted small">Only a salted SHA-256 hash of the passcode is stored (never the passcode). If you forget it, restore a backup made before it was set or clear the site's data.</p>
+      <label class="fld"><span>New passcode (4+ characters)</span><input id="devPass1" type="password" autocomplete="new-password" maxlength="64"/></label>
+      <label class="fld"><span>Repeat passcode</span><input id="devPass2" type="password" autocomplete="new-password" maxlength="64"/></label>
+      <button type="button" class="bigBtn" data-action="dev-set">SET PASSCODE & UNLOCK</button></div>`;
+  }
+  return `${head()}<div class="card devCard devGate" data-dev-state="locked"><div class="eyebrow">🔒 LOCKED</div><p class="muted small">${HONEST}</p>
+    <label class="fld"><span>Passcode</span><input id="devPass" type="password" autocomplete="current-password" maxlength="64"/></label>
+    <button type="button" class="bigBtn" data-action="dev-unlock">UNLOCK</button></div>`;
+}
+
+export function renderDev(state) {
+  if (!D.isUnlocked()) return gate();
+  const dev = D.loadDev();
+  const ov = Object.values(O.loadOverrides().items);
+  const items = S.loadContent();
+  return `${head()}
+    <div class="card devCard" data-dev-state="unlocked"><div class="eyebrow">🔓 UNLOCKED</div><p class="muted small">${HONEST}</p>
+      <div class="eyebrow">AUTO-LOCK AFTER</div><div class="chips">${D.AUTO_LOCK_OPTIONS.map((m) => `<button type="button" class="chip${dev.autoLockMin === m ? ' active' : ''}" data-action="dev-autolock" data-v="${m}">${m ? `${m} min idle` : 'Only when closed'}</button>`).join('')}</div>
+      <button type="button" class="bigBtn danger" data-action="dev-lock">🔒 LOCK</button>
+      <button type="button" class="linkish" data-action="dev-change">Change passcode</button></div>
+    ${state.devSeed ? `<div class="card devBanner" data-dev-seed>TEST STATE ACTIVE · ${esc(state.devSeed.label)}<button type="button" class="bigBtn" data-action="dev-restore-real">RESTORE MY REAL PROGRESS</button><small class="muted">Anything played while the test state is active is discarded when you restore.</small></div>` : ''}
+    <h2>Edit built-in content</h2>
+    <div class="card devCard"><p class="muted small">Edits are saved as a local override layer keyed by content id — the built-in files never change. RESET TO ORIGINAL removes an override. (The built-in drill library is empty and Learn lessons are not built yet; Arcade stages with a single shot can be edited.)</p>
+      <div class="devGames">${GAMES.filter((g) => !g.special).map((g) => { const n = ov.filter((o) => o.id.startsWith(`stage:${g.id}:`)).length; return `<button type="button" class="chip" data-action="go" data-href="#devgame/${g.id}">${g.icon} ${esc(g.name)}${n ? ` <b class="gold">${n}</b>` : ''}</button>`; }).join('')}</div>
+      <div class="kv"><span>Overrides</span><b data-override-count="${ov.length}">${ov.length}</b></div>
+      <button type="button" class="bigBtn alt" data-action="dev-export" ${ov.length ? '' : 'disabled'}>EXPORT OVERRIDES (.pooliq pack)</button>
+      <label class="bigBtn alt fileBtn">IMPORT OVERRIDES<input type="file" accept=".pooliq,.json,application/json" data-dev-import aria-label="Import an overrides pack"/></label></div>
+    <h2>My Content (unrestricted)</h2>
+    <div class="card devCard"><p class="muted small">While unlocked, pack stages can be played in any order. Mark imported content official / eligible to test how it counts.</p>
+      ${items.length ? items.map((it) => { const d = it.doc; return `<div class="devItem" data-dev-item="${esc(it.uid)}"><div><b>${esc(it.title)}</b><small class="muted">${esc(typeLabel(d.contentType))}${d.metadata?.official ? ' · OFFICIAL' : ''}</small></div><div class="chips"><button type="button" class="chip${d.careerEligible ? ' active' : ''}" data-action="dev-mark" data-uid="${esc(it.uid)}" data-k="careerEligible">Career-eligible</button><button type="button" class="chip${d.rankXpEligible ? ' active' : ''}" data-action="dev-mark" data-uid="${esc(it.uid)}" data-k="rankXpEligible">Rank XP</button><button type="button" class="chip${d.metadata?.official ? ' active' : ''}" data-action="dev-mark" data-uid="${esc(it.uid)}" data-k="official">Official</button><button type="button" class="chip" data-action="go" data-href="#cedit/${esc(it.uid)}">Edit</button><button type="button" class="chip danger" data-action="dev-del-content" data-uid="${esc(it.uid)}">Delete</button></div></div>`; }).join('') : '<p class="muted">No installed content.</p>'}
+      <button type="button" class="bigBtn alt" data-action="go" data-href="#content">OPEN MY CONTENT</button></div>
+    <h2>Test progression</h2>
+    <div class="card devCard"><p class="muted small">Jump to a test state. It is flagged DEV (banner shown, excluded from public stats). Your real data is stashed first — RESTORE MY REAL PROGRESS brings it back.</p>
+      <div class="eyebrow">CAREER RANK</div><div class="chips">${RANK_LADDER.names.map((n, i) => `<button type="button" class="chip${seedSel.rank === i ? ' active' : ''}" data-action="dev-seed-rank" data-v="${i}">${esc(n)}</button>`).join('')}</div>
+      ${RANK_LADDER.balls[seedSel.rank] ? `<div class="eyebrow">BALL</div><div class="chips">${Array.from({ length: RANK_LADDER.balls[seedSel.rank] }, (_, i) => i + 1).map((b) => `<button type="button" class="chip${seedSel.ball === b ? ' active' : ''}" data-action="dev-seed-ball" data-v="${b}">${b}</button>`).join('')}</div>` : ''}
+      <button type="button" class="bigBtn alt" data-action="dev-seed" data-what="rank">SEED CAREER RANK</button>
+      <div class="eyebrow">DRILL RANK</div><div class="chips">${DRILL_RANK.ranks.map((r, i) => `<button type="button" class="chip${seedSel.drill === i + 1 ? ' active' : ''}" data-action="dev-seed-drill" data-v="${i + 1}">${i + 1} ${esc(r.name)}</button>`).join('')}</div>
+      <button type="button" class="bigBtn alt" data-action="dev-seed" data-what="drill">SEED DRILL RANK</button></div>
+    <h2>Tools</h2>
+    <div class="card devCard">
+      <div class="kv"><span>App version</span><b>v${esc(APP_VERSION)}</b></div>
+      <div class="kv"><span>Service worker caches</span><b data-cache-names>…</b></div>
+      <button type="button" class="bigBtn alt" data-action="dev-clear-caches">CLEAR CACHES & RELOAD</button>
+      <button type="button" class="bigBtn alt" data-action="go" data-href="#devkeys">VIEW STORAGE KEYS</button></div>`;
+}
+/** Fill async info (cache names) after render */
+export async function fillDev() {
+  const el = document.querySelector('[data-cache-names]');
+  if (!el) return;
+  try { const k = typeof caches !== 'undefined' ? await caches.keys() : []; el.textContent = k.length ? k.join(', ') : 'none'; } catch { el.textContent = 'not available'; }
+}
+export function renderDevGame(gameId) {
+  if (!D.isUnlocked()) return gate();
+  const g = getGame(gameId);
+  if (!g || g.special) return `${head('Edit')}<p class="muted">Unknown game.</p>`;
+  const specs = stageSpecs(gameId);
+  return `${head(g.name)}<div class="stageList">${specs.map((s, i) => {
+    const id = O.stageOverrideId(gameId, s.id);
+    const has = !!O.getOverride(id);
+    const ok = O.isEditableSpec(s, s.kind || g.kind);
+    return `<div class="stageRow card devStage${has ? ' overridden' : ''}" data-dev-stage="${esc(s.id)}" data-overridden="${has ? 1 : 0}"><span class="srNum">${i + 1}</span><span class="srMain"><b>${esc(getStage(gameId, s.id)?.name || s.name)}</b><small>${has ? '<span class="tag gold">OVERRIDDEN</span> ' : ''}${ok ? esc(id) : 'Multi-ball / calibration stage — not editable with the drill builder'}</small></span><span class="srSide devBtns">${ok ? `<button type="button" class="miniAct" data-action="go" data-href="#devedit/${gameId}/${esc(s.id)}">EDIT</button>` : ''}${has ? `<button type="button" class="miniAct danger" data-action="dev-reset" data-id="${esc(id)}" data-game="${gameId}">RESET TO ORIGINAL</button>` : ''}${ok ? `<button type="button" class="miniAct" data-action="go" data-href="#play/${gameId}/${esc(s.id)}">PLAY</button>` : ''}</span></div>`;
+  }).join('')}</div>`;
+}
+export function renderDevKeys() {
+  if (!D.isUnlocked()) return gate();
+  const keys = D.storageKeys();
+  return `${head('Storage keys')}<div class="card devCard" data-dev-keys>${keys.map((k) => `<details class="devKey"><summary><b>${esc(k.key)}</b><small>${fmtB(k.bytes)}</small></summary><pre class="jsonBox">${esc(k.key === D.DEV_KEY ? '(passcode hash hidden)' : k.preview)}${k.preview.length >= 160 ? '…' : ''}</pre></details>`).join('')}<p class="muted small">localStorage keys on this device (${keys.length}). Data keys are mirrored to IndexedDB and included in backups.</p></div>`;
+}
+
+/** Content-mode options for the builder when editing a built-in stage (#devedit) */
+export function devEditOptions(gameId, stageId, env) {
+  if (!D.isUnlocked()) return null;
+  const g = getGame(gameId);
+  const spec = stageSpecs(gameId).find((s) => s.id === stageId);
+  if (!g || !spec || !O.isEditableSpec(spec, spec.kind || g.kind)) return null;
+  const id = O.stageOverrideId(gameId, stageId);
+  const ov = O.getOverride(id);
+  clearStageCache(gameId);
+  const ch = getStage(gameId, stageId);
+  let doc;
+  try { doc = D.editDocForStage(ch, ov); } catch (e) { return { error: String(e.message || e) }; }
+  return {
+    uid: `dev-${gameId}-${stageId}`,
+    loc: [],
+    doc,
+    item: doc,
+    label: 'DEV OVERRIDE',
+    exitHref: `#devgame/${gameId}`,
+    onSave(newDoc) {
+      env.snapshot(`Before DEV override: ${ch.name}`);
+      const out = O.setOverride(id, newDoc);
+      clearStageCache(gameId);
+      return out;
+    }
+  };
+}
+
+export function devAction(a, el, env) {
+  if (!a.startsWith('dev-')) return false;
+  if (a !== 'dev-set' && a !== 'dev-unlock' && !D.isUnlocked()) { toast('DEV MODE is locked'); env.rerender(); return true; }
+  D.touch();
+  switch (a) {
+    case 'dev-set': {
+      const p1 = document.getElementById('devPass1')?.value || '';
+      const p2 = document.getElementById('devPass2')?.value || '';
+      if (p1 !== p2) { toast('The passcodes do not match'); return true; }
+      env.snapshot('Before DEV passcode');
+      D.setPasscode(p1).then((r) => { toast(r.error || 'Passcode set — DEV MODE unlocked'); closeSheet(); env.rerender(); });
+      return true;
+    }
+    case 'dev-unlock': {
+      const p = document.getElementById('devPass')?.value || '';
+      D.unlock(p).then((r) => { toast(r.error || 'DEV MODE unlocked'); if (!r.error) env.rerender(); else { const i = document.getElementById('devPass'); if (i) { i.value = ''; i.classList.add('bad'); } } });
+      return true;
+    }
+    case 'dev-lock': D.lock(); toast('DEV MODE locked'); env.rerender(); return true;
+    case 'dev-change':
+      openSheet(`<div class="eyebrow">CHANGE PASSCODE</div><label class="fld"><span>New passcode</span><input id="devPass1" type="password" autocomplete="new-password" maxlength="64"/></label><label class="fld"><span>Repeat</span><input id="devPass2" type="password" autocomplete="new-password" maxlength="64"/></label><button type="button" class="bigBtn" data-action="dev-set">SAVE PASSCODE</button><button type="button" class="bigBtn alt" data-action="sheet-close">CANCEL</button>`, { id: 'devpass' });
+      return true;
+    case 'dev-autolock': D.setAutoLock(Number(el.dataset.v)); env.rerender(); return true;
+    case 'dev-reset': {
+      env.snapshot('Before DEV reset override');
+      O.removeOverride(el.dataset.id);
+      clearStageCache(el.dataset.game);
+      toast('Reset to the original');
+      env.rerender();
+      return true;
+    }
+    case 'dev-export': {
+      const out = D.exportOverridesPack();
+      if (out.error) { toast(out.error); return true; }
+      env.downloadFile(`${out.doc.id}.pooliq`, JSON.stringify(out.doc, null, 2));
+      toast(`Exported ${out.count} override${out.count === 1 ? '' : 's'}`);
+      return true;
+    }
+    case 'dev-mark': {
+      const it = S.getItem(el.dataset.uid);
+      if (!it) return true;
+      const k = el.dataset.k;
+      const cur = k === 'official' ? !!it.doc.metadata?.official : !!it.doc[k];
+      env.snapshot('Before DEV mark content');
+      const r = S.updateItemDoc(it.uid, D.markContentDoc(it.doc, { [k]: !cur }));
+      if (r.error) toast(r.error.split('\n')[0]); else toast(`${it.title}: ${k} ${!cur ? 'ON' : 'OFF'}`);
+      env.afterContentChange();
+      env.rerender();
+      return true;
+    }
+    case 'dev-del-content': {
+      env.snapshot('Before DEV delete content');
+      S.deleteItem(el.dataset.uid);
+      env.afterContentChange();
+      toast('Deleted');
+      env.rerender();
+      return true;
+    }
+    case 'dev-seed-rank': seedSel.rank = Number(el.dataset.v); seedSel.ball = 1; env.rerender(); return true;
+    case 'dev-seed-ball': seedSel.ball = Number(el.dataset.v); env.rerender(); return true;
+    case 'dev-seed-drill': seedSel.drill = Number(el.dataset.v); env.rerender(); return true;
+    case 'dev-seed': {
+      const opts = el.dataset.what === 'drill' ? { drillRank: seedSel.drill } : { rank: seedSel.rank, ball: seedSel.ball };
+      env.seed(opts);
+      return true;
+    }
+    case 'dev-restore-real': env.restoreReal(); return true;
+    case 'dev-clear-caches': env.clearCaches(); return true;
+    default: return false;
+  }
+}
+/** DEV import (file input) */
+export async function onDevImportFile(file, env) {
+  if (!D.isUnlocked()) { toast('DEV MODE is locked'); return; }
+  env.snapshot('Before DEV import overrides');
+  const r = D.importOverridesPack(await file.text(), { stageExists: (g, s) => !!stageSpecs(g).find((x) => x.id === s) });
+  if (r.error) { toast(r.error); return; }
+  clearStageCache();
+  toast(`Imported ${r.applied} override${r.applied === 1 ? '' : 's'}${r.skipped.length ? ` · ${r.skipped.length} skipped` : ''}`);
+  env.rerender();
+}

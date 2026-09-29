@@ -16,6 +16,7 @@
  * Alternative input: { dx, dy } in diamonds (dx 0–8 from the head rail, dy 0–4 from the top rail).
  */
 import { SKILL_NAMES } from '../storage.js';
+import { toSkillId, TIER_DIFFICULTY, SKILLS as V11_SKILLS } from '../progression/config.js';
 
 export const FORMAT = 'pooliq';
 export const SCHEMA_VERSION = '1.0';
@@ -278,12 +279,46 @@ const skillEffects = (v, p, c) => {
 const diamondAnswer = T.obj({ rail: T.oneOf(RAIL_IDS), diamond: T.num(0, 8), tolerance: T.obj({ pass: T.num(0, 2), close: T.num(0, 4) }), explanation: text(1500) }, ['rail', 'diamond']);
 const shot = (v, p, c) => objOf(v, p, c, SHOT_FIELDS, ['cueBallPosition', 'speed']);
 
+// v11 (optional, backward compatible): difficulty may also be a tier word; progression metadata fields
+const TIER_WORDS = Object.keys(TIER_DIFFICULTY);
+const difficulty = (v, p, c) => {
+  if (typeof v === 'string' && TIER_WORDS.includes(v.toLowerCase())) return TIER_DIFFICULTY[v.toLowerCase()];
+  return Number.isInteger(v) && v >= 1 && v <= 10 ? v : void c.err(p, `must be a whole number from 1 to 10 or one of: ${TIER_WORDS.join(', ')} (got ${JSON.stringify(v)})`);
+};
+const skillRef = (v, p, c) => {
+  const id = toSkillId(v);
+  return id ? id : void c.err(p, `must be a skill: ${V11_SKILLS.map((s) => s.id).join(', ')} (got ${JSON.stringify(v)})`);
+};
+const skillWeights = (v, p, c) => {
+  if (!isObj(v)) return void c.err(p, 'must be an object like {"draw": 1, "position": 0.5}');
+  const out = {};
+  for (const [k, w] of Object.entries(v)) {
+    const id = toSkillId(k);
+    if (!id) { c.err(`${p}.${k}`, `unknown skill (use one of: ${V11_SKILLS.map((s) => s.id).join(', ')})`); continue; }
+    if (typeof w !== 'number' || !Number.isFinite(w) || w < 0 || w > 1) { c.err(`${p}.${k}`, 'must be a number from 0 to 1'); continue; }
+    out[id] = w;
+  }
+  return Object.keys(out).length ? out : undefined;
+};
+const masteryDef = (v, p, c) => {
+  const o = T.obj({ strong: T.num(0.5, 1), mastered: T.num(0.5, 1) }, ['strong', 'mastered'])(v, p, c);
+  if (o && o.mastered < o.strong) return void c.err(p, 'mastered must be at least strong');
+  return o;
+};
+export const V11_FIELDS = ['rankXpEligible', 'baseXP', 'primarySkill', 'secondarySkills', 'skills', 'skillWeights', 'mastery'];
 const COMMON_ITEM = {
   title: T.str(80, 1),
   description: text(2000),
   category: text(40),
-  difficulty: T.int(1, 10),
-  skill: T.oneOf(SKILL_NAMES)
+  difficulty,
+  skill: T.oneOf(SKILL_NAMES),
+  rankXpEligible: T.bool,
+  baseXP: T.int(0, 500),
+  primarySkill: skillRef,
+  secondarySkills: T.arr(skillRef, 6),
+  skills: T.arr(skillRef, 12),
+  skillWeights,
+  mastery: masteryDef
 };
 export const TYPE_FIELDS = {
   drill: { shot, scoringRules, xp: T.int(0, 1000), skillEffects, prerequisites: T.arr(idStr, 10) },
@@ -294,7 +329,7 @@ export const TYPE_FIELDS = {
   game: {
     template: T.oneOf(GAME_TEMPLATES),
     rules: T.obj({ lives: T.int(1, 10), pointsPerSuccess: T.int(0, 10000), pointsPerStar: T.int(0, 10000), streakBonus: T.obj({ every: T.int(2, 50), points: T.int(0, 10000) }, ['every', 'points']), stageBonus: T.int(0, 100000), retry: T.oneOf(['repeat', 'next']), shots: T.int(1, 200), loop: T.bool, passScore: T.int(0, 1000000), quizPoints: T.int(0, 10000), order: T.oneOf(['listed', 'difficulty']) }),
-    stages: T.arr(T.obj({ id: idStr, title: T.str(80, 1), difficulty: T.int(1, 10), shot, points: T.int(0, 10000), scoringRules, quiz: T.obj({ question: T.str(240, 1), options: T.arr(T.str(80, 1), 6, 2), correct: T.int(0, 5), answer: diamondAnswer, explanation: text(1500) }, ['question']) }, ['id', 'title', 'shot']), 60, 1)
+    stages: T.arr(T.obj({ id: idStr, title: T.str(80, 1), difficulty, shot, points: T.int(0, 10000), scoringRules, quiz: T.obj({ question: T.str(240, 1), options: T.arr(T.str(80, 1), 6, 2), correct: T.int(0, 5), answer: diamondAnswer, explanation: text(1500) }, ['question']) }, ['id', 'title', 'shot']), 60, 1)
   },
   pack: { unlockMode: T.oneOf(['sequential', 'open']), stages: null /* set below */ }
 };
@@ -307,7 +342,7 @@ const HEADER = {
   contentVersion: versionStr,
   attribution: T.obj({ author: text(80), sourceName: text(120), sourceURL: urlStr, notes: text(600) }),
   careerEligible: T.bool,
-  metadata: T.obj({ tags: T.arr(T.str(30, 1), 12), created: text(40), updated: text(40), language: text(16), demo: T.bool, generator: text(80) }),
+  metadata: T.obj({ tags: T.arr(T.str(30, 1), 12), created: text(40), updated: text(40), language: text(16), demo: T.bool, generator: text(80), official: T.bool }),
   ...COMMON_ITEM
 };
 const STAGE_BASE = { id: idStr, stageType: T.oneOf(STAGE_TYPES), requires: T.arr(idStr, 10), contentType: T.oneOf(STAGE_CONTENT_TYPES), ...COMMON_ITEM };
@@ -508,7 +543,7 @@ function normalizeInPlace(doc) {
     if (it.contentType === 'game' || it.template) for (const st of it.stages || []) normalizeShot(st.shot);
   }
 }
-const KEY_ORDER = ['format', 'schemaVersion', 'contentType', 'id', 'contentVersion', 'title', 'description', 'category', 'difficulty', 'skill', 'attribution', 'careerEligible', 'metadata'];
+const KEY_ORDER = ['format', 'schemaVersion', 'contentType', 'id', 'contentVersion', 'title', 'description', 'category', 'difficulty', 'skill', 'attribution', 'careerEligible', 'rankXpEligible', 'baseXP', 'primarySkill', 'secondarySkills', 'skills', 'skillWeights', 'mastery', 'metadata'];
 function orderKeys(doc) {
   const out = {};
   for (const k of KEY_ORDER) if (doc[k] !== undefined) out[k] = doc[k];

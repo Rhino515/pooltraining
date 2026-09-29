@@ -7,6 +7,7 @@
 import { RANK_NAMES } from './storage.js';
 import { gameLevel, ghostBeaten, totalStars, gameState, nextOpenStage, isGameUnlocked, unlockLabel } from './games/engine.js';
 import { getGame, bossForRank, stageSpecs } from './games/registry.js';
+import { promotionReady, promotionStatus } from './progression/rank.js';
 
 export { RANK_NAMES };
 
@@ -94,9 +95,12 @@ export function requirementsMet(rankIndex, state) {
   return !!def && def.requirements.every((r) => checkRequirement(r, state));
 }
 
-/** Boss for rank r is playable when you hold rank r-1 and every other requirement is met */
+/**
+ * Boss for rank r = that rank's PROMOTION TEST. Playable when you hold rank r-1, every other Career requirement
+ * is met AND the v11 promotion requirements are met (Rank XP full, Skill Gates, skill floors, mastery — progression/rank.js).
+ */
 export function isBossUnlocked(state, boss) {
-  return (state.rankIndex || 0) === boss.rank - 1 && nonBossMet(boss.rank, state);
+  return (state.rankIndex || 0) === boss.rank - 1 && nonBossMet(boss.rank, state) && promotionReady(state);
 }
 
 /** Highest rank earned: starts at rankFloor, then climbs while each rank's boss has been beaten. */
@@ -131,6 +135,11 @@ export function nextUp(state) {
   if (!item) return { done: true, title: info.next, text: 'Promotion ready.', href: '#career' };
   if (item.type === 'boss') {
     const b = bossForRank(item.rank);
+    const ps = promotionStatus(state);
+    if (!ps.unlocked) {
+      const o = ps.open[0];
+      return { title: `Promotion Test locked: ${o.label}`, text: `${ps.met}/${ps.items.length} promotion requirements met for ${info.next}.${o.have != null && o.need != null ? ` Now ${o.have} / ${o.need}.` : ''}`, href: o.href, linkText: o.type === 'gate' ? 'Skill Gate' : o.type === 'floor' ? 'Skill' : 'Train', req: item, rank: info.next, remaining: ps.open.length, promo: true };
+    }
     return { title: `Boss Battle unlocked: ${b.name}`, text: `Every requirement for ${info.next} is met. Beat the boss to promote.`, href: `#boss/${b.id}`, req: item, rank: info.next };
   }
   const p = item.progress;

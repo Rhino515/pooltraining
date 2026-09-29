@@ -7,6 +7,7 @@ import { getGame, getStages, getStage, stageSpecs, GAMES, getBoss } from './regi
 import { recordCalibration, travelFromStop, lagEndpoint } from './speed.js';
 import { buildLag } from './builders.js';
 import { getDrillById } from '../drills.js';
+import { awardSession, awardBoss } from '../progression/sessions.js';
 
 export const RESULT_SOURCE_MANUAL = 'manual';
 
@@ -502,6 +503,9 @@ export function finishSession(state, session) {
     for (const a of session.attempts) cal = recordCalibration(cal, a.speed, a.actual);
     next.speedCal = cal;
   }
+  // v11: Lifetime / Rank / Drill XP + mastery record for this session (progression/award.js)
+  const aw = awardSession(next, session, stage, ev);
+  next = aw.state;
   const afterUnlocked = GAMES.filter((x) => isGameUnlocked(next, x.id)).map((x) => x.id);
   const specs = stageSpecs(gid);
   const idx = specs.findIndex((s) => s.id === session.stageId);
@@ -513,6 +517,7 @@ export function finishSession(state, session) {
       firstPass,
       newPB,
       xpGain,
+      award: aw.award,
       nextStageId: ev.passed && nextStage ? nextStage.id : null,
       unlockedNext: firstPass && !!nextStage,
       endlessUnlocked: firstPass && !nextStage && !!getGame(gid)?.endless,
@@ -606,8 +611,9 @@ export function finishBoss(state, session) {
       { date: now, passed: ev.passed, weakSkills: ev.weakSkills, shots: ev.shots.map((s) => ({ skill: s.shot.skill, title: s.shot.title, made: s.made, stars: s.stars, need: s.shot.need, passed: s.passed, attempts: s.attempts.map((a) => ({ ...a })) })) }
     ].slice(-20)
   };
-  const next = { ...state, bosses: { ...(state.bosses || {}), [session.bossId]: rec }, xp: (state.xp || 0) + (ev.passed && !old.passed ? 400 : 20), activeSession: null };
-  return { state: next, result: { ...ev, firstPass: ev.passed && !old.passed } };
+  const next0 = { ...state, bosses: { ...(state.bosses || {}), [session.bossId]: rec }, xp: (state.xp || 0) + (ev.passed && !old.passed ? 400 : 20), activeSession: null };
+  const aw = awardBoss(next0, session, ev);
+  return { state: aw.state, result: { ...ev, firstPass: ev.passed && !old.passed, award: aw.award } };
 }
 
 // ------------------------------------------------------------------ calibration helpers
