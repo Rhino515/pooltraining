@@ -1,13 +1,14 @@
 /**
  * Local player profile (the phone's owner): display name + photo, in its own key (poolIQProfileV1), mirrored to
  * IndexedDB / snapshots / backups by vault.js. Sync-ready shape (stable UUID, createdAt/updatedAt, schema) and a
- * clean exportable publicStats() summary for a future account service / leaderboards. NO network code: nothing is
- * uploaded anywhere and there are no online leaderboards.
+ * clean exportable publicStats() summary. NO network code here: v13 online accounts (js/cloud/) upload the profile
+ * and public stats only when the player signs in.
  */
 import { dataWritten } from './storage.js';
 import { uuid } from './friends/model.js';
 import { careerStatus, drillRankStatus, masteryCounts } from './progression/rank.js';
 import { computeSkillLevels } from './progression/skillLevels.js';
+import { totalStars } from './games/engine.js';
 
 export const PROFILE_KEY = 'poolIQProfileV1';
 export const PROFILE_SCHEMA = 1;
@@ -50,10 +51,11 @@ export function updateProfile(patch, now = Date.now()) {
 export const displayNameOf = (p) => (p && p.displayName) || 'You';
 
 /**
- * Public stats summary — the object a future account service / leaderboard would receive. Training data only
- * (PvP results are private to this phone). Pure; nothing is sent anywhere.
+ * Public stats summary — what the v13 friends leaderboard receives (public_stats table) when you are signed in.
+ * Training data only; friend-match (PvP) results stay private unless opts.pvp is passed (the opt-in "share my
+ * friend-match record" switch in Settings). Pure; the network code lives in js/cloud/.
  */
-export function publicStats(state, profile = getProfile(), now = Date.now()) {
+export function publicStats(state, profile = getProfile(), now = Date.now(), opts = {}) {
   const cs = careerStatus(state);
   const dr = drillRankStatus(state);
   const mc = masteryCounts(state);
@@ -70,7 +72,9 @@ export function publicStats(state, profile = getProfile(), now = Date.now()) {
     drillRank: { number: dr.number, name: dr.name, drillXp: dr.have.xp },
     mastery: { passed: mc.passed, strong: mc.strong, mastered: mc.mastered },
     skills: Object.fromEntries(Object.values(lv).map((s) => [s.id, { level: s.label, step: s.step, rating: s.score }])),
+    stars: totalStars(state),
     ghost: { matches: gm.length, wins: gm.filter((m) => m.won).length },
+    ...(opts.pvp ? { pvp: { matches: opts.pvp.matches || 0, wins: opts.pvp.wins || 0, losses: opts.pvp.losses || 0 } } : {}),
     devSeeded: !!state.devSeed // DEV MODE test states must never be synced
   };
 }

@@ -15,7 +15,30 @@ Pool IQ is a mobile-first PWA for practising billiards on a real table. You play
 
 All content is original. Pass/fail is only ever computed from the results you record. The app has no self-report "I passed" buttons.
 
+## What's new in v13 (changelog)
+
+**Free online accounts** for a small group of friends, on Supabase's free tier. The app is still the static GitHub
+Pages site and still works fully signed out and offline. Details: [docs/ONLINE_ACCOUNTS.md](docs/ONLINE_ACCOUNTS.md).
+
+- **Sign in with email + password** (no magic links — they open in Safari instead of the installed iPhone app).
+  Create account, sign in, sign out, forgot password and change password. Email confirmation is off, so an account
+  works the moment it's created. The official supabase-js v2 UMD build is bundled in `js/vendor/` (no CDN, precached,
+  so it loads offline too) and is only loaded when an account is actually used.
+- **Profile sync**: the existing local profile (name + photo) syncs to a `profiles` table. Photos go in a public
+  `avatars` storage bucket, still the same small 256×256 photos the app already makes.
+- **Cloud save**: one private JSON backup per account in the existing v9 backup format (`saves`). Automatic upload
+  ~20 s after a session, plus **Back Up to Cloud** and **Restore from Cloud** in Settings. On a new phone, signing in
+  offers to restore — local data is never overwritten without a confirm step, and a snapshot is taken first.
+- **Friends leaderboard** (`#leaderboard`, linked from Friends and Profile): everyone in the project, with photos,
+  sortable by Lifetime XP, Career rank or Drill Rank. Tap a player for their public profile card. The numbers come
+  from the existing public stats export (Career rank and ball level, Drill Rank, Lifetime XP, stars, Ghost record;
+  the friend-match record only if the player switches it on in Settings).
+- **Security**: row-level security on every table, owner-only writes, owner-only avatar uploads. The SQL (no secrets)
+  is `supabase/schema.sql`.
+- Cache `pool-iq-v13`, app version 13.
+
 ## What's new in v12 (changelog)
+
 
 A visual restyle only: no features, routes, data or storage keys changed.
 
@@ -313,6 +336,13 @@ Before shipping new drills, run `node scripts/verify.mjs`. It applies the same g
 ## Career
 
 A rank's requirements are Table Games levels, Ghost wins and that rank's Boss Battle; some higher ranks also require star totals or PBs. From v11 the boss is the rank's **Promotion Test**. It unlocks when every non-boss requirement is met **and** the rank's Rank XP is full (top ball, Skill Gates cleared), skill floors are reached and enough items are STRONG/MASTERED. Beating the boss is the only way to promote, and XP never promotes by itself. Details: [docs/RANKING_AND_XP.md](docs/RANKING_AND_XP.md) and [docs/SKILL_GATES_AND_PROMOTIONS.md](docs/SKILL_GATES_AND_PROMOTIONS.md).
+
+## Online accounts (v13)
+
+Optional, and the app is unchanged without one. Settings → **Online account · Cloud save** (or Profile → Online
+Account): create an account or sign in with email and password, back up to the cloud, restore on a new phone, and
+open the **Friends Leaderboard**. Setup, what's stored where, and how to reset a friend's password:
+[docs/ONLINE_ACCOUNTS.md](docs/ONLINE_ACCOUNTS.md).
 
 ## Local player profile (v11)
 

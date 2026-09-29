@@ -796,7 +796,7 @@ let state = storage.defaultState();
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
   const missing = walk(path.join(root, 'js')).filter((f) => f.endsWith('.js')).map((f) => './' + path.relative(root, f)).filter((f) => !sw.includes(`'${f}'`));
-  assert(/'pool-iq-v12'/.test(sw), 'service worker cache is pool-iq-v12');
+  assert(/'pool-iq-v13'/.test(sw), 'service worker cache is pool-iq-v13');
   assertAll('service worker precaches every JS module (incl. simulator + Create Drill)', missing.map((m) => `missing ${m}`));
   const wordN = { one: 1, two: 2, three: 3, four: 4 };
   const probs = [];
@@ -929,7 +929,9 @@ let state = storage.defaultState();
   const uncovered = [...keyConsts].filter((k) => !V.DATA_KEYS.includes(k) && k !== V.META_KEY && k !== 'poolIQFlash');
   assertAll(`every persisted localStorage key is mirrored + backed up (${V.DATA_KEYS.length} data keys: ${V.DATA_KEYS.join(', ')})`, uncovered.map((k) => `not covered: ${k}`));
   assert(V.KEYS.custom === CDm.CUSTOM_KEY && V.KEYS.sim === LIBm.SIM_KEY && /WIP_KEY = 'poolIQDrillWip'/.test(src('js/ui/drillBuilder.js')) && /DRAFT_KEY = 'poolIQDrillDraft'/.test(src('js/ui/simulator.js')) && /GHOST_PRESET_KEY = 'poolIQGhostPreset'/.test(src('js/app.js')), 'vault key list matches the owning modules (custom drills, simulator, drafts, ghost preset)');
-  assertAll('every module that writes localStorage notifies the mirror (dataWritten / lsSet)', writers.filter(([f, t]) => !/vault\.js$/.test(f) && !/dataWritten\(/.test(t)).map(([f]) => f));
+  // js/vendor/supabase.js (v13, third-party) only keeps its own sign-in session (sb-<ref>-auth-token): tokens must
+  // never go into backup files, so that key is deliberately outside the mirrored / backed-up set
+  assertAll('every module that writes localStorage notifies the mirror (dataWritten / lsSet)', writers.filter(([f, t]) => !/vault\.js$/.test(f) && !/^js\/vendor\//.test(f) && !/dataWritten\(/.test(t)).map(([f]) => f));
   assert(!/localStorage\.setItem\(/.test(src('js/ui/drillBuilder.js')) && !/localStorage\.setItem\(/.test(src('js/ui/simulator.js')) && /lsSet\(GHOST_PRESET_KEY/.test(src('js/app.js')), 'drafts + ghost preset go through lsSet (mirrored)');
   {
     let hits = 0;
@@ -1791,7 +1793,7 @@ let state = storage.defaultState();
   const pb2 = VLT.parseBackup(JSON.stringify(newBackup));
   assert(pb2.keys.poolIQFriendsV1 && pb2.summary.pvp === fd.matches.length && pb2.summary.friends > 0, 'vault: v11 backup summary counts friends + friend matches');
   assert(!VLT.parseBackup(JSON.stringify({ ...newBackup, keys: { ...newBackup.keys, poolIQFriendsV1: { nope: 1 } } })).keys.poolIQFriendsV1, 'vault: a damaged friends key is dropped (rest restores)');
-  assert(VLT.APP_VERSION === '12', 'vault: APP_VERSION is 12');
+  assert(VLT.APP_VERSION === '13', 'vault: APP_VERSION is 13');
   // docs exist
   for (const f of ['docs/RANKING_AND_XP.md', 'docs/SKILL_GATES_AND_PROMOTIONS.md', 'docs/FRIENDS_AND_TOURNAMENTS.md', 'docs/DEV_MODE.md']) assert(fs.existsSync(path.join(root, f)), `doc present: ${f}`);
   store.clear();
@@ -2020,6 +2022,66 @@ let state = storage.defaultState();
   if (!/^<svg[^>]*viewBox="0 0 512 512"/.test(src('icons/favicon.svg')) || /<text/.test(src('icons/favicon.svg'))) iprobs.push('favicon.svg must be self-contained (outlined text)');
   assertAll('v12 icons: 192/512 any + maskable, apple-touch-icon 180, favicon SVG + 32 px PNG, all real PNG sizes, precached', iprobs);
   assert(/v12/.test(src('README.md')) && /Poppins/.test(src('README.md')) && /Open Font License/.test(src('README.md')), 'README has the v12 changelog (font + licence)');
+}
+
+// ---------------------------------------------------------------- v13: online accounts (Supabase)
+{
+  const fsm = await import('fs');
+  const src = (f) => fsm.readFileSync(path.join(root, f), 'utf8');
+  const sw = src('sw.js');
+  const idx = src('index.html');
+  const cfg = src('js/cloud/config.js');
+  const sql = src('supabase/schema.sql');
+  const docs = src('docs/ONLINE_ACCOUNTS.md');
+  const app = src('js/app.js');
+  const dash = src('js/dashboard.js');
+  const friends = src('js/ui/friends.js');
+  const vendor = src('js/vendor/supabase.js');
+  assert(/'pool-iq-v13'/.test(sw) && !/'pool-iq-v12'/.test(sw), 'v13: service worker cache is pool-iq-v13');
+  assert(sw.includes(`'./js/vendor/supabase.js'`) && sw.includes(`'./js/cloud/controller.js'`) && sw.includes(`'./js/ui/account.js'`), 'v13: sw precaches the bundled supabase-js and the cloud modules');
+  assert(/supabase-js\/2\.117\.2/.test(vendor) && /createClient/.test(vendor) && !/cdn\.jsdelivr|unpkg\.com|esm\.sh/.test(idx + sw), 'v13: official supabase-js v2 UMD build is bundled locally (no CDN)');
+  assert(/nqfwlpfyccbqetcyjijf/.test(cfg) && /sb_publishable_/.test(cfg) && !/sb_secret_|service_role|sbp_[0-9a-f]{10}/.test(cfg + sql + docs), 'v13: config carries the project ref + publishable key only (no secrets anywhere)');
+  assert(/enable row level security/.test(sql) && /profiles: owner insert/.test(sql) && /saves: owner read/.test(sql) && /public_stats: signed-in read/.test(sql) && /avatars: owner insert/.test(sql) && /pool-iq-backup/.test(sql), 'v13: schema.sql has RLS + owner policies on profiles, saves, public_stats and the avatars bucket');
+  assert(/createCloud/.test(app) && /name === 'account'/.test(app) && /name === 'leaderboard'/.test(app) && /cloudCard/.test(dash) && /leaderboard/.test(friends), 'v13: app wires account + leaderboard routes, Settings cloud card, Friends link');
+  assert(/Reset a friend's password/.test(docs) && /What's stored where/.test(docs) && /mailer_autoconfirm/.test(docs), 'v13: docs/ONLINE_ACCOUNTS.md covers setup, storage and password reset');
+  assert(/v13/.test(src('README.md')) && /ONLINE_ACCOUNTS/.test(src('README.md')), 'README has the v13 changelog');
+  // the pure cloud logic (Node-runnable, no network)
+  const S = await import(js('cloud/sync.js'));
+  const kv = { m: new Map(), getItem(k) { return this.m.has(k) ? this.m.get(k) : null; }, setItem(k, v) { this.m.set(k, String(v)); }, removeItem(k) { this.m.delete(k); } };
+  kv.setItem('poolIQStateV4', JSON.stringify({ version: 4, xp: 50, rankIndex: 0, results: {}, games: { landing: { stages: { 'lz-1': { tries: 2 } }, pb: {}, sessions: [] } }, ghostMatches: [], settings: {}, speedCal: {} }));
+  const dev = S.deviceId(kv);
+  assert(S.deviceId(kv) === dev && dev.startsWith('dev-'), 'v13 sync: device id is stable per install');
+  const row = S.buildSaveRow(kv, { userId: 'u1', deviceId: dev, deviceLabel: 'iPhone', now: 1700000000000 });
+  assert(row.data.format === 'pool-iq-backup' && row.data.keys.poolIQStateV4 && row.device_label === 'iPhone' && row.summary.sessions === 2, 'v13 sync: cloud save row is a real pool-iq-backup');
+  const parsed = S.parseCloudSave({ ...row, updated_at: '2026-09-01T00:00:00Z' });
+  assert(parsed.summary.sessions === 2 && parsed.keys.poolIQStateV4, 'v13 sync: a cloud save parses back like a backup file');
+  let bad = false; try { S.parseCloudSave({ data: { format: 'nope' } }); } catch { bad = true; }
+  assert(bad, 'v13 sync: a non-backup cloud row is rejected');
+  const cmp = S.compareWithCloud({ kv, row: { updated_at: '2026-09-01T00:00:00Z', local_saved_at: Date.now() + 1e7, device_id: 'other', device_label: 'Android phone', summary: {} }, userId: 'u1' });
+  assert(cmp.exists && !cmp.known && cmp.newer === 'cloud' && cmp.recommend === 'restore', `v13 sync: newer cloud save recommends restore (${cmp.recommend})`);
+  const block = S.uploadBlocked({ kv, head: { updated_at: '2026-09-02T00:00:00Z', device_id: 'other' }, userId: 'u1' });
+  assert(block && block.reason === 'cloud-changed', 'v13 sync: an unseen cloud change blocks the automatic upload');
+  S.setCloudMeta(kv, { userId: 'u1', cloudUpdatedAt: '2026-09-02T00:00:00Z' });
+  assert(S.uploadBlocked({ kv, head: { updated_at: '2026-09-02T00:00:00Z', device_id: 'other' }, userId: 'u1' }) === null, 'v13 sync: once the cloud change is acknowledged, upload is allowed');
+  const ps = { format: 'pool-iq-public-stats', displayName: 'Andrew', career: { rankIndex: 2, rank: 'Shooter', ball: 3, title: 'Shooter · 3-ball', champion: false, lifetimeXp: 1200 }, drillRank: { number: 1, name: 'Chalk Rookie', drillXp: 40 }, stars: 9, ghost: { matches: 4, wins: 2 }, devSeeded: false };
+  const sr = S.publicStatsRow(ps, { userId: 'u1' });
+  assert(sr && sr.rank_name === 'Shooter' && sr.lifetime_xp === 1200 && sr.drill_rank === 1 && sr.stars === 9 && sr.pvp_wins === null, 'v13 sync: public stats row maps the export (no win record by default)');
+  assert(S.publicStatsRow({ ...ps, devSeeded: true }, { userId: 'u1' }) === null, 'v13 sync: DEV test states are never shared');
+  const entries = S.mergeLeaderboard([{ id: 'a', display_name: 'Maya', avatar_url: 'https://x/a' }, { id: 'b', display_name: '', avatar_url: null }], [{ user_id: 'b', display_name: 'Leo', lifetime_xp: 500 }, { user_id: 'a', display_name: 'Maya', lifetime_xp: 100, rank_index: 3 }], 'a');
+  const sorted = S.sortLeaderboard(entries, 'xp');
+  assert(sorted.map((e) => e.name).join(',') === 'Leo,Maya' && sorted[1].isMe && sorted.length === 2, `v13 sync: leaderboard merges profiles + stats and sorts by XP (${sorted.map((e) => e.name).join(',')})`);
+  const byCareer = S.sortLeaderboard(entries, 'career');
+  assert(byCareer[0].name === 'Maya', 'v13 sync: Career rank sort puts the higher rank first');
+  const parts = S.dataUrlParts('data:image/png;base64,iVBORw0KGgo=');
+  assert(parts && parts.mime === 'image/png' && parts.ext === 'png' && parts.bytes.length > 0 && S.avatarPath('u1') === 'u1/avatar', 'v13 sync: data URLs decode for the avatars bucket');
+  assert(S.friendlyError({ message: 'Invalid login credentials' }) === 'Wrong email or password.' && /No connection/.test(S.friendlyError({ message: 'Failed to fetch' })), 'v13 sync: errors become plain sentences');
+  // public stats export now carries stars + an opt-in win record
+  const prof = await import(js('profile.js'));
+  const st = { version: 4, xp: 0, rankIndex: 0, results: {}, games: {}, ghostMatches: [], settings: {}, speedCal: {} };
+  const out = prof.publicStats(st, prof.defaultProfile(), 1700000000000, { pvp: { matches: 3, wins: 2, losses: 1 } });
+  assert(out.format === 'pool-iq-public-stats' && typeof out.stars === 'number' && out.pvp && out.pvp.wins === 2, 'v13: public stats export includes stars and the opt-in friend-match record');
+  const out2 = prof.publicStats(st, prof.defaultProfile(), 1700000000000);
+  assert(!out2.pvp, 'v13: friend-match record is absent unless opted in');
 }
 
 console.log('\n--- Summary ---');

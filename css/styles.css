@@ -1259,3 +1259,58 @@ nav button[data-page="arcade"]{flex-grow:1.3}
 nav button span{white-space:nowrap}
 h2.chTitle{font-variant-caps:all-small-caps;font-size:clamp(25px,6.6vw,36px);line-height:1.02}
 @media(max-width:420px){h2.chTitle{font-size:25px}}
+/* v13 online accounts: sign-in, cloud save, friends leaderboard, player card */
+.acTabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:4px 0 6px}
+.acTabs .chip{min-height:46px;font-weight:800;letter-spacing:.6px;font-size:13px}
+.acCard form{margin:0}
+.acMsg{margin:10px 0 0;font-size:13px;line-height:1.4;min-height:0}
+.acMsg:empty{display:none}
+.acMsg.err{color:#ffb3bf}
+.acMsg.ok{color:var(--green)}
+.acForgot{display:block;margin:14px auto 4px}
+.acWho{display:flex;align-items:center;gap:14px;margin:4px 0 6px}
+.acWho b{display:block;font-size:17px}
+.acWho small{display:block;font-size:12px}
+.cloudCard .kv b{max-width:62%;overflow-wrap:anywhere}
+.cloudCard .warnBox{margin:10px 0}
+.cloudCard .shareRow{align-items:center;border-bottom:0;margin-top:8px}
+.cloudCard .shareRow .chip{min-width:64px;min-height:40px;font-weight:800}
+.cloudCard .shareRow .chip.active{color:var(--gold);border-color:#6a5420;box-shadow:0 0 12px #f6c45333}
+.lbPromo{margin-bottom:14px}
+.lbSort{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 14px}
+.lbSort .chip{min-height:44px;font-weight:800;padding:8px 6px}
+.lbRow{gap:10px;cursor:pointer}
+.lbRow.me{border-color:#6a5420;box-shadow:0 0 0 1px #6a5420,0 0 18px #f6c45322}
+.lbPos{width:26px;flex:none;text-align:center;font-weight:900;font-size:17px;color:var(--muted)}
+.lbPos[data-place="1"]{color:var(--gold)}
+.lbPos[data-place="2"]{color:#d9e2ec}
+.lbPos[data-place="3"]{color:#e0a36a}
+.lbMetric{flex:none;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;min-width:64px;text-align:right}
+.lbMetric b{font-size:18px;color:var(--cyan);line-height:1.1}
+.lbMetric small{font-size:10.5px;color:var(--muted);letter-spacing:.6px;max-width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lbFoot{text-align:center;margin-top:12px}
+.remoteAvatar{position:relative}
+.remoteAvatar img{position:absolute;inset:0}
+.pcHead{display:flex;align-items:center;gap:14px;margin:6px 0 10px}
+.pcHead .sheetTitle{margin:0}
+.pcBadges{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.pcBadges>div{display:flex;flex-direction:column;align-items:center;gap:4px;background:#0b1522;border:1px solid var(--line);border-radius:14px;padding:12px 6px;text-align:center}
+.pcBadges b{font-size:15px}
+.pcBadges small{font-size:10.5px;color:var(--muted);letter-spacing:1px}
+.cmpGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin:8px 0}
+.cmpGrid div{background:#0b1522;border:1px solid var(--line);border-radius:10px;padding:8px 4px;text-align:center;min-width:0}
+.cmpGrid b{display:block;font-size:16px;color:var(--cyan);overflow-wrap:anywhere}
+.cmpGrid span{font-size:9.5px;color:var(--muted);letter-spacing:.8px}
+.pcStats{grid-template-columns:repeat(3,1fr)}
+.pcSkills{margin:8px 0}
+.pcSkills .kv{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid #1a2738;font-size:13px}
+.pcSkills .kv span{color:var(--muted)}
+.cmpWrap{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.cmpCol{background:#08111b;border:1px solid var(--line);border-radius:14px;padding:10px 8px;min-width:0}
+.cmpCol.newer{border-color:#6a5420;box-shadow:0 0 14px #f6c45322}
+.cmpCol .eyebrow{font-size:10.5px}
+.cmpCol small{display:block;font-size:11px;min-height:28px}
+.cmpCol .cmpGrid{grid-template-columns:1fr 1fr;gap:4px}
+.cmpCol .cmpGrid b{font-size:14px}
+.cmpCol .cmpGrid span{font-size:8.5px;letter-spacing:.4px}
+.newTag{color:var(--gold);border-color:#6a5420;font-size:9.5px;padding:1px 6px}

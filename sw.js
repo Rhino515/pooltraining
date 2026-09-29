@@ -1,4 +1,4 @@
-const CACHE = 'pool-iq-v12';
+const CACHE = 'pool-iq-v13';
 const ASSETS = [
   './',
   './index.html',
@@ -24,9 +24,14 @@ const ASSETS = [
   './examples/demo-diamond-challenge.pooliq',
   './examples/demo-player-solution.pooliq',
   './examples/pooliq-drill-template.pooliq',
+  './js/vendor/supabase.js',
   './js/analyze.js',
   './js/app.js',
   './js/career.js',
+  './js/cloud/client.js',
+  './js/cloud/config.js',
+  './js/cloud/controller.js',
+  './js/cloud/sync.js',
   './js/content/convert.js',
   './js/content/schema.js',
   './js/content/store.js',
@@ -87,6 +92,7 @@ const ASSETS = [
   './js/skills.js',
   './js/storage.js',
   './js/tableDiagram.js',
+  './js/ui/account.js',
   './js/ui/builderContent.js',
   './js/ui/content.js',
   './js/ui/dev.js',
@@ -113,6 +119,8 @@ self.addEventListener('activate', (e) => {
 });
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  // v13: other origins (the Supabase account API + avatar photos) go straight to the network, never via this cache
+  if (new URL(e.request.url).origin !== location.origin) return;
   e.respondWith(
     caches.match(e.request, { ignoreSearch: true }).then((cached) =>
       cached ||

@@ -222,7 +222,7 @@ export function renderProfile(state) {
     ${careerHeaderHTML(state, { compact: true })}
     ${drillRankCardHTML(state, { compact: true })}
     <div class="card stats"><div><b>${(state.prog?.lifetimeXp ?? state.xp) || 0}</b><span>LIFETIME XP</span></div><div><b>${passedStages}</b><span>STAGES PASSED</span></div><div><b>${E.totalStars(state)}★</b><span>STARS</span></div></div>
-    <div class="chLinks"><button type="button" class="chip" data-action="go" data-href="#me/stats">My Stats</button><button type="button" class="chip" data-action="go" data-href="#skills">Skill Breakdown</button><button type="button" class="chip" data-action="go" data-href="#champion">${cs.champion ? 'Champion Stats' : 'Road to Champion'}</button><button type="button" class="chip" data-action="go" data-href="#friends">Friends & PvP</button></div>
+    <div class="chLinks"><button type="button" class="chip" data-action="go" data-href="#me/stats">My Stats</button><button type="button" class="chip" data-action="go" data-href="#skills">Skill Breakdown</button><button type="button" class="chip" data-action="go" data-href="#champion">${cs.champion ? 'Champion Stats' : 'Road to Champion'}</button><button type="button" class="chip" data-action="go" data-href="#friends">Friends & PvP</button><button type="button" class="chip lbChip" data-action="go" data-href="#leaderboard">🏆 Friends Leaderboard</button><button type="button" class="chip" data-action="go" data-href="#account">Online Account</button></div>
     <h2>Skill Breakdown</h2>
     <div class="skills card" id="profileSkills">${skillBreakdownHTML(state)}</div>
     <h2>Recommended Training</h2>
@@ -266,6 +266,7 @@ export function renderSettings(state, info = {}) {
   const coach = state.settings?.coaching || 'auto';
   return `<div class="title"><span class="eyebrow">SETTINGS</span><h1>Settings</h1></div>
     ${dataCardHTML(info)}
+    ${info.cloudCard || ''}
     <div class="card settingsCard">
       <div class="eyebrow">COACHING LEVEL</div>
       <p class="muted small">Auto picks the level from your rating in each game's main skill (now: ${esc(COACH_LABEL[coachingLevel({ ...state, settings: { coaching: 'auto' } }, { primarySkill: 'Position Play' })])} for position games).</p>
@@ -279,7 +280,7 @@ export function renderSettings(state, info = {}) {
       <p class="muted small">SPEED n = n table lengths of total cue-ball travel, measured from where the cue ball starts (standard start: the first diamond at your end). Quarter steps: 1.25, 1.50, 1.75… ${esc(clothNote(cal))}</p>
       <button type="button" class="bigBtn alt" data-action="go" data-href="#play/speed/sp-cal">RUN SPEED CALIBRATION</button>
     </div>
-    <div class="card settingsCard" data-card="profile"><div class="eyebrow">PLAYER PROFILE</div><p class="muted small">Your name and photo on this phone (shown on Profile and in friend matches). Stored only on this device and in your backups.</p><button type="button" class="bigBtn alt" data-action="go" data-href="#me">EDIT PROFILE</button></div>
+    <div class="card settingsCard" data-card="profile"><div class="eyebrow">PLAYER PROFILE</div><p class="muted small">Your name and photo (shown on Profile and in friend matches). ${info.signedIn ? 'Saved on this device, in your backups, and synced to your online account (friends see them on the leaderboard).' : 'Stored only on this device and in your backups — until you sign in to an online account.'}</p><button type="button" class="bigBtn alt" data-action="go" data-href="#me">EDIT PROFILE</button></div>
     ${installCardHTML(info)}
     <div class="card settingsCard devCard" data-card="dev"><div class="eyebrow">DEV MODE</div><p class="muted small">Passcode-locked test tools for the owner of this phone. A convenience lock on this device — not server security.</p><button type="button" class="bigBtn alt" data-action="go" data-href="#dev">DEV MODE</button></div>
     <div class="card settingsCard dangerCard"><div class="eyebrow">DANGER ZONE</div><p class="muted small">Clears stages, Ghost matches, bosses, calibration and rank. A snapshot is taken first, so it can be undone from “Restore previous snapshot”.</p><button type="button" class="bigBtn danger" data-action="reset-all">RESET ALL PROGRESS</button></div>`;

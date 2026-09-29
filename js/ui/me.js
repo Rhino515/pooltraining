@@ -1,6 +1,6 @@
 /**
  * Local player profile screens: #me (name + photo) and #me/stats (my stats + the exportable public-stats summary).
- * Nothing here goes online — the public summary is the shape a future account service / leaderboard would use.
+ * Nothing here does network I/O: when signed in (v13), js/cloud/controller.js syncs the profile and public stats.
  */
 import { getProfile, updateProfile, avatarFromFile, publicStats, displayNameOf } from '../profile.js';
 import { avatarHTML } from '../progression/badge.js';
@@ -10,9 +10,9 @@ import { toast } from './sheet.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-export function renderMe(state) {
+export function renderMe(state, { signedIn = false } = {}) {
   const p = getProfile();
-  return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#profile">‹ Profile</button><span class="eyebrow">MY PROFILE</span><h1>${esc(displayNameOf(p))}</h1><p>Your name and photo on this phone. They are saved on this device and in your backups — nothing is uploaded.</p></div>
+  return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#profile">‹ Profile</button><span class="eyebrow">MY PROFILE</span><h1>${esc(displayNameOf(p))}</h1><p>${signedIn ? 'Your name and photo. Saved on this device and in your backups, and synced to your online account — friends see them on the leaderboard.' : 'Your name and photo on this phone. They are saved on this device and in your backups — nothing is uploaded unless you sign in to an online account.'}</p></div>
     <div class="card meEdit" data-me="${esc(p.id)}">
       <div class="avatarEdit"><span id="meAvatarPrev">${avatarHTML({ ...p, name: p.displayName }, 112)}</span>
         <div class="avatarBtns"><label class="bigBtn alt fileBtn">TAKE PHOTO<input type="file" accept="image/*" capture="user" data-avatar-input="me" aria-label="Take a profile photo"/></label><label class="bigBtn alt fileBtn">CHOOSE PHOTO<input type="file" accept="image/*" data-avatar-input="me" aria-label="Choose a profile photo"/></label>${p.avatar ? '<button type="button" class="bigBtn alt" data-action="me-photo-clear">REMOVE PHOTO</button>' : ''}</div></div>
@@ -24,7 +24,7 @@ export function renderMe(state) {
     <button type="button" class="bigBtn alt" data-action="go" data-href="#me/stats">MY STATS</button>`;
 }
 
-export function renderMyStats(state) {
+export function renderMyStats(state, { signedIn = false } = {}) {
   const p = getProfile();
   const ps = publicStats(state, p);
   const d = loadFriends();
@@ -36,7 +36,7 @@ export function renderMyStats(state) {
     ${pvp && pvp.matches ? `<h2>Friend matches (private)</h2><div class="card stats"><div><b>${pvp.wins}–${pvp.losses}</b><span>RECORD</span></div><div><b>${pvp.winPct}%</b><span>WIN RATE</span></div><div><b>${pvp.bestStreak}</b><span>BEST STREAK</span></div></div>` : ''}
     <h2>Skills</h2><div class="skills card">${skillBreakdownHTML(state)}</div>
     <h2>Public stats summary</h2>
-    <div class="card settingsCard" data-public-stats><p class="muted small">This is the summary a future online account could share (training only — friend matches stay private). Pool IQ has no online accounts or leaderboards yet; nothing is sent anywhere.${ps.devSeeded ? ' <b class="gold">DEV test state — would not be shared.</b>' : ''}</p>
+    <div class="card settingsCard" data-public-stats><p class="muted small">${signedIn ? 'This is what the friends leaderboard shows for you (training only — your friend-match record is shared only if you switch it on in Settings).' : 'This is what the friends leaderboard would show if you sign in to an online account (training only — friend matches stay private). Signed out, nothing is sent anywhere.'}${ps.devSeeded ? ' <b class="gold">DEV test state — never shared.</b>' : ''}</p>
       <pre class="jsonBox">${esc(JSON.stringify(ps, null, 2))}</pre>
       <button type="button" class="bigBtn alt" data-action="me-export-stats">SAVE AS FILE</button></div>`;
 }

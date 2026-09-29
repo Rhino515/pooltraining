@@ -41,6 +41,12 @@ import * as FM from './friends/model.js';
 import * as FT from './friends/tournament.js';
 import * as PR from './profile.js';
 import { clearStageCache } from './games/registry.js';
+// v13: optional online accounts (Supabase) — sign-in, profile sync, cloud save, friends leaderboard
+import { createCloud } from './cloud/controller.js';
+import { renderAuthCallback } from './ui/account.js';
+
+/** The hash the app was opened with (a Supabase email link lands as #access_token=… / #error_description=…) */
+const BOOT_HASH = typeof location !== 'undefined' ? location.hash : '';
 
 function derive(s) {
   // fresh / reset saves start on the current progression version (legacy saves are migrated at boot first)
@@ -50,6 +56,16 @@ function derive(s) {
 
 let state = null; // set in boot() after the storage vault has reconciled localStorage with IndexedDB
 const vault = V.createVault({ kv: localStorage, idb: idbAdapter });
+const cloud = createCloud({
+  kv: localStorage,
+  vault,
+  V,
+  getState: () => state,
+  routeName: () => route.name,
+  renderRoute: () => renderRoute(),
+  navigate: (h) => navigate(h),
+  flash: (msg) => { try { sessionStorage.setItem(FLASH_KEY, msg); } catch { /* ignore */ } }
+});
 const FLASH_KEY = 'poolIQFlash';
 const DAY = 86400000;
 
@@ -91,7 +107,7 @@ function parseHash() {
   return { name: name || 'home', args };
 }
 
-const NAV_FOR = { gate: 'career', promo: 'career', champion: 'career', training: 'career', skill: 'profile', skills: 'profile', me: 'profile', drillrank: 'drills', friends: 'arcade', friend: 'arcade', h2h: 'arcade', fmatch: 'arcade', fsession: 'arcade', tourney: 'arcade', tnew: 'arcade', dev: 'profile', devgame: 'profile', devedit: 'profile', devkeys: 'profile', content: 'drills', cimport: 'drills', cview: 'drills', cplay: 'drills', cedit: 'drills', sim: 'sim', drillnew: 'drills', drilledit: 'drills', home: 'home', career: 'career', drills: 'drills', analyze: 'analyze', arcade: 'arcade', tablegames: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
+const NAV_FOR = { account: 'profile', leaderboard: 'profile', gate: 'career', promo: 'career', champion: 'career', training: 'career', skill: 'profile', skills: 'profile', me: 'profile', drillrank: 'drills', friends: 'arcade', friend: 'arcade', h2h: 'arcade', fmatch: 'arcade', fsession: 'arcade', tourney: 'arcade', tnew: 'arcade', dev: 'profile', devgame: 'profile', devedit: 'profile', devkeys: 'profile', content: 'drills', cimport: 'drills', cview: 'drills', cplay: 'drills', cedit: 'drills', sim: 'sim', drillnew: 'drills', drilledit: 'drills', home: 'home', career: 'career', drills: 'drills', analyze: 'analyze', arcade: 'arcade', tablegames: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
 
 function setChrome(playing, navName) {
   document.body.classList.toggle('playing', playing);
@@ -198,7 +214,10 @@ function renderRoute() {
   else if (name === 'fsession') v.innerHTML = FU.renderSession(args[0]);
   else if (name === 'tourney') v.innerHTML = FU.renderTourney(args[0]);
   else if (name === 'tnew') v.innerHTML = FU.renderTourneyNew();
-  else if (name === 'me') v.innerHTML = args[0] === 'stats' ? MU.renderMyStats(state) : MU.renderMe(state);
+  else if (name === 'me') v.innerHTML = args[0] === 'stats' ? MU.renderMyStats(state, { signedIn: cloud.isSignedIn() }) : MU.renderMe(state, { signedIn: cloud.isSignedIn() });
+  else if (name === 'account') v.innerHTML = cloud.renderAccountPage(args[0] || '');
+  else if (name === 'leaderboard') v.innerHTML = cloud.renderLeaderboardPage();
+  else if (name.includes('=')) v.innerHTML = renderAuthCallback(); // #access_token=… while the account library finishes the email link
   else if (name === 'dev') { v.innerHTML = DU.renderDev(state); DU.fillDev(); }
   else if (name === 'devgame') v.innerHTML = DU.renderDevGame(args[0]);
   else if (name === 'devkeys') v.innerHTML = DU.renderDevKeys();
@@ -212,7 +231,7 @@ function renderRoute() {
   } else if (name === 'arcade' || name === 'tablegames') v.innerHTML = renderArcade(state);
   else if (name === 'profile' || name === 'stats') v.innerHTML = renderProfile(state);
   else if (name === 'settings') {
-    v.innerHTML = renderSettings(state, settingsInfo());
+    v.innerHTML = renderSettings(state, { ...settingsInfo(), cloudCard: cloud.settingsCardHTML(), signedIn: cloud.isSignedIn() });
     fillSettings();
   }
   else if (name === 'ghost') {
@@ -226,6 +245,7 @@ function renderRoute() {
   setChrome(playing, NAV_FOR[name] || 'home');
   if (!playing) window.scrollTo(0, 0);
   else window.scrollTo(0, 0);
+  if (!playing) cloud.showPendingOffer(); // v13: a waiting "cloud save found" offer never interrupts a game
 }
 
 function rerender() {
@@ -248,6 +268,7 @@ function handleAction(action, el, e) {
   if (action.startsWith('fr-') && FU.friendsAction(action, el, ctx)) return;
   if (action.startsWith('me-') && MU.meAction(action, el, ctx, { downloadFile })) return;
   if (action.startsWith('dev-') && DU.devAction(action, el, devEnv)) return;
+  if ((action.startsWith('ac-') || action.startsWith('cloud-') || action.startsWith('lb-')) && cloud.action(action, el)) return;
   switch (action) {
     case 'ce-save-meta': {
       const out = C.saveMetaFromForm(el.dataset.uid);
@@ -751,7 +772,7 @@ document.addEventListener('pointerdown', () => D.touch(), { passive: true });
 async function boot() {
   let rec = null;
   try { rec = await vault.reconcile(); } catch (e) { console.warn('Pool IQ vault reconcile failed', e); }
-  onDataWrite(() => vault.touch());
+  onDataWrite((key) => { vault.touch(); cloud.noteDataChange(key); });
   refreshCustomDrills();
   let st0 = archiveUnknownDrills(loadState(), allDrills().map((d) => d.id));
   // v11 progression migration: snapshot first, replay saved history, never demote the Career rank
@@ -764,6 +785,7 @@ async function boot() {
   loadGhostPreset();
   initInstall(() => { if ((route.name === 'home' || route.name === 'settings') && !document.querySelector('#sheet.show')) renderRoute(); });
   window.addEventListener('hashchange', renderRoute);
+  cloud.init(BOOT_HASH); // loads the account library only if signed in before or opened from an email link
   renderRoute();
   document.documentElement.dataset.ready = '1';
   window.PoolIQ.boot = rec;
@@ -791,6 +813,6 @@ window.addEventListener('load', () => {
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
 });
 
-window.PoolIQ = { prog: { careerStatus, promotionStatus, drillRankStatus, computeSkillLevels, migrateProgression, needsMigration }, friends: { model: FM, tournament: FT }, profile: PR, dev: D, getState: () => state, drills, getDrillById, allDrills, commit, navigate, rerender, vault, V, backupPayload, installMode, get screen() { return screen; }, content: { store: CS, getPending: C.getPending, processImport: (text, name) => C.processImport(text, name || 'test.pooliq', ctx) } };
+window.PoolIQ = { cloud, prog: { careerStatus, promotionStatus, drillRankStatus, computeSkillLevels, migrateProgression, needsMigration }, friends: { model: FM, tournament: FT }, profile: PR, dev: D, getState: () => state, drills, getDrillById, allDrills, commit, navigate, rerender, vault, V, backupPayload, installMode, get screen() { return screen; }, content: { store: CS, getPending: C.getPending, processImport: (text, name) => C.processImport(text, name || 'test.pooliq', ctx) } };
 boot();
 export { drills, getDrillById };
