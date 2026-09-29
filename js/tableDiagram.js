@@ -367,11 +367,7 @@ export function renderTableDiagram(spec = {}, options = {}) {
     showGhost = shouldShowGhostBall(spec, cue, ob, pocket, ghost, ballR);
   }
 
-  const portrait = !!options.portrait;
-  const vb = portrait
-    ? `${-RAIL} ${-RAIL} ${50 + 2 * RAIL} ${100 + 2 * RAIL}`
-    : VIEWBOX;
-  let svg = `<svg${options.id ? ` id="${esc(options.id)}"` : ''} class="${esc(className)}${portrait ? ' is-portrait' : ''}" viewBox="${vb}" data-ball-r="${ballR}" data-portrait="${portrait ? 1 : 0}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pool table drill diagram" preserveAspectRatio="xMidYMid meet">`;
+  let svg = `<svg${options.id ? ` id="${esc(options.id)}"` : ''} class="${esc(className)}" viewBox="${VIEWBOX}" data-ball-r="${ballR}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pool table drill diagram" preserveAspectRatio="xMidYMid meet">`;
 
   // Rails / felt (v12: wood rails, teal cloth; gradient ids are unique per SVG so a hidden copy never blanks another)
   const u = `t${++uidSeq}`;
@@ -419,8 +415,6 @@ export function renderTableDiagram(spec = {}, options = {}) {
     </marker>
     <clipPath id="feltClip"><rect x="0" y="0" width="100" height="50"/></clipPath>
   </defs>`;
-  if (portrait) svg += `<g id="tableRoot" transform="translate(50 0) rotate(90)">`;
-  else svg += `<g id="tableRoot">`;
 
   // Outer wood rail: dark lip, wood body with grain, a thin light bevel and a shadow line where it meets the cushion
   svg += `<rect class="rail-wood" x="${-RAIL}" y="${-RAIL}" width="${100 + 2 * RAIL}" height="${50 + 2 * RAIL}" rx="3.2" ry="3.2" fill="url(#woodV${u}) #4a2915" stroke="#1a0c05" stroke-width="0.35"/>`;
@@ -553,7 +547,7 @@ export function renderTableDiagram(spec = {}, options = {}) {
   }
 
   if (spec.extraOver) svg += spec.extraOver;
-  svg += `</g></svg>`;
+  svg += `</svg>`;
   return svg;
 }
 
