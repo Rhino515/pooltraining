@@ -1,0 +1,122 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Half Table Patterns",
+  "difficulty": 2,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Five. Setups use repeatable diamond-grid references while preserving the pattern-play lesson."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "half-table",
+      "pattern-play"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-half-p11-speed",
+  "title": "PKF \u00b7 Half Pattern 11 \u00b7 Speed Only",
+  "description": "Pocket the 1 and reach the 2-ball zone using center ball and speed control only.",
+  "xp": 60,
+  "skillEffects": {
+    "Pattern Play": 0.6,
+    "Cue-Ball Control": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 7,
+      "dy": 3
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "dx": 6.5,
+        "dy": 2
+      },
+      {
+        "n": 2,
+        "dx": 5,
+        "dy": 3
+      },
+      {
+        "n": 3,
+        "dx": 3.5,
+        "dy": 2
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TR",
+    "cueBallPath": [
+      {
+        "dx": 7,
+        "dy": 3
+      },
+      {
+        "dx": 6.5,
+        "dy": 2
+      },
+      {
+        "dx": 5.25,
+        "dy": 3.25
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 6.5,
+        "dy": 2
+      },
+      {
+        "x": 100,
+        "y": 0
+      }
+    ],
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "technique": "stun",
+    "speed": 1.0,
+    "targetZones": [
+      {
+        "dx": 5.25,
+        "dy": 3.25,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "SHAPE ZONE"
+      }
+    ],
+    "goal": "Pocket the 1 and reach the 2-ball zone using center ball and speed control only.",
+    "instructions": "Avoid sidespin. Repeat until you can enter the same position zone by changing only stroke speed.",
+    "setupInstructions": "Use the displayed full/half-diamond grid references; keep the pattern on one half of the table."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

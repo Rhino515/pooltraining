@@ -1,0 +1,126 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Half Table Patterns",
+  "difficulty": 3,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Five. Setups use repeatable diamond-grid references while preserving the pattern-play lesson."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "half-table",
+      "pattern-play"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-half-p7-two-rail",
+  "title": "PKF \u00b7 Half Pattern 7 \u00b7 Two Rail",
+  "description": "Pocket the 1 and use the natural two-rail route to reach the 2-ball position zone.",
+  "xp": 60,
+  "skillEffects": {
+    "Pattern Play": 0.6,
+    "Cue-Ball Control": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 7,
+      "dy": 3
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "dx": 6.5,
+        "dy": 2
+      },
+      {
+        "n": 2,
+        "dx": 4.5,
+        "dy": 3
+      },
+      {
+        "n": 3,
+        "dx": 3,
+        "dy": 2
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TR",
+    "cueBallPath": [
+      {
+        "dx": 7,
+        "dy": 3
+      },
+      {
+        "dx": 6.5,
+        "dy": 2
+      },
+      {
+        "dx": 5.75,
+        "dy": 3.5
+      },
+      {
+        "dx": 4.75,
+        "dy": 3.25
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 6.5,
+        "dy": 2
+      },
+      {
+        "x": 100,
+        "y": 0
+      }
+    ],
+    "cueContact": {
+      "vTips": 0.5,
+      "hTips": 0
+    },
+    "technique": "follow",
+    "speed": 1.5,
+    "targetZones": [
+      {
+        "dx": 4.75,
+        "dy": 3.25,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "SHAPE ZONE"
+      }
+    ],
+    "goal": "Pocket the 1 and use the natural two-rail route to reach the 2-ball position zone.",
+    "instructions": "Let the cue ball travel naturally. Focus on speed and entering the position zone along its long axis.",
+    "setupInstructions": "Use the displayed full/half-diamond grid references; keep the pattern on one half of the table."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

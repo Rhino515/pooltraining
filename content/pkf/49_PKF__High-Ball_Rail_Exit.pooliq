@@ -1,0 +1,128 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Half Table Patterns",
+  "difficulty": 3,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Five, printed pages 71\u201384. Layouts use simple grid references while preserving the source pattern lesson."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "half-table",
+      "pattern-play",
+      "figures-5-59-5-63",
+      "high-ball"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-half-p72-high-roll",
+  "title": "PKF \u00b7 High-Ball Rail Exit",
+  "description": "Pocket the 1 with a rolling cue ball and use the rail exit to create the correct 2-ball angle.",
+  "xp": 70,
+  "skillEffects": {
+    "Pattern Play": 0.65,
+    "Cue-Ball Control": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 6,
+      "dy": 3.5
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "dx": 5.5,
+        "dy": 2.5
+      },
+      {
+        "n": 2,
+        "dx": 4,
+        "dy": 3
+      },
+      {
+        "n": 3,
+        "dx": 2.5,
+        "dy": 2
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TM",
+    "cueBallPath": [
+      {
+        "dx": 6,
+        "dy": 3.5
+      },
+      {
+        "dx": 5.5,
+        "dy": 2.5
+      },
+      {
+        "dx": 6.25,
+        "dy": 3.25
+      },
+      {
+        "dx": 4.75,
+        "dy": 3.25
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 5.5,
+        "dy": 2.5
+      },
+      {
+        "x": 50,
+        "y": 0
+      }
+    ],
+    "cueContact": {
+      "vTips": 0.75,
+      "hTips": 0
+    },
+    "technique": "follow",
+    "speed": 1.5,
+    "targetZones": [
+      {
+        "dx": 4.75,
+        "dy": 3.25,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "SHAPE ZONE"
+      }
+    ],
+    "goal": "Pocket the 1 with a rolling cue ball and use the rail exit to create the correct 2-ball angle.",
+    "instructions": "Use high/rolling cue ball rather than forcing the route with sidespin. Judge the first-rail contact and speed.",
+    "setupInstructions": "Use the displayed diamond-grid references. Keep the pattern within the half-table training area."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

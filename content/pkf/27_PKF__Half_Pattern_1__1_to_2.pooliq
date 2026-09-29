@@ -1,0 +1,126 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Half Table Patterns",
+  "difficulty": 2,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Five: Half Table Pattern Play. The original lessons emphasize center/low/center-high and keeping the cue ball on one half of the table."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "half-table",
+      "pattern-play"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-half-p1-1to2",
+  "title": "PKF \u00b7 Half Pattern 1 \u00b7 1 to 2",
+  "description": "Use center ball to pocket the 1 and come off the side rail into the ideal angle on the 2.",
+  "xp": 60,
+  "skillEffects": {
+    "Pattern Play": 0.6,
+    "Cue-Ball Control": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 7,
+      "dy": 3
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "dx": 6.5,
+        "dy": 2
+      },
+      {
+        "n": 2,
+        "dx": 5,
+        "dy": 3
+      },
+      {
+        "n": 3,
+        "dx": 3,
+        "dy": 2
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TR",
+    "cueBallPath": [
+      {
+        "dx": 7,
+        "dy": 3
+      },
+      {
+        "dx": 6.5,
+        "dy": 2
+      },
+      {
+        "dx": 5.75,
+        "dy": 3.25
+      },
+      {
+        "dx": 5.25,
+        "dy": 3
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 6.5,
+        "dy": 2
+      },
+      {
+        "x": 100,
+        "y": 0
+      }
+    ],
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "technique": "stun",
+    "speed": 1.25,
+    "targetZones": [
+      {
+        "dx": 5.25,
+        "dy": 3,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "SHAPE ZONE"
+      }
+    ],
+    "goal": "Pocket the 1 and finish in the shape zone for the 2.",
+    "instructions": "Use center ball. Let the natural angle do the work; avoid unnecessary sidespin.",
+    "setupInstructions": "Set all balls from the displayed diamond grid. Keep the entire pattern on one half of the table."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

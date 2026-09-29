@@ -1,0 +1,134 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Half Table Patterns",
+  "difficulty": 3,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Five, printed pages 71\u201384. Layouts use simple grid references while preserving the source pattern lesson."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "half-table",
+      "pattern-play",
+      "five-ball",
+      "figures-5-69-5-77"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-fiveball-p1-start",
+  "title": "PKF \u00b7 Five-Ball Pattern 1 \u00b7 Start",
+  "description": "Start the first five-ball pattern by pocketing the 1 and preserving an easy natural route to the 2.",
+  "xp": 70,
+  "skillEffects": {
+    "Pattern Play": 0.65,
+    "Cue-Ball Control": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 7,
+      "dy": 3.5
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "dx": 6.25,
+        "dy": 2.5
+      },
+      {
+        "n": 2,
+        "dx": 5,
+        "dy": 3
+      },
+      {
+        "n": 3,
+        "dx": 4,
+        "dy": 2
+      },
+      {
+        "n": 4,
+        "dx": 3,
+        "dy": 3
+      },
+      {
+        "n": 5,
+        "dx": 2,
+        "dy": 2.5
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TR",
+    "cueBallPath": [
+      {
+        "dx": 7,
+        "dy": 3.5
+      },
+      {
+        "dx": 6.25,
+        "dy": 2.5
+      },
+      {
+        "dx": 5.25,
+        "dy": 3.25
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 6.25,
+        "dy": 2.5
+      },
+      {
+        "x": 100,
+        "y": 0
+      }
+    ],
+    "cueContact": {
+      "vTips": 0.5,
+      "hTips": 0
+    },
+    "technique": "follow",
+    "speed": 1.25,
+    "targetZones": [
+      {
+        "dx": 5.25,
+        "dy": 3.25,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "SHAPE ZONE"
+      }
+    ],
+    "goal": "Start the first five-ball pattern by pocketing the 1 and preserving an easy natural route to the 2.",
+    "instructions": "Plan the complete 1\u21925 pattern before shooting. Use the simplest center/high/low route available and avoid unnecessary cue-ball travel.",
+    "setupInstructions": "Use the displayed diamond-grid references. Keep the pattern within the half-table training area."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

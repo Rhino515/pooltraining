@@ -1,0 +1,110 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Cue Ball Control",
+  "difficulty": 1,
+  "skill": "Cue-Ball Control",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted for Pool IQ from the user-provided PKF handbook. Setup simplified to repeatable diamond-grid references without changing the lesson."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "cue-ball-control",
+      "stop-shot",
+      "low-spin",
+      "progressive"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-stop-2",
+  "title": "PKF \u00b7 Stop Shot \u00b7 1 Diamond",
+  "description": "Pocket the object ball and stop the cue ball dead from 1 diamond away.",
+  "xp": 40,
+  "skillEffects": {
+    "Cue-Ball Control": 0.6,
+    "Position Play": 0.2
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 4,
+      "dy": 2
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "dx": 4,
+        "dy": 1
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TM",
+    "cueBallPath": [
+      {
+        "dx": 4,
+        "dy": 2
+      },
+      {
+        "x": 50,
+        "y": 14.75
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 4,
+        "dy": 1
+      },
+      {
+        "x": 50,
+        "y": -1.45
+      }
+    ],
+    "cueContact": {
+      "vTips": -0.75,
+      "hTips": 0
+    },
+    "technique": "stun",
+    "speed": 1.25,
+    "targetZones": [
+      {
+        "dx": 4,
+        "dy": 1.02,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "STOP"
+      }
+    ],
+    "goal": "Pocket the 1-ball and leave the cue ball stopped at contact.",
+    "instructions": "Use low spin and the softest stroke that still leaves the cue ball sliding at impact. If it follows, reduce speed or use more low; if it draws back, use less low or adjust speed.",
+    "setupInstructions": "1-ball: center line at the 1-diamond line. Cue ball: same line at 2 diamonds."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

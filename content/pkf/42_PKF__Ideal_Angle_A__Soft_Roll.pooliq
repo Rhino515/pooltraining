@@ -1,0 +1,119 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Half Table Patterns",
+  "difficulty": 2,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Five, printed pages 64\u201370. Layout coordinates are normalized to repeatable diamond-grid references while preserving the source lesson."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "half-table",
+      "pattern-play",
+      "figure-5-28",
+      "angle-choice"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-p65-angle-a",
+  "title": "PKF \u00b7 Ideal Angle A \u00b7 Soft Roll",
+  "description": "Pocket the 2 and softly roll off the side rail into shape on the 3.",
+  "xp": 65,
+  "skillEffects": {
+    "Pattern Play": 0.6,
+    "Cue-Ball Control": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 4.5,
+      "dy": 3
+    },
+    "ballPositions": [
+      {
+        "n": 2,
+        "dx": 5,
+        "dy": 2.5
+      },
+      {
+        "n": 3,
+        "dx": 6.5,
+        "dy": 2
+      }
+    ],
+    "targetBall": 2,
+    "targetPocket": "TM",
+    "cueBallPath": [
+      {
+        "dx": 4.5,
+        "dy": 3
+      },
+      {
+        "dx": 5,
+        "dy": 2.5
+      },
+      {
+        "dx": 6,
+        "dy": 2.75
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 5,
+        "dy": 2.5
+      },
+      {
+        "x": 50,
+        "y": 0
+      }
+    ],
+    "cueContact": {
+      "vTips": 0.75,
+      "hTips": 0
+    },
+    "technique": "follow",
+    "speed": 1.0,
+    "targetZones": [
+      {
+        "dx": 6,
+        "dy": 2.75,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "SHAPE ZONE"
+      }
+    ],
+    "goal": "Pocket the 2 and softly roll off the side rail into shape on the 3.",
+    "instructions": "This is the preferred shallow angle: use a soft rolling cue ball and let the rail naturally carry it toward the 3.",
+    "setupInstructions": "Use the displayed full/half-diamond references. Keep the pattern on one half of the table."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

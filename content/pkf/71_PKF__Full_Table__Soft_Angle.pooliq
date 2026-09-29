@@ -1,0 +1,124 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Full Table Patterns",
+  "difficulty": 3,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Six full-table pattern examples. Positions are normalized to clear full/half-diamond references while preserving the source decision/route lesson."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "full-table",
+      "pattern-play",
+      "speed-control",
+      "natural-roll"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-full-soft-angle",
+  "title": "PKF \u00b7 Full Table \u00b7 Soft Angle",
+  "description": "Pocket the 1 softly and retain a useful angle on the 2.",
+  "xp": 75,
+  "skillEffects": {
+    "Pattern Play": 0.65,
+    "Cue-Ball Control": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 6,
+      "dy": 3.5
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "dx": 5.5,
+        "dy": 2.5
+      },
+      {
+        "n": 2,
+        "dx": 4,
+        "dy": 2
+      },
+      {
+        "n": 3,
+        "dx": 2.25,
+        "dy": 3
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TM",
+    "cueBallPath": [
+      {
+        "dx": 6,
+        "dy": 3.5
+      },
+      {
+        "dx": 5.5,
+        "dy": 2.5
+      },
+      {
+        "dx": 4.5,
+        "dy": 2.75
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 5.5,
+        "dy": 2.5
+      },
+      {
+        "x": 50,
+        "y": 0
+      }
+    ],
+    "cueContact": {
+      "vTips": 0.5,
+      "hTips": 0
+    },
+    "technique": "follow",
+    "speed": 1.0,
+    "targetZones": [
+      {
+        "dx": 4.5,
+        "dy": 2.75,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "SHAPE ZONE"
+      }
+    ],
+    "goal": "Pocket the 1 softly and retain a useful angle on the 2.",
+    "instructions": "Do not overrun the position. A softer natural roll can preserve the next angle better than sending the cue ball to another rail.",
+    "setupInstructions": "Set the balls from the displayed full/half-diamond references. Preserve the intended side/angle on the next ball."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

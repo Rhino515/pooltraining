@@ -1,0 +1,122 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Half Table Patterns",
+  "difficulty": 2,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Five: Half Table Pattern Play. The original lessons emphasize center/low/center-high and keeping the cue ball on one half of the table."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "half-table",
+      "pattern-play"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-half-p4-pocket-choice",
+  "title": "PKF \u00b7 Half Pattern 4 \u00b7 Pocket Choice",
+  "description": "Pocket the 1 and play position on the 2 with the next pocket choice in mind.",
+  "xp": 60,
+  "skillEffects": {
+    "Pattern Play": 0.6,
+    "Cue-Ball Control": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 7,
+      "dy": 3
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "dx": 6.5,
+        "dy": 2
+      },
+      {
+        "n": 2,
+        "dx": 4.5,
+        "dy": 2.5
+      },
+      {
+        "n": 3,
+        "dx": 3,
+        "dy": 3
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TR",
+    "cueBallPath": [
+      {
+        "dx": 7,
+        "dy": 3
+      },
+      {
+        "dx": 6.5,
+        "dy": 2
+      },
+      {
+        "dx": 5.25,
+        "dy": 2.75
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 6.5,
+        "dy": 2
+      },
+      {
+        "x": 100,
+        "y": 0
+      }
+    ],
+    "cueContact": {
+      "vTips": -0.75,
+      "hTips": 0
+    },
+    "technique": "draw",
+    "speed": 1.5,
+    "targetZones": [
+      {
+        "dx": 5.25,
+        "dy": 2.75,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "SHAPE ZONE"
+      }
+    ],
+    "goal": "Pocket the 1 and leave an angle on the 2 that preserves an easy route to the 3.",
+    "instructions": "Work backward from the 3-ball pocket. The PKF lesson emphasizes choosing the 2-ball pocket before deciding the 1-ball position route.",
+    "setupInstructions": "Use the displayed half-table grid layout."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

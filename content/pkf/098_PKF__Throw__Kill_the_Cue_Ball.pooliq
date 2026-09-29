@@ -1,0 +1,120 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Full Table with Sidespin",
+  "difficulty": 3,
+  "skill": "Cue-Ball Control",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Six pages 114\u2013123. Coordinates favor practical diamond-grid references while preserving the source spin/route lesson."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "full-table",
+      "sidespin",
+      "figure-6-119",
+      "throw",
+      "speed-control"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-6-119-kill",
+  "title": "PKF \u00b7 Throw \u00b7 Kill the Cue Ball",
+  "description": "Pocket the 5 while using throw and fuller contact to kill cue-ball speed for the 8.",
+  "xp": 85,
+  "skillEffects": {
+    "Cue-Ball Control": 0.55,
+    "Pattern Play": 0.4
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 6.25,
+      "dy": 3
+    },
+    "ballPositions": [
+      {
+        "n": 5,
+        "dx": 5.5,
+        "dy": 2.5
+      },
+      {
+        "n": 8,
+        "dx": 2,
+        "dy": 2
+      }
+    ],
+    "targetBall": 5,
+    "targetPocket": "BR",
+    "cueBallPath": [
+      {
+        "dx": 6.25,
+        "dy": 3
+      },
+      {
+        "dx": 5.5,
+        "dy": 2.5
+      },
+      {
+        "dx": 4.8,
+        "dy": 3.1
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 5.5,
+        "dy": 2.5
+      },
+      {
+        "x": 100,
+        "y": 50
+      }
+    ],
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0.5
+    },
+    "technique": "stun",
+    "speed": 1.0,
+    "targetZones": [
+      {
+        "dx": 4.8,
+        "dy": 3.1,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "SHAPE ZONE"
+      }
+    ],
+    "goal": "Pocket the 5 while using throw and fuller contact to kill cue-ball speed for the 8.",
+    "instructions": "Aim slightly fuller and use right spin so the 5 is thrown toward the pocket while the cue ball loses energy after contact.",
+    "setupInstructions": "Use the displayed full/half-diamond grid references. Preserve the source rail approach and next-ball side."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

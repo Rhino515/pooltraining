@@ -1,0 +1,87 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Center Ball",
+  "difficulty": 2,
+  "skill": "Shot Making",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from the user-provided PKF handbook. Coordinates normalized to simple diamond-grid references where that preserves the lesson."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "center-ball",
+      "throw",
+      "cut-shot",
+      "figures-3-59-3-60"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-throw-right",
+  "title": "PKF \u00b7 Throw Cut \u00b7 Right",
+  "description": "Practice a right cut with center ball and learn the small aim correction caused by throw.",
+  "xp": 45,
+  "skillEffects": {
+    "Shot Making": 0.4,
+    "Cue-Ball Control": 0.4
+  },
+  "shot": {
+    "kind": "pot",
+    "cueBallPosition": {
+      "dx": 2,
+      "dy": 2
+    },
+    "ballPositions": [
+      {
+        "n": 3,
+        "dx": 5,
+        "dy": 3
+      }
+    ],
+    "targetBall": 3,
+    "targetPocket": "BR",
+    "cueBallPath": [
+      {
+        "dx": 2,
+        "dy": 2
+      },
+      {
+        "dx": 5,
+        "dy": 3
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 5,
+        "dy": 3
+      },
+      {
+        "x": 100,
+        "y": 50
+      }
+    ],
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "speed": 1.25,
+    "goal": "Pocket the 3-ball cleanly with center ball.",
+    "instructions": "Shoot without sidespin. Refine the cut slightly thinner as needed to compensate for throw into the pocket opening.",
+    "setupInstructions": "Use the displayed full-diamond grid intersections so the shot can be reproduced exactly."
+  },
+  "scoringRules": {
+    "mode": "success",
+    "attempts": 10,
+    "pass": {
+      "made": 7
+    }
+  }
+}

@@ -1,0 +1,122 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Half Table Patterns",
+  "difficulty": 2,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Five: Half Table Pattern Play. The original lessons emphasize center/low/center-high and keeping the cue ball on one half of the table."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "half-table",
+      "pattern-play"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-half-p3-slide-b",
+  "title": "PKF \u00b7 Half Pattern 3 \u00b7 Slide Route B",
+  "description": "Use the alternate sliding route from the 2 to send the cue ball toward the side-rail position for the 3.",
+  "xp": 60,
+  "skillEffects": {
+    "Pattern Play": 0.6,
+    "Cue-Ball Control": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 5.5,
+      "dy": 3.25
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "dx": 6.5,
+        "dy": 3
+      },
+      {
+        "n": 2,
+        "dx": 5,
+        "dy": 2
+      },
+      {
+        "n": 3,
+        "dx": 3,
+        "dy": 3
+      }
+    ],
+    "targetBall": 2,
+    "targetPocket": "TM",
+    "cueBallPath": [
+      {
+        "dx": 5.5,
+        "dy": 3.25
+      },
+      {
+        "dx": 5,
+        "dy": 2
+      },
+      {
+        "dx": 4,
+        "dy": 3.5
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 5,
+        "dy": 2
+      },
+      {
+        "x": 50,
+        "y": 0
+      }
+    ],
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "technique": "stun",
+    "speed": 1.75,
+    "targetZones": [
+      {
+        "dx": 4,
+        "dy": 3.5,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "SHAPE ZONE"
+      }
+    ],
+    "goal": "Pocket the 2 and reach the alternate shape zone for the 3.",
+    "instructions": "Use a firm sliding stroke and compare this route with Route A.",
+    "setupInstructions": "Begin from the same 2-ball position as Route A."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

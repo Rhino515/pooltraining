@@ -1,0 +1,124 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Sliding Cue Ball",
+  "difficulty": 3,
+  "skill": "Cue-Ball Control",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Four. Grid-friendly coordinates preserve the lesson and make setup repeatable."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "sliding-cue-ball",
+      "stun",
+      "figures-4-14-4-17",
+      "rail-gate"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-stun-rail-gate-firm",
+  "title": "PKF \u00b7 Stun Rail Gate \u00b7 Firm",
+  "description": "Pocket the object ball with a sliding cue ball and pass through the rail-side gate.",
+  "xp": 50,
+  "skillEffects": {
+    "Cue-Ball Control": 0.6,
+    "Position Play": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 3,
+      "dy": 3
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "dx": 4,
+        "dy": 2
+      },
+      {
+        "n": 6,
+        "dx": 5.75,
+        "dy": 1.75
+      },
+      {
+        "n": 7,
+        "dx": 5.75,
+        "dy": 2.25
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TM",
+    "cueBallPath": [
+      {
+        "dx": 3,
+        "dy": 3
+      },
+      {
+        "dx": 4,
+        "dy": 2
+      },
+      {
+        "dx": 6,
+        "dy": 2
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 4,
+        "dy": 2
+      },
+      {
+        "x": 50,
+        "y": 0
+      }
+    ],
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "technique": "stun",
+    "speed": 2.0,
+    "targetZones": [
+      {
+        "dx": 6,
+        "dy": 2,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "RAIL GATE"
+      }
+    ],
+    "goal": "Pocket the 1-ball and send the cue ball between the blockers without touching either.",
+    "instructions": "If the cue ball hits the near blocker it is usually drawing; if it hits the far blocker it is usually rolling. Adjust speed until it passes cleanly.",
+    "setupInstructions": "Use the shown grid references; blockers straddle the tangent-line route."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

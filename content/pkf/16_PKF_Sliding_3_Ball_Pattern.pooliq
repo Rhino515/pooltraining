@@ -1,0 +1,123 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Sliding Cue Ball",
+  "difficulty": 3,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Four. Grid-friendly coordinates preserve the lesson and make setup repeatable."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "sliding-cue-ball",
+      "stun",
+      "figures-4-5-4-8",
+      "pattern"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-sliding-3ball-pattern",
+  "title": "PKF \u00b7 Sliding 3-Ball Pattern",
+  "description": "Run 2, 3 and 4 in order using sliding cue-ball tangent lines.",
+  "xp": 50,
+  "skillEffects": {
+    "Cue-Ball Control": 0.6,
+    "Position Play": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 2,
+      "dy": 3
+    },
+    "ballPositions": [
+      {
+        "n": 2,
+        "dx": 3,
+        "dy": 2
+      },
+      {
+        "n": 3,
+        "dx": 4,
+        "dy": 3
+      },
+      {
+        "n": 4,
+        "dx": 5,
+        "dy": 2
+      }
+    ],
+    "targetBall": 2,
+    "targetPocket": "TL",
+    "cueBallPath": [
+      {
+        "dx": 2,
+        "dy": 3
+      },
+      {
+        "dx": 3,
+        "dy": 2
+      },
+      {
+        "dx": 4,
+        "dy": 3
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 3,
+        "dy": 2
+      },
+      {
+        "x": 0,
+        "y": 0
+      }
+    ],
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "technique": "stun",
+    "speed": 1.5,
+    "targetZones": [
+      {
+        "dx": 4,
+        "dy": 3,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "NEXT SHOT"
+      }
+    ],
+    "goal": "Run 2 \u2192 3 \u2192 4 while using sliding cue-ball routes for position.",
+    "instructions": "Visualize each pocket line and tangent line before shooting. Reset the complete pattern after a miss.",
+    "setupInstructions": "Place the balls on the displayed grid references."
+  },
+  "scoringRules": {
+    "mode": "success",
+    "attempts": 5,
+    "pass": {
+      "made": 3
+    }
+  }
+}

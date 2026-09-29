@@ -100,7 +100,7 @@ export const MASTERY = {
 // ------------------------------------------------------------------ skills
 /** Extensible: add a row to add a skill. core = minimum floors apply from early ranks; secondary floors start later. */
 export const SKILLS = [
-  { id: 'straight', name: 'Straight Cueing', long: 'Straight Cueing / Alignment', core: true },
+  { id: 'straight', name: 'Straight Cueing', long: 'Straight Cueing / Alignment', core: true, hidden: true }, // not shown in Skill Breakdown; gates, floors and weights still use this id
   { id: 'shotMaking', name: 'Shot Making', core: true },
   { id: 'stop', name: 'Stop Shot', core: true },
   { id: 'follow', name: 'Follow', core: true },

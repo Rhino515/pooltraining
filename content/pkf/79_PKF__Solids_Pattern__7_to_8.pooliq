@@ -1,0 +1,119 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Full Table Patterns",
+  "difficulty": 3,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Six, source figures 6-1 through 6-34. Coordinates are normalized to repeatable grid references while preserving the described cue-ball route."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "full-table",
+      "pattern-play",
+      "figures-6-14-6-17",
+      "rolling-vs-sliding"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-6-14-seven-to-eight",
+  "title": "PKF \u00b7 Solids Pattern \u00b7 7 to 8",
+  "description": "Pocket the 7 and roll naturally toward the correct side of the 8.",
+  "xp": 75,
+  "skillEffects": {
+    "Pattern Play": 0.65,
+    "Cue-Ball Control": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 3.8,
+      "dy": 3.1
+    },
+    "ballPositions": [
+      {
+        "n": 7,
+        "dx": 3.5,
+        "dy": 3
+      },
+      {
+        "n": 8,
+        "dx": 1.5,
+        "dy": 2
+      }
+    ],
+    "targetBall": 7,
+    "targetPocket": "BM",
+    "cueBallPath": [
+      {
+        "dx": 3.8,
+        "dy": 3.1
+      },
+      {
+        "dx": 3.5,
+        "dy": 3
+      },
+      {
+        "dx": 2.4,
+        "dy": 2.5
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 3.5,
+        "dy": 3
+      },
+      {
+        "x": 50,
+        "y": 50
+      }
+    ],
+    "cueContact": {
+      "vTips": 0.5,
+      "hTips": 0
+    },
+    "technique": "follow",
+    "speed": 1.0,
+    "targetZones": [
+      {
+        "dx": 2.4,
+        "dy": 2.5,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "SHAPE ZONE"
+      }
+    ],
+    "goal": "Pocket the 7 and roll naturally toward the correct side of the 8.",
+    "instructions": "Use a rolling cue ball when the 7-ball angle allows it. If the angle becomes flatter, switch to the sliding alternative rather than forcing the roll.",
+    "setupInstructions": "Use the displayed full/half-diamond grid references. Preserve the intended side of the next ball."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

@@ -1,0 +1,122 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Full Table Patterns",
+  "difficulty": 3,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from printed pages 134\u2013140, figures 6-196 through 7-17. Uses repeatable grid references while preserving source position/safety concepts."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "figures-6-201-6-202",
+      "two-rail",
+      "route-choice"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-6-201-seven-to-eight",
+  "title": "PKF \u00b7 7 to 8 \u00b7 Two-Rail Choice",
+  "description": "Pocket the 7 and use the two-rail route to reach the 8-ball area.",
+  "xp": 85,
+  "skillEffects": {
+    "Pattern Play": 0.6,
+    "Cue-Ball Control": 0.35
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 3.5,
+      "dy": 3
+    },
+    "ballPositions": [
+      {
+        "n": 7,
+        "dx": 3,
+        "dy": 2.5
+      },
+      {
+        "n": 8,
+        "dx": 1.5,
+        "dy": 2
+      }
+    ],
+    "targetBall": 7,
+    "targetPocket": "TL",
+    "cueBallPath": [
+      {
+        "dx": 3.5,
+        "dy": 3
+      },
+      {
+        "dx": 3,
+        "dy": 2.5
+      },
+      {
+        "dx": 2.5,
+        "dy": 3.75
+      },
+      {
+        "dx": 1.8,
+        "dy": 3.2
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 3,
+        "dy": 2.5
+      },
+      {
+        "x": 0,
+        "y": 0
+      }
+    ],
+    "cueContact": {
+      "vTips": -0.5,
+      "hTips": -0.25
+    },
+    "technique": "stun-draw",
+    "speed": 1.75,
+    "targetZones": [
+      {
+        "dx": 1.8,
+        "dy": 3.2,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "TARGET ZONE"
+      }
+    ],
+    "goal": "Pocket the 7 and use the two-rail route to reach the 8-ball area.",
+    "instructions": "Compare low-left with a firmer draw route. Choose the route whose rail entry gives the largest usable 8-ball position window.",
+    "setupInstructions": "Use the displayed full/half-diamond grid references. Preserve the intended rail target and position line."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

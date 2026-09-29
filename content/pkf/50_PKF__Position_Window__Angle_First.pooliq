@@ -1,0 +1,124 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Half Table Patterns",
+  "difficulty": 3,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Five, printed pages 71\u201384. Layouts use simple grid references while preserving the source pattern lesson."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "half-table",
+      "pattern-play",
+      "figures-5-64-5-68",
+      "position-window"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-half-p73-angle-window",
+  "title": "PKF \u00b7 Position Window \u00b7 Angle First",
+  "description": "Pocket the 1 and finish inside the broad position window while preserving the correct side of the 2.",
+  "xp": 70,
+  "skillEffects": {
+    "Pattern Play": 0.65,
+    "Cue-Ball Control": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 6.5,
+      "dy": 3
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "dx": 6,
+        "dy": 2
+      },
+      {
+        "n": 2,
+        "dx": 4.5,
+        "dy": 3
+      },
+      {
+        "n": 3,
+        "dx": 3,
+        "dy": 2.5
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TR",
+    "cueBallPath": [
+      {
+        "dx": 6.5,
+        "dy": 3
+      },
+      {
+        "dx": 6,
+        "dy": 2
+      },
+      {
+        "dx": 5,
+        "dy": 3.25
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 6,
+        "dy": 2
+      },
+      {
+        "x": 100,
+        "y": 0
+      }
+    ],
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "technique": "stun",
+    "speed": 1.25,
+    "targetZones": [
+      {
+        "dx": 5,
+        "dy": 3.25,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "SHAPE ZONE"
+      }
+    ],
+    "goal": "Pocket the 1 and finish inside the broad position window while preserving the correct side of the 2.",
+    "instructions": "Do not chase a single point. The goal is the correct angle inside the usable position window.",
+    "setupInstructions": "Use the displayed diamond-grid references. Keep the pattern within the half-table training area."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

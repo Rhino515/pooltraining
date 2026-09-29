@@ -1,0 +1,127 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Tips & Tricks \u00b7 Safeties",
+  "difficulty": 3,
+  "skill": "Safeties",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from printed pages 134\u2013140, figures 6-196 through 7-17. Uses repeatable grid references while preserving source position/safety concepts."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "figures-7-4-7-6",
+      "safety",
+      "hide"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-7-4-slide-hide",
+  "title": "PKF \u00b7 Safety \u00b7 Hide Behind Two Balls",
+  "description": "Use a sliding cue ball to hide behind the blocker pair.",
+  "xp": 85,
+  "skillEffects": {
+    "Safeties": 0.6,
+    "Cue-Ball Control": 0.35
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 5.75,
+      "dy": 3
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "dx": 5,
+        "dy": 2.5
+      },
+      {
+        "n": 8,
+        "dx": 2,
+        "dy": 2.5
+      },
+      {
+        "n": 9,
+        "dx": 2.25,
+        "dy": 2.75
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TR",
+    "cueBallPath": [
+      {
+        "dx": 5.75,
+        "dy": 3
+      },
+      {
+        "dx": 5,
+        "dy": 2.5
+      },
+      {
+        "dx": 4,
+        "dy": 3.5
+      },
+      {
+        "dx": 2.5,
+        "dy": 3.2
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 5,
+        "dy": 2.5
+      },
+      {
+        "dx": 5.2,
+        "dy": 2.4
+      }
+    ],
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "technique": "stun",
+    "speed": 1.25,
+    "targetZones": [
+      {
+        "dx": 2.5,
+        "dy": 3.2,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "TARGET ZONE"
+      }
+    ],
+    "goal": "Use a sliding cue ball to hide behind the blocker pair. The pocket field is nominal only; this is a safety drill, not a pocketing objective.",
+    "instructions": "Pick the end-rail target first, then use the 90-degree tangent line to locate the corresponding side-rail target. Control speed so the cue ball finishes behind the blockers.",
+    "setupInstructions": "Use the displayed full/half-diamond grid references. Preserve the intended rail target and position line."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

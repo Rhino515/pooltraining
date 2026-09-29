@@ -36,6 +36,7 @@ import { loadCustomDrills } from './customDrills.js';
 import { loadContent } from './content/store.js';
 import { shotToChallenge } from './content/convert.js';
 import { threeLaneSpeedDrill } from './games/data/threeLaneSpeed.js';
+import { pkfDrillChallenges } from './content/pkfBuiltins.js';
 
 export const CATEGORIES = [
   'Shot Making',
@@ -51,12 +52,20 @@ export const CATEGORIES = [
   'Banks',
   'Kicks',
   'Safeties',
-  'Runouts'
+  'Runouts',
+  'PKF · Cue Ball Control',
+  'PKF · Center Ball',
+  'PKF · Sliding Cue Ball',
+  'PKF · Half Table Patterns',
+  'PKF · Full Table Patterns',
+  'PKF · Full Table with Sidespin',
+  'PKF · Tips & Tricks · Safeties'
 ];
 
 /**
- * Author drills here. The library ships only drills Andrew asked for (no sample content):
+ * Author drills here. The library ships drills Andrew asked for (no sample content):
  * v11.1 — the Three-Lane Speed Exercise (js/games/data/threeLaneSpeed.js), also linked from the Speed Ladder.
+ * v14-6 — 117 PKF drills from content/pkf/*.pooliq (categories as written in each file).
  */
 const DRILL_SPECS = [threeLaneSpeedDrill()];
 
@@ -79,10 +88,11 @@ let built = null;
 function buildAll() {
   if (!built) {
     built = [];
-    for (const spec of [...DRILL_SPECS, ...extraDrills]) {
+    for (const spec of [...DRILL_SPECS, ...extraDrills, ...pkfDrillChallenges()]) {
       try {
         built.push(normalizeDrill(spec));
       } catch (e) {
+        if (spec && String(spec.id || '').startsWith('pkf-')) throw e;
         console.warn('Pool IQ: skipped invalid drill', spec && spec.id, e);
       }
     }

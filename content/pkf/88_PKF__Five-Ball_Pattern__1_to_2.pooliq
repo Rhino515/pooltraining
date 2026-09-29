@@ -1,0 +1,139 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Full Table Patterns",
+  "difficulty": 3,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Six, figures 6-35 onward. Positions favor repeatable full/half-diamond references while preserving the source route lesson."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "full-table",
+      "pattern-play",
+      "figures-6-55-6-58",
+      "five-ball",
+      "high-action"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-6-55-one-to-two",
+  "title": "PKF \u00b7 Five-Ball Pattern \u00b7 1 to 2",
+  "description": "Pocket the 1 and use high action off the side rail to land on or near the 2-ball line.",
+  "xp": 80,
+  "skillEffects": {
+    "Pattern Play": 0.65,
+    "Cue-Ball Control": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 6.5,
+      "dy": 3
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "dx": 5.75,
+        "dy": 2.5
+      },
+      {
+        "n": 2,
+        "dx": 4,
+        "dy": 3
+      },
+      {
+        "n": 3,
+        "dx": 3,
+        "dy": 2
+      },
+      {
+        "n": 4,
+        "dx": 2,
+        "dy": 3
+      },
+      {
+        "n": 5,
+        "dx": 1.25,
+        "dy": 2
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TM",
+    "cueBallPath": [
+      {
+        "dx": 6.5,
+        "dy": 3
+      },
+      {
+        "dx": 5.75,
+        "dy": 2.5
+      },
+      {
+        "dx": 6.25,
+        "dy": 3.5
+      },
+      {
+        "dx": 4.4,
+        "dy": 3.2
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 5.75,
+        "dy": 2.5
+      },
+      {
+        "x": 50,
+        "y": 0
+      }
+    ],
+    "cueContact": {
+      "vTips": 0.75,
+      "hTips": 0
+    },
+    "technique": "follow",
+    "speed": 1.5,
+    "targetZones": [
+      {
+        "dx": 4.4,
+        "dy": 3.2,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "SHAPE ZONE"
+      }
+    ],
+    "goal": "Pocket the 1 and use high action off the side rail to land on or near the 2-ball line.",
+    "instructions": "The source favors the high-action rail route because the cue ball can approach the 2-ball position line naturally and remain playable if slightly short.",
+    "setupInstructions": "Use the displayed full/half-diamond references. Preserve the shown side of the next ball."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

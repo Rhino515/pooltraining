@@ -89,13 +89,13 @@ export function computeSkillLevels(state, now = Date.now()) {
     step = Math.min(step, stepOf(ceil.rank, ceil.ball));
     let lv = levelOfStep(step);
     if (rating >= SKILL_LEVEL.champion.rating && proMastered >= SKILL_LEVEL.champion.proMastered) lv = levelOfStep(TOTAL_STEPS + 1);
-    out[s.id] = { id: s.id, name: s.name, long: s.long || s.name, core: s.core, rating, score: Math.round(rating * 100), step: lv.champion ? TOTAL_STEPS + 1 : step, rank: lv.rank, ball: lv.ball, champion: lv.champion, label: played ? levelLabel(lv) : 'Not rated yet', played, ceiling: topTier, passesAtTier };
+    out[s.id] = { id: s.id, name: s.name, long: s.long || s.name, core: s.core, hidden: !!s.hidden, rating, score: Math.round(rating * 100), step: lv.champion ? TOTAL_STEPS + 1 : step, rank: lv.rank, ball: lv.ball, champion: lv.champion, label: played ? levelLabel(lv) : 'Not rated yet', played, ceiling: topTier, passesAtTier };
   }
   cache.set(key, { at: now, rank: state.rankIndex || 0, out });
   return out;
 }
 export function weakestSkillLevels(state, n = 3, now = Date.now()) {
   const lv = computeSkillLevels(state, now);
-  return Object.values(lv).sort((a, b) => a.step - b.step || a.rating - b.rating || (b.core ? 1 : 0) - (a.core ? 1 : 0)).slice(0, n);
+  return Object.values(lv).filter((s) => !s.hidden).sort((a, b) => a.step - b.step || a.rating - b.rating || (b.core ? 1 : 0) - (a.core ? 1 : 0)).slice(0, n);
 }
 export { MASTERY };

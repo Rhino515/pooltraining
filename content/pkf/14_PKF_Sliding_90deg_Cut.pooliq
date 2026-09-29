@@ -1,0 +1,114 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Sliding Cue Ball",
+  "difficulty": 1,
+  "skill": "Cue-Ball Control",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Four. Grid-friendly coordinates preserve the lesson and make setup repeatable."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "sliding-cue-ball",
+      "stun",
+      "figures-4-1-4-2",
+      "tangent-line"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-stun-cut-demo",
+  "title": "PKF \u00b7 Sliding 90\u00b0 Cut",
+  "description": "Compare rolling and sliding cue-ball behavior after a cut.",
+  "xp": 50,
+  "skillEffects": {
+    "Cue-Ball Control": 0.6,
+    "Position Play": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 3,
+      "dy": 3
+    },
+    "ballPositions": [
+      {
+        "n": 8,
+        "dx": 5,
+        "dy": 2
+      }
+    ],
+    "targetBall": 8,
+    "targetPocket": "TR",
+    "cueBallPath": [
+      {
+        "dx": 3,
+        "dy": 3
+      },
+      {
+        "dx": 5,
+        "dy": 2
+      },
+      {
+        "dx": 4,
+        "dy": 3
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 5,
+        "dy": 2
+      },
+      {
+        "x": 100,
+        "y": 0
+      }
+    ],
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "technique": "stun",
+    "speed": 1.5,
+    "targetZones": [
+      {
+        "dx": 4,
+        "dy": 3,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "CB TARGET"
+      }
+    ],
+    "goal": "Pocket the 8-ball and send the cue ball into the displayed target zone.",
+    "instructions": "Use the displayed cue contact and consistent speed. Compare this route with the companion drill.",
+    "setupInstructions": "Use the shown full/half-diamond grid references."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

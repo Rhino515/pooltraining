@@ -1,0 +1,134 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Full Table Patterns",
+  "difficulty": 3,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Six, printed pages 124\u2013133, figures 6-150 through 6-195. Setups favor repeatable diamond-grid references while preserving the source route lesson."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "full-table",
+      "pattern-play",
+      "figures-6-177-6-181",
+      "eight-ball",
+      "pocket-line"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-6-178-one-to-two",
+  "title": "PKF \u00b7 Solids \u00b7 1 to 2 Pocket Line",
+  "description": "Pocket the 1 and finish just short of the 2-ball pocket line.",
+  "xp": 85,
+  "skillEffects": {
+    "Pattern Play": 0.6,
+    "Cue-Ball Control": 0.35
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 6.25,
+      "dy": 3
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "dx": 5.5,
+        "dy": 2.5
+      },
+      {
+        "n": 2,
+        "dx": 3.75,
+        "dy": 3
+      },
+      {
+        "n": 4,
+        "dx": 2.5,
+        "dy": 2
+      },
+      {
+        "n": 7,
+        "dx": 1.5,
+        "dy": 3
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "BR",
+    "cueBallPath": [
+      {
+        "dx": 6.25,
+        "dy": 3
+      },
+      {
+        "dx": 5.5,
+        "dy": 2.5
+      },
+      {
+        "dx": 5,
+        "dy": 3.75
+      },
+      {
+        "dx": 4,
+        "dy": 3.2
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 5.5,
+        "dy": 2.5
+      },
+      {
+        "x": 100,
+        "y": 50
+      }
+    ],
+    "cueContact": {
+      "vTips": 0.75,
+      "hTips": 0
+    },
+    "technique": "follow",
+    "speed": 1.5,
+    "targetZones": [
+      {
+        "dx": 4,
+        "dy": 3.2,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "SHAPE ZONE"
+      }
+    ],
+    "goal": "Pocket the 1 and finish just short of the 2-ball pocket line.",
+    "instructions": "Use high action to force the cue ball toward the 2-ball line. Slightly short is preferred because it preserves the planned route to the 4.",
+    "setupInstructions": "Use the displayed full/half-diamond grid references and preserve the intended pocket line/side of the next ball."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

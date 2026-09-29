@@ -1,0 +1,134 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Half Table Patterns",
+  "difficulty": 3,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Five, printed pages 71\u201384. Layouts use simple grid references while preserving the source pattern lesson."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "half-table",
+      "pattern-play",
+      "five-ball",
+      "figures-5-86-5-96"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-fiveball-pocket-line",
+  "title": "PKF \u00b7 Five-Ball \u00b7 Pocket-Line Shape",
+  "description": "Pocket the 1 and approach the 2-ball position from near its pocket line.",
+  "xp": 70,
+  "skillEffects": {
+    "Pattern Play": 0.65,
+    "Cue-Ball Control": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 6.5,
+      "dy": 3
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "dx": 6,
+        "dy": 2.5
+      },
+      {
+        "n": 2,
+        "dx": 4.75,
+        "dy": 2
+      },
+      {
+        "n": 3,
+        "dx": 3.75,
+        "dy": 3
+      },
+      {
+        "n": 4,
+        "dx": 2.75,
+        "dy": 2
+      },
+      {
+        "n": 5,
+        "dx": 2,
+        "dy": 3
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "BR",
+    "cueBallPath": [
+      {
+        "dx": 6.5,
+        "dy": 3
+      },
+      {
+        "dx": 6,
+        "dy": 2.5
+      },
+      {
+        "dx": 5,
+        "dy": 2.75
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 6,
+        "dy": 2.5
+      },
+      {
+        "x": 100,
+        "y": 50
+      }
+    ],
+    "cueContact": {
+      "vTips": -0.5,
+      "hTips": 0
+    },
+    "technique": "stun-draw",
+    "speed": 1.25,
+    "targetZones": [
+      {
+        "dx": 5,
+        "dy": 2.75,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "SHAPE ZONE"
+      }
+    ],
+    "goal": "Pocket the 1 and approach the 2-ball position from near its pocket line.",
+    "instructions": "When the next position window is small, prioritize the correct line over exact distance. A little short or long is playable if the angle is right.",
+    "setupInstructions": "Use the displayed diamond-grid references. Keep the pattern within the half-table training area."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

@@ -114,12 +114,13 @@ export function renderDrillRankPage(state) {
 // ------------------------------------------------------------------ skills
 export function skillBreakdownHTML(state, { link = true, only = null } = {}) {
   const lv = computeSkillLevels(state);
-  return Object.values(lv).filter((s) => !only || only.includes(s.id)).map((s) => `<div class="skill skillRow${s.core ? '' : ' secondary'}" data-skill="${esc(s.id)}" ${link ? `data-action="go" data-href="#skill/${esc(s.id)}"` : ''}><span class="skName">${esc(s.name)}<small class="lvl" data-level>${esc(s.label)}</small></span><div class="meter"><i style="width:${s.score}%"></i></div><b>${s.score}</b></div>`).join('');
+  return Object.values(lv).filter((s) => !s.hidden && (!only || only.includes(s.id))).map((s) => `<div class="skill skillRow${s.core ? '' : ' secondary'}" data-skill="${esc(s.id)}" ${link ? `data-action="go" data-href="#skill/${esc(s.id)}"` : ''}><span class="skName">${esc(s.name)}<small class="lvl" data-level>${esc(s.label)}</small></span><div class="meter"><i style="width:${s.score}%"></i></div><b>${s.score}</b></div>`).join('');
 }
 export function renderSkillsPage(state) {
-  return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#profile">‹ Profile</button><span class="eyebrow">SKILL BREAKDOWN</span><h1>12 Skills</h1><p>Each skill has its own level on the Career ladder (e.g. “Shooter 7”), from passes, mastery and difficulty in the content that trains it. The number is the 0–100 rating.</p></div>
-    <h2>Core skills</h2><div class="skills card">${skillBreakdownHTML(state, { only: SKILLS.filter((s) => s.core).map((s) => s.id) })}</div>
-    <h2>Secondary skills</h2><div class="skills card">${skillBreakdownHTML(state, { only: SKILLS.filter((s) => !s.core).map((s) => s.id) })}</div>`;
+  const shown = SKILLS.filter((s) => !s.hidden);
+  return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#profile">‹ Profile</button><span class="eyebrow">SKILL BREAKDOWN</span><h1>${shown.length} Skills</h1><p>Each skill has its own level on the Career ladder (e.g. “Shooter 7”), from passes, mastery and difficulty in the content that trains it. The number is the 0–100 rating.</p></div>
+    <h2>Core skills</h2><div class="skills card">${skillBreakdownHTML(state, { only: shown.filter((s) => s.core).map((s) => s.id) })}</div>
+    <h2>Secondary skills</h2><div class="skills card">${skillBreakdownHTML(state, { only: shown.filter((s) => !s.core).map((s) => s.id) })}</div>`;
 }
 export function renderSkillPage(state, skillId) {
   const s = skillById(skillId);

@@ -1,0 +1,124 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Half Table Patterns",
+  "difficulty": 2,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Five, printed pages 64\u201370. Layout coordinates are normalized to repeatable diamond-grid references while preserving the source lesson."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "half-table",
+      "pattern-play",
+      "figures-5-30-5-33",
+      "natural-route"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-p65-close-shape",
+  "title": "PKF \u00b7 Close Shape \u00b7 1 to 2",
+  "description": "Pocket the 1 softly and finish close to the 2 with the correct angle for the 3.",
+  "xp": 65,
+  "skillEffects": {
+    "Pattern Play": 0.6,
+    "Cue-Ball Control": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 6.5,
+      "dy": 3.5
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "dx": 6,
+        "dy": 3
+      },
+      {
+        "n": 2,
+        "dx": 4.5,
+        "dy": 2.5
+      },
+      {
+        "n": 3,
+        "dx": 6.5,
+        "dy": 2
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "BR",
+    "cueBallPath": [
+      {
+        "dx": 6.5,
+        "dy": 3.5
+      },
+      {
+        "dx": 6,
+        "dy": 3
+      },
+      {
+        "dx": 5,
+        "dy": 3
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 6,
+        "dy": 3
+      },
+      {
+        "x": 100,
+        "y": 50
+      }
+    ],
+    "cueContact": {
+      "vTips": 0.25,
+      "hTips": 0
+    },
+    "technique": "follow",
+    "speed": 1.0,
+    "targetZones": [
+      {
+        "dx": 5,
+        "dy": 3,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "SHAPE ZONE"
+      }
+    ],
+    "goal": "Pocket the 1 softly and finish close to the 2 with the correct angle for the 3.",
+    "instructions": "The PKF lesson prefers this natural route over forcing the cue ball to the end rail and back. Stay close to the 1 and use a soft stroke.",
+    "setupInstructions": "Use the displayed full/half-diamond references. Keep the pattern on one half of the table."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

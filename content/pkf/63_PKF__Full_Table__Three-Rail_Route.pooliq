@@ -1,0 +1,136 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Full Table Patterns",
+  "difficulty": 3,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Six: Full Table Patterns. Positions favor repeatable diamond-grid references without changing the route lesson."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "full-table",
+      "pattern-play",
+      "three-rail",
+      "running-english"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-full-three-rail",
+  "title": "PKF \u00b7 Full Table \u00b7 Three-Rail Route",
+  "description": "Pocket the 1 and use three rails to approach the 2 from the safe side.",
+  "xp": 75,
+  "skillEffects": {
+    "Pattern Play": 0.65,
+    "Cue-Ball Control": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 6.5,
+      "dy": 3
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "dx": 5.5,
+        "dy": 2
+      },
+      {
+        "n": 2,
+        "dx": 2.5,
+        "dy": 3
+      },
+      {
+        "n": 3,
+        "dx": 1.5,
+        "dy": 2
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TM",
+    "cueBallPath": [
+      {
+        "dx": 6.5,
+        "dy": 3
+      },
+      {
+        "dx": 5.5,
+        "dy": 2
+      },
+      {
+        "dx": 6.25,
+        "dy": 3.75
+      },
+      {
+        "dx": 4.75,
+        "dy": 4
+      },
+      {
+        "dx": 3.25,
+        "dy": 3.5
+      },
+      {
+        "dx": 2.75,
+        "dy": 3
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 5.5,
+        "dy": 2
+      },
+      {
+        "x": 50,
+        "y": 0
+      }
+    ],
+    "cueContact": {
+      "vTips": 0.5,
+      "hTips": 0.25
+    },
+    "technique": "follow",
+    "speed": 2.0,
+    "targetZones": [
+      {
+        "dx": 2.75,
+        "dy": 3,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "SHAPE ZONE"
+      }
+    ],
+    "goal": "Pocket the 1 and use three rails to approach the 2 from the safe side.",
+    "instructions": "Let the rails create the angle. Use modest running spin and prioritize the final approach direction over stopping on an exact point.",
+    "setupInstructions": "Set the balls from the displayed full/half-diamond grid references. Preserve the shown side of the next ball."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

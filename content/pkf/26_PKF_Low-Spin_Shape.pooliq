@@ -1,0 +1,118 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Sliding Cue Ball",
+  "difficulty": 2,
+  "skill": "Cue-Ball Control",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Four. Positions use simple diamond-grid references when compatible with the original lesson."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "sliding-cue-ball",
+      "figures-4-23-4-27",
+      "shape-comparison"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-shape-spin-stun-draw",
+  "title": "PKF \u00b7 Low-Spin Shape",
+  "description": "Play the same cut with a different cue-ball state and compare the resulting position route.",
+  "xp": 55,
+  "skillEffects": {
+    "Cue-Ball Control": 0.6,
+    "Position Play": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 3,
+      "dy": 3
+    },
+    "ballPositions": [
+      {
+        "n": 3,
+        "dx": 4,
+        "dy": 2
+      },
+      {
+        "n": 8,
+        "dx": 6,
+        "dy": 1.5
+      }
+    ],
+    "targetBall": 3,
+    "targetPocket": "TM",
+    "cueBallPath": [
+      {
+        "dx": 3,
+        "dy": 3
+      },
+      {
+        "dx": 4,
+        "dy": 2
+      },
+      {
+        "dx": 5.5,
+        "dy": 4
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 4,
+        "dy": 2
+      },
+      {
+        "x": 50,
+        "y": 0
+      }
+    ],
+    "cueContact": {
+      "vTips": -0.5,
+      "hTips": 0
+    },
+    "technique": "stun-draw",
+    "speed": 1.5,
+    "targetZones": [
+      {
+        "dx": 5.5,
+        "dy": 4,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "SHAPE 8"
+      }
+    ],
+    "goal": "Pocket the 3-ball and land in the selected position zone for the 8-ball.",
+    "instructions": "Use the same setup each time. Change only the cue-ball state so you learn how roll, slide and low spin alter the route.",
+    "setupInstructions": "3-ball and 8-ball remain fixed. Reset the cue ball to the same grid reference for every attempt."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

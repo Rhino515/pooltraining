@@ -1,0 +1,123 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Full Table Patterns",
+  "difficulty": 3,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Six, figures 6-35 onward. Positions favor repeatable full/half-diamond references while preserving the source route lesson."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "full-table",
+      "pattern-play",
+      "figures-6-48-6-50",
+      "roll-vs-stun-follow"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-6-48-three-to-four",
+  "title": "PKF \u00b7 Four-Ball Pattern \u00b7 3 to 4",
+  "description": "Pocket the 3 and use a soft rolling route to finish on the preferred side of the 4.",
+  "xp": 80,
+  "skillEffects": {
+    "Pattern Play": 0.65,
+    "Cue-Ball Control": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 3.25,
+      "dy": 3
+    },
+    "ballPositions": [
+      {
+        "n": 3,
+        "dx": 2.75,
+        "dy": 2.25
+      },
+      {
+        "n": 4,
+        "dx": 1.5,
+        "dy": 3
+      }
+    ],
+    "targetBall": 3,
+    "targetPocket": "TL",
+    "cueBallPath": [
+      {
+        "dx": 3.25,
+        "dy": 3
+      },
+      {
+        "dx": 2.75,
+        "dy": 2.25
+      },
+      {
+        "dx": 2.25,
+        "dy": 3.25
+      },
+      {
+        "dx": 1.75,
+        "dy": 3
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 2.75,
+        "dy": 2.25
+      },
+      {
+        "x": 0,
+        "y": 0
+      }
+    ],
+    "cueContact": {
+      "vTips": 0.5,
+      "hTips": 0
+    },
+    "technique": "follow",
+    "speed": 1.0,
+    "targetZones": [
+      {
+        "dx": 1.75,
+        "dy": 3,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "SHAPE ZONE"
+      }
+    ],
+    "goal": "Pocket the 3 and use a soft rolling route to finish on the preferred side of the 4.",
+    "instructions": "When the angle allows, roll naturally. If the cue ball is above the needed line, switch to a sliding/stun-follow route rather than forcing the roll.",
+    "setupInstructions": "Use the displayed full/half-diamond references. Preserve the shown side of the next ball."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

@@ -1,0 +1,129 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Full Table Patterns",
+  "difficulty": 3,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Six: Full Table Patterns. Layouts are normalized to clear diamond-grid references while retaining the source route/position lesson."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "full-table",
+      "pattern-play",
+      "chapter-6",
+      "three-ball",
+      "planning"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-full-threeball-plan",
+  "title": "PKF \u00b7 Full Table \u00b7 3-Ball Plan",
+  "description": "Run the three-ball layout by first landing in the correct 2-ball window.",
+  "xp": 75,
+  "skillEffects": {
+    "Pattern Play": 0.65,
+    "Cue-Ball Control": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 7,
+      "dy": 3
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "dx": 6,
+        "dy": 2
+      },
+      {
+        "n": 2,
+        "dx": 3.5,
+        "dy": 3
+      },
+      {
+        "n": 3,
+        "dx": 1.5,
+        "dy": 2
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TR",
+    "cueBallPath": [
+      {
+        "dx": 7,
+        "dy": 3
+      },
+      {
+        "dx": 6,
+        "dy": 2
+      },
+      {
+        "dx": 5.25,
+        "dy": 3.25
+      },
+      {
+        "dx": 3.75,
+        "dy": 3
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 6,
+        "dy": 2
+      },
+      {
+        "x": 100,
+        "y": 0
+      }
+    ],
+    "cueContact": {
+      "vTips": 0.25,
+      "hTips": 0
+    },
+    "technique": "follow",
+    "speed": 1.5,
+    "targetZones": [
+      {
+        "dx": 3.75,
+        "dy": 3,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "SHAPE ZONE"
+      }
+    ],
+    "goal": "Run the three-ball layout by first landing in the correct 2-ball window.",
+    "instructions": "Plan 1\u21922\u21923 before the first stroke. The first position route should make the second route easier, not merely leave any shot on the 2.",
+    "setupInstructions": "Use the displayed full/half-diamond grid references. This is a full-table pattern; preserve the shown side of each ball."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

@@ -1,0 +1,139 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Full Table with Sidespin",
+  "difficulty": 3,
+  "skill": "Cue-Ball Control",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Six pages 114\u2013123. Coordinates favor practical diamond-grid references while preserving the source spin/route lesson."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "full-table",
+      "sidespin",
+      "figures-6-139-6-149",
+      "full-table-pattern",
+      "pro-example"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-full-pro-pattern",
+  "title": "PKF \u00b7 Full Table \u00b7 Pro Pattern Opening",
+  "description": "Pocket the 1 and use the rail route to land on the correct side of the 2 for the full-table runout.",
+  "xp": 85,
+  "skillEffects": {
+    "Cue-Ball Control": 0.55,
+    "Pattern Play": 0.4
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 7,
+      "dy": 3.25
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "dx": 6.25,
+        "dy": 2.5
+      },
+      {
+        "n": 2,
+        "dx": 4.75,
+        "dy": 3
+      },
+      {
+        "n": 4,
+        "dx": 3.25,
+        "dy": 3
+      },
+      {
+        "n": 5,
+        "dx": 2.25,
+        "dy": 2.5
+      },
+      {
+        "n": 6,
+        "dx": 1.5,
+        "dy": 2
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TR",
+    "cueBallPath": [
+      {
+        "dx": 7,
+        "dy": 3.25
+      },
+      {
+        "dx": 6.25,
+        "dy": 2.5
+      },
+      {
+        "dx": 6.5,
+        "dy": 3.75
+      },
+      {
+        "dx": 5,
+        "dy": 3.25
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 6.25,
+        "dy": 2.5
+      },
+      {
+        "x": 100,
+        "y": 0
+      }
+    ],
+    "cueContact": {
+      "vTips": 0.75,
+      "hTips": 0
+    },
+    "technique": "follow",
+    "speed": 1.75,
+    "targetZones": [
+      {
+        "dx": 5,
+        "dy": 3.25,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "SHAPE ZONE"
+      }
+    ],
+    "goal": "Pocket the 1 and use the rail route to land on the correct side of the 2 for the full-table runout.",
+    "instructions": "Study the entire pattern first. The source example identifies 1\u21922 as the key opening shot; use the rail route to approach the 2-ball pocket line with margin for speed error.",
+    "setupInstructions": "Use the displayed full/half-diamond grid references. Preserve the source rail approach and next-ball side."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Center Ball",
+  "difficulty": 2,
+  "skill": "Shot Making",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from the user-provided PKF handbook. Coordinates normalized to simple diamond-grid references where that preserves the lesson."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "center-ball",
+      "throw",
+      "cut-shot",
+      "figure-3-58"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-center-ball-throw",
+  "title": "PKF \u00b7 Center Ball Throw",
+  "description": "Pocket a cut shot with no sidespin while learning the small aim correction caused by throw.",
+  "xp": 45,
+  "skillEffects": {
+    "Shot Making": 0.4,
+    "Cue-Ball Control": 0.4
+  },
+  "shot": {
+    "kind": "pot",
+    "cueBallPosition": {
+      "dx": 3,
+      "dy": 2.5
+    },
+    "ballPositions": [
+      {
+        "n": 8,
+        "dx": 4,
+        "dy": 2
+      }
+    ],
+    "targetBall": 8,
+    "targetPocket": "TM",
+    "cueBallPath": [
+      {
+        "dx": 3,
+        "dy": 2.5
+      },
+      {
+        "dx": 4,
+        "dy": 2
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 4,
+        "dy": 2
+      },
+      {
+        "x": 50,
+        "y": 0
+      }
+    ],
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "speed": 1.25,
+    "goal": "Pocket the 8-ball using center ball and account for natural throw.",
+    "instructions": "Use no sidespin. Refine the cut slightly thinner as needed to compensate for throw.",
+    "setupInstructions": "8-ball: center-grid intersection. Cue ball: one diamond left and a half-diamond lower."
+  },
+  "scoringRules": {
+    "mode": "success",
+    "attempts": 10,
+    "pass": {
+      "made": 7
+    }
+  }
+}

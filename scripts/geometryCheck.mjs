@@ -33,9 +33,12 @@ export function geometryProblems(ch, label) {
   }
   for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) if (G.dist(all[i], all[j]) < 2 * R - 0.05) out.push(`${label}: balls ${all[i].n} & ${all[j].n} overlap`);
   // paths inside the table (a final point may drop into the target pocket)
+  // Paths and zones use the schema table (cushion nose to cushion nose, x 0–100, y 0–50).
+  // Ball centres stay on the inset playing surface (ballOnTable). A stop on the rail is y = 0 or 50.
+  const onNose = (q) => q.x >= -TOL && q.x <= 100 + TOL && q.y >= -TOL && q.y <= 50 + TOL;
   const checkPath = (p, name, pocketKey) => {
     p.forEach((q, i) => {
-      if (inside(q)) return;
+      if (onNose(q)) return;
       const last = i === p.length - 1;
       if (last && pocketKey && G.dist(q, POCK[pocketKey]) < 1.5) return;
       out.push(`${label}: ${name} point ${i} outside the table (${q.x},${q.y})`);
@@ -50,7 +53,8 @@ export function geometryProblems(ch, label) {
     checkPath(p, `OB ${op.n} path`, pocket);
   }
   // some object-ball route ends at the target pocket (combinations: the last ball in the chain)
-  if (ch.targetPocket && obPaths.length && ch.kind !== 'safety' && ch.kind !== 'lag') {
+  const nominalPocket = /not a pocketing objective/i.test(`${ch.goal || ''} ${ch.instructions || ''}`);
+  if (ch.targetPocket && obPaths.length && ch.kind !== 'safety' && ch.kind !== 'lag' && !nominalPocket) {
     const ends = obPaths.map((op) => op.points[op.points.length - 1]).filter(Boolean);
     const best = Math.min(...ends.map((e) => G.dist(e, POCK[ch.targetPocket])));
     if (best > 1.5) out.push(`${label}: no object-ball route ends in pocket ${ch.targetPocket} (closest ${best.toFixed(1)})`);
@@ -77,7 +81,7 @@ export function geometryProblems(ch, label) {
   }
   // target zones inside the table
   for (const z of ch.targetZones || []) {
-    if (z.type === 'rings' && !inside({ x: z.x, y: z.y })) out.push(`${label}: zone centre (${z.x},${z.y}) outside the table`);
+    if (z.type === 'rings' && !onNose({ x: z.x, y: z.y })) out.push(`${label}: zone centre (${z.x},${z.y}) outside the table`);
     if (z.type === 'band' && (z.center < C.minX || z.center > C.maxX)) out.push(`${label}: band zone outside the table`);
   }
   // cue ball's approach does not pass through other balls
@@ -91,7 +95,10 @@ export function geometryProblems(ch, label) {
   }
   // after contact: the cue ball's route must not run through balls (carom target excepted)
   const after = cp.slice(ch.contactIndex ?? cp.length - 1);
-  const afterOthers = others.filter((b) => b.n !== ch.caromTarget);
+  const end = after[after.length - 1];
+  // A pattern route drawn to the next ball ends on that ball; it is the target of the line, not an obstacle.
+  const aimed = new Set((end ? balls : []).filter((b) => G.dist(b, end) <= 2 * R + 0.05).map((b) => b.n));
+  const afterOthers = others.filter((b) => b.n !== ch.caromTarget && !aimed.has(b.n));
   for (let i = 0; i < after.length - 1; i++) for (const b of afterOthers) {
     const d = G.distToSegment(b, after[i], after[i + 1]);
     if (d < 2 * R - 0.25) out.push(`${label}: cue route after contact runs through ball ${b.n} (clearance ${d.toFixed(2)})`);

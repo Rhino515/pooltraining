@@ -1,0 +1,117 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Sliding Cue Ball",
+  "difficulty": 3,
+  "skill": "Cue-Ball Control",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Four. Positions use simple diamond-grid references when compatible with the original lesson."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "sliding-cue-ball",
+      "figures-4-21-4-22",
+      "rail-markers"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-two-marker-slide",
+  "title": "PKF \u00b7 Two-Marker Slide Path",
+  "description": "Send the sliding cue ball between two rail markers and into the end-rail position zone.",
+  "xp": 55,
+  "skillEffects": {
+    "Cue-Ball Control": 0.6,
+    "Position Play": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 2,
+      "dy": 3
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "dx": 4,
+        "dy": 2
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TM",
+    "cueBallPath": [
+      {
+        "dx": 2,
+        "dy": 3
+      },
+      {
+        "dx": 4,
+        "dy": 2
+      },
+      {
+        "dx": 6,
+        "dy": 3
+      },
+      {
+        "dx": 7,
+        "dy": 4
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 4,
+        "dy": 2
+      },
+      {
+        "x": 50,
+        "y": 0
+      }
+    ],
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "technique": "stun",
+    "speed": 1.75,
+    "targetZones": [
+      {
+        "dx": 7,
+        "dy": 4,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "END ZONE"
+      }
+    ],
+    "goal": "Pocket the 1-ball, cross the first-rail marker correctly, and finish in the end-rail target zone.",
+    "instructions": "Use the first rail marker as feedback. Landing above or below it shows whether the cue ball had too much roll or draw at contact.",
+    "setupInstructions": "Use the displayed grid positions. Place physical stickers at the indicated rail-crossing and end-zone references if desired."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

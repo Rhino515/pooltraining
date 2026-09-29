@@ -187,7 +187,7 @@ export function recommendedTraining(state, n = RECOMMEND.skills) {
   const blocked = [];
   if (cs.gateLocked) for (const f of cs.gateLocked.foundations) if (!f.met) blocked.push({ skill: f.skill, why: `${cs.gateLocked.gate.title}: ${f.label}` });
   for (const it of ps.open || []) if (it.type === 'floor') blocked.push({ skill: it.skill, why: `Promotion floor: ${it.label}` });
-  const order = [...blocked.map((b) => b.skill), ...Object.values(levels).sort((a, b) => a.step - b.step || a.rating - b.rating).map((l) => l.id)];
+  const order = [...blocked.map((b) => b.skill), ...Object.values(levels).filter((l) => !l.hidden).sort((a, b) => a.step - b.step || a.rating - b.rating).map((l) => l.id)];
   const picked = [];
   for (const id of order) if (!picked.includes(id)) picked.push(id);
   return picked.slice(0, n).map((id) => ({ skill: id, name: skillName(id), level: levels[id], why: blocked.find((b) => b.skill === id)?.why || null, items: trainingFor(state, id) }));

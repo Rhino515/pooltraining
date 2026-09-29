@@ -1,0 +1,113 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Sliding Cue Ball",
+  "difficulty": 3,
+  "skill": "Cue-Ball Control",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Four. Positions use simple diamond-grid references when compatible with the original lesson."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "sliding-cue-ball",
+      "figures-4-18-4-20",
+      "distance-control"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-long-slide-22",
+  "title": "PKF \u00b7 Long Slide \u00b7 Long Firm",
+  "description": "Keep the cue ball sliding at object-ball contact from progressively longer distance.",
+  "xp": 55,
+  "skillEffects": {
+    "Cue-Ball Control": 0.6,
+    "Position Play": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 1.5,
+      "dy": 3
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "dx": 6,
+        "dy": 3
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "BR",
+    "cueBallPath": [
+      {
+        "dx": 1.5,
+        "dy": 3
+      },
+      {
+        "dx": 6,
+        "dy": 3
+      },
+      {
+        "dx": 6,
+        "dy": 4
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 6,
+        "dy": 3
+      },
+      {
+        "x": 100,
+        "y": 50
+      }
+    ],
+    "cueContact": {
+      "vTips": -0.75,
+      "hTips": 0
+    },
+    "technique": "stun",
+    "speed": 2.25,
+    "targetZones": [
+      {
+        "dx": 6,
+        "dy": 4,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "SLIDE ZONE"
+      }
+    ],
+    "goal": "Pocket the 1-ball and keep the cue ball on the sliding route into the target zone.",
+    "instructions": "Start with low spin. As distance increases, adjust speed and cue height so the cue ball is still sliding at impact.",
+    "setupInstructions": "Object ball stays fixed on the grid. Move the cue ball progressively farther back along the same line."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

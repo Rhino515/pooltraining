@@ -1,0 +1,132 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF \u00b7 Full Table Patterns",
+  "difficulty": 3,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "P.K.F. \u2014 Pattern Play / Cue Ball Control (Zero-X Billiards)",
+    "notes": "Converted from Chapter Six full-table pattern examples. Positions are normalized to clear full/half-diamond references while preserving the source decision/route lesson."
+  },
+  "metadata": {
+    "tags": [
+      "pkf",
+      "full-table",
+      "pattern-play",
+      "end-rail",
+      "route-choice"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "ChatGPT"
+  },
+  "careerEligible": true,
+  "id": "pkf-full-endrail-choice",
+  "title": "PKF \u00b7 Full Table \u00b7 End-Rail Choice",
+  "description": "Pocket the 1 and use the end-rail route to approach the 2 from the favorable side.",
+  "xp": 75,
+  "skillEffects": {
+    "Pattern Play": 0.65,
+    "Cue-Ball Control": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "dx": 6.25,
+      "dy": 3
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "dx": 5.5,
+        "dy": 2
+      },
+      {
+        "n": 2,
+        "dx": 3,
+        "dy": 3
+      },
+      {
+        "n": 3,
+        "dx": 1.5,
+        "dy": 2.5
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TM",
+    "cueBallPath": [
+      {
+        "dx": 6.25,
+        "dy": 3
+      },
+      {
+        "dx": 5.5,
+        "dy": 2
+      },
+      {
+        "dx": 6.25,
+        "dy": 3.5
+      },
+      {
+        "dx": 4.5,
+        "dy": 4
+      },
+      {
+        "dx": 3.25,
+        "dy": 3.25
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "dx": 5.5,
+        "dy": 2
+      },
+      {
+        "x": 50,
+        "y": 0
+      }
+    ],
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "technique": "stun",
+    "speed": 1.75,
+    "targetZones": [
+      {
+        "dx": 3.25,
+        "dy": 3.25,
+        "rings": [
+          {
+            "r": 2.5,
+            "stars": 3
+          },
+          {
+            "r": 4,
+            "stars": 2
+          },
+          {
+            "r": 6,
+            "stars": 1
+          }
+        ],
+        "label": "SHAPE ZONE"
+      }
+    ],
+    "goal": "Pocket the 1 and use the end-rail route to approach the 2 from the favorable side.",
+    "instructions": "Choose the end-rail route when it makes the final approach more forgiving. Avoid trying to stop the cue ball at one tiny point.",
+    "setupInstructions": "Set the balls from the displayed full/half-diamond references. Preserve the intended side/angle on the next ball."
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}
