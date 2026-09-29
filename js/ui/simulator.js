@@ -26,7 +26,7 @@ import { lsSet } from '../storage.js';
 import * as TC from '../sim/tableCal.js';
 import { offsetDragPoint } from '../sim/drag.js';
 import { SCAN_PLACE_LABEL, detectBalls, perspectiveWarp, defaultCorners } from '../sim/scan.js';
-import { drawTable3D, pickBall3D, feltFromScreen3D } from '../sim/view3d.js';
+import { renderTable3D, pickBall3D, feltFromScreen3D } from '../sim/view3d.js';
 import { planRunoutOptions, groupChoices } from '../sim/runout.js';
 import { SHOT_TYPES, POCKET_CHOICES, generateShot, wayLabel } from '../sim/randomShot.js';
 
@@ -327,7 +327,7 @@ export function createSimScreen(ctx, args = []) {
       const pv = PV.runPreview(step.balls, { aim: step.aim, V: P.speedToV0(step.speed, tableSpec()), vTips: step.vTips, hTips: step.hTips, table: tableSpec() });
       over += PV.previewSVG(PV.previewPaths(pv));
     }
-    return renderTableDiagram({ balls, ballR: rad(), hitR: Math.max(7.2, rad() * 3.4), grid: set.grid === 'off' ? false : set.grid === 'half' ? 'half' : true, headString: true, extraUnder: under, extraOver: over }, { className: 'table-diagram sim-svg', id: 'simSvg' });
+    return renderTableDiagram({ balls, ballR: rad(), hitR: Math.max(7.2, rad() * 3.4), grid: set.grid === 'off' ? false : set.grid === 'half' ? 'half' : true, headString: true, extraUnder: under, extraOver: over }, { className: 'table-diagram sim-svg', id: 'simSvg', portrait: true });
   }
 
   // ------------------------------------------------------------------ panel pieces
@@ -487,10 +487,13 @@ export function createSimScreen(ctx, args = []) {
   function toTableXY(clientX, clientY) {
     const svg = ctx.root.querySelector('#simSvg');
     if (!svg) return { x: 0, y: 0 };
+    const root = svg.querySelector('#tableRoot') || svg;
+    const ctm = root.getScreenCTM();
+    if (!ctm) return { x: 0, y: 0 };
     const pt = svg.createSVGPoint();
     pt.x = clientX;
     pt.y = clientY;
-    const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+    const p = pt.matrixTransform(ctm.inverse());
     return { x: p.x, y: p.y };
   }
   function toTable(e) { return toTableXY(e.clientX, e.clientY); }
@@ -1244,13 +1247,9 @@ export function createSimScreen(ctx, args = []) {
     const rect = c.parentElement.getBoundingClientRect();
     const w = Math.max(180, Math.floor(rect.width));
     const h = Math.max(160, Math.floor(rect.height || w * 0.55));
-    c.width = w * 2;
-    c.height = h * 2;
     c.style.width = w + 'px';
     c.style.height = h + 'px';
-    const g = c.getContext('2d');
-    g.setTransform(2, 0, 0, 2, 0, 0);
-    drawTable3D(g, w, h, { balls: st.balls.map((b) => ({ id: b.id, x: b.x, y: b.y })), ballR: rad(), yaw: st.yaw || 0, pitch: st.pitch || 0 });
+    renderTable3D(c, { balls: st.balls.map((b) => ({ id: b.id, x: b.x, y: b.y })), ballR: rad(), yaw: st.yaw || 0, pitch: st.pitch || 0 });
   }
   function scanCornerHTML() {
     return `<div class="scanBox" data-scan-box="corners"><p class="scanHint">Drag the 4 corners onto the edges of the table, then straighten. This does not find the balls.</p><div class="scanPhoto" id="scanPhoto"><img id="scanImg" alt="Table photo" src="${st.scan.url}"/></div><div class="simTools"><button type="button" data-action="sim-scan-straight">STRAIGHTEN</button><button type="button" data-action="sim-scan-asis">USE PHOTO</button><button type="button" data-action="sim-scan-cancel">CANCEL</button></div></div>`;

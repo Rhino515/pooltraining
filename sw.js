@@ -1,4 +1,4 @@
-const CACHE = 'pool-iq-v14-5';
+const CACHE = 'pool-iq-v14-10';
 const ASSETS = [
   './',
   './index.html',
@@ -25,6 +25,7 @@ const ASSETS = [
   './examples/demo-player-solution.pooliq',
   './examples/pooliq-drill-template.pooliq',
   './js/vendor/supabase.js',
+  './js/vendor/three.module.js',
   './js/analyze.js',
   './js/app.js',
   './js/career.js',
