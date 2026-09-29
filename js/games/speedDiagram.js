@@ -43,12 +43,15 @@ export function speedDiagramSVG(s, opt = {}) {
   const meaning = speedMeaning(s);
   let svg = `<svg class="${opt.className || 'speed-mini'}" data-speed-diagram="${label}" data-rails="${g.path.rails}" data-stop-diamond="${g.path.diamond}" viewBox="-5 -9 110 69" role="img" aria-label="SPEED ${label}: ${meaning.replace(/"/g, '')}">`;
   // table: wood, felt, pockets, diamonds, side-pocket line
-  svg += `<rect x="-4.5" y="-4.5" width="109" height="59" rx="3" fill="#3a2414" stroke="#1d120a" stroke-width="0.6"/>`;
-  svg += `<rect x="0" y="0" width="100" height="50" fill="#0f6b4f" stroke="#0a4a37" stroke-width="0.6"/>`;
-  for (const [px, py] of [[0, 0], [50, -0.6], [100, 0], [0, 50], [50, 50.6], [100, 50]]) svg += `<circle cx="${px}" cy="${py}" r="2.4" fill="#05110c"/>`;
+  // v12 look: wood rails with a light bevel, teal cloth-covered cushion, teal cloth, white diamond sights
+  svg += `<rect class="sm-wood" x="-4.5" y="-4.5" width="109" height="59" rx="3" fill="#57301a" stroke="#1a0c05" stroke-width="0.6"/>`;
+  svg += `<rect x="-3.9" y="-3.9" width="107.8" height="57.8" rx="2.6" fill="none" stroke="#c98a57" stroke-opacity="0.3" stroke-width="0.3"/>`;
+  svg += `<rect x="-1.3" y="-1.3" width="102.6" height="52.6" rx="0.6" fill="#045466" stroke="#1a0c05" stroke-width="0.5"/>`;
+  svg += `<rect class="sm-felt" x="0" y="0" width="100" height="50" fill="#066b83" stroke="#02303b" stroke-width="0.4"/>`;
+  for (const [px, py] of [[0, 0], [50, -0.6], [100, 0], [0, 50], [50, 50.6], [100, 50]]) svg += `<circle cx="${px}" cy="${py}" r="2.4" fill="#000" stroke="#2c1a0e" stroke-width="0.4"/>`;
   for (let d = 1; d < 8; d++) {
     if (d === 4) continue;
-    svg += `<circle cx="${d * 12.5}" cy="-2.3" r="0.65" fill="#e9dcc3"/><circle cx="${d * 12.5}" cy="52.3" r="0.65" fill="#e9dcc3"/>`;
+    for (const y of [-2.9, 52.9]) svg += `<path class="sm-diamond" d="M${d * 12.5} ${y - 0.95} L${d * 12.5 + 0.6} ${y} L${d * 12.5} ${y + 0.95} L${d * 12.5 - 0.6} ${y} Z" fill="#f4f6fb"/>`;
   }
   svg += `<line x1="50" y1="0" x2="50" y2="50" stroke="#e8fbff" stroke-width="0.35" stroke-dasharray="1.2 1.2" opacity="0.45"/>`;
   svg += `<line x1="${X(g.path.start)}" y1="0" x2="${X(g.path.start)}" y2="50" stroke="#ffd34d" stroke-width="0.3" stroke-dasharray="0.8 1" opacity="0.5"/>`;
@@ -63,7 +66,7 @@ export function speedDiagramSVG(s, opt = {}) {
   // numbered cushion turns
   for (const t of g.turns) {
     const cx = t.far ? 100 - 3.4 : 3.4;
-    svg += `<g class="sm-turn" data-turn="${t.n}"><circle cx="${f(cx)}" cy="${f(t.y)}" r="2.3" fill="#19b8ff" stroke="#062a32" stroke-width="0.4"/><text x="${f(cx)}" y="${f(t.y + 1.25)}" text-anchor="middle" font-size="3.4" font-weight="900" fill="#fff" font-family="system-ui,sans-serif">${t.n}</text></g>`;
+    svg += `<g class="sm-turn" data-turn="${t.n}"><circle cx="${f(cx)}" cy="${f(t.y)}" r="2.3" fill="#19b8ff" stroke="#062a32" stroke-width="0.4"/><text x="${f(cx)}" y="${f(t.y + 1.25)}" text-anchor="middle" font-size="3.4" font-weight="900" fill="#fff" font-family="Poppins,system-ui,sans-serif">${t.n}</text></g>`;
   }
   // start ball + stop ring
   svg += `<circle class="sm-start" cx="${f(g.start.x)}" cy="${f(g.start.y)}" r="2" fill="#f7fbff" stroke="#062a32" stroke-width="0.4"/>`;
@@ -71,17 +74,17 @@ export function speedDiagramSVG(s, opt = {}) {
   // diamond numbers counted from YOUR end rail (the same count the speed meaning uses)
   for (let n = 1; n < 8; n++) {
     const hit = Math.abs(g.path.diamond - n) < 0.15;
-    svg += `<text class="sm-dnum${hit ? ' sm-dnum-stop' : ''}" x="${n * 12.5}" y="48.6" text-anchor="middle" font-size="${hit ? 3.4 : 2.8}" font-weight="${hit ? 900 : 700}" fill="${hit ? '#ffc75b' : '#cfe9df'}" opacity="${hit ? 1 : 0.7}" font-family="system-ui,sans-serif">${n}</text>`;
+    svg += `<text class="sm-dnum${hit ? ' sm-dnum-stop' : ''}" x="${n * 12.5}" y="48.6" text-anchor="middle" font-size="${hit ? 3.4 : 2.8}" font-weight="${hit ? 900 : 700}" fill="${hit ? '#ffc75b' : '#d6eef5'}" opacity="${hit ? 1 : 0.7}" font-family="Poppins,system-ui,sans-serif">${n}</text>`;
   }
   // labels above / below the table
   const dn = Math.round(g.path.diamond);
   const stopTxt = Math.abs(g.path.diamond - dn) < 0.15 && dn >= 1 && dn <= 7 ? `STOP · ${ORD[dn]} diamond` : 'STOP';
   const stopLx = Math.max(22, Math.min(78, b.x));
-  svg += `<text class="sm-stop-label" x="${f(stopLx)}" y="58.6" text-anchor="middle" font-size="3.9" font-weight="900" fill="#ffc75b" font-family="system-ui,sans-serif">${stopTxt}</text>`;
-  svg += `<text x="${f(Math.max(7, g.start.x))}" y="-5.6" text-anchor="middle" font-size="3.6" font-weight="800" fill="#f4fbff" font-family="system-ui,sans-serif">START</text>`;
-  svg += `<text x="50" y="-5.6" text-anchor="middle" font-size="3.2" font-weight="700" fill="#9fc3d3" font-family="system-ui,sans-serif">side pockets</text>`;
-  svg += `<text x="99" y="-5.6" text-anchor="end" font-size="3.2" font-weight="700" fill="#9fc3d3" font-family="system-ui,sans-serif">far rail</text>`;
-  svg += `<text x="1" y="58.6" text-anchor="start" font-size="3.2" font-weight="700" fill="#9fc3d3" font-family="system-ui,sans-serif">${stopLx - stopTxt.length * 1.1 < 10 ? '' : 'you'}</text>`;
+  svg += `<text class="sm-stop-label" x="${f(stopLx)}" y="58.6" text-anchor="middle" font-size="3.9" font-weight="900" fill="#ffc75b" font-family="Poppins,system-ui,sans-serif">${stopTxt}</text>`;
+  svg += `<text x="${f(Math.max(7, g.start.x))}" y="-5.6" text-anchor="middle" font-size="3.6" font-weight="800" fill="#f4fbff" font-family="Poppins,system-ui,sans-serif">START</text>`;
+  svg += `<text x="50" y="-5.6" text-anchor="middle" font-size="3.2" font-weight="700" fill="#9fc3d3" font-family="Poppins,system-ui,sans-serif">side pockets</text>`;
+  svg += `<text x="99" y="-5.6" text-anchor="end" font-size="3.2" font-weight="700" fill="#9fc3d3" font-family="Poppins,system-ui,sans-serif">far rail</text>`;
+  svg += `<text x="1" y="58.6" text-anchor="start" font-size="3.2" font-weight="700" fill="#9fc3d3" font-family="Poppins,system-ui,sans-serif">${stopLx - stopTxt.length * 1.1 < 10 ? '' : 'you'}</text>`;
   svg += `</svg>`;
   if (!opt.caption) return svg;
   return `<figure class="speedExplain" data-speed-explain="${label}">${svg}<figcaption><b>SPEED ${label}</b> ${meaning}.</figcaption></figure>`;

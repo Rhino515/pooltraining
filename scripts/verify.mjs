@@ -796,7 +796,7 @@ let state = storage.defaultState();
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
   const missing = walk(path.join(root, 'js')).filter((f) => f.endsWith('.js')).map((f) => './' + path.relative(root, f)).filter((f) => !sw.includes(`'${f}'`));
-  assert(/pool-iq-v11/.test(sw), 'service worker cache is pool-iq-v11');
+  assert(/'pool-iq-v12'/.test(sw), 'service worker cache is pool-iq-v12');
   assertAll('service worker precaches every JS module (incl. simulator + Create Drill)', missing.map((m) => `missing ${m}`));
   const wordN = { one: 1, two: 2, three: 3, four: 4 };
   const probs = [];
@@ -1791,7 +1791,7 @@ let state = storage.defaultState();
   const pb2 = VLT.parseBackup(JSON.stringify(newBackup));
   assert(pb2.keys.poolIQFriendsV1 && pb2.summary.pvp === fd.matches.length && pb2.summary.friends > 0, 'vault: v11 backup summary counts friends + friend matches');
   assert(!VLT.parseBackup(JSON.stringify({ ...newBackup, keys: { ...newBackup.keys, poolIQFriendsV1: { nope: 1 } } })).keys.poolIQFriendsV1, 'vault: a damaged friends key is dropped (rest restores)');
-  assert(VLT.APP_VERSION === '11.1', 'vault: APP_VERSION is 11.1');
+  assert(VLT.APP_VERSION === '12', 'vault: APP_VERSION is 12');
   // docs exist
   for (const f of ['docs/RANKING_AND_XP.md', 'docs/SKILL_GATES_AND_PROMOTIONS.md', 'docs/FRIENDS_AND_TOURNAMENTS.md', 'docs/DEV_MODE.md']) assert(fs.existsSync(path.join(root, f)), `doc present: ${f}`);
   store.clear();
@@ -1958,6 +1958,68 @@ let state = storage.defaultState();
   assert(/'tablegames'/.test(src('js/app.js')) && /Table Games stars/.test(src('js/career.js')), 'Table Games: #tablegames alias route; career text renamed');
   assert(/SPEED n = n table lengths of total cue-ball travel/.test(src('POOLIQ_CONTENT_SCHEMA.md')) && src('POOLIQ_CONTENT_SCHEMA.md').includes(speed.speedMeaning(1.5)) && src('POOLIQ_CONTENT_SCHEMA.md').includes(speed.speedMeaning(1.25)), 'schema doc section 4 has the v11.1 speed definition and meaning table');
   assert(/v11\.1/.test(src('README.md')) && /Table Games/.test(src('README.md')) && src('README.md').includes(speed.speedMeaning(1.5)), 'README has the v11.1 changelog');
+}
+
+// ---------------------------------------------------------------- v12: visual restyle (font, theme, table look, icons)
+{
+  const fsm = await import('fs');
+  const src = (f) => fsm.readFileSync(path.join(root, f), 'utf8');
+  const bin = (f) => fsm.readFileSync(path.join(root, f));
+  const sw = src('sw.js');
+  const css = src('css/styles.css');
+  const idx = src('index.html');
+  const man = JSON.parse(src('manifest.json'));
+  // font: Poppins bundled locally (woff2), licence shipped, every face declared + precached
+  const faces = ['regular', 'medium', 'semibold', 'bold', 'extrabold'];
+  const fprobs = [];
+  for (const w of faces) {
+    const f = `fonts/poppins-${w}.woff2`;
+    if (!fsm.existsSync(path.join(root, f))) { fprobs.push(`missing ${f}`); continue; }
+    if (bin(f).subarray(0, 4).toString('latin1') !== 'wOF2') fprobs.push(`${f} is not WOFF2`);
+    if (!css.includes(`url(../fonts/poppins-${w}.woff2)`)) fprobs.push(`${f} not declared in @font-face`);
+    if (!sw.includes(`'./${f}'`)) fprobs.push(`${f} not precached`);
+  }
+  assertAll('v12 font: 5 Poppins WOFF2 faces bundled locally, declared with @font-face and precached for offline use', fprobs);
+  const ofl = fsm.existsSync(path.join(root, 'fonts/OFL.txt')) ? src('fonts/OFL.txt') : '';
+  assert(/SIL OPEN FONT LICENSE Version 1\.1/.test(ofl) && /Poppins Project Authors/.test(ofl), 'v12 font licence: SIL Open Font License 1.1 text shipped in fonts/OFL.txt');
+  assert(/body\{font-family:Poppins/.test(css) && /font-display:swap/.test(css) && !/fonts\.googleapis|fonts\.gstatic/.test(css + idx), 'v12: Poppins is the app font, font-display swap, no remote font CDN');
+  // theme + header / nav
+  assert(/POOL <b>IQ<\/b>/.test(idx) && !/1Q/.test(idx), 'v12 header keeps the POOL IQ wordmark (never "1Q")');
+  const navBtns = (idx.match(/<nav>[\s\S]*<\/nav>/) || [''])[0].match(/<button[\s\S]*?<\/button>/g) || [];
+  assert(navBtns.length === 7 && navBtns.every((b) => /<svg class="navIco"/.test(b) && /<span>[^<]+<\/span>/.test(b)), 'v12 nav: 7 tabs, each with an SVG icon + its label (routes / data-page ids unchanged)');
+  assert(['home', 'career', 'drills', 'analyze', 'sim', 'arcade', 'profile'].every((p) => idx.includes(`data-page="${p}"`)) && idx.includes('id="settingsBtn"') && idx.includes('aria-label="Settings"'), 'v12 nav + settings button keep their ids, pages and labels');
+  assert(/--gold:#f6c453/.test(css) && /--bg:#040a12/.test(css) && /--cloth:#066b83/.test(css) && /--wood:#57301a/.test(css), 'v12 palette variables: navy background, gold, teal cloth, wood');
+  // table look: wood rails, teal cloth, white diamond sights, unique gradient ids
+  const svgA = table.renderTableDiagram({ balls: [{ id: 'cue', x: 20, y: 25 }, { id: 1, x: 60, y: 20 }], targetPocket: 'TR' });
+  const svgB = table.renderTableDiagram({ balls: [{ id: 'cue', x: 30, y: 25 }] });
+  const idsA = [...svgA.matchAll(/id="(feltGrad[^"]+)"/g)].map((m) => m[1]);
+  const idsB = [...svgB.matchAll(/id="(feltGrad[^"]+)"/g)].map((m) => m[1]);
+  assert(/class="rail-wood"[^>]*fill="url\(#woodV[^)]+\) #4a2915"/.test(svgA) && /class="wood-grain"/.test(svgA), 'v12 table: wood rail with grain (solid fallback colour)');
+  assert(/class="felt"[^>]*fill="url\(#feltGrad[^)]+\) #066b83"/.test(svgA) && /stop-color="#066b83"/.test(svgA), 'v12 table: teal cloth playing surface');
+  assert((svgA.match(/class="diamond-mark"/g) || []).length === 18 && (svgA.match(/class="diamond-sight"/g) || []).length === 18 && /class="diamond-mark"[^>]*fill="#f4f6fb"/.test(svgA), 'v12 table: 18 white diamond sights on the rails (sight positions unchanged)');
+  assert(idsA.length === 1 && idsB.length === 1 && idsA[0] !== idsB[0], 'v12 table: gradient ids are unique per SVG (a hidden copy never blanks another)');
+  assert((svgA.match(/class="ball-shine"/g) || []).length === 2 && (svgA.match(/class="ball-body"[^>]* r="1\.125"/g) || []).length === 2, 'v12 table: glossy shine on each true-scale ball (r stays 1.125)');
+  const sd = (await import(js('games/speedDiagram.js'))).speedDiagramSVG(1.5);
+  assert(/class="sm-felt"[^>]*fill="#066b83"/.test(sd) && /class="sm-wood"/.test(sd) && (sd.match(/class="sm-diamond"/g) || []).length === 12 && /STOP · 3rd diamond/.test(sd), 'v12 speed mini diagram: teal cloth, wood rail, white diamonds, STOP marker kept');
+  // icons: every manifest size exists as a real PNG of that size; maskable + apple opaque; favicons linked + precached
+  const pngInfo = (f) => { const b = bin(f); return { png: b.subarray(1, 4).toString('latin1') === 'PNG', w: b.readUInt32BE(16), h: b.readUInt32BE(20), type: b[25] }; };
+  const iprobs = [];
+  for (const ic of man.icons) {
+    const f = ic.src.replace('./', '');
+    const [w, h] = ic.sizes.split('x').map(Number);
+    const info = pngInfo(f);
+    if (!info.png || info.w !== w || info.h !== h) iprobs.push(`${f}: ${info.w}x${info.h}`);
+    if (ic.purpose === 'maskable' && info.type !== 2) iprobs.push(`${f}: maskable icon should be opaque RGB`);
+  }
+  const ap = pngInfo('icons/apple-touch-icon.png');
+  if (!(ap.png && ap.w === 180 && ap.h === 180 && ap.type === 2)) iprobs.push('apple-touch-icon must be an opaque 180×180 PNG');
+  const fv = pngInfo('icons/favicon-32.png');
+  if (!(fv.png && fv.w === 32 && fv.h === 32)) iprobs.push('favicon-32.png must be 32×32');
+  for (const f of ['./icons/favicon.svg', './icons/favicon-32.png', './icons/apple-touch-icon.png']) if (!sw.includes(`'${f}'`)) iprobs.push(`${f} not precached`);
+  if (!/rel="icon" href="\.\/icons\/favicon\.svg"/.test(idx) || !/rel="icon" href="\.\/icons\/favicon-32\.png"/.test(idx)) iprobs.push('favicon links missing');
+  if (!/^<svg[^>]*viewBox="0 0 512 512"/.test(src('icons/favicon.svg')) || /<text/.test(src('icons/favicon.svg'))) iprobs.push('favicon.svg must be self-contained (outlined text)');
+  assertAll('v12 icons: 192/512 any + maskable, apple-touch-icon 180, favicon SVG + 32 px PNG, all real PNG sizes, precached', iprobs);
+  assert(/v12/.test(src('README.md')) && /Poppins/.test(src('README.md')) && /Open Font License/.test(src('README.md')), 'README has the v12 changelog (font + licence)');
 }
 
 console.log('\n--- Summary ---');

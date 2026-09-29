@@ -1,4 +1,4 @@
-const CACHE = 'pool-iq-v11-1';
+const CACHE = 'pool-iq-v12';
 const ASSETS = [
   './',
   './index.html',
@@ -9,6 +9,13 @@ const ASSETS = [
   './icons/maskable-192.png',
   './icons/maskable-512.png',
   './icons/apple-touch-icon.png',
+  './icons/favicon.svg',
+  './icons/favicon-32.png',
+  './fonts/poppins-regular.woff2',
+  './fonts/poppins-medium.woff2',
+  './fonts/poppins-semibold.woff2',
+  './fonts/poppins-bold.woff2',
+  './fonts/poppins-extrabold.woff2',
   './POOLIQ_CONTENT_SCHEMA.md',
   './examples/demo-single-drill.pooliq',
   './examples/demo-training-pack.pooliq',

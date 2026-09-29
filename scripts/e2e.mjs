@@ -2078,7 +2078,7 @@ const swOk = await page.evaluate(async () => {
 });
 check(swOk, 'service worker registered and active');
 const cacheName = await page.evaluate(async () => (await caches.keys()).join(','));
-check(/pool-iq-v11-1/.test(cacheName) && !/pool-iq-v10|pool-iq-v11(,|$)/.test(cacheName), `cache bumped to pool-iq-v11-1 (${cacheName})`);
+check(/pool-iq-v12/.test(cacheName) && !/pool-iq-v10|pool-iq-v11/.test(cacheName), `cache bumped to pool-iq-v12 (${cacheName})`);
 await page.setOfflineMode(true);
 await page.goto(BASE + 'index.html#arcade', { waitUntil: 'domcontentloaded' });
 await sleep(800);

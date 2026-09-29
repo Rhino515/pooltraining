@@ -9,10 +9,22 @@ Pool IQ is a mobile-first PWA for practising billiards on a real table. You play
 - A teaching layer on every shot: table diagram, Shot Recipe gauges (Aim View, cue-ball tip, SPEED dial), and a Why This Shot? sheet
 - A faint dashed diamond grid on every table diagram, plus a Setup line giving each ball's position in diamonds
 
+- **v12:** a full visual restyle (Poppins type, navy theme, teal cloth with wood rails and white diamond sights, gold/cyan accents, rounded cards, icon nav) and a new app icon
 - **v11.1:** Arcade renamed **Table Games**, a clearer SPEED scale with a mini-table diagram, the Three-Lane Speed Exercise drill, a full-path multi-rail aim preview in the Shot Simulator, and clock readings for the cue-ball tip, with a drag-to-set tip picker pop-up
 - **v11:** Career ball levels ("Shooter · 7-Ball"), Rank and Lifetime XP, 12 skill levels, Skill Gates, Promotion Tests, a separate Drill Rank, Friends / PvP / tournaments, a local player profile, and a passcode-locked DEV MODE
 
 All content is original. Pass/fail is only ever computed from the results you record. The app has no self-report "I passed" buttons.
+
+## What's new in v12 (changelog)
+
+A visual restyle only: no features, routes, data or storage keys changed.
+
+- **Font: Poppins** (400/500/600/700/800), bundled in `fonts/` as Latin subset WOFF2 files (~8 KB each) so it works offline. Poppins is licensed under the **SIL Open Font License 1.1**; the licence text is in `fonts/OFL.txt`. Big titles use small caps, so the text itself (copy/paste, screen readers, tests) keeps its normal case.
+- **Theme:** deep navy background, rounded dark cards with thin borders, gold eyebrows and titles, cyan/blue accents, blue gradient primary buttons, red MISS / blue MADE result bar, circle attempt dots, a gear icon in the header, an arrow back button and a bottom nav with SVG icons (active tab raised in a card).
+- **Tables:** every table diagram and the SPEED mini diagram now use teal cloth, a wood-grain rail with a dark cushion edge, white diamond-shaped sights, deep pockets with a rim and shaded balls. Gradient ids are unique per diagram, so several tables on one page never clash. Stage lists show a small thumbnail of each stage's table layout.
+- **App icon:** new icon in the same style (POOL IQ wordmark over a mini table: wood rail, white diamonds, teal cloth, a dashed cue-ball bank line to the 1 ball): `icons/icon-192.png`, `icon-512.png`, `maskable-192.png`, `maskable-512.png` (safe-zone padded), `apple-touch-icon.png` (180), `favicon-32.png` and `favicon.svg`. Masters are in `icons/src/` (`scripts/make-icons.py` builds them, `scripts/render-icons.mjs` rasterises them).
+- Game screens still fit a 375×667 phone without scrolling; controls keep their ≥ 44 px touch targets.
+- **Versions:** `APP_VERSION` 12, service worker cache `pool-iq-v12` (fonts and favicons are precached).
 
 ## What's new in v11.1 (changelog)
 

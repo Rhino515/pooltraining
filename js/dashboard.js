@@ -133,11 +133,25 @@ export function renderGameLobby(state, gameId) {
   const gs = E.gameState(state, gameId);
   const specs = stageSpecs(gameId);
   const active = state.activeSession && state.activeSession.gameId === gameId ? state.activeSession : null;
+  let currentSet = false;
+  // v12: each stage row leads with a small table thumbnail (the stage's own layout), like the mockup's level list
+  const fullStages = Object.fromEntries(getStages(gameId).map((x) => [x.id, x]));
+  const thumb = (id) => {
+    try {
+      const st = fullStages[id];
+      return st && st.kind !== 'calibration' ? renderStageTable(st, { className: 'table-diagram srThumbSvg' }) : '';
+    } catch {
+      return '';
+    }
+  };
   const rows = specs.map((s, i) => {
     const rec = gs.stages?.[s.id];
     const open = E.isStageUnlocked(state, gameId, s.id);
-    return `<button type="button" class="stageRow card ${open ? '' : 'locked'} ${rec?.passed ? 'passed' : ''}" data-action="${open ? 'go' : 'locked-stage'}" data-href="#play/${gameId}/${s.id}" data-stage="${s.id}" data-open="${open ? 1 : 0}">
-      <span class="srNum">${i + 1}</span>
+    // v12: the first open, not-yet-passed stage gets the gold "current level" ring
+    const current = open && !rec?.passed && !currentSet;
+    if (current) currentSet = true;
+    return `<button type="button" class="stageRow card ${open ? '' : 'locked'} ${rec?.passed ? 'passed' : ''}${current ? ' current' : ''}" data-action="${open ? 'go' : 'locked-stage'}" data-href="#play/${gameId}/${s.id}" data-stage="${s.id}" data-open="${open ? 1 : 0}">
+      ${(() => { const t = thumb(s.id); return `<span class="srLead${t ? ' hasThumb' : ''}">${t}<span class="srNum">${i + 1}</span></span>`; })()}
       <span class="srMain"><b>${esc(s.name)}</b><small>${esc((s.instructions || '').slice(0, 90))}${(s.instructions || '').length > 90 ? '…' : ''}</small></span>
       <span class="srSide">${open ? `${stars(rec?.bestStars || 0)}<small>${rec ? `Best ${rec.bestScore}` : 'New'}</small>${rec ? starsHTML(masteryOf(state, stageItem(gameId, s, i).key)) : ''}` : '<span class="lock">🔒</span>'}</span>
     </button>`;

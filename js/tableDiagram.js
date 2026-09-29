@@ -9,7 +9,7 @@
 
 export const BALL_RADIUS = 1.125;
 export const RAIL = 4.6; // drawn rail width (cushion + wood) outside the playing surface
-export const CUSHION_W = 1.3; // drawn cushion rubber strip inside the rail
+export const CUSHION_W = 1.15; // drawn cushion rubber strip inside the rail (v12: teal cloth-covered cushion, wood beyond it)
 export const VIEWBOX = `${-RAIL} ${-RAIL} ${100 + 2 * RAIL} ${50 + 2 * RAIL}`;
 
 /** Pocket centres (drawn holes and object-ball aim targets). Corner holes sit on the cushion corner, side holes just behind the long cushions. */
@@ -273,11 +273,50 @@ function renderGhostOverlay({ cue, ob, pocket, ghost, ballR, label, compact }) {
     const line1 = 'GHOST';
     const line2 = thickness;
     const fs = compact ? 1.9 : 2.15;
-    svg += `<text class="ghost-label" x="${lx}" y="${ly}" text-anchor="middle" fill="#e8fbff" font-size="${fs}" font-weight="800" font-family="system-ui,sans-serif" stroke="#062a32" stroke-width="0.35" paint-order="stroke">${esc(line1)}</text>`;
-    svg += `<text class="ghost-label" x="${lx}" y="${ly + (compact ? 2.2 : 2.5)}" text-anchor="middle" fill="#ffc75b" font-size="${fs * 0.92}" font-weight="700" font-family="system-ui,sans-serif" stroke="#062a32" stroke-width="0.3" paint-order="stroke">${esc(line2)}</text>`;
+    svg += `<text class="ghost-label" x="${lx}" y="${ly}" text-anchor="middle" fill="#e8fbff" font-size="${fs}" font-weight="800" font-family="${FONT}" stroke="#062a32" stroke-width="0.35" paint-order="stroke">${esc(line1)}</text>`;
+    svg += `<text class="ghost-label" x="${lx}" y="${ly + (compact ? 2.2 : 2.5)}" text-anchor="middle" fill="#ffc75b" font-size="${fs * 0.92}" font-weight="700" font-family="${FONT}" stroke="#062a32" stroke-width="0.3" paint-order="stroke">${esc(line2)}</text>`;
   }
 
   return svg;
+}
+
+
+/* —— v12 look: teal cloth, wood rails with grain, white diamond sights, glossy balls —— */
+let uidSeq = 0;
+const FONT = 'Poppins,system-ui,sans-serif';
+const r2 = (v) => Math.round(v * 100) / 100;
+/** Deterministic wood-grain streaks inside the rail band (pure string SVG, no filters: cheap on phones) */
+function woodGrainSVG() {
+  const o = RAIL - 0.35; // outer edge of the grain band
+  const i = CUSHION_W + 0.35; // inner edge (next to the cushion)
+  let g = '<g class="wood-grain" fill="none" stroke-linecap="round" pointer-events="none">';
+  const tones = ['#2a1409', '#8a5431', '#23110a', '#9a6038', '#311a0e'];
+  const n = 5;
+  for (let k = 0; k < n; k++) {
+    const t = i + ((o - i) * (k + 0.5)) / n;
+    const c = tones[k % tones.length];
+    const op = k % 2 ? 0.28 : 0.38;
+    const w = k % 2 ? 0.12 : 0.16;
+    const wob = 0.18 + 0.07 * k;
+    // top + bottom rails (horizontal grain)
+    for (const y of [-t, 50 + t]) {
+      g += `<path d="M${r2(-RAIL + 2.6)} ${r2(y)} Q 20 ${r2(y + wob)} 38 ${r2(y - wob * 0.6)} T 72 ${r2(y + wob * 0.5)} T ${r2(100 + RAIL - 2.6)} ${r2(y)}" stroke="${c}" stroke-width="${w}" opacity="${op}"/>`;
+    }
+    // head + foot rails (vertical grain)
+    for (const x of [-t, 100 + t]) {
+      g += `<path d="M${r2(x)} ${r2(-RAIL + 2.6)} Q ${r2(x + wob)} 14 ${r2(x - wob * 0.6)} 27 T ${r2(x)} ${r2(50 + RAIL - 2.6)}" stroke="${c}" stroke-width="${w}" opacity="${op}"/>`;
+    }
+  }
+  return g + '</g>';
+}
+/** White diamond sight (rhombus, long axis across the rail) */
+function diamondMarkSVG(x, y) {
+  const across = 0.78;
+  const along = 0.5;
+  const horiz = y < 0 || y > 50; // on a long (top / bottom) rail
+  const ax = horiz ? along : across;
+  const ay = horiz ? across : along;
+  return `<path class="diamond-mark" d="M${r2(x)} ${r2(y - ay)} L${r2(x + ax)} ${r2(y)} L${r2(x)} ${r2(y + ay)} L${r2(x - ax)} ${r2(y)} Z" fill="#f4f6fb" stroke="#2a160b" stroke-width="0.08"/>`;
 }
 
 /**
@@ -330,12 +369,34 @@ export function renderTableDiagram(spec = {}, options = {}) {
 
   let svg = `<svg${options.id ? ` id="${esc(options.id)}"` : ''} class="${esc(className)}" viewBox="${VIEWBOX}" data-ball-r="${ballR}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pool table drill diagram" preserveAspectRatio="xMidYMid meet">`;
 
-  // Rails / felt
+  // Rails / felt (v12: wood rails, teal cloth; gradient ids are unique per SVG so a hidden copy never blanks another)
+  const u = `t${++uidSeq}`;
   svg += `<defs>
-    <radialGradient id="feltGrad" cx="50%" cy="45%" r="70%">
-      <stop offset="0%" stop-color="#147a7e"/>
-      <stop offset="55%" stop-color="#0a4d56"/>
-      <stop offset="100%" stop-color="#073840"/>
+    <radialGradient id="feltGrad${u}" cx="50%" cy="48%" r="72%">
+      <stop offset="0%" stop-color="#0b86a0"/>
+      <stop offset="55%" stop-color="#066b83"/>
+      <stop offset="100%" stop-color="#03485a"/>
+    </radialGradient>
+    <linearGradient id="woodV${u}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6d3f22"/>
+      <stop offset="0.07" stop-color="#5a321b"/>
+      <stop offset="0.5" stop-color="#4a2915"/>
+      <stop offset="0.93" stop-color="#5a321b"/>
+      <stop offset="1" stop-color="#6d3f22"/>
+    </linearGradient>
+    <linearGradient id="cushV${u}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#045466"/>
+      <stop offset="1" stop-color="#034050"/>
+    </linearGradient>
+    <radialGradient id="ballShine${u}" cx="35%" cy="30%" r="75%">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="0.3" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="0.75" stop-color="#000000" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.42"/>
+    </radialGradient>
+    <radialGradient id="pocketGrad${u}" cx="50%" cy="50%" r="50%">
+      <stop offset="0.6" stop-color="#000000"/>
+      <stop offset="1" stop-color="#161616"/>
     </radialGradient>
     <filter id="ballShadow" x="-40%" y="-40%" width="180%" height="180%">
       <feDropShadow dx="0.12" dy="0.2" stdDeviation="0.14" flood-opacity="0.5"/>
@@ -355,14 +416,17 @@ export function renderTableDiagram(spec = {}, options = {}) {
     <clipPath id="feltClip"><rect x="0" y="0" width="100" height="50"/></clipPath>
   </defs>`;
 
-  // Outer (wood) rail
-  svg += `<rect x="${-RAIL}" y="${-RAIL}" width="${100 + 2 * RAIL}" height="${50 + 2 * RAIL}" rx="3.4" ry="3.4" fill="#1a3344" stroke="#2a5570" stroke-width="0.5"/>`;
-  // Cushion rubber strip (felt-covered) between the wood and the playing surface
-  svg += `<rect x="${-CUSHION_W}" y="${-CUSHION_W}" width="${100 + 2 * CUSHION_W}" height="${50 + 2 * CUSHION_W}" rx="0.8" ry="0.8" fill="#0b5a63" stroke="#0d3a42" stroke-width="0.25"/>`;
+  // Outer wood rail: dark lip, wood body with grain, a thin light bevel and a shadow line where it meets the cushion
+  svg += `<rect class="rail-wood" x="${-RAIL}" y="${-RAIL}" width="${100 + 2 * RAIL}" height="${50 + 2 * RAIL}" rx="3.2" ry="3.2" fill="url(#woodV${u}) #4a2915" stroke="#1a0c05" stroke-width="0.35"/>`;
+  svg += `<rect x="${-RAIL + 0.45}" y="${-RAIL + 0.45}" width="${100 + 2 * RAIL - 0.9}" height="${50 + 2 * RAIL - 0.9}" rx="2.8" ry="2.8" fill="none" stroke="#c98a57" stroke-opacity="0.28" stroke-width="0.22"/>`;
+  svg += woodGrainSVG();
+  svg += `<rect x="${-CUSHION_W - 0.32}" y="${-CUSHION_W - 0.32}" width="${100 + 2 * (CUSHION_W + 0.32)}" height="${50 + 2 * (CUSHION_W + 0.32)}" rx="0.9" ry="0.9" fill="#1a0c05" opacity="0.85"/>`;
+  // Cushion rubber strip (teal cloth-covered) between the wood and the playing surface
+  svg += `<rect class="cushion" x="${-CUSHION_W}" y="${-CUSHION_W}" width="${100 + 2 * CUSHION_W}" height="${50 + 2 * CUSHION_W}" rx="0.6" ry="0.6" fill="url(#cushV${u}) #045466" stroke="#022f3a" stroke-width="0.2"/>`;
   // Playing surface (cushion nose to cushion nose)
-  svg += `<rect class="felt" x="0" y="0" width="100" height="50" fill="url(#feltGrad)"/>`;
-  // Cushion nose line
-  svg += `<rect x="0" y="0" width="100" height="50" fill="none" stroke="#062a32" stroke-width="0.22" opacity="0.9"/>`;
+  svg += `<rect class="felt" x="0" y="0" width="100" height="50" fill="url(#feltGrad${u}) #066b83"/>`;
+  // Cushion nose line (soft shadow under the cushion lip)
+  svg += `<rect x="0" y="0" width="100" height="50" fill="none" stroke="#02303b" stroke-width="0.3" opacity="0.9"/>`;
 
   // Diamond grid (under everything that follows)
   if (spec.grid !== false) svg += diamondGridSVG(spec.grid === 'half');
@@ -371,26 +435,28 @@ export function renderTableDiagram(spec = {}, options = {}) {
   if (headString) {
     svg += `<line x1="25" y1="0" x2="25" y2="50" stroke="#55e5ff" stroke-width="0.25" stroke-dasharray="1.2 1.2" opacity="0.45"/>`;
     if (!compact) {
-      svg += `<text x="25" y="48.9" text-anchor="middle" fill="#7eb8c8" font-size="1.6" font-family="system-ui,sans-serif" opacity="0.7">HEAD</text>`;
+      svg += `<text x="25" y="48.9" text-anchor="middle" fill="#7eb8c8" font-size="1.6" font-family="${FONT}" opacity="0.7">HEAD</text>`;
     }
   }
 
   // Diamond marks (simple)
   for (const [dx, dy] of DIAMOND_SIGHTS) {
-    svg += `<circle class="diamond-sight" cx="${dx}" cy="${dy}" r="0.5" fill="#e3f4fa" opacity="0.8"/>`;
+    svg += diamondMarkSVG(dx, dy);
+    svg += `<circle class="diamond-sight" cx="${dx}" cy="${dy}" r="0.2" fill="#ffffff"/>`;
   }
 
   // Pockets
   for (const [key, p] of Object.entries(POCKETS)) {
     const isTarget = pocket && pocket.label === key;
     const r = p.r;
-    svg += `<circle class="pocket" data-pocket="${key}" cx="${p.x}" cy="${p.y}" r="${r}" fill="#020508" stroke="${isTarget ? '#55e5ff' : '#0a1520'}" stroke-width="${isTarget ? 0.55 : 0.25}"/>`;
+    svg += `<circle class="pocket-rim" cx="${p.x}" cy="${p.y}" r="${r + 0.45}" fill="#140a05" stroke="#2c1a0e" stroke-width="0.2"/>`;
+    svg += `<circle class="pocket" data-pocket="${key}" cx="${p.x}" cy="${p.y}" r="${r}" fill="url(#pocketGrad${u}) #000" stroke="${isTarget ? '#55e5ff' : '#050505'}" stroke-width="${isTarget ? 0.55 : 0.25}"/>`;
     if (isTarget) {
       svg += `<circle cx="${p.x}" cy="${p.y}" r="${r + 1.1}" fill="none" stroke="#55e5ff" stroke-width="0.4" stroke-dasharray="1.2 0.8" opacity="0.9">
         <animate attributeName="opacity" values="0.55;1;0.55" dur="2s" repeatCount="indefinite"/>
       </circle>`;
       if (!compact) {
-        svg += `<text x="${Math.max(5.5, Math.min(94.5, p.x))}" y="${p.y > 25 ? p.y - 4.4 : p.y + 5.6}" text-anchor="middle" fill="#55e5ff" font-size="1.9" font-weight="700" font-family="system-ui,sans-serif" stroke="#062a32" stroke-width="0.3" paint-order="stroke">TARGET</text>`;
+        svg += `<text x="${Math.max(5.5, Math.min(94.5, p.x))}" y="${p.y > 25 ? p.y - 4.4 : p.y + 5.6}" text-anchor="middle" fill="#55e5ff" font-size="1.9" font-weight="700" font-family="${FONT}" stroke="#062a32" stroke-width="0.3" paint-order="stroke">TARGET</text>`;
       }
     }
   }
@@ -403,7 +469,7 @@ export function renderTableDiagram(spec = {}, options = {}) {
     svg += `<circle cx="${zx}" cy="${zy}" r="${zr}" fill="#16c5ff22" stroke="#62e9ff" stroke-width="0.55" stroke-dasharray="1.5 1"/>`;
     svg += `<circle cx="${zx}" cy="${zy}" r="${zr * 0.35}" fill="#55e5ff33" stroke="none"/>`;
     if (!compact) {
-      svg += `<text x="${zx}" y="${zy + zr + 2.4}" text-anchor="middle" fill="#7fdfff" font-size="2" font-family="system-ui,sans-serif">CB ZONE</text>`;
+      svg += `<text x="${zx}" y="${zy + zr + 2.4}" text-anchor="middle" fill="#7fdfff" font-size="2" font-family="${FONT}">CB ZONE</text>`;
     }
   }
 
@@ -472,11 +538,10 @@ export function renderTableDiagram(spec = {}, options = {}) {
       svg += `<circle class="ball-body" cx="${x}" cy="${y}" r="${ballR}" fill="${fill}" stroke="${isCue ? '#1d2b36' : '#050b10'}" stroke-width="0.2"/>`;
     }
     if (!isCue) {
-      svg += `<circle cx="${x}" cy="${y}" r="${ballR * 0.56}" fill="#f8fafc"/>`;
-      svg += `<text x="${x}" y="${y + ballR * 0.3}" text-anchor="middle" fill="#05111b" font-size="${num >= 10 ? ballR * 0.72 : ballR * 0.84}" font-weight="900" font-family="system-ui,sans-serif">${num}</text>`;
-    } else {
-      svg += `<circle cx="${x - ballR * 0.3}" cy="${y - ballR * 0.32}" r="${ballR * 0.26}" fill="#ffffff" opacity="0.9"/>`;
+      svg += `<circle cx="${x}" cy="${y}" r="${ballR * 0.58}" fill="#f8fafc"/>`;
+      svg += `<text x="${x}" y="${r2(y + ballR * 0.3)}" text-anchor="middle" fill="#05111b" font-size="${num >= 10 ? r2(ballR * 0.7) : r2(ballR * 0.84)}" font-weight="800" font-family="${FONT}">${num}</text>`;
     }
+    svg += `<circle class="ball-shine" cx="${x}" cy="${y}" r="${ballR}" fill="url(#ballShine${u})" pointer-events="none"/>`;
     svg += `</g></g>`;
   }
 
