@@ -1,7 +1,6 @@
 /**
- * First-person table. Same diagram coordinates as 2D (x along the length,
- * diagram y becomes z). Camera sits just behind the cue ball. Drawing never
- * moves the balls. Shaded canvas projection, not a photo.
+ * Elevated 3D table camera. Whole table in view — not a zoom of the 2D diagram.
+ * Same diagram coordinates (x along the length, diagram y becomes z). Height is y.
  */
 const f2 = (v) => Math.round(v * 100) / 100;
 
@@ -28,22 +27,14 @@ function hash(n) {
 }
 
 export function cameraBehind(cue, yaw = 0, pitch = 0) {
-  const c = cue || { x: 25, y: 25 };
-  const look = { x: Math.min(92, c.x + 42), y: 0.55, z: c.y * 0.35 + 25 * 0.65 };
-  let dx = c.x - look.x;
-  let dz = c.y - look.z;
-  const len = Math.hypot(dx, dz) || 1;
-  dx /= len;
-  dz /= len;
-  const cy = Math.cos(yaw);
-  const sy = Math.sin(yaw);
-  const rx = dx * cy - dz * sy;
-  const rz = dx * sy + dz * cy;
-  const dist = 11.5;
+  const look = { x: 50, y: 0.15, z: 25 };
+  const ang = -0.72 + yaw;
+  const elev = 36 + pitch * 1.15;
+  const dist = 92;
   return {
-    x: c.x + rx * dist,
-    y: 8.4 + pitch * 0.35,
-    z: c.y + rz * dist,
+    x: look.x + Math.sin(ang) * dist * 0.82,
+    y: Math.max(16, elev),
+    z: look.z + Math.cos(ang) * dist * 0.55,
     look,
     yaw,
     pitch
@@ -79,8 +70,8 @@ function toCam(p, cam) {
 }
 
 function projCS(p, w, h) {
-  const f = h * 0.58;
-  return { x: w / 2 + (p.x / p.z) * f, y: h * 0.30 - (p.y / p.z) * f, z: p.z, s: f / p.z };
+  const f = h * 0.72;
+  return { x: w / 2 + (p.x / p.z) * f, y: h * 0.46 - (p.y / p.z) * f, z: p.z, s: f / p.z };
 }
 
 export function project(p, cam, w, h) {
@@ -352,7 +343,6 @@ export function drawTable3D(ctx, w, h, { balls, ballR, yaw = 0, pitch = 0 }) {
     sprites.push({ b, p, sh, rad: Math.max(3.5, ballR * p.s) });
   }
   sprites.sort((a, b) => b.p.z - a.p.z);
-  if (cue) drawCue(ctx, cam, w, h, cue, ballR);
   for (const s of sprites) drawBall(ctx, s);
 
   const vig = ctx.createRadialGradient(w / 2, h * 0.45, h * 0.2, w / 2, h * 0.5, h * 0.75);
@@ -492,4 +482,41 @@ function drawCue(ctx, cam, w, h, cue, ballR) {
   ctx.closePath();
   ctx.fillStyle = '#2c78d0';
   ctx.fill();
+}
+
+function rayFromScreen(sx, sy, w, h, cam) {
+  const f = h * 0.72;
+  const x = (sx - w / 2) / f;
+  const y = (h * 0.46 - sy) / f;
+  const b = cam._b || (cam._b = basis(cam));
+  return {
+    ox: cam.x,
+    oy: cam.y,
+    oz: cam.z,
+    dx: x * b.rx + y * b.ux + b.fx,
+    dy: x * b.ry + y * b.uy + b.fy,
+    dz: x * b.rz + y * b.uz + b.fz
+  };
+}
+
+export function feltFromScreen3D(sx, sy, w, h, yaw, pitch, ballR = 1.125) {
+  const cam = cameraBehind(null, yaw, pitch);
+  const r = rayFromScreen(sx, sy, w, h, cam);
+  if (Math.abs(r.dy) < 1e-6) return null;
+  const t = (ballR - r.oy) / r.dy;
+  if (t < 0.2) return null;
+  return { x: r.ox + r.dx * t, y: r.oz + r.dz * t };
+}
+
+export function pickBall3D(sx, sy, w, h, balls, ballR, yaw, pitch) {
+  const cam = cameraBehind(null, yaw, pitch);
+  let best = null;
+  for (const b of balls || []) {
+    const p = project({ x: b.x, y: ballR, z: b.y }, cam, w, h);
+    if (!p) continue;
+    const hitR = Math.max(16, p.s * ballR * 1.55);
+    const d = Math.hypot(p.x - sx, p.y - sy);
+    if (d <= hitR && (!best || p.z < best.z)) best = { id: b.id, z: p.z };
+  }
+  return best ? best.id : null;
 }

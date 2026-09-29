@@ -80,10 +80,23 @@ function tryPocket(layout, id, pocket, table, speed, tip) {
   for (const aim of [aim0, aim0 - 1.2, aim0 + 1.2]) {
     const res = P.simulate(layout, { ...shotBase, aim }, simOpt(table));
     if (pocketedOnly(res, id, pocket) && cueRailsBefore(res) === 0) {
-      return { res, aim, speed, tip, pocket, cut: cut.deg, fullness: cut.fullness, side: cut.side, ghost: cut.ghost };
+      return { res, aim, speed, tip, pocket, cut: cut.deg, fullness: cut.fullness, side: cut.side, ghost: cut.ghost, kisses: kissCount(res, id) };
     }
   }
   return null;
+}
+
+function kissCount(res, id) {
+  return res.events.filter((e) => {
+    if (e.type !== 'ball') return false;
+    const pair = [String(e.a), String(e.b)];
+    const cueOb = pair.includes('cue') && pair.includes(String(id));
+    return !cueOb;
+  }).length;
+}
+
+function othersMoved(res, id) {
+  return kissCount(res, id);
 }
 
 function clustered(layout, id, r) {
@@ -274,7 +287,12 @@ function rateHit(hit, layout, style, ctx) {
   const cueEnd = hit.res.final.find((b) => b.id === 'cue');
   let s = 80 - hit.cut * 1.35;
   s -= Math.abs(hit.speed - 2.25) * 4;
-  s -= (Math.abs(hit.tip.v) + Math.abs(hit.tip.h)) * 8;
+  // Pros stay on center ball. Draw/follow only for shape. Side spin last.
+  s -= Math.abs(hit.tip.v) * 14;
+  s -= Math.abs(hit.tip.h) * 22;
+  if (!hit.tip.v && !hit.tip.h) s += 16;
+  const kisses = hit.kisses ?? kissCount(hit.res, ctx.id);
+  if (kisses && !ctx.allowKiss) s -= 55 * kisses;
   if (hit.fullness >= 0.68) s += 18;
   else if (hit.fullness >= 0.4) s += 8;
   else if (!style.thinOk) s -= 25;
@@ -308,13 +326,15 @@ function pickShot(layout, legal, style, table, keys, problems) {
     wantSide,
     keys: new Set(keys),
     problems: new Set(problems.map((p) => p.id)),
-    left: legal.filter((id) => Number(id) !== 8).length
+    left: legal.filter((id) => Number(id) !== 8).length,
+    allowKiss: false
   };
   let best = null;
   for (const id of legal) {
     const hits = hitsFor(layout, id, table, style.maxCut);
     const pool = hits.length ? hits : anyHits(layout, id, table);
     for (const hit of pool) {
+      if ((hit.kisses || 0) && pool.some((h) => !h.kisses)) continue;
       let s = rateHit(hit, layout, style, { ...ctxBase, id });
       // Prefer an open makeable ball that leaves you on a problem (make, then break out).
       if (ctxBase.problems.size && !ctxBase.problems.has(Number(id)) && !ctxBase.problems.has(String(id))) {

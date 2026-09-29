@@ -26,7 +26,7 @@ import { lsSet } from '../storage.js';
 import * as TC from '../sim/tableCal.js';
 import { offsetDragPoint } from '../sim/drag.js';
 import { SCAN_PLACE_LABEL, detectBalls, perspectiveWarp, defaultCorners } from '../sim/scan.js';
-import { drawTable3D } from '../sim/view3d.js';
+import { drawTable3D, pickBall3D, feltFromScreen3D } from '../sim/view3d.js';
 import { planRunoutOptions, groupChoices } from '../sim/runout.js';
 import { SHOT_TYPES, POCKET_CHOICES, generateShot, wayLabel } from '../sim/randomShot.js';
 
@@ -426,7 +426,7 @@ export function createSimScreen(ctx, args = []) {
       </div><div class="pbMain${g ? ' one' : ''}">${main}</div></div>`;
     }
     if (st.full) return '';
-    if (st.view3d) return `<div class="simBar"><button type="button" class="bigBtn" data-action="sim-2d">2D TOP VIEW</button></div>`;
+    if (st.view3d) return `<div class="simBar"><button type="button" class="bigBtn" data-action="sim-2d">2D TOP VIEW</button><p class="runNote" style="margin:8px 0 0">Drag a ball to move it. Drag the cloth to turn the table.</p></div>`;
     if (st.scan || st.runout) return '';
     return `<div class="simBar"><button type="button" class="toolBtn${st.tool ? ' on' : ''}" data-action="sim-draw" aria-label="Draw on the table">✎<small>Draw</small></button>${st.game ? '' : `<button type="button" class="toolBtn${st.shape ? ' on' : ''}" data-action="sim-shape" aria-label="Shape zone">◭<small>Zone</small></button>`}<button type="button" class="bigBtn shootBtn" data-action="sim-shoot" ${cueBall() ? '' : 'disabled'}>SHOOT ▶</button></div>`;
   }
@@ -577,7 +577,21 @@ export function createSimScreen(ctx, args = []) {
       drag = { kind: 'anno', start: p, cur: p };
       return;
     }
-    if (st.view3d) { drag = { kind: 'orbit', sx: e.clientX, sy: e.clientY, yaw: st.yaw || 0, pitch: st.pitch || 0 }; return; }
+    if (st.view3d) {
+      const cnv = ctx.root.querySelector('#sim3d');
+      const rect = cnv ? cnv.getBoundingClientRect() : { left: 0, top: 0, width: 1, height: 1 };
+      const sx = e.clientX - rect.left;
+      const sy = e.clientY - rect.top;
+      const id = pickBall3D(sx, sy, rect.width, rect.height, activeBalls(), rad(), st.yaw || 0, st.pitch || 0);
+      if (id != null && !st.game) {
+        const b = activeBalls().find((q) => q.id === id);
+        drag = { kind: 'ball3d', id, from: { x: b.x, y: b.y }, sx: e.clientX, sy: e.clientY, moved: false };
+        st.sel = id;
+        return;
+      }
+      drag = { kind: 'orbit', sx: e.clientX, sy: e.clientY, yaw: st.yaw || 0, pitch: st.pitch || 0 };
+      return;
+    }
     document.documentElement.classList.add('sim-dragging');
     const b = ballAt(p);
     if (b && !st.game) {
@@ -624,9 +638,23 @@ export function createSimScreen(ctx, args = []) {
         bub.style.top = `${Math.max(0, e.clientY - rect.top - 60)}px`;
         bub.classList.add('show');
       }
+    } else if (drag.kind === 'ball3d') {
+      if (!drag.moved && movedPx < 6) return;
+      drag.moved = true;
+      const cnv = ctx.root.querySelector('#sim3d');
+      const rect = cnv ? cnv.getBoundingClientRect() : { left: 0, top: 0, width: 1, height: 1 };
+      const felt = feltFromScreen3D(e.clientX - rect.left, e.clientY - rect.top, rect.width, rect.height, st.yaw || 0, st.pitch || 0, rad());
+      if (!felt) return;
+      let q = L.clampToTable(felt, rad());
+      if (set.snap) q = L.snapPoint(q, L.QUARTER, rad());
+      drag.to = q;
+      const list = activeBalls();
+      const b = list.find((x) => x.id === drag.id);
+      if (b) { b.x = f2(q.x); b.y = f2(q.y); }
+      paint3d();
     } else if (drag.kind === 'orbit') {
-      st.yaw = Math.max(-0.8, Math.min(0.8, drag.yaw + (e.clientX - drag.sx) * 0.008));
-      st.pitch = Math.max(-6, Math.min(14, drag.pitch + (drag.sy - e.clientY) * 0.05));
+      st.yaw = Math.max(-1.2, Math.min(1.2, drag.yaw + (e.clientX - drag.sx) * 0.006));
+      st.pitch = Math.max(-10, Math.min(18, drag.pitch + (drag.sy - e.clientY) * 0.04));
       paint3d();
     } else if (drag.kind === 'aim') {
       if (!drag.moved && movedPx < 5) return;
@@ -669,7 +697,7 @@ export function createSimScreen(ctx, args = []) {
       refresh(['table', 'panel']);
       return;
     }
-    if (d.kind === 'ball') {
+    if (d.kind === 'ball' || d.kind === 'ball3d') {
       if (!d.moved) {
         st.sel = d.id;
         if (d.id !== 'cue' && st.scan?.phase !== 'confirm') aimAtBall(d.id);

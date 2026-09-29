@@ -2184,7 +2184,7 @@ const swOk = await page.evaluate(async () => {
 });
 check(swOk, 'service worker registered and active');
 const cacheName = await page.evaluate(async () => (await caches.keys()).join(','));
-check(/pool-iq-v14-4/.test(cacheName) && !/pool-iq-v10|pool-iq-v11|pool-iq-v12|pool-iq-v13/.test(cacheName), `cache bumped to pool-iq-v14-4 (${cacheName})`);
+check(/pool-iq-v14-5/.test(cacheName) && !/pool-iq-v10|pool-iq-v11|pool-iq-v12|pool-iq-v13/.test(cacheName), `cache bumped to pool-iq-v14-5 (${cacheName})`);
 check(await page.evaluate(async () => !!(await caches.match('./js/vendor/supabase.js'))), 'v13: the supabase-js file is precached for offline use');
 await page.setOfflineMode(true);
 await page.goto(BASE + 'index.html#arcade', { waitUntil: 'domcontentloaded' });
