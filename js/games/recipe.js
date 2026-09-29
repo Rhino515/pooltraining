@@ -8,6 +8,7 @@ import { contactText, englishText, techniqueName, fracTips } from './text.js';
 import { aimViewInfo, aimViewSVG, shadeDefs } from './aimView.js';
 import { setupBalls, ballName, shortPos, wordsPos, CONVENTION_TEXT } from './diamonds.js';
 import { speedLabel, speedMeaning, formatSpeed, calibrationAdvice } from './speed.js';
+import { speedDiagramSVG } from './speedDiagram.js';
 
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({
   '&': '&amp;',
@@ -57,12 +58,12 @@ export function recipeCardHTML(
     <div class="rc-rows">
       <div class="eyebrow">SHOT RECIPE · ${esc(r.technique.toUpperCase())}</div>
 
-      ${row('Cue-ball contact', esc(r.contact))}
+      ${row('Cue-ball contact', `${esc(r.contact)}<small class="tipClock" data-tip-clock>${esc(tipClockLabel(ch.cueContact?.vTips || 0, ch.cueContact?.hTips || 0, { oclock: true }))}</small>`)}
       ${row('English', esc(r.english))}
 
       ${row(
         'Speed',
-        `${speedChip(ch.speed, cal)}<small class="rc-mean">${esc(r.speedMeaning)}</small>`
+        `${speedChip(ch.speed, cal)}<small class="rc-mean">${esc(r.speedMeaning)}.</small>${speedDiagramSVG(ch.speed)}`
       )}
 
       ${hideAim ? '' : row('Object-ball contact', esc(r.obContact))}
@@ -177,12 +178,12 @@ export function tipLabel(vTips = 0, hTips = 0) {
  * The clock position is calculated from the SAME vTips/hTips
  * values used to draw the contact dot.
  */
-export function tipClockLabel(vTips = 0, hTips = 0) {
+export function tipClockLabel(vTips = 0, hTips = 0, { oclock = false } = {}) {
   const v = Number(vTips) || 0;
   const h = Number(hTips) || 0;
 
   if (!v && !h) {
-    return 'Center of cue ball';
+    return oclock ? 'Center' : 'Center of cue ball';
   }
 
   // atan2(horizontal, vertical) makes:
@@ -205,7 +206,8 @@ export function tipClockLabel(vTips = 0, hTips = 0) {
 
   const hour = whole === 0 ? 12 : whole;
 
-  return `${hour}:${mins} on cue ball`;
+  // v11.1: { oclock: true } gives the short reading shown right under the tip text ("1:30 o'clock").
+  return oclock ? `${hour}:${mins} o'clock` : `${hour}:${mins} on cue ball`;
 }
 
 /**
@@ -336,7 +338,7 @@ function arcPath(a0, a1, rad) {
 
 /**
  * Round speed dial:
- * coloured arc over Pool IQ's numeric SPEED scale (0.5–5.0)
+ * coloured arc over Pool IQ's numeric SPEED scale (0.50–5.00, ticks every 0.25)
  */
 export function speedDialSVG(speed) {
   const a = speedAngle(speed);
@@ -400,17 +402,22 @@ export function speedDialSVG(speed) {
     stroke-linecap="round"
   />`;
 
-  for (let v = 1; v <= 5; v++) {
+  // v11.1 ticks every quarter step: long at whole speeds, medium at halves, short at quarters
+  for (let q = SPEED_MIN * 4; q <= SPEED_MAX * 4; q++) {
+    const v = q / 4;
+    const major = q % 4 === 0;
+    const half = q % 2 === 0;
     const o = polar(speedAngle(v), 30);
-    const i = polar(speedAngle(v), 25.5);
+    const i = polar(speedAngle(v), major ? 25 : half ? 27 : 28.4);
 
     s += `<line
+      class="sd-tick${major ? ' major' : half ? ' half' : ' quarter'}"
       x1="${r2(i.x)}"
       y1="${r2(i.y)}"
       x2="${r2(o.x)}"
       y2="${r2(o.y)}"
       stroke="#35505f"
-      stroke-width="1.6"
+      stroke-width="${major ? 1.6 : half ? 1.1 : 0.7}"
     />`;
   }
 
@@ -418,7 +425,7 @@ export function speedDialSVG(speed) {
     x="50"
     y="80"
     text-anchor="middle"
-    font-size="15"
+    font-size="14"
     font-weight="900"
     fill="#0b2635"
     font-family="system-ui,sans-serif"
@@ -535,9 +542,9 @@ export function recipeGaugesHTML(
         ${esc(tipLabel(cc.vTips, cc.hTips))}
       </b>
 
+      <small class="tipClock" data-tip-clock>${esc(tipClockLabel(cc.vTips, cc.hTips, { oclock: true }))}</small>
+
       <small>
-        ${esc(tipClockLabel(cc.vTips, cc.hTips))}
-        ·
         ${esc(techniqueName(ch.technique))}
       </small>
     </button>`

@@ -1,6 +1,6 @@
 /**
  * Skill ratings (0–100) computed from saved results only:
- * Arcade stage records (passed, stars, success rate), drill records, Ghost matches and Boss Battle shots,
+ * Table Games stage records (passed, stars, success rate), drill records, Ghost matches and Boss Battle shots,
  * each weighted by the stage's difficulty × the stage's weight for that skill × a recency factor.
  * A rating of 100 means every piece of content that trains the skill has been mastered recently.
  */

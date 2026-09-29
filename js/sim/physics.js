@@ -292,7 +292,8 @@ export const aimFromVector = (dx, dy) => { let a = (Math.atan2(-dy, dx) * 180) /
  * Run a shot to rest.
  * @param {Array<{id,x,y}>} layout balls ('cue' + numbers)
  * @param {{aim:number, speed?:number, V?:number, vTips?:number, hTips?:number}} shot
- * @param {{maxTime?:number, frameDt?:number, record?:boolean, stopAfterFirstHit?:boolean, initial?:object}} opt
+ * @param {{maxTime?:number, frameDt?:number, record?:boolean, stopAfterFirstHit?:boolean, initial?:object, maxSteps?:number}} opt
+ *   frameDt / record only change what is recorded, never the physics, so a preview run and the real shot agree.
  */
 export function simulate(layout, shot, opt = {}) {
   const balls = makeBalls(layout);
@@ -323,6 +324,7 @@ export function simulate(layout, shot, opt = {}) {
   for (const b of balls) dist.set(b.id, 0);
   let firstHit = null;
   let steps = 0;
+  let truncated = false;
   while (t < maxTime) {
     let vmax = 0;
     let any = false;
@@ -373,11 +375,13 @@ export function simulate(layout, shot, opt = {}) {
           bi.x -= bi.vx * back; bi.y -= bi.vy * back;
           bj.x -= bj.vx * back; bj.y -= bj.vy * back;
           const vn = collideBalls(bi, bj);
+          const pa = { x: bi.x, y: bi.y }; // centres at the moment of contact (used by the aim preview paths)
+          const pb = { x: bj.x, y: bj.y };
           bi.x += bi.vx * back; bi.y += bi.vy * back;
           bj.x += bj.vx * back; bj.y += bj.vy * back;
           if (vn > 0) {
             hit = true;
-            const ev = { t: t + dt - back, type: 'ball', a: bi.id, b: bj.id, x: (bi.x + bj.x) / 2, y: (bi.y + bj.y) / 2, v: vn };
+            const ev = { t: t + dt - back, type: 'ball', a: bi.id, b: bj.id, x: (bi.x + bj.x) / 2, y: (bi.y + bj.y) / 2, v: vn, pa, pb };
             events.push(ev);
             if (!firstHit && (bi.id === 'cue' || bj.id === 'cue')) {
               firstHit = { ...ev, ob: bi.id === 'cue' ? bj.id : bi.id, cueAt: bi.id === 'cue' ? { x: bi.x - bi.vx * back, y: bi.y - bi.vy * back } : { x: bj.x - bj.vx * back, y: bj.y - bj.vy * back } };
@@ -430,6 +434,8 @@ export function simulate(layout, shot, opt = {}) {
     steps++;
     if (record) while (t >= nextFrame) { snap(nextFrame); nextFrame += frameDt; }
     if (opt.stopAfterFirstHit && firstHit && t - firstHit.t > (opt.afterHit || 0.02)) break;
+    // optional step cap (the live aim preview uses it so a phone never stalls; normal shots have no cap)
+    if (opt.maxSteps && steps >= opt.maxSteps) { truncated = true; break; }
   }
   for (const b of balls) if (b.on && b.rolling && hyp(b.vx, b.vy) <= STOP_V) { b.vx = b.vy = 0; b.wx = b.wy = 0; }
   if (record) snap(t);
@@ -445,21 +451,28 @@ export function simulate(layout, shot, opt = {}) {
     firstHit,
     distance: Object.fromEntries(dist),
     pocketed: balls.filter((b) => !b.on).map((b) => ({ id: b.id, pocket: b.pocket })),
-    scratch: !!(cue && !cue.on)
+    scratch: !!(cue && !cue.on),
+    truncated
   };
 }
 
 // ------------------------------------------------------------------ SPEED scale
-/** Table lengths travelled by a lone center-ball lag from the head rail at cue-ball speed V */
-export function lagLengths(V) {
-  const r = simulate([{ id: 'cue', x: R + 0.05, y: 25 }], { aim: 0, V }, { record: false, maxTime: 60 });
+/** Standard SPEED-scale start spot (v11.1): the first diamond at your end of the table */
+export const LAG_START_X = 12.5;
+/**
+ * Table lengths travelled by a lone center-ball lag at cue-ball speed V, measured from where it starts
+ * (the first diamond, rolling along the length; rail rebounds and their losses included).
+ * SPEED n = n lengths of total travel from the start spot, so this is the calibration reference.
+ */
+export function lagLengths(V, startX = LAG_START_X) {
+  const r = simulate([{ id: 'cue', x: startX, y: 25 }], { aim: 0, V }, { record: false, maxTime: 60 });
   return r.distance.cue / LEN_UNITS;
 }
 /** Precomputed by scripts/gen-speed-table.mjs: [table lengths, cue-ball launch speed in/s] */
-const SPEED_TABLE = [[0,0],[0.25,19.228],[0.5,27.192],[0.75,33.304],[1,38.467],[1.25,48.3],[1.5,56.597],[1.75,63.923],[2,70.572],[2.25,84.084],[2.5,96.133],[2.75,107.152],[3,117.397],[3.25,138.85],[3.5,158.708],[3.75,176.47],[4,185.739],[4.25,206.964],[4.5,228.431],[4.75,247.093],[5,258.51],[5.25,285.912],[5.5,315.773],[5.75,343.707],[6,361.558],[6.25,400.577],[6.5,438.807],[6.75,474.615],[7,497.648],[7.25,548.129],[7.5,597.683],[7.75,644.264],[8,674.417]];
+const SPEED_TABLE = [[0,0],[0.25,19.228],[0.5,27.192],[0.75,33.304],[1,41.232],[1.25,50.636],[1.5,58.635],[1.75,65.77],[2,75.907],[2.25,88.861],[2.5,100.533],[2.75,111.243],[3,126.922],[3.25,147.641],[3.5,166.097],[3.75,175.66],[4,190.75],[4.25,212.55],[4.5,234.458],[4.75,248.803],[5,267.712],[5.25,296.659],[5.5,328.069],[5.75,349.496],[6,379.268],[6.25,415.721],[6.5,455.711],[6.75,483.038],[7,521.434],[7.25,568.815],[7.5,620.893],[7.75,656.888],[8,707.085]];
 let speedTable = null;
 export function buildSpeedTable() {
-  // V for lengths 0, 0.25 … 8 by bisection on the simulated lag (includes rail losses)
+  // V for lengths 0, 0.25 … 8 by bisection on the simulated lag from the first diamond (includes rail losses)
   const out = [[0, 0]];
   let lo = 0;
   for (let L = 0.25; L <= 8.001; L += 0.25) {
@@ -475,7 +488,7 @@ export function buildSpeedTable() {
   }
   return out;
 }
-/** Cue-ball launch speed (in/s) for Pool IQ SPEED s (s table lengths of center-ball travel) */
+/** Cue-ball launch speed (in/s) for Pool IQ SPEED s (s table lengths of total center-ball travel from the start spot) */
 export function speedToV0(s) {
   if (!speedTable) speedTable = SPEED_TABLE || buildSpeedTable();
   const v = Math.max(0, Math.min(8, Number(s) || 0));

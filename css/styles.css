@@ -58,7 +58,7 @@
   .table-diagram{overflow:visible}
 }
 
-/* —— Gamified training system (Arcade, play screen, recipe, coaching) —— */
+/* —— Gamified training system (Table Games, play screen, recipe, coaching) —— */
 .bigBtn{display:block;width:100%;margin-top:12px;border:0;border-radius:14px;background:linear-gradient(90deg,#087fc4,var(--blue));color:#fff;font-weight:900;letter-spacing:.5px;padding:15px;min-height:52px;font-size:14px;cursor:pointer}
 .bigBtn.alt{background:#0f2536;border:1px solid var(--line);color:var(--cyan)}
 .bigBtn.danger{background:#7d2636}
@@ -73,7 +73,7 @@
 .nextUp h3{margin:8px 0 4px;font-size:19px}
 .nextUp small{display:block;margin-top:8px}
 .linkish.back{display:block;margin:0 0 6px}
-/* arcade */
+/* Table Games hub (class names keep the internal "arcade" id) */
 .arcadeGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
 .gameCard{display:grid;grid-template-columns:46px 1fr;gap:12px;text-align:left;padding:14px;color:inherit;cursor:pointer;position:relative;overflow:hidden}
 .gameCard.locked{opacity:.55}
@@ -918,3 +918,83 @@ h2 .miniAct{float:right;margin-top:-4px}
 .friendsPromo{margin-bottom:14px}
 .rkBalls{font-weight:600;font-size:11px}
 @media(max-width:420px){.careerHead{gap:12px;padding:14px}.chTitle{font-size:21px}.skillRow{grid-template-columns:minmax(0,118px) 1fr 32px;gap:8px}.champGrid b{font-size:17px}.lsScore{font-size:52px}}
+
+/* ---------------------------------------------------------------- v11.1: Table Games label, tip clock, speed mini diagram, lanes, preview */
+nav button{padding-left:1px;padding-right:1px}
+nav button span{white-space:nowrap}
+@media(max-width:380px){nav button span{font-size:8px;letter-spacing:-.2px}}
+.tipClock{display:block;color:var(--gold);font-size:10.5px;font-weight:800;letter-spacing:.2px;line-height:1.2;font-variant-numeric:tabular-nums}
+.gauge small.tipClock{color:var(--gold);font-size:9.5px}
+.simTip small.tipClock{color:var(--gold);font-size:10.5px}
+.rc-row b .tipClock,.rc-row b small.tipClock{display:block;margin-top:2px}
+.rc-mean{display:block;color:#cfe3ef;font-size:12px;font-weight:600;line-height:1.35;margin:4px 0 2px}
+.speed-mini{display:block;width:100%;max-width:240px;height:auto;margin:6px 0 2px}
+.spDiagram .speed-mini{max-width:170px;margin:4px auto 0}
+.simSpeed small.spMean{font-size:10.5px;line-height:1.3;color:#cfe3ef}
+.speedExplain{display:block;background:#0a1d2a;border:1px solid #1c4a60;border-radius:12px;padding:8px 10px;margin:8px 0}
+.speedExplain .se-text{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.speedExplain .se-mean{font-size:12.5px;line-height:1.35;flex:1 1 180px;color:#e8f6ff}
+.speedExplain .speed-mini{max-width:260px;margin:6px auto 2px}
+.speedExplain .se-note{display:block;font-size:10.5px;line-height:1.35}
+.speedExplain figcaption{font-size:12px;line-height:1.35;color:#cfe3ef}
+.plSpeedMean{display:block;font-size:11.5px;line-height:1.35;margin:4px 0 6px}
+.laneTag{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;background:#0d2333;border:1px solid #1f6c8d;border-radius:12px;padding:8px 10px;margin:6px 0}
+.laneTag b{color:var(--cyan);font-size:14px}
+.laneTag span{color:var(--muted);font-size:11.5px}
+.laneChips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.credit{display:block;font-size:11px;line-height:1.35;margin-top:6px;font-style:italic}
+.threeLaneCard{padding:14px;margin:12px 0}
+.threeLaneCard h3{margin:8px 0 4px}
+.threeLaneCard .bigBtn{margin-top:10px}
+.chips.speedChoices{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+.chips.speedChoices .chip{min-height:44px;padding:6px 2px;font-size:13px;font-variant-numeric:tabular-nums;text-align:center}
+.pvSummary{display:block;color:var(--gold);font-size:11px;font-weight:700;line-height:1.3;margin-top:2px}
+.speedExplain.compact{display:grid;grid-template-columns:minmax(0,1fr) 124px;gap:8px;align-items:center;padding:6px 8px;margin:6px 0}
+.speedExplain.compact .se-text{flex-direction:column;gap:4px}
+.speedExplain.compact .se-mean{font-size:12px;flex:none}
+.speedExplain.compact .speed-mini{max-width:124px;margin:0}
+.laneTag{padding:5px 10px;margin:6px 0 0}
+.laneTag b{font-size:13px}
+@media(max-height:700px){.speedExplain.compact{grid-template-columns:minmax(0,1fr) 104px}.speedExplain.compact .speed-mini{max-width:104px}.speedExplain.compact .se-mean{font-size:11.5px}}
+/* v11.1 cue-ball tip picker pop-up (compact popover next to the small cue ball) */
+.tipPopBackdrop{position:fixed;inset:0;z-index:60;background:#0004;touch-action:none}
+.tipPop{position:fixed;z-index:61;width:max(196px,calc(var(--tp-ball) + 72px));padding:10px 12px 12px;border-radius:18px;border:1px solid #2a6f8f;background:linear-gradient(160deg,#10263a,#0a1622);box-shadow:0 18px 50px #000b;display:flex;flex-direction:column;align-items:center;gap:6px}
+.tpHead{align-self:stretch;display:flex;justify-content:space-between;align-items:baseline;font-size:10.5px;letter-spacing:1.5px;font-weight:900;color:var(--cyan)}
+.tpHead small{letter-spacing:0;font-weight:700;color:var(--muted);font-size:10.5px}
+.tipPopBall{width:var(--tp-ball);height:var(--tp-ball);display:block;touch-action:none;cursor:grab;overflow:visible;-webkit-user-select:none;user-select:none;filter:drop-shadow(0 4px 8px #0009)}
+.tipPop.dragging .tipPopBall{cursor:grabbing}
+.tpText{display:flex;flex-direction:column;align-items:center;gap:1px;text-align:center;min-height:50px}
+.tpLabel{font-size:15px;font-weight:900}
+.tpClock{font-size:13px}
+.tpOff{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tpBtns{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;align-self:stretch}
+.tpCenter,.tpDone{min-height:48px;border-radius:12px;font-weight:900;font-size:14px;letter-spacing:.5px;cursor:pointer}
+.tpCenter{border:1px solid #1f6c8d;background:#0d2333;color:var(--cyan)}
+.tpDone{border:0;background:linear-gradient(90deg,#087fc4,var(--blue));color:#fff}
+.chips.oneLine{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;padding-bottom:2px;mask-image:linear-gradient(90deg,#000 88%,transparent)}
+.chips.oneLine::-webkit-scrollbar{display:none}
+.chips.oneLine .chip{flex:none;scroll-snap-align:start;min-height:40px;font-variant-numeric:tabular-nums}
+/* v11.1: the tip clock adds a line to the tip gauge — keep short phones (≤ 700 px tall) scroll-free */
+@media(max-height:700px){
+  .gauge svg{width:40px;height:40px}
+  .gauge b{margin-top:1px;line-height:1.1}
+  .gauge small{line-height:1.05}
+  .gauge small.tipClock{line-height:1.05}
+  .gaugeCard{padding:4px 4px 3px}
+}
+.srOnly{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.speedExplain.lagGoal .se-top{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.speedExplain.lagGoal .laneTag{display:flex;flex-direction:column;align-items:flex-start;gap:1px;background:transparent;border:0;padding:0;margin:0}
+.speedExplain.lagGoal .laneTag span{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.speedExplain.lagGoal .coachTag{font-size:9px;padding:2px 6px}
+.speedExplain.lagGoal{position:relative}
+.speedExplain.compact{grid-template-columns:minmax(0,1fr) 110px;padding:5px 8px;gap:6px}
+.speedExplain.compact .speed-mini{max-width:110px}
+.speedExplain.compact .se-text{gap:2px}
+.speedExplain.compact .se-mean{font-size:11.5px;line-height:1.3}
+.speedExplain.lagGoal .laneTag{flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:0 6px}
+.speedExplain.lagGoal .laneTag b{font-size:12.5px}
+.speedExplain.lagGoal .laneTag span{font-size:10.5px}
+@media(max-height:700px){.speedExplain.compact{grid-template-columns:minmax(0,1fr) 96px}.speedExplain.compact .speed-mini{max-width:96px}.speedExplain.compact .se-mean{font-size:11px;line-height:1.25}}
+.laneOf{font-style:normal}
+@media(max-height:700px){.speedExplain.lagGoal .laneOf{display:none}.speedExplain.lagGoal .laneTag b{font-size:12px}}

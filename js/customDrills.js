@@ -2,7 +2,7 @@
  * Custom drills (Create Drill builder) — pure data layer, no DOM.
  *
  * The builder keeps a small "builder state" (balls, pocket, zones, recipe, texts, scoring). buildCustomDrill()
- * turns it into a FULL challenge object — the same data model the drill library and Arcade stages use
+ * turns it into a FULL challenge object — the same data model the drill library and Table Games stages use
  * (see drills.js header / README) — with the cue-ball and object-ball routes computed by the Shot Simulator
  * physics (throw-compensated aim, real contact point, rail contacts). The challenge (with its builder state
  * embedded for editing) is what gets stored, exported and played.
@@ -243,7 +243,7 @@ export function buildCustomDrill(b, { id = null, now = Date.now(), route: given 
     whyCustom: String(b.why || '').trim() || undefined,
     whyAim: info ? `The ${b.targetBall} is cut about ${cutDeg}° into the ${pocketWords[0]} — ${fullWord.toLowerCase()} contact. The aim shown is where the simulator's cue ball actually meets the ${b.targetBall}, with a small allowance for throw.` : undefined,
     whyContact: technique === 'follow' ? `${contactText(b.tip.vTips, 0)}: topspin makes the cue ball keep rolling forward after it hits the ${b.targetBall}.` : technique === 'draw' ? `${contactText(b.tip.vTips, 0)}: backspin pulls the cue ball back off the ${b.targetBall}${cutDeg > 10 ? ' along a line behind the tangent' : ''}.` : technique === 'stop' ? 'Center ball with enough pace that the cue ball is sliding at contact — it stops dead on a straight-in hit.' : `Center ball (stun): the cue ball is sliding at contact, so it leaves along the tangent line, 90° from the ${b.targetBall}'s path.`,
-    whySpeed: `${formatSpeed(b.speed)} on the SPEED scale (${speedMeaning(b.speed)}).${travelAfter != null && travelAfter > 1 ? ` In the simulation the cue ball travels about ${travelAfter}" after contact.` : ''}`,
+    whySpeed: `SPEED ${formatSpeed(b.speed)} = ${formatSpeed(b.speed)} table lengths of total cue-ball travel from where it starts. On a straight lag from the first diamond: ${speedMeaning(b.speed).replace(/^./, (c) => c.toLowerCase())}.${travelAfter != null && travelAfter > 1 ? ` In the simulation the cue ball travels about ${travelAfter}" after contact.` : ''}`,
     whySpin: hTips ? `${englishText(hTips, engType)}: side spin changes the cue ball's angle off the ${cueRails.length ? 'first rail' : 'object ball'} and makes the shot less forgiving — squirt and throw are included in the simulated aim.` : 'No side spin keeps the shot simple and the aim reliable.',
     whyRoute: route ? (cueRails.length ? `The cue ball goes ${railsText(cueRails).toLowerCase()} before it stops.` : 'The cue ball stays off the rails.') + (route.cueEnd && zones.length ? ` It finishes ${route.zoneMiss < 1 ? 'in the middle of the zone' : `${Math.round(route.zoneMiss)}" from the zone centre`}.` : '') : undefined
   };

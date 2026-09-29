@@ -1,4 +1,4 @@
-const CACHE = 'pool-iq-v11';
+const CACHE = 'pool-iq-v11-1';
 const ASSETS = [
   './',
   './index.html',
@@ -49,6 +49,7 @@ const ASSETS = [
   './js/games/data/railRunner.js',
   './js/games/data/safetyLock.js',
   './js/games/data/speedLadder.js',
+  './js/games/data/threeLaneSpeed.js',
   './js/games/data/stunMaster.js',
   './js/games/diamonds.js',
   './js/games/engine.js',
@@ -56,6 +57,7 @@ const ASSETS = [
   './js/games/recipe.js',
   './js/games/registry.js',
   './js/games/speed.js',
+  './js/games/speedDiagram.js',
   './js/games/stageTable.js',
   './js/games/text.js',
   './js/ghost.js',
@@ -72,6 +74,7 @@ const ASSETS = [
   './js/sim/layouts.js',
   './js/sim/library.js',
   './js/sim/physics.js',
+  './js/sim/preview.js',
   './js/sim/share.js',
   './js/sim/solver.js',
   './js/skills.js',
@@ -88,6 +91,7 @@ const ASSETS = [
   './js/ui/share.js',
   './js/ui/sheet.js',
   './js/ui/simulator.js',
+  './js/ui/tipPicker.js',
   './js/vault.js'
 ];
 self.addEventListener('install', (e) => {

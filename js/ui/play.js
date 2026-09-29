@@ -1,5 +1,5 @@
 /**
- * Play screen for every Arcade mode, drills and Boss Battles.
+ * Play screen for every Table Games mode, drills and Boss Battles.
  * Layout (mobile-first): sticky header → table → recipe strip + WHY → goal/progress → fixed result bar.
  * Results are recorded manually (resultSource: 'manual') unless a camera adapter is registered via
  * analyze.js registerResultAdapter(); pass/fail is always computed by the engine from recorded attempts.
@@ -7,11 +7,12 @@
 import * as E from '../games/engine.js';
 import { getGame, getStage, getBoss, stageSpecs } from '../games/registry.js';
 import { renderStageTable, legendHTML } from '../games/stageTable.js';
-import { recipeCardHTML, recipeGaugesHTML, whyHTML, esc, speedChip, setupLineHTML, setupSheetHTML, aimRowHTML } from '../games/recipe.js';
+import { recipeCardHTML, recipeGaugesHTML, whyHTML, esc, speedChip, setupLineHTML, setupSheetHTML, aimRowHTML, tipClockLabel } from '../games/recipe.js';
 import { cueBallSVG, tipsFromTap } from '../games/cueBallDiagram.js';
 import { coachingLevel, visibility, comparePlan, TECHNIQUES, SPEED_CHOICES, RAIL_CHOICES, COACH_LABEL } from '../games/coaching.js';
 import { contactText, englishText, techniqueName } from '../games/text.js';
-import { speedLabel, formatSpeed, lagEndpoint, CALIBRATION_SPEEDS, personalFactor } from '../games/speed.js';
+import { speedLabel, formatSpeed, lagEndpoint, CALIBRATION_SPEEDS, personalFactor, speedMeaning, calLookup } from '../games/speed.js';
+import { speedExplainHTML, speedDiagramSVG } from '../games/speedDiagram.js';
 import { openSheet, closeSheet, toast, stars } from './sheet.js';
 import { getDrillById } from '../drills.js';
 import { RANK_NAMES } from '../storage.js';
@@ -114,7 +115,7 @@ export function createPlayScreen(ctx, key) {
       return `<i class="${good}">${label}</i>`;
     });
     if (total && Number.isFinite(total)) for (let i = A.length; i < total; i++) dots.push('<i></i>');
-    return `<div class="attemptDots compact" style="grid-template-columns:repeat(${Math.min(12, Math.max(dots.length, 1))},1fr)">${dots.join('')}</div>`;
+    return `<div class="attemptDots compact" style="grid-template-columns:repeat(${Math.min(dots.length > 12 && dots.length <= 16 ? dots.length : 12, Math.max(dots.length, 1))},1fr)">${dots.join('')}</div>`;
   }
 
   function render() {
@@ -139,7 +140,9 @@ export function createPlayScreen(ctx, key) {
       : isPattern
         ? { allSteps: true, showAim: false, orderBadges: true, pickedOrder: session.plan?.order || [] }
         : { showCuePath: vis.cuePath, showAim: vis.aim, showObPath: vis.obPath, showZones: vis.zones, step: step ?? (ch.steps ? 0 : undefined), orderBadges: !!(shot && ch.steps) };
-    const tableSrc = ev.mode === 'train' ? stage : isPattern ? stage : ch;
+    // v11.1 multi-lane drills: show every lane (start spots, routes, target circles) with the current lane highlighted
+    const laneSrc = ch.lane && stage.laneOverlay ? { ...ch, laneOverlay: stage.laneOverlay.map((l) => ({ ...l, active: l.key === ch.lane.key })), targetZones: stage.targetZones } : null;
+    const tableSrc = ev.mode === 'train' ? stage : isPattern ? stage : laneSrc || ch;
     const tableSVG = renderStageTable(tableSrc, ev.mode === 'train' ? { ...tableOpts, step } : tableOpts);
     const goalText = vis.goalOnly ? ch.expertGoal || ch.goal : ch.goal;
     let mid = '';
@@ -147,6 +150,15 @@ export function createPlayScreen(ctx, key) {
     else if (planning) mid = plannerHTML(ch, level);
     else {
       mid = `<div class="recipeRow">${recipeGaugesHTML(ch, { hideAim: !vis.aim, hideRoute: !vis.cuePath && !vis.obPath })}<button type="button" class="whyBtn" data-action="why-open">WHY THIS SHOT?</button></div>`;
+      // v11.1: speed drills (lags) always show the plain-English speed sentence with its mini-table diagram
+      // v11.1: speed drills (lags) show the plain speed meaning with its mini-table diagram. It stands in for the
+      // goal line (same statement), so the screen still fits a 375×667 phone without scrolling.
+      if (ch.kind === 'lag') {
+        const top = ch.lane
+          ? `<div class="laneTag" data-lane="${ch.lane.index + 1}"><b>${esc(ch.lane.label)}</b><span><i class="laneOf">Lane ${ch.lane.index + 1} of ${ch.lane.count} · ${ch.lane.attempts} attempts</i> <span class="coachTag" data-action="coach-info">${COACH_LABEL[level]}</span></span></div>`
+          : `<div class="se-top"><span class="speedChip" data-speed="${formatSpeed(ch.speed)}">${speedLabel(ch.speed)}</span><span class="coachTag" data-action="coach-info">${COACH_LABEL[level]}</span></div>`;
+        mid += `<div class="speedExplain compact lagGoal goalLine" data-speed-explain="${formatSpeed(ch.speed)}"><div class="se-text">${top}<b class="se-mean">${esc(speedMeaning(ch.speed))}.</b><p class="goal srOnly">${esc(goalText)}</p></div>${speedDiagramSVG(ch.speed)}</div>`;
+      }
     }
     const need = boss ? `${shot.shot.mode === 'zone' ? `${shot.shot.need}★` : `${shot.shot.need} of ${shot.shot.attempts}`} to pass this shot` : ev.needText ? `Pass: ${ev.needText}` : '';
     const btns = patternPlanning || planning ? [] : session.bossId ? E.bossButtons(ev) : E.resultButtons(session, stage, ev);
@@ -162,7 +174,7 @@ export function createPlayScreen(ctx, key) {
       ${patternPlanning ? '<div class="legend small">Tap the balls in the order you would run them.</div>' : legendHTML(ch)}
       <div class="playBody">
         ${mid}
-        <div class="goalLine"><span class="coachTag" data-action="coach-info">${COACH_LABEL[level]}</span><p class="goal">${esc(goalText)}</p></div>
+        ${!planning && !patternPlanning && ch.kind === 'lag' ? '' : `<div class="goalLine"><span class="coachTag" data-action="coach-info">${COACH_LABEL[level]}</span><p class="goal">${esc(goalText)}</p></div>`}
         <div class="progressLine"><span class="muted">${esc(need)}</span><span class="muted">${esc(ev.progressText || (boss ? `${ev.passedCount} passed` : ''))}</span></div>
         ${progressHTML(ev)}
         ${ch.instructions && !patternPlanning ? `<details class="instr"><summary>Setup &amp; instructions</summary><p>${esc(ch.instructions)}</p>${ch.criteria ? `<ol class="criteria" start="0">${ch.criteria.map((c) => `<li>${esc(c)}</li>`).join('')}</ol>` : ''}</details>` : ''}
@@ -177,8 +189,9 @@ export function createPlayScreen(ctx, key) {
     return `<div class="planner" data-planner="1">
       <div class="plHead"><b>${level === 'expert' ? 'Expert' : 'Advanced'} coaching:</b> plan the shot, then lock your answer to see Pool IQ's recipe.</div>
       <div class="plRow"><span>Technique</span><div class="chips">${TECHNIQUES.map((t) => `<button type="button" class="chip${d.technique === t.id ? ' active' : ''}" data-action="plan-tech" data-v="${t.id}">${t.label}</button>`).join('')}</div></div>
-      <div class="plContact"><div class="plBall" data-action="plan-tap">${cueBallSVG(d.touched ? { vTips: d.vTips, hTips: d.hTips } : null, { size: 'sm', interactive: true, id: 'planBall' })}</div><div class="plContactText"><span>Tap the cue ball</span><b>${d.touched ? esc(contactText(d.vTips, d.hTips)) : '—'}</b></div></div>
-      <div class="plRow"><span>Speed</span><div class="chips">${SPEED_CHOICES.map((s) => `<button type="button" class="chip${d.speed === s ? ' active' : ''}" data-action="plan-speed" data-v="${s}">${formatSpeed(s)}</button>`).join('')}</div></div>
+      <div class="plContact"><div class="plBall" data-action="plan-tap">${cueBallSVG(d.touched ? { vTips: d.vTips, hTips: d.hTips } : null, { size: 'sm', interactive: true, id: 'planBall' })}</div><div class="plContactText"><span>Tap the cue ball</span><b>${d.touched ? esc(contactText(d.vTips, d.hTips)) : '—'}</b>${d.touched ? `<small class="tipClock" data-tip-clock>${esc(tipClockLabel(d.vTips, d.hTips, { oclock: true }))}</small>` : ''}</div></div>
+      <div class="plRow"><span>Speed</span><div class="chips speedChoices">${SPEED_CHOICES.map((s) => `<button type="button" class="chip${d.speed === s ? ' active' : ''}" data-action="plan-speed" data-v="${s}">${formatSpeed(s)}</button>`).join('')}</div></div>
+      ${d.speed != null ? `<small class="muted plSpeedMean">${esc(speedMeaning(d.speed))}.</small>` : ''}
       <div class="plRow"><span>Rails</span><div class="chips">${RAIL_CHOICES.map((r) => `<button type="button" class="chip${d.rails === r ? ' active' : ''}" data-action="plan-rails" data-v="${r}">${r}</button>`).join('')}</div></div>
     </div>`;
   }
@@ -189,7 +202,7 @@ export function createPlayScreen(ctx, key) {
       <div class="plRow"><span>Your order</span><div class="chips">${ui.patternPick.map((n) => `<span class="chip active">${n}</span>`).join('') || '<span class="muted">tap balls on the table…</span>'}${ui.patternPick.length ? '<button type="button" class="chip" data-action="pattern-clear">Clear</button>' : ''}</div></div>
       <div class="plRow"><span>First route</span><div class="chips">${['above', 'below'].map((s) => `<button type="button" class="chip${ui.routeSide === s ? ' active' : ''}" data-action="pattern-side" data-v="${s}">Land ${s} the 2nd ball</button>`).join('')}</div></div>
       <div class="plContact"><div class="plBall" data-action="plan-tap">${cueBallSVG(d.touched ? { vTips: d.vTips, hTips: d.hTips } : null, { size: 'sm', interactive: true, id: 'planBall' })}</div><div class="plContactText"><span>First-shot contact</span><b>${d.touched ? esc(contactText(d.vTips, d.hTips)) : 'center (tap to change)'}</b></div></div>
-      <div class="plRow"><span>First speed</span><div class="chips">${SPEED_CHOICES.slice(0, 7).map((s) => `<button type="button" class="chip${d.speed === s ? ' active' : ''}" data-action="plan-speed" data-v="${s}">${formatSpeed(s)}</button>`).join('')}</div></div>
+      <div class="plRow"><span>First speed</span><div class="chips speedChoices">${SPEED_CHOICES.filter((v) => v <= 3.5).map((s) => `<button type="button" class="chip${d.speed === s ? ' active' : ''}" data-action="plan-speed" data-v="${s}">${formatSpeed(s)}</button>`).join('')}</div></div>
     </div>`;
   }
 
@@ -253,9 +266,10 @@ export function createPlayScreen(ctx, key) {
       ${headerHTML(ev, `${game.name} · Calibration`, `Shot ${Object.keys(ev.done).length + 1}/${stage.speeds.length} · ${speedLabel(target)}`)}
       <div class="playTable">${renderStageTable(ch, {})}</div>
       ${setupLineHTML(ch)}
-      <div class="legend small"><span>Start against the head rail (left). Diamonds counted from the head rail: 0 → 8.</span></div>
+      <div class="legend small"><span>Start on the first diamond at your end (left), centre ball. Diamonds counted from your end rail: 0 → 8.</span></div>
       <div class="playBody">
-        <div class="calTarget"><span class="speedChip big" data-speed="${formatSpeed(target)}">${speedLabel(target)}</span><p>Target: ${esc(ch.whyExplanation.whySpeed.split('. ')[0])}. It should stop on pass ${ep.leg} at diamond ${ep.diamond}.</p></div>
+        <div class="calTarget"><span class="speedChip big" data-speed="${formatSpeed(target)}">${speedLabel(target)}</span><p>Target: ${esc(speedMeaning(target))}. It should stop on pass ${ep.leg} at diamond ${ep.diamond}.</p></div>
+        ${speedExplainHTML(target, { note: false })}
         <div class="calPick"><span>Where did it stop? Pass:</span><div class="chips">${legs.map((l) => `<button type="button" class="chip${ui.calLeg === l ? ' active' : ''}" data-action="cal-leg" data-v="${l}">${l}${l % 2 ? ' →' : ' ←'}</button>`).join('')}</div></div>
         <div class="ruler" aria-label="Diamond ruler">${ruler.join('')}</div>
         <div class="calDone"><em>Session:</em>${stage.speeds.map((s) => { const a = ev.done[s]; return `<span class="${a ? 'ok' : ''}">${formatSpeed(s)}${a ? `: ${a.actual.toFixed(2)}L` : ''}</span>`; }).join('')}</div>
@@ -337,7 +351,7 @@ export function createPlayScreen(ctx, key) {
   }
 
   function calibrationSummary(cal) {
-    return `<div class="calSummary"><b>Your calibration</b>${CALIBRATION_SPEEDS.map((s) => { const f = personalFactor(cal, s); const last = (cal.results?.[formatSpeed(s)] || []).slice(-1)[0]; return `<div class="calRow"><span>${speedLabel(s)}</span><span>${last ? `${last.actual.toFixed(2)} lengths` : '—'}</span><span class="${Math.abs(f - 1) < 0.06 ? 'green' : 'gold'}">${Math.abs(f - 1) < 0.06 ? 'on target' : f > 1 ? 'runs short' : 'runs long'}</span></div>`; }).join('')}</div>`;
+    return `<div class="calSummary"><b>Your calibration</b>${CALIBRATION_SPEEDS.map((s) => { const f = personalFactor(cal, s); const last = (calLookup(cal.results, s) || []).slice(-1)[0]; return `<div class="calRow"><span>${speedLabel(s)}</span><span>${last ? `${last.actual.toFixed(2)} lengths` : '—'}</span><span class="${Math.abs(f - 1) < 0.06 ? 'green' : 'gold'}">${Math.abs(f - 1) < 0.06 ? 'on target' : f > 1 ? 'runs short' : 'runs long'}</span></div>`; }).join('')}</div>`;
   }
 
   /** The layout the player sets up at the table (train/pattern: the starting rack, not the current step) */

@@ -58,6 +58,8 @@ export const deg = (rad) => (rad * 180) / Math.PI;
 export const rad = (d) => (d * Math.PI) / 180;
 export const round1 = (v) => Math.round(v * 10) / 10;
 export const roundHalf = (v) => Math.round(v * 2) / 2;
+/** SPEED values use quarter steps (v11.1) */
+export const roundQuarter = (v) => Math.round(v * 4) / 4;
 export const toPoint = (p) => (Array.isArray(p) ? P(p[0], p[1]) : P(p.x, p.y));
 export const clean = (p) => P(round1(p.x), round1(p.y));
 
@@ -479,19 +481,27 @@ export function capacityForLegs(legs) {
   return E;
 }
 
-/** Convert capacity to the Pool IQ Speed scale (lengths, with a rail rebound between each length). */
+/**
+ * Where the SPEED scale's reference lag starts: the first diamond, so its first cushion comes after 7/8 of a
+ * length and every later cushion one full length apart (v11.1: SPEED n = n lengths of total travel from the start).
+ */
+export const SPEED_START_FRACTION = 7 / 8;
+/** Convert capacity to the Pool IQ Speed scale (lengths of travel from the start spot, with the reference lag's rail rebounds). */
 export function speedFromCapacity(C) {
   let S = 0;
   let E = C;
-  while (E > TABLE_LENGTH && S < 9) {
-    E -= TABLE_LENGTH;
-    S += 1;
+  let leg = TABLE_LENGTH * SPEED_START_FRACTION;
+  while (E > leg && S < 9) {
+    E -= leg;
+    S += leg / TABLE_LENGTH;
     E *= RAIL_KEEP;
+    leg = TABLE_LENGTH;
   }
   return S + E / TABLE_LENGTH;
 }
 
-export const clampSpeed = (s) => Math.max(0.5, Math.min(5, roundHalf(s)));
+/** Recommended speeds snap to the nearest quarter step inside the controlled range 0.5–5.0 */
+export const clampSpeed = (s) => Math.max(0.5, Math.min(5, roundQuarter(s)));
 
 /**
  * Recommended Pool IQ speed for a position shot.

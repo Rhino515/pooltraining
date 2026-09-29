@@ -13,7 +13,8 @@ export const DEFAULT_SETTINGS = {
   maxCut: 60, // shape-zone max cut angle
   findMode: 'precise', // Find a Shot: 'fast' | 'precise'
   playback: 1, // animation speed
-  useCal: false // scale SPEED with my speed calibration
+  useCal: false, // scale SPEED with my speed calibration
+  fullPath: true // v11.1: live full-path aim preview (real physics, every rail, POCKET / STOP marker)
 };
 
 function blank() {

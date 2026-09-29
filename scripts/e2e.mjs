@@ -118,21 +118,21 @@ for (const r of ROUTES) {
   check(t.trim().length > 20, `route ${r} renders`);
 }
 await go('#drills');
-check(await exists('.drillsEmpty[data-empty="1"]'), 'drills route shows the empty state');
 const dt = await text('#view');
-check(/No drills yet/.test(dt) && /CREATE YOUR FIRST DRILL/i.test(dt) && (await exists('.drillsEmpty [data-action="drill-create"]')), 'empty state offers Create Drill');
-check(!/coming soon/i.test(dt) && !(await exists('.drillCard')), 'no fake "Coming Soon" drill cards');
+check(await exists('.drill.card[data-drill="three-lane-speed"]') && /Three-Lane Speed Exercise/.test(dt) && !(await exists('.drillsEmpty')), 'drill library shows the built-in Three-Lane Speed Exercise (no empty state)');
+check(await exists('[data-action="drill-create"]') && /CREATE DRILL/i.test(dt), 'drill library still offers Create Drill');
+check(!/coming soon/i.test(dt), 'no fake "Coming Soon" drill cards');
 check(errors.length === 0, `drills route: zero console errors (${errors.length})`);
-await shot('14-drills-empty-state');
+await shot('14-drills-library');
 
 // ------------------------------------------------------------------------------------------ arcade + table
 await go('#arcade');
-check((await page.$$('.gameCard[data-game]')).length === 14, '14 arcade game cards');
+check((await page.$$('.gameCard[data-game]')).length === 14, '14 Table Games cards');
 await shot('01-arcade-hub');
 await go('#play/landing/lz-1');
 for (const cls of ['obj-ball', 'cue-ball', 'zone-ring', 'cue-path', 'ob-path']) check(await exists(`.playTable svg .${cls}`), `landing table SVG has .${cls}`);
 const chip = await text('.recipeRow .gauge-speed b');
-check(/^Speed \d\.\d$/.test(chip.trim()) && (await exists('.recipeRow .gauge-speed .speed-dial .sd-needle')), `SPEED dial shown ("${chip.trim()}")`);
+check(/^Speed \d\.\d\d$/.test(chip.trim()) && (await exists('.recipeRow .gauge-speed .speed-dial .sd-needle')), `SPEED dial shown ("${chip.trim()}")`);
 await shot('02-landing-zone');
 /** Diamond grid, setup readout and aim view on the current play screen */
 async function gridReport() {
@@ -531,7 +531,7 @@ await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile
   await page.mouse.click(obp.x, obp.y);
   await sleep(150);
   // speed
-  await tap('[data-action="sim-speed"][data-v="0.5"]');
+  await tap('[data-action="sim-speed"][data-v="0.25"]');
   const spd = (await simSt()).shot.speed;
   check(spd > 0, `speed control (${spd})`);
   await shot('20-sim-edit');
@@ -1169,7 +1169,7 @@ await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile
   }));
   check(/#cview\/pending$/.test(pv.h) && pv.view === 'drill' && pv.imported && pv.demo, 'valid drill file → PREVIEW (not installed) with IMPORTED badge and DEMO title');
   check(pv.grid === 10 && pv.balls >= 1 && pv.cue && pv.paths && pv.zones >= 1 && pv.setup >= 2, `preview uses the normal table renderer: diamond grid, balls, paths, target zone, SETUP readout (${pv.balls} balls, ${pv.zones} rings)`);
-  check(pv.gauges === 3 && pv.speed === '1.5' && /10/.test(pv.attempts) && /\d/.test(pv.pass) && pv.why, `preview shows Shot Recipe (3 gauges), SPEED ${pv.speed}, attempts, pass requirement, Why This Shot?`);
+  check(pv.gauges === 3 && pv.speed === '1.50' && /10/.test(pv.attempts) && /\d/.test(pv.pass) && pv.why, `preview shows Shot Recipe (3 gauges), SPEED ${pv.speed}, attempts, pass requirement, Why This Shot?`);
   check(/Pool IQ \(demo content\)/.test(pv.attr) && /PLAY TEST/.test(pv.acts) && /ADD TO MY CONTENT/.test(pv.acts) && /DISCARD/.test(pv.acts), 'preview shows attribution and PLAY TEST / ADD TO MY CONTENT / DISCARD');
   check(pv.table >= 360, `preview table diagram is large (${pv.table}px wide)`);
   check((await items()).length === 0, 'import did NOT install anything yet');
@@ -1252,9 +1252,10 @@ await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile
   const bFields = await page.evaluate(() => ['db-title', 'db-instructions', 'db-why'].every((id) => document.getElementById(id)) && !!document.querySelector('[data-action="db-speed"]') && !!document.querySelector('[data-action="db-tool"][data-v="marker"]') && !!document.querySelector('[data-action="db-tech"]') && !!document.querySelector('[data-action="db-eng"]'));
   check(bFields, 'builder has title, instructions, Why, SPEED, technique, English and table tools (paths, rails, markers)');
   const sp0 = await page.$eval('[data-speed]', (e) => e.dataset.speed);
-  await tap('[data-action="db-speed"][data-v="-0.5"]');
+  await tap('[data-action="db-speed"][data-v="-0.25"]');
+  await tap('[data-action="db-speed"][data-v="-0.25"]');
   const sp1 = await page.$eval('#dbPanel [data-speed], .builderScreen b[data-speed]', (e) => e.dataset.speed);
-  check(sp0 === '1.5' && sp1 === '1.0', `SPEED changed ${sp0} → ${sp1}`);
+  check(sp0 === '1.50' && sp1 === '1.00', `SPEED changed ${sp0} → ${sp1}`);
   await page.$eval('#db-instructions', (e) => { e.value = 'Edited on my phone: stop the cue ball dead.'; e.dispatchEvent(new Event('input', { bubbles: true })); });
   const b0 = await page.evaluate(() => { const b = window.PoolIQ.screen.builder; const o = b.balls.find((x) => x.n === 1); return { x: o.x, y: o.y }; });
   const bb = await page.$eval('#dbTable svg g.ball[data-n="1"]', (g) => { const r = g.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
@@ -1781,6 +1782,294 @@ await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile
   if (errors.length > errBefore) console.log(errors.slice(errBefore).join('\n'));
 }
 
+// ------------------------------------------------------------------------------------------ v11.1
+{
+  const errBefore = errors.length;
+  const V390 = { width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true };
+  await page.setViewport(V390);
+  const simSt = () => page.evaluate(() => { const st = window.PoolIQ.screen.state; return { balls: st.balls, shot: st.shot, mode: st.mode, game: !!st.game, res: st.res ? { dur: st.res.duration, final: st.res.final } : null, playT: st.playT, playing: st.playing }; });
+  const simLink = (balls, shot) => page.evaluate(async (balls, shot) => '#sim/s=' + (await import('./js/sim/share.js')).encodeState({ balls, shot, annotations: [] }), balls, shot);
+  async function openSim(balls, shot) {
+    await go('#home');
+    await go(await simLink(balls, shot));
+    await page.waitForSelector('.simScreen[data-mode="edit"] #simSvg', { timeout: 5000 }).catch(() => {});
+    await page.waitForSelector('#simPreview .pv-path.pv-cue', { timeout: 5000 }).catch(() => {});
+    await sleep(250);
+    await page.evaluate(() => { const t = document.getElementById('toast'); if (t) t.classList.remove('show'); });
+  }
+  const pvInfo = () => page.evaluate(() => ({
+    cue: document.querySelectorAll('#simPreview .pv-path.pv-cue').length,
+    ob: document.querySelectorAll('#simPreview .pv-path.pv-ob').length,
+    railsCue: [...document.querySelectorAll('#simPreview .pv-rail.pv-rail-cue')].map((g) => +g.dataset.n),
+    railsOb: document.querySelectorAll('#simPreview .pv-rail.pv-rail-ob').length,
+    tags: [...document.querySelectorAll('#simPreview .pv-tag')].map((g) => g.dataset.tag),
+    ends: [...document.querySelectorAll('#simPreview .pv-end')].map((g) => ({ ball: g.dataset.ball, end: g.dataset.end, pocket: g.dataset.pocket || null, x: +g.dataset.x, y: +g.dataset.y })),
+    pts: document.querySelector('#simPreview .pv-path.pv-cue')?.getAttribute('points') || '',
+    label: document.querySelector('.simSpeed .spRow b')?.textContent.trim(),
+    summary: document.querySelector('#pvSummary')?.textContent.trim() || '',
+    stub: document.querySelectorAll('#simSvg .rail-preview').length,
+    labelFont: (() => { const t = document.querySelector('#simPreview .pv-rail text'); if (!t) return 0; return t.getBoundingClientRect().height; })()
+  }));
+
+  // 1. Table Games rename
+  await go('#home');
+  const navInfo = await page.evaluate(() => { const b = document.querySelector('nav [data-page="arcade"]'); const sp = b.querySelector('span'); const r = sp.getBoundingClientRect(); const br = b.getBoundingClientRect(); return { txt: sp.textContent, fits: sp.scrollWidth <= sp.clientWidth + 1 && r.left >= br.left - 1 && r.right <= br.right + 1, navTxt: document.querySelector('nav').innerText }; });
+  check(navInfo.txt === 'Table Games' && !/Arcade/.test(navInfo.navTxt) && navInfo.fits, `bottom nav tab reads "Table Games" and fits its button (${navInfo.txt})`);
+  const homeTxt = await text('#view');
+  check(/Table Games/.test(homeTxt) && !/Arcade/.test(homeTxt), 'home screen says Table Games, never Arcade');
+  await go('#tablegames');
+  await sleep(150);
+  const tgTxt = await text('#view');
+  check((await page.$$('.gameCard[data-game]')).length === 14 && /TABLE GAMES/.test(tgTxt) && !/Arcade/.test(tgTxt), '#tablegames alias opens the Table Games hub (14 games, no "Arcade")');
+  check(await page.$eval('nav [data-page="arcade"]', (b) => b.classList.contains('active')), 'Table Games tab is highlighted on #tablegames');
+  await go('#arcade');
+  await shot('v111-01-nav-table-games');
+  await go('#game/speed');
+  const lobbyTxt = await text('#view');
+  check(/‹ Table Games/.test(lobbyTxt) && !/Arcade/.test(lobbyTxt), 'game lobby back button says "‹ Table Games"');
+  for (const r of ['#career', '#profile', '#settings', '#drillrank', '#skills', '#ghost']) {
+    await go(r);
+    const t = await text('#view');
+    if (/Arcade/.test(t)) check(false, `${r} still shows "Arcade"`);
+  }
+  check(true, 'career, profile, settings, drill rank, skills and ghost screens never show "Arcade"');
+
+  // 2. speed meanings + mini diagram on the Speed Ladder play screen
+  const M = await page.evaluate(async () => { const s = await import('./js/games/speed.js'); return { m15: s.speedMeaning(1.5), m25: s.speedMeaning(2.5), m3: s.speedMeaning(3), m7: s.speedMeaning(7) }; });
+  await go('#play/speed/sp-2');
+  await sleep(200);
+  const sx = await page.evaluate(() => { const e = document.querySelector('.speedExplain[data-speed-explain="1.50"]'); const svg = e?.querySelector('svg.speed-mini'); return { txt: e?.innerText || '', stop: svg?.dataset.stopDiamond, label: svg?.querySelector('.sm-stop-label')?.textContent, w: svg?.getBoundingClientRect().width || 0, noScroll: document.documentElement.scrollHeight <= innerHeight + 2, bar: (document.querySelector('.resultBar')?.getBoundingClientRect().bottom || 9e9) <= innerHeight + 1, name: document.querySelector('#view').innerText }; });
+  check(sx.txt.includes(M.m15) && sx.stop === '3' && sx.label === 'STOP · 3rd diamond' && sx.w >= 90, `Speed Ladder SPEED 1.50: plain meaning + mini diagram with STOP · 3rd diamond ("${M.m15}")`);
+  check(/Back to the 3rd Diamond/.test(sx.name), 'Speed Ladder stage name follows the new meaning');
+  check(sx.noScroll && sx.bar, '390×844: speed stage with the mini diagram still fits without scrolling');
+  await shot('v111-04-speed-explain-diagram');
+  // recipe card (Why sheet / recipe) shows the meaning + diagram + tip clock
+  await go('#play/landing/lz-1');
+  const gTip = await page.evaluate(() => { const g = document.querySelector('.recipeRow .gauge-tip, .recipeRow .gauge:nth-child(2)'); const b = g?.querySelector('b'); const c = g?.querySelector('[data-tip-clock]'); return { clock: c?.textContent || '', under: !!(b && c && c.getBoundingClientRect().top >= b.getBoundingClientRect().bottom - 1) }; });
+  check(/o'clock|^Center$/.test(gTip.clock) && gTip.under, `Shot Recipe tip gauge: clock reading under the tip text ("${gTip.clock}")`);
+  await page.$eval('.recipeRow .gauge-speed', (e) => e.click());
+  await sleep(350);
+  const rc = await page.evaluate(() => ({ diag: !!document.querySelector('#sheet [data-speed-diagram]'), clock: document.querySelector('#sheet [data-tip-clock]')?.textContent || '', mean: document.querySelector('#sheet .rc-mean')?.textContent || '' }));
+  check(rc.diag && rc.clock && /Stops/.test(rc.mean), `Shot Recipe card: speed meaning + mini diagram + tip clock ("${rc.clock}")`);
+  await page.evaluate(() => document.querySelector('.sheetWrap')?.classList.remove('show'));
+  // 3. Shot Simulator: full-path preview at SPEED 7, markers, match with SHOOT
+  const potLayout = [{ id: 'cue', x: 30, y: 30 }, { id: 1, x: 62.5, y: 18.75 }];
+  const potAim = await page.evaluate(async () => (await import('./js/sim/physics.js')).ghostAim({ x: 30, y: 30 }, { x: 62.5, y: 18.75 }, 'TR').aim);
+  await openSim(potLayout, { aim: potAim, speed: 7, vTips: 0, hTips: 0 });
+  let pv = await pvInfo();
+  check(pv.label === 'SPEED 7.00', `simulator speed readout uses two decimals (${pv.label})`);
+  check(pv.cue === 1 && pv.ob === 1 && pv.railsCue.length >= 3 && pv.railsCue.every((n, i) => n === i + 1), `SPEED 7 preview: full cue-ball path through ${pv.railsCue.length} numbered rails (${pv.railsCue.join(',')}) + object-ball path`);
+  check(pv.tags.includes('POCKET') && pv.ends.some((e) => e.ball === '1' && e.end === 'pocket' && e.pocket === 'TR') && pv.tags.some((t) => t === 'STOP'), `preview end markers: POCKET on the 1 (TR), STOP for the cue ball (${pv.tags.join(', ')})`);
+  check(pv.stub === 0 && /pocket/i.test(pv.summary), `preview replaces the old first-rail stub; summary "${pv.summary}"`);
+  check(pv.labelFont >= 7, `rail numbers are readable on a phone (${pv.labelFont.toFixed(1)} px tall)`);
+  const spMean = await page.evaluate(() => ({ m: document.querySelector('.simSpeed .spMean')?.textContent || '', d: document.querySelector('#simSpeedDiagram svg')?.dataset.speedDiagram, tip: document.querySelector('.simTip [data-tip-clock]')?.textContent }));
+  check(spMean.m.startsWith(M.m7.slice(0, 30)) && spMean.d === '7.00', 'simulator speed readout: plain meaning + mini diagram for SPEED 7.00');
+  check(spMean.tip === 'Center', `simulator tip clock: "Center" for a centre hit (${spMean.tip})`);
+  await shot('v111-02-sim-speed7-preview');
+  // preview == SHOOT
+  const before = pv.ends;
+  await tap('.shootBtn');
+  await page.waitForFunction(() => { const st = window.PoolIQ.screen.state; return st.mode === 'play' && st.res; }, { timeout: 8000 }).catch(() => {});
+  await tap('[data-action="sim-end"]').catch(() => {});
+  await sleep(250);
+  const shotRes = await simSt();
+  const mism = [];
+  for (const e of before) {
+    const f = shotRes.res?.final.find((b) => String(b.id) === e.ball);
+    if (!f) { mism.push(`${e.ball}: missing`); continue; }
+    if (e.end === 'pocket') { if (f.on || f.pocket !== e.pocket) mism.push(`${e.ball}: preview ${e.pocket}, shot ${f.pocket || 'on table'}`); }
+    else if (!f.on || Math.hypot(f.x - e.x, f.y - e.y) > 0.02) mism.push(`${e.ball}: preview ${e.x},${e.y} vs shot ${f.x.toFixed(2)},${f.y.toFixed(2)}`);
+  }
+  check(before.length >= 2 && mism.length === 0, `SHOOT ends exactly where the preview said (${before.map((e) => `${e.ball}→${e.end === 'pocket' ? e.pocket : `${e.x},${e.y}`}`).join(' ')}) ${mism.join('; ')}`);
+  check(!(await exists('#simPreview .pv-path')), 'preview is hidden while the shot plays');
+  // SPEED 7 toward a rail with no object ball: multi-rail kick, STOP/SCRATCH marker, and a second match check
+  await openSim([{ id: 'cue', x: 25, y: 25 }], { aim: 60, speed: 7, vTips: 0, hTips: 0 });
+  pv = await pvInfo();
+  check(pv.railsCue.length >= 4 && pv.tags.length === 1 && /STOP|SCRATCH/.test(pv.tags[0]), `SPEED 7 into a rail: ${pv.railsCue.length} numbered rails and a ${pv.tags[0]} marker`);
+  const kickEnd = pv.ends[0];
+  await tap('.shootBtn');
+  await page.waitForFunction(() => { const st = window.PoolIQ.screen.state; return st.mode === 'play' && st.res; }, { timeout: 8000 }).catch(() => {});
+  const kickRes = (await simSt()).res?.final.find((b) => b.id === 'cue');
+  check(kickRes && (kickEnd.end === 'pocket' ? kickRes.pocket === kickEnd.pocket : Math.hypot(kickRes.x - kickEnd.x, kickRes.y - kickEnd.y) < 0.02), `multi-rail kick: SHOOT final cue position matches the preview (${kickEnd.x},${kickEnd.y})`);
+  // live updates: aim, speed and spin all redraw the path
+  await openSim(potLayout, { aim: potAim, speed: 7, vTips: 0, hTips: 0 });
+  const p0 = (await pvInfo()).pts;
+  await tap('[data-action="sim-speed"][data-v="-0.25"]');
+  await sleep(300);
+  const p1 = await pvInfo();
+  check(p1.label === 'SPEED 6.75' && p1.pts && p1.pts !== p0, `preview redraws live when SPEED changes (7.00 → ${p1.label})`);
+  await tap('[data-action="sim-nudge"][data-v="1"]');
+  await sleep(300);
+  const p2 = (await pvInfo()).pts;
+  check(p2 && p2 !== p1.pts, 'preview redraws live when the aim changes');
+  await openSim(potLayout, { aim: potAim, speed: 7, vTips: 0.5, hTips: 0.5 });
+  const p3 = await pvInfo();
+  const tipC = await page.evaluate(() => { const b = document.querySelector('.simTip small[data-tip]'); const c = document.querySelector('.simTip [data-tip-clock]'); return { t: b?.textContent, c: c?.textContent, under: !!(b && c && c.getBoundingClientRect().top >= b.getBoundingClientRect().bottom - 1) }; });
+  check(p3.pts && p3.pts !== p0, 'preview changes with spin (top-right tip vs centre)');
+  check(tipC.c === "1:30 o'clock" && tipC.under, `simulator tip clock under the tip text ("${tipC.t}" → "${tipC.c}")`);
+  await shot('v111-03-tip-clock-sim');
+  // smooth: many rapid changes are throttled (no long tasks piling up)
+  const tRapid = await page.evaluate(async () => { const t0 = performance.now(); for (let i = 0; i < 12; i++) document.querySelector('[data-action="sim-nudge"][data-v="0.1"]').click(); await new Promise((r) => setTimeout(r, 400)); return performance.now() - t0; });
+  check(tRapid < 2500 && (await exists('#simPreview .pv-path.pv-cue')), `12 rapid aim nudges stay responsive (${Math.round(tRapid)} ms incl. 400 ms settle)`);
+  // tip picker pop-up: open, drag (touch + mouse), live values + preview, miscue limit, Center, Done, tap outside — 4 sizes
+  const pickInfo = () => page.evaluate(() => {
+    const p = document.querySelector('#tipPicker');
+    if (!p) return null;
+    const r = p.getBoundingClientRect();
+    const ball = p.querySelector('.tipPopBall').getBoundingClientRect();
+    const hit = p.querySelector('.tp-hit').getBoundingClientRect();
+    const small = document.querySelector('.simTip svg, .builderScreen .simTip svg')?.getBoundingClientRect();
+    return {
+      v: +p.dataset.vtips, h: +p.dataset.htips, label: p.querySelector('[data-tip-label]').textContent, clock: p.querySelector('[data-tip-clock]').textContent, off: p.querySelector('[data-tip-offsets]').textContent,
+      inView: r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight, ballW: ball.width, vw: innerWidth, hit: Math.min(hit.width, hit.height),
+      btn: Math.min(...[...p.querySelectorAll('.tpBtns button')].map((b) => b.getBoundingClientRect().height)),
+      textBelow: p.querySelector('.tpText').getBoundingClientRect().top >= ball.bottom - 1 && p.querySelector('.tpBtns').getBoundingClientRect().top >= p.querySelector('.tpText').getBoundingClientRect().bottom - 1,
+      near: small ? Math.hypot((r.left + r.right) / 2 - (small.left + small.right) / 2, Math.min(Math.abs(r.bottom - small.top), Math.abs(r.top - small.bottom))) < 260 : true,
+      ballBox: { x: ball.left, y: ball.top, w: ball.width, h: ball.height }
+    };
+  });
+  const tipPx = (b, v, h) => ({ x: b.x + ((50 + h * 19.5 + 6) / 112) * b.w, y: b.y + ((50 - v * 19.5 + 6) / 112) * b.h });
+  async function dragTip(b, from, to, mode) {
+    const a = tipPx(b, from[0], from[1]);
+    const z = tipPx(b, to[0], to[1]);
+    if (mode === 'touch') {
+      await page.touchscreen.touchStart(a.x, a.y);
+      for (let k = 1; k <= 10; k++) { await page.touchscreen.touchMove(a.x + ((z.x - a.x) * k) / 10, a.y + ((z.y - a.y) * k) / 10); await sleep(16); }
+      await page.touchscreen.touchEnd();
+    } else {
+      await page.mouse.move(a.x, a.y);
+      await page.mouse.down();
+      for (let k = 1; k <= 10; k++) { await page.mouse.move(a.x + ((z.x - a.x) * k) / 10, a.y + ((z.y - a.y) * k) / 10); await sleep(16); }
+      await page.mouse.up();
+    }
+    await sleep(220);
+  }
+  for (const [w, h] of [[390, 844], [375, 667], [412, 915], [360, 800]]) {
+    await page.setViewport({ width: w, height: h, deviceScaleFactor: w === 412 ? 2.625 : w === 375 ? 2 : 3, isMobile: true, hasTouch: true });
+    await openSim(potLayout, { aim: potAim, speed: 7, vTips: 0, hTips: 0 });
+    const pts0 = (await pvInfo()).pts;
+    await tap('.simTip[data-action="sim-tip"]');
+    await page.waitForSelector('#tipPicker', { timeout: 3000 }).catch(() => {});
+    let pi = await pickInfo();
+    check(!!pi && pi.inView && pi.near && pi.ballW >= 0.26 * w && pi.ballW <= 0.4 * w && pi.textBelow, `${w}×${h}: tip picker opens as a compact pop-up by the cue ball (ball ${Math.round(pi?.ballW)} px ≈ ${Math.round((100 * (pi?.ballW || 0)) / w)}% of the width), text + buttons below`);
+    check(pi && pi.hit >= 44 && pi.btn >= 44, `${w}×${h}: drag dot hit area ${Math.round(pi?.hit)} px, Center / Done ${Math.round(pi?.btn)} px (≥ 44)`);
+    await dragTip(pi.ballBox, [0, 0], [1, 1], w === 390 ? 'mouse' : 'touch');
+    pi = await pickInfo();
+    const live = await pvInfo();
+    const stTip = (await simSt()).shot;
+    check(pi.v === 1 && pi.h === 1 && pi.label === 'Top Right' && pi.clock === "1:30 o'clock" && pi.off === '↑ 1 · → 1 tips', `${w}×${h}: dragging the dot (${w === 390 ? 'mouse' : 'touch'}) to top right updates the text live ("${pi.label}", "${pi.clock}", "${pi.off}")`);
+    check(stTip.vTips === 1 && stTip.hTips === 1 && live.pts && live.pts !== pts0, `${w}×${h}: the shot and the full-path preview update live while the pop-up is open`);
+    if (w === 390) await shot('v111-09-tip-picker-popup');
+    await dragTip(pi.ballBox, [1, 1], [3, 3], w === 390 ? 'touch' : 'mouse');
+    pi = await pickInfo();
+    check(Math.hypot(pi.v, pi.h) <= 1.5 + 1e-9 && pi.v > 0 && pi.h > 0, `${w}×${h}: dragging past the edge stops at the miscue limit (${pi.v}, ${pi.h})`);
+    await tap('#tipPicker [data-tip-center]');
+    pi = await pickInfo();
+    check(pi.v === 0 && pi.h === 0 && pi.clock === 'Center', `${w}×${h}: CENTER resets the tip`);
+    await dragTip(pi.ballBox, [0, 0], [-1, 0], 'touch');
+    await tap('#tipPicker [data-tip-done]');
+    const afterDone = await page.evaluate(() => ({ open: !!document.querySelector('#tipPicker'), back: !!document.querySelector('.tipPopBackdrop'), clock: document.querySelector('.simTip [data-tip-clock]')?.textContent }));
+    check(!afterDone.open && !afterDone.back && afterDone.clock === "6:00 o'clock" && (await simSt()).shot.vTips === -1, `${w}×${h}: DONE closes the pop-up and keeps the tip (${afterDone.clock})`);
+    await tap('.simTip[data-action="sim-tip"]');
+    await page.waitForSelector('#tipPicker', { timeout: 3000 }).catch(() => {});
+    const outside = await page.evaluate(() => { const r = document.querySelector('#tipPicker').getBoundingClientRect(); return { x: 12, y: r.top > innerHeight / 2 ? 40 : innerHeight - 40 }; });
+    await page.mouse.click(outside.x, outside.y);
+    await sleep(200);
+    const afterOut = await page.evaluate(() => !!document.querySelector('#tipPicker') || !!document.querySelector('.tipPopBackdrop'));
+    const s2 = await simSt();
+    check(!afterOut && s2.shot.vTips === -1 && s2.mode === 'edit', `${w}×${h}: tapping outside closes the pop-up without touching the table`);
+  }
+  await page.setViewport(V390);
+  // drill builder uses the same pop-up (side spin limited to ±1 tip)
+  await go('#drillnew');
+  await sleep(400);
+  await tap('[data-action="db-tip"]');
+  await page.waitForSelector('#tipPicker', { timeout: 3000 }).catch(() => {});
+  let pb = await pickInfo();
+  check(!!pb && pb.inView, 'Create Drill: tapping the small cue ball opens the tip pop-up');
+  if (pb) {
+    await dragTip(pb.ballBox, [0, 0], [0, 2], 'touch');
+    pb = await pickInfo();
+    await tap('#tipPicker [data-tip-done]');
+    const dbTxt = await page.evaluate(() => document.querySelector('.builderScreen .simTip [data-tip-clock], .simTip [data-tip-clock]')?.textContent);
+    check(pb.h === 1 && pb.v === 0 && dbTxt === "3:00 o'clock" && !(await exists('#tipPicker')), `Create Drill: drag sets the tip (side spin capped at 1 tip → ${pb.h}), DONE applies it ("${dbTxt}")`);
+  }
+  await go('#home');
+  // hidden during the Target Game (it would give the answer away)
+  await go('#sim/target');
+  await sleep(500);
+  const tg = await simSt().catch(() => null);
+  check(tg && tg.game && !(await exists('#simPreview .pv-path')), 'full-path preview is hidden in the Target Game');
+  await page.evaluate(() => document.querySelector('.sheetWrap')?.classList.remove('show'));
+  await go('#home');
+
+  // 4. Three-Lane Speed Exercise
+  await go('#drills');
+  const card = await page.evaluate(() => { const c = document.querySelector('.drill.card[data-drill="three-lane-speed"]'); return { txt: c?.innerText || '', chips: c ? [...c.querySelectorAll('.laneChips .speedChip')].map((e) => e.textContent) : [] }; });
+  check(card.chips.join() === 'SPEED 1.50,SPEED 2.50,SPEED 3.00' && /Inspired by Ron the Pool Student's ICA cue-ball speed exercise\./.test(card.txt), `drill card: lane speeds ${card.chips.join(' / ')} + credit`);
+  await go('#game/speed');
+  check(await exists('[data-three-lane] [data-href="#play/drills/three-lane-speed"]'), 'Speed Ladder page links the Three-Lane Speed Exercise');
+  await tap('[data-three-lane] [data-href="#play/drills/three-lane-speed"]');
+  await sleep(300);
+  const laneInfo = async () => page.evaluate(() => ({
+    lane: document.querySelector('.laneTag')?.dataset.lane, laneTxt: document.querySelector('.laneTag')?.innerText || '',
+    ex: document.querySelector('.speedExplain')?.dataset.speedExplain, mean: document.querySelector('.speedExplain .se-mean')?.textContent || '',
+    starts: document.querySelectorAll('.playTable svg .lane-start').length + document.querySelectorAll('.playTable svg .cue-ball').length,
+    labels: [...document.querySelectorAll('.playTable svg .lane-label')].map((t) => t.textContent),
+    btns: [...document.querySelectorAll('.resultBar .rb')].map((b) => b.innerText.replace(/\s+/g, ' ')),
+    noScroll: document.documentElement.scrollHeight <= innerHeight + 2, bar: (document.querySelector('.resultBar')?.getBoundingClientRect().bottom || 9e9) <= innerHeight + 1,
+    minTap: Math.min(...[...document.querySelectorAll('.resultBar .rb')].map((b) => b.getBoundingClientRect().height)),
+    view: document.querySelector('#view').innerText
+  }));
+  let li = await laneInfo();
+  check(li.lane === '1' && /Left lane · SPEED 1\.50/.test(li.laneTxt) && li.ex === '1.50' && li.mean.includes(M.m15.slice(0, 40)), `Three-Lane drill opens on lane 1 of 3: left lane SPEED 1.50 with its plain meaning`);
+  check(li.starts >= 3 && li.labels.join() === '1.50,2.50,3.00', `table shows 3 lane start spots on the first diamond and target circles 1.50 / 2.50 / 3.00`);
+  check(li.btns.length === 4 && /MISSED ZONE/.test(li.btns[0]) && /BULLSEYE/.test(li.btns[3]) && li.minTap >= 44, `manual scoring like the Speed Ladder (${li.btns.join(' | ')}), big buttons (${Math.round(li.minTap)} px)`);
+  check(li.noScroll && li.bar, '390×844: Three-Lane screen fits without scrolling');
+  check(/Inspired by Ron the Pool Student/.test(li.view) || (await page.evaluate(() => /Inspired by Ron the Pool Student/.test(document.body.innerHTML))), 'credit line reachable from the drill screen');
+  await shot('v111-05-three-lane-exercise');
+  for (let i = 0; i < 5; i++) await record(2);
+  li = await laneInfo();
+  check(li.lane === '2' && /Center lane · SPEED 2\.50/.test(li.laneTxt) && li.ex === '2.50' && li.mean.includes(M.m25.slice(0, 40)), 'after 5 attempts the drill moves to lane 2 (center, SPEED 2.50)');
+  for (let i = 0; i < 5; i++) await record(2);
+  li = await laneInfo();
+  check(li.lane === '3' && /Right lane · SPEED 3\.00/.test(li.laneTxt) && li.ex === '3.00', 'then lane 3 (right, SPEED 3.00)');
+  await shot('v111-06-three-lane-lane3');
+  for (let i = 0; i < 5; i++) await record(i < 3 ? 2 : 1);
+  await sleep(300);
+  const tlDone = await page.evaluate(() => ({ panel: !!document.querySelector('.resultPanel'), txt: document.querySelector('.resultPanel')?.innerText || '' }));
+  const stTL = await getState();
+  const recTL = stTL.games?.drills?.stages?.['three-lane-speed'];
+  check(tlDone.panel && /PASS/i.test(tlDone.txt) && recTL?.passed, `15 attempts → PASSED (8★ in lane 3 ≥ 7★)`);
+  check((stTL.prog?.drillXp || 0) > 0 && (stTL.prog?.lifetimeXp || 0) > 0 && !!stTL.prog?.items?.['drill:three-lane-speed'], `earns Drill XP (${stTL.prog?.drillXp}) and Lifetime XP; mastery item recorded`);
+  await shot('v111-07-three-lane-result');
+
+  // 5. four phone sizes: no sideways scroll, nav label fits, Three-Lane + speed stage fit, 0 console errors
+  for (const [w, h] of [[390, 844], [375, 667], [412, 915], [360, 800]]) {
+    await page.setViewport({ width: w, height: h, deviceScaleFactor: w === 412 ? 2.625 : w === 375 ? 2 : 3, isMobile: true, hasTouch: true });
+    const bad = [];
+    for (const r of ['#home', '#arcade', '#tablegames', '#game/speed', '#drills', '#play/speed/sp-2', '#play/drills/three-lane-speed', '#play/landing/lz-1']) {
+      await go(r);
+      const o = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+      if (o > 1) bad.push(`${r}:${o}`);
+    }
+    await go('#home');
+    const nav = await page.evaluate(() => [...document.querySelectorAll('nav button span')].every((sp) => { const r = sp.getBoundingClientRect(); const b = sp.parentElement.getBoundingClientRect(); return sp.scrollWidth <= sp.clientWidth + 1 && r.left >= b.left - 1 && r.right <= b.right + 1; }));
+    await go('#play/drills/three-lane-speed');
+    const fit = await page.evaluate(() => ({ noScroll: document.documentElement.scrollHeight <= innerHeight + 2, bar: (document.querySelector('.resultBar')?.getBoundingClientRect().bottom || 9e9) <= innerHeight + 1, diag: (document.querySelector('.speedExplain svg')?.getBoundingClientRect().width || 0) }));
+    if (w !== 390) await shot(`v111-08-three-lane-${w}x${h}`);
+    await openSim(potLayout, { aim: potAim, speed: 7, vTips: 0, hTips: 0 });
+    const simOk = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth - innerWidth, pv: document.querySelectorAll('#simPreview .pv-rail').length, shoot: document.querySelector('.shootBtn')?.getBoundingClientRect().height || 0 }));
+    check(!bad.length && nav, `${w}×${h}: v11.1 screens have no sideways scroll and every nav label fits ${bad.join(' ')}`);
+    check(fit.noScroll && fit.bar && fit.diag >= 80, `${w}×${h}: Three-Lane screen (lane tag, meaning, mini diagram, score buttons) fits without scrolling`);
+    check(simOk.sw <= 1 && simOk.pv >= 3 && simOk.shoot >= 44, `${w}×${h}: simulator SPEED 7 preview renders (${simOk.pv} rail labels), no sideways scroll`);
+  }
+  await page.setViewport(V390);
+  await go('#home');
+  check(errors.length === errBefore, `v11.1 checks: zero console errors (${errors.length - errBefore})`);
+  if (errors.length > errBefore) console.log(errors.slice(errBefore).join('\n'));
+}
+
 // ------------------------------------------------------------------------------------------ service worker + offline
 const swOk = await page.evaluate(async () => {
   if (!('serviceWorker' in navigator)) return false;
@@ -1789,11 +2078,11 @@ const swOk = await page.evaluate(async () => {
 });
 check(swOk, 'service worker registered and active');
 const cacheName = await page.evaluate(async () => (await caches.keys()).join(','));
-check(/pool-iq-v11/.test(cacheName) && !/pool-iq-v10/.test(cacheName), `cache bumped to v11 (${cacheName})`);
+check(/pool-iq-v11-1/.test(cacheName) && !/pool-iq-v10|pool-iq-v11(,|$)/.test(cacheName), `cache bumped to pool-iq-v11-1 (${cacheName})`);
 await page.setOfflineMode(true);
 await page.goto(BASE + 'index.html#arcade', { waitUntil: 'domcontentloaded' });
 await sleep(800);
-check((await page.$$('.gameCard')).length === 14, 'offline reload still renders the Arcade');
+check((await page.$$('.gameCard')).length === 14, 'offline reload still renders Table Games');
 await page.setOfflineMode(false);
 
 // ------------------------------------------------------------------------------------------ errors

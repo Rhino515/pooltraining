@@ -29,7 +29,7 @@ The Promotion Test is **the existing Boss Battle for that rank**: a real sequenc
 1. **Rank XP full.** You are on the top ball of your current rank, which also means every gate in the rank is cleared.
 2. **Skill floors.** Core and secondary skills are at or above the minimum level.
 3. **Mastery.** You have enough items at STRONG ⭐⭐ and MASTERED ⭐⭐⭐.
-4. **Existing Career requirements.** These are unchanged: Arcade levels, Ghost wins, stars and PBs from `js/career.js`.
+4. **Existing Career requirements.** These are unchanged: Table Games levels, Ghost wins, stars and PBs from `js/career.js`.
 
 | To rank | Core floor | Secondary floor | STRONG+ | MASTERED |
 |---|---|---|---|---|

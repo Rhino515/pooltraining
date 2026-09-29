@@ -131,7 +131,7 @@ export const SKILL_LEVEL = {
   foundationWeight: 0.5 // an item trains a skill "as a foundation" when its normalized weight is ≥ this
 };
 
-/** Skill mapping for built-in Arcade games (normalized so the top weight = 1). "_tech" = the skill of the stage's technique (stop/stun/draw/follow). */
+/** Skill mapping for built-in Table Games games (normalized so the top weight = 1). "_tech" = the skill of the stage's technique (stop/stun/draw/follow). */
 export const GAME_SKILLS = {
   landing: { position: 1, speed: 0.4, _tech: 0.6 },
   draw: { _tech: 1, speed: 0.3, position: 0.3 },

@@ -6,7 +6,7 @@ Every number on this page comes from `js/progression/config.js`, which is the on
 
 | Progression | What it measures | Earned from | Shown |
 |---|---|---|---|
-| **Career** (Rookie … Champion) | Your overall training rank | Arcade stages, built-in / Create Drill drills, rank-eligible installed `.pooliq` content, Ghost matches, Boss Battles | Home, Career, Profile header (ball badge) |
+| **Career** (Rookie … Champion) | Your overall training rank | Table Games stages, built-in / Create Drill drills, rank-eligible installed `.pooliq` content, Ghost matches, Boss Battles | Home, Career, Profile header (ball badge) |
 | **Drill Rank** (Chalk Rookie … Drill Legend) | Your drill work only | Built-in drills, Create Drill drills, rank-eligible installed `.pooliq` content | Top of the Drills tab and Profile (square chalk badge, visually distinct) |
 | **Skill levels** (12 skills) | How well you have shown each skill | The same sessions as Career, weighted by the skills each item trains | Career → Skill Breakdown, Home |
 
@@ -76,7 +76,7 @@ Each scoring mode has its own defaults in `MASTERY.byMode`. `.pooliq` files can 
 
 ## Skill levels
 
-There are 12 skills. Core: Straight Cueing, Shot Making, Stop, Follow, Draw, Stun, Speed Control, Position Play. Secondary: Banks, Kicks, Safeties, Pattern Play. Each Arcade game maps to skill weights (`GAME_SKILLS`, with per-stage overrides), and one session trains every skill the item weights.
+There are 12 skills. Core: Straight Cueing, Shot Making, Stop, Follow, Draw, Stun, Speed Control, Position Play. Secondary: Banks, Kicks, Safeties, Pattern Play. Each Table Games game maps to skill weights (`GAME_SKILLS`, with per-stage overrides), and one session trains every skill the item weights.
 
 ```
 rating(skill) = Σ weight × tierPoints × credit(mastery) × recency  /  Σ weight × tierPoints   (over content that trains the skill)
@@ -89,7 +89,7 @@ level         = Career ladder step at rating^0.85, capped by the hardest tier wi
 
 ## Drill Rank (separate from Career)
 
-Drill Rank is earned only from **built-in drills, Create Drill drills and rank-eligible installed `.pooliq` content** (`DRILL_RANK.sources`). Arcade stages, Ghost matches, Boss Battles, PvP and Play Test never count. Drill XP uses the same session formula, including first clear, PB and the anti-farming reductions. Each rank needs **all** of its thresholds:
+Drill Rank is earned only from **built-in drills, Create Drill drills and rank-eligible installed `.pooliq` content** (`DRILL_RANK.sources`). Table Games stages, Ghost matches, Boss Battles, PvP and Play Test never count. Drill XP uses the same session formula, including first clear, PB and the anti-farming reductions. Each rank needs **all** of its thresholds:
 
 | # | Drill Rank | Drill XP | Passed drills | Strong ⭐⭐ | Mastered ⭐⭐⭐ | Skill categories |
 |---|---|---|---|---|---|---|
@@ -108,7 +108,7 @@ Drill Rank is earned only from **built-in drills, Create Drill drills and rank-e
 
 `js/progression/migrate.js` runs at startup when `state.prog` is missing or older than `PROGRESSION_VERSION`. A vault snapshot ("Before v11 progression update") is taken first.
 
-1. It replays your saved history in date order: Arcade stage history, drill history, Ghost matches and Boss Battles. This fills Lifetime XP, item mastery, skill records and Drill XP.
+1. It replays your saved history in date order: Table Games stage history, drill history, Ghost matches and Boss Battles. This fills Lifetime XP, item mastery, skill records and Drill XP.
 2. **It never demotes.** You keep your current Career rank (`rankIndex`/`rankFloor`). Ranks below it are marked complete. Your current rank gets the Rank XP left over from the replay, capped at that rank's total.
 3. Lifetime XP is at least your old v10 XP total (kept as `prog.legacyXp`).
 4. The migration is idempotent: running it again is a no-op. Fresh installs and data resets get an empty `prog` straight away, with no migration and no snapshot.

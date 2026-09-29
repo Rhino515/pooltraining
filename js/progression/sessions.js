@@ -1,5 +1,5 @@
 /**
- * Session → award adapters used by the game engine (Arcade stages, drills, bosses) and Ghost matches.
+ * Session → award adapters used by the game engine (Table Games stages, drills, bosses) and Ghost matches.
  * Every finished, recorded session goes through applyAward once. Content Play Test / preview never reaches here.
  */
 import { getGame, BOSSES } from '../games/registry.js';

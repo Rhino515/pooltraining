@@ -1,9 +1,9 @@
 /**
- * Pages: Home, Career, Arcade hub, Game lobby, Boss intro, Profile, Drills (empty-state aware), Settings.
+ * Pages: Home, Career, Table Games hub (route #arcade, alias #tablegames), Game lobby, Boss intro, Profile, Drills (empty-state aware), Settings.
  */
 import { nextRankInfo, RANK_NAMES, RANK_REQUIREMENTS, requirementChecklist, nextUp, isBossUnlocked } from './career.js';
 import { skillBarsHTML, weakestSkills, recommendations } from './skills.js';
-import { allDrills, drillsByCategory, isDrillUnlocked, CATEGORIES } from './drills.js';
+import { allDrills, drillsByCategory, isDrillUnlocked, CATEGORIES, getDrillById } from './drills.js';
 import { maxUnlockedBalls, ghostStats } from './ghost.js';
 import { GAMES, getGame, stageSpecs, getStages, getBosses, getBoss } from './games/registry.js';
 import * as E from './games/engine.js';
@@ -17,7 +17,7 @@ import { RANK_LADDER } from './progression/config.js';
 import { getProfile } from './profile.js';
 import { loadFriends, activePlayers } from './friends/model.js';
 import { COACH_LEVELS, COACH_LABEL, coachingLevel } from './games/coaching.js';
-import { TABLE_SIZES, CLOTH_SPEEDS, CALIBRATION_SPEEDS, speedLabel, formatSpeed, personalFactor, clothNote } from './games/speed.js';
+import { TABLE_SIZES, CLOTH_SPEEDS, CALIBRATION_SPEEDS, speedLabel, formatSpeed, personalFactor, clothNote, calLookup } from './games/speed.js';
 
 function nextUpCard(state) {
   const n = nextUp(state);
@@ -49,7 +49,7 @@ export function renderHome(state, extras = {}) {
     ${nextUpCard(state)}
     <button type="button" class="card simPromo" data-action="go" data-href="#sim"><span class="simPromoIcon">◔</span><span class="simPromoText"><span class="eyebrow">NEW</span><b>Shot Simulator</b><small>Set up any layout, shoot it and watch the physics — racks, run-outs, Find a Shot and more.</small></span><span class="simPromoGo">›</span></button>
     <div class="dashActions">
-      <button type="button" class="dashAction card" data-action="go" data-href="#arcade"><span class="icon">🎯</span><b>Arcade</b><span>${GAMES.length} skill games · ${E.totalStars(state)}★ earned</span></button>
+      <button type="button" class="dashAction card" data-action="go" data-href="#arcade"><span class="icon">🎯</span><b>Table Games</b><span>${GAMES.length} skill games · ${E.totalStars(state)}★ earned</span></button>
       <button type="button" class="dashAction card" data-action="go" data-href="#ghost"><span class="icon">♚</span><b>Ghost</b><span>Up to ${maxUnlockedBalls(state)}-ball · ${st.pct}% wins</span></button>
       <button type="button" class="dashAction card" data-action="go" data-href="#training"><span class="icon">▥</span><b>Recommended</b><span>${esc(weakText(state))}</span></button>
       <button type="button" class="dashAction card friendsAction" data-action="go" data-href="#friends"><span class="icon">⚔</span><b>Play with Friends</b><span>${esc(friendsText())}</span></button>
@@ -103,7 +103,7 @@ export function renderCareerPage(state) {
 
 const RANK_BALLS_TEXT = (i) => { const b = RANK_LADDER.balls[i]; return b ? `· ${b} balls` : '· MAX RANK'; };
 
-// ------------------------------------------------------------------------------ arcade
+// ------------------------------------------------------------------------------ Table Games (internal id: arcade)
 function gameCard(state, g) {
   const unlocked = E.isGameUnlocked(state, g.id);
   const total = g.special === 'ghost' ? 7 : stageSpecs(g.id).length;
@@ -121,7 +121,7 @@ function gameCard(state, g) {
 }
 
 export function renderArcade(state) {
-  return `<div class="title"><span class="eyebrow">ARCADE</span><h1>Skill Games</h1><p>Replay any unlocked stage for stars, streaks and personal bests. Every result feeds your skill ratings.</p></div>
+  return `<div class="title"><span class="eyebrow">TABLE GAMES</span><h1>Skill Games</h1><p>Replay any unlocked stage for stars, streaks and personal bests. Every result feeds your skill ratings.</p></div>
     <button type="button" class="card simPromo friendsPromo" data-action="go" data-href="#friends"><span class="simPromoIcon">⚔</span><span class="simPromoText"><span class="eyebrow">PvP</span><b>Play with Friends</b><small>Score real matches head-to-head, run a group night or a tournament. Separate from your training ranks.</small></span><span class="simPromoGo">›</span></button>
     <div class="arcadeGrid">${GAMES.map((g) => gameCard(state, g)).join('')}</div>`;
 }
@@ -144,8 +144,8 @@ export function renderGameLobby(state, gameId) {
   });
   const endless = g.endless ? (E.isEndlessUnlocked(state, gameId) ? `<button type="button" class="stageRow card endless" data-action="go" data-href="#play/${gameId}/endless" data-stage="endless"><span class="srNum">∞</span><span class="srMain"><b>Endless Mode</b><small>Random bank layouts, rising difficulty, 3 lives.</small></span><span class="srSide"><small>Best ${gs.pb?.endlessBest || 0}</small></span></button>` : `<div class="stageRow card locked"><span class="srNum">∞</span><span class="srMain"><b>Endless Mode</b><small>Pass the final stage to unlock.</small></span><span class="srSide lock">🔒</span></div>`) : '';
   const hist = (gs.sessions || []).slice(-6).reverse().map((h) => `<div class="historyRow"><span>${esc(specs.find((s) => s.id === h.stageId)?.name || (h.stageId === 'endless' ? 'Endless' : h.stageId))}</span><span class="${h.passed ? 'green' : 'muted'}">${h.passed ? 'PASS' : '—'} ${h.score}</span><span class="muted">${new Date(h.date).toLocaleDateString()}</span></div>`).join('');
-  const cal = gameId === 'speed' ? calibrationCard(state) : '';
-  return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#arcade">‹ Arcade</button><span class="eyebrow">${g.icon} ${esc(g.name.toUpperCase())}</span><h1>${esc(g.name)}</h1><p>${esc(g.tagline)}</p></div>
+  const cal = gameId === 'speed' ? calibrationCard(state) + threeLaneCard(state) : '';
+  return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#arcade">‹ Table Games</button><span class="eyebrow">${g.icon} ${esc(g.name.toUpperCase())}</span><h1>${esc(g.name)}</h1><p>${esc(g.tagline)}</p></div>
     ${!unlocked ? `<div class="card lockNote">🔒 Locked — reach <b>${esc(E.unlockLabel(gameId))}</b> to play.</div>` : ''}
     ${active ? `<div class="card resumeCard"><b>Session in progress</b><p class="muted">${esc(specs.find((s) => s.id === active.stageId)?.name || 'Endless')} · ${active.attempts.length} shots recorded</p><button type="button" class="bigBtn" data-action="go" data-href="#play/${gameId}/${active.stageId}">RESUME</button></div>` : ''}
     <div class="card stats"><div><b>${E.gameLevel(state, gameId)}/${specs.length}</b><span>LEVEL</span></div><div><b>${E.totalStars(state, gameId)}★</b><span>STARS</span></div><div><b data-pb>${gs.pb?.highScore || 0}</b><span>HIGH SCORE</span></div></div>
@@ -154,11 +154,27 @@ export function renderGameLobby(state, gameId) {
     <h2>History</h2><div class="card history">${hist || '<p class="muted">No sessions yet.</p>'}</div>`;
 }
 
+/** v11.1: the Three-Lane Speed Exercise lives in the Drills library (Drill XP / Drill Rank) and is linked here */
+function threeLaneCard(state) {
+  const d = getDrillById('three-lane-speed');
+  if (!d) return '';
+  const rec = state.games?.drills?.stages?.[d.id];
+  return `<div class="card threeLaneCard" data-three-lane>
+    <div class="eyebrow">DRILL · NEXT TO THE LADDER</div>
+    <div class="diagramWrap mini">${renderStageTable(d, { className: 'table-diagram mini' })}</div>
+    <h3>${esc(d.name)}</h3>
+    <p class="muted small">Three lanes from the first diamond: SPEED 1.50, 2.50 and 3.00. 5 attempts per lane, 7★ in every lane to pass. Earns XP and Drill Rank.</p>
+    <small class="muted credit">${esc(d.credit)}</small>
+    ${rec ? `<small class="pbLine">Best ${rec.bestScore || 0} pts · ${rec.tries || 0} session${rec.tries === 1 ? '' : 's'}${rec.passed ? ' · passed ✓' : ''}</small>` : ''}
+    <button type="button" class="bigBtn" data-action="go" data-href="#play/drills/${esc(d.id)}">${rec?.passed ? 'TRAIN AGAIN' : 'START THE EXERCISE'}</button>
+  </div>`;
+}
+
 function calibrationCard(state) {
   const cal = state.speedCal || {};
   const has = Object.keys(cal.factors || {}).length;
   return `<div class="card calCard"><div class="eyebrow">YOUR SPEED CALIBRATION</div>
-    ${has ? CALIBRATION_SPEEDS.map((s) => { const f = personalFactor(cal, s); const list = cal.results?.[formatSpeed(s)] || []; return `<div class="calRow"><span>${speedLabel(s)}</span><span>${list.length ? `${list[list.length - 1].actual.toFixed(2)} L` : '—'}</span><span class="${Math.abs(f - 1) < 0.06 ? 'green' : 'gold'}">${list.length ? (Math.abs(f - 1) < 0.06 ? 'on target' : f > 1 ? 'short' : 'long') : ''}</span></div>`; }).join('') : '<p class="muted">Not calibrated yet — play the Calibration stage.</p>'}
+    ${has ? CALIBRATION_SPEEDS.map((s) => { const f = personalFactor(cal, s); const list = calLookup(cal.results, s) || []; return `<div class="calRow"><span>${speedLabel(s)}</span><span>${list.length ? `${list[list.length - 1].actual.toFixed(2)} L` : '—'}</span><span class="${Math.abs(f - 1) < 0.06 ? 'green' : 'gold'}">${list.length ? (Math.abs(f - 1) < 0.06 ? 'on target' : f > 1 ? 'short' : 'long') : ''}</span></div>`; }).join('') : '<p class="muted">Not calibrated yet — play the Calibration stage.</p>'}
     <p class="muted small">${esc(clothNote(cal))}</p></div>`;
 }
 
@@ -227,7 +243,7 @@ function drillCard(state, d) {
   const ms = rec ? masteryOf(state, drillItem(d).key) : 0;
   const pb = rec ? `<small class="pbLine">${starsHTML(ms)} Best ${rec.bestScore || 0} pts${rec.bestStars ? ` · ${'★'.repeat(rec.bestStars)}` : ''} · ${rec.tries || 0} session${rec.tries === 1 ? '' : 's'}${rec.passed ? ' · passed ✓' : ''}</small>` : '';
   const tools = d.custom ? `<div class="drillBtns"><button type="button" class="miniAct" data-action="drill-edit" data-id="${esc(d.id)}">Edit</button><button type="button" class="miniAct" data-action="drill-dup" data-id="${esc(d.id)}">Duplicate</button><button type="button" class="miniAct" data-action="drill-history" data-id="${esc(d.id)}">History</button><button type="button" class="miniAct" data-action="drill-export" data-id="${esc(d.id)}">Export</button><button type="button" class="miniAct danger" data-action="drill-del" data-id="${esc(d.id)}">Delete</button></div>` : d.contentUid ? `<div class="drillBtns"><button type="button" class="miniAct" data-action="go" data-href="#cview/${esc(d.contentUid)}">My Content</button><button type="button" class="miniAct" data-action="go" data-href="#cedit/${esc(d.contentUid)}">Edit</button><button type="button" class="miniAct" data-action="drill-history" data-id="${esc(d.id)}">History</button></div>` : '';
-  return `<div class="drill card ${open ? '' : 'locked'}" data-drill="${esc(d.id)}"><div class="diagramWrap mini">${renderStageTable(d, { className: 'table-diagram mini' })}</div>${meta}<h3>${esc(d.name)}</h3><p>${esc(d.goal || d.instructions || '')}</p>${speedChip(d.speed)}${pb}<button type="button" class="${rec?.passed ? 'done' : ''}" data-action="go" data-href="#play/drills/${esc(d.id)}" ${open ? '' : 'disabled'}>${rec?.passed ? 'Passed ✓ — Train again' : 'Train'}</button>${tools}</div>`;
+  return `<div class="drill card ${open ? '' : 'locked'}" data-drill="${esc(d.id)}"><div class="diagramWrap mini">${renderStageTable(d, { className: 'table-diagram mini' })}</div>${meta}<h3>${esc(d.name)}</h3><p>${esc(d.goal || d.instructions || '')}</p>${d.lanes ? `<div class="laneChips">${d.lanes.map((l) => speedChip(l.speed)).join('')}</div>` : speedChip(d.speed)}${d.credit ? `<small class="muted credit">${esc(d.credit)}</small>` : ''}${pb}<button type="button" class="${rec?.passed ? 'done' : ''}" data-action="go" data-href="#play/drills/${esc(d.id)}" ${open ? '' : 'disabled'}>${rec?.passed ? 'Passed ✓ — Train again' : 'Train'}</button>${tools}</div>`;
 }
 
 // ------------------------------------------------------------------------------ settings
@@ -246,7 +262,7 @@ export function renderSettings(state, info = {}) {
       <div class="eyebrow">TABLE & SPEED SCALE</div>
       <div class="chips">${TABLE_SIZES.map((t) => `<button type="button" class="chip${cal.tableSize === t ? ' active' : ''}" data-action="set-table" data-v="${t}">${t}-ft</button>`).join('')}</div>
       <div class="chips">${CLOTH_SPEEDS.map((c) => `<button type="button" class="chip${cal.cloth === c ? ' active' : ''}" data-action="set-cloth" data-v="${c}">${c} cloth</button>`).join('')}</div>
-      <p class="muted small">SPEED n ≈ n lengths of total cue-ball travel from an end rail. ${esc(clothNote(cal))}</p>
+      <p class="muted small">SPEED n = n table lengths of total cue-ball travel, measured from where the cue ball starts (standard start: the first diamond at your end). Quarter steps: 1.25, 1.50, 1.75… ${esc(clothNote(cal))}</p>
       <button type="button" class="bigBtn alt" data-action="go" data-href="#play/speed/sp-cal">RUN SPEED CALIBRATION</button>
     </div>
     <div class="card settingsCard" data-card="profile"><div class="eyebrow">PLAYER PROFILE</div><p class="muted small">Your name and photo on this phone (shown on Profile and in friend matches). Stored only on this device and in your backups.</p><button type="button" class="bigBtn alt" data-action="go" data-href="#me">EDIT PROFILE</button></div>

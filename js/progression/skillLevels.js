@@ -1,5 +1,5 @@
 /**
- * Individual skill levels (v11) — computed ONLY from real performance records (prog.items: Arcade stages, drills,
+ * Individual skill levels (v11) — computed ONLY from real performance records (prog.items: Table Games stages, drills,
  * Create Drill drills, rank-eligible .pooliq content, Ghost matches, Promotion Test shots).
  *   rating(skill) = Σ weight × tierPoints × credit(record) × recency  /  Σ weight × tierPoints over the content that trains it
  *   credit = masteryCredit[stars] (not passed: masteryCredit[0] × performance curve)

@@ -2,25 +2,64 @@
 
 Pool IQ is a mobile-first PWA for practising billiards on a real table. You play the shots at your table, then tap the result into the phone. It includes:
 
-- 14 Arcade skill games (102 stages in total)
+- 14 Table Games skill games (102 stages in total)
 - Boss Battles that gate each Career rank
 - Ghost races
-- A numeric SPEED system you can calibrate to your own stroke
+- A numeric SPEED system (SPEED n = n table lengths of travel from the start spot, quarter steps, shown as SPEED 1.50) you can calibrate to your own stroke
 - A teaching layer on every shot: table diagram, Shot Recipe gauges (Aim View, cue-ball tip, SPEED dial), and a Why This Shot? sheet
 - A faint dashed diamond grid on every table diagram, plus a Setup line giving each ball's position in diamonds
 
+- **v11.1:** Arcade renamed **Table Games**, a clearer SPEED scale with a mini-table diagram, the Three-Lane Speed Exercise drill, a full-path multi-rail aim preview in the Shot Simulator, and clock readings for the cue-ball tip, with a drag-to-set tip picker pop-up
 - **v11:** Career ball levels ("Shooter · 7-Ball"), Rank and Lifetime XP, 12 skill levels, Skill Gates, Promotion Tests, a separate Drill Rank, Friends / PvP / tournaments, a local player profile, and a passcode-locked DEV MODE
 
 All content is original. Pass/fail is only ever computed from the results you record. The app has no self-report "I passed" buttons.
+
+## What's new in v11.1 (changelog)
+
+- **Arcade is now "Table Games"** everywhere you see it: bottom nav, headings, back buttons, home action, Career requirement text ("Earn 240 Table Games stars"), Profile and DEV MODE text, and the docs. Internal route ids and storage keys are unchanged (`#arcade` still works, `#tablegames` is an alias, `arcade:` item keys are kept).
+- **SPEED scale fix.** SPEED n = n table lengths of **total cue-ball travel measured from where the cue ball starts** (Andrew's reference: Ron the Pool Student's ICA cue-ball speed exercise; standard start on the first diamond at your end). Quarter steps (0.25) are allowed everywhere and every speed shows two decimals, like the ICA indicator: `SPEED 1.50`. Each speed has one plain meaning that names the stop diamond counted from your end rail:
+
+| SPEED | Centre-ball lag from the first diamond |
+|---|---|
+| 0.25 | Rolls up the table. Stops on the 3rd diamond from your end, just before it reaches the side pockets. |
+| 0.50 | Rolls up the table. Stops on the 5th diamond from your end, just past the side pockets. |
+| 0.75 | Rolls up the table. Stops on the 7th diamond from your end, 1 diamond short of the far rail. |
+| 1.00 | Up to the far rail and back. Stops on the 7th diamond from your end, 1 diamond off the far rail. |
+| 1.25 | Up to the far rail and back. Stops on the 5th diamond from your end, just before it reaches the side pockets. |
+| 1.50 | Up to the far rail and back. Stops on the 3rd diamond from your end, just past the side pockets on the way back to you. |
+| 1.75 | Up to the far rail and back. Stops on the 1st diamond from your end, back on the start spot. |
+| 2.00 | Up, back off your end rail, and out again. Stops on the 1st diamond from your end, right back on the start spot. |
+| 2.25 | Up, back off your end rail, and out again. Stops on the 3rd diamond from your end, just before it reaches the side pockets. |
+| 2.50 | Up, back off your end rail, and out again. Stops on the 5th diamond from your end, just past the side pockets. |
+| 2.75 | Up, back off your end rail, and out again. Stops on the 7th diamond from your end, 1 diamond short of the far rail. |
+| 3.00 | Up and back, then up and back again. Stops on the 7th diamond from your end, 1 diamond off the far rail. |
+| 3.25 | Up and back, then up and back again. Stops on the 5th diamond from your end, just before it reaches the side pockets. |
+| 3.50 | Up and back, then up and back again. Stops on the 3rd diamond from your end, just past the side pockets on the way back to you. |
+| 3.75 | Up and back, then up and back again. Stops on the 1st diamond from your end, back on the start spot. |
+| 4.00 | Up and back twice, then out again. Stops on the 1st diamond from your end, right back on the start spot. |
+| 4.25 | Up and back twice, then out again. Stops on the 3rd diamond from your end, just before it reaches the side pockets. |
+| 4.50 | Up and back twice, then out again. Stops on the 5th diamond from your end, just past the side pockets. |
+| 4.75 | Up and back twice, then out again. Stops on the 7th diamond from your end, 1 diamond short of the far rail. |
+| 5.00 | Up and back twice, then up and back again. Stops on the 7th diamond from your end, 1 diamond off the far rail. |
+
+  - A **mini-table diagram** (START ball, numbered cushion turns, numbered diamonds, `STOP · 3rd diamond` marker) sits next to the meaning in the Shot Recipe, the simulator speed readout, the speed drills, calibration and Create Drill.
+  - Updated everywhere speed appears: `js/games/speed.js`, the simulator's `SPEED_TABLE` (recalibrated to lags from the first diamond; every quarter step stops on the diamond its meaning names), Shot Recipe tooltip and dial (ticks every 0.25), calibration texts, Speed Ladder names/texts (all lags now start on the first diamond; "SPEED 1.50 — Back to the 3rd Diamond"), coaching planner choices (every quarter step 0.50–5.00), geometry rounding (quarter steps, so a few stage recipes moved by 0.25), Create Drill ±0.25 stepper and "why this speed" texts. `.pooliq` files accept 0.25 steps; old 0.5-step files are unchanged and still valid.
+  - Saved calibration data keeps working (old keys such as `"2.0"` are read and appended to; quarter steps get keys like `"1.25"`).
+- **New drill: Three-Lane Speed Exercise** (Drills → Speed Control, also linked from the Speed Ladder page). Three lanes up the table, each cue ball on the first diamond at your end: left SPEED 1.50 (3rd diamond, just past the side pockets on the way back), center SPEED 2.50 (5th diamond, just past the side pockets on the way out again), right SPEED 3.00 (7th diamond, 1 diamond off the far rail). Centre-ball hit, Speed Ladder scoring (tap bullseye / middle / outer / missed short or long), 5 attempts per lane, pass with 7★ in every lane. Earns Lifetime XP, Drill XP and Drill Rank. Inspired by Ron the Pool Student's ICA cue-ball speed exercise.
+- **Shot Simulator full-path aim preview.** The simulator's own physics runs headlessly at the chosen SPEED and tip and draws the complete path of the cue ball (white dashes) and every ball it moves (object ball gold dots, others thin in their colour) through every rail bounce. Rail contacts are numbered 1, 2, 3…; the end is marked with a highlighted pocket + **POCKET** tag (or **SCRATCH** for the cue ball), or an end ring with **STOP** / **MISS**. It updates live as aim, speed or spin change (throttled to 80 ms, capped at 40,000 physics steps) and its final positions are exactly what SHOOT produces (`verify.mjs` and e2e both check this). Hidden during the Target Game; Settings → Full-path preview turns it off.
+- **Tip clock.** Under the tip text ("Top Right", "Draw 1 tip") the simulator's cue-ball panel, the Shot Recipe gauge, the recipe card, the planner and Create Drill show a clock reading, e.g. "1:30 o'clock", or "Center" (reuses `tipClockLabel()` from `js/games/recipe.js`).
+- **Cue-ball tip picker pop-up.** Tap the small cue-ball image in the Shot Simulator or Create Drill and a compact popover opens right next to it: a cue ball about 30% of the screen width (≈120 px on a 390 px phone) whose contact dot you press and drag (touch or mouse, Pointer Events; the dot has a ≥ 44 px hit area). The value stays on a ¼-tip grid inside the miscue limit (1½ tips from centre, dashed red circle; Create Drill also keeps side spin within ±1 tip like the `.pooliq` schema). Under the ball: the live tip text ("Top Right"), the clock reading ("1:30 o'clock") and the exact offsets ("↑ 1 · → 1 tips"), then CENTER and a big DONE button; tapping outside or Escape also closes it. In the simulator the full-path preview follows the drag live. Quarter tips now read "¼ / ¾" instead of being rounded to "½".
+- **Speed drill screens** (Speed Ladder lags and the Three-Lane exercise) show the lane, the plain speed meaning and the mini diagram in one compact block in place of the goal line, so they still fit a 375×667 phone without scrolling. The Three-Lane table shows all three lanes and target circles with the current lane highlighted.
+- **Versions:** `APP_VERSION` 11.1, service worker cache `pool-iq-v11-1`. No storage keys changed.
 
 ## What's new in v11 (changelog)
 
 - **Career ball levels.** Each Career rank (Rookie … Pro) has 10–15 ball levels filled by **Rank XP**, for example *Shooter · 7-Ball*. **Champion** is the max rank: Rank XP stops, Lifetime XP continues, and it has its own stats screen. The rank names, requirements and Boss Battles are unchanged. See [docs/RANKING_AND_XP.md](docs/RANKING_AND_XP.md).
 - **XP formula.** XP depends on difficulty tier and performance, with bonuses for first clears, PBs and perfect sessions. Repeating mastered items or grinding the same item on one day earns less, and each tier has a Rank XP cap (shown as MAXED). **Lifetime XP** is permanent.
-- **Mastery per item:** PASSED ⭐ / STRONG ⭐⭐ / MASTERED ⭐⭐⭐, shown on Arcade stages, drills and content.
+- **Mastery per item:** PASSED ⭐ / STRONG ⭐⭐ / MASTERED ⭐⭐⭐, shown on Table Games stages, drills and content.
 - **12 skill levels** (Straight Cueing … Pattern Play), each shown as "<rank> <ball>". One session trains several skills by weight. Skill Breakdown and Recommended Training screens are included.
 - **Skill Gates** hold your ball inside a rank until foundations are passed. **Promotion Tests** (the rank's Boss Battle) unlock only with full Rank XP, cleared gates, skill floors, mastery counts and the existing Career requirements. See [docs/SKILL_GATES_AND_PROMOTIONS.md](docs/SKILL_GATES_AND_PROMOTIONS.md).
-- **Drill Rank** (Chalk Rookie → Drill Legend) is separate from Career. It is earned only from built-in drills, Create Drill drills and rank-eligible installed `.pooliq` content. It never comes from Play Test, Arcade, Ghost or PvP.
+- **Drill Rank** (Chalk Rookie → Drill Legend) is separate from Career. It is earned only from built-in drills, Create Drill drills and rank-eligible installed `.pooliq` content. It never comes from Play Test, Table Games, Ghost or PvP.
 - **Friends / PvP:** players with photos, live rack-by-rack scoring (hill-hill, undo, advanced stats), quick scores, head-to-head, group sessions, single-elimination brackets (seeding, byes) and round robins (documented tiebreakers). PvP never changes training progress. See [docs/FRIENDS_AND_TOURNAMENTS.md](docs/FRIENDS_AND_TOURNAMENTS.md).
 - **Local player profile** (`#me`): display name, photo (take or choose, cropped to a 256 px square), Career ball badge plus Drill Rank on the Profile header, and a stats page with an exportable **public stats** summary. It is sync-ready (stable UUID, `updatedAt`), but no online features are built.
 - **DEV MODE** (Settings → DEV MODE, passcode stored as a salted SHA-256 hash) has built-in stage overrides, an overrides pack export, unrestricted My Content, mark official/eligible, seeded test progression with restore, cache tools and a storage key viewer. Every action snapshots first. See [docs/DEV_MODE.md](docs/DEV_MODE.md).
@@ -43,12 +82,12 @@ To deploy, copy the folder to any static host (for example GitHub Pages). All as
 
 | Area | Files |
 |---|---|
-| Hash router / boot | `js/app.js` (`#home #career #drills #analyze #arcade #profile #settings #ghost #gate #promo #skills #skill/<id> #training #champion #drillrank #friends #friend/<id> #h2h/<a>/<b> #fmatch #fsession/<id> #tourney/<id> #tnew #me #me/stats #dev #devgame/<id> #devedit/<game>/<stage> #devkeys #game/<id> #play/<game>/<stage> #boss/<id> #bossplay/<id> #sim #sim/s=<code> #sim/target #drillnew #drilledit/<id> #content #cimport #cview/<ref> #cplay/<ref>[/<stage>] #cedit/<uid>[/<loc>]`) |
+| Hash router / boot | `js/app.js` (`#home #career #drills #analyze #arcade (alias #tablegames, shown as Table Games) #profile #settings #ghost #gate #promo #skills #skill/<id> #training #champion #drillrank #friends #friend/<id> #h2h/<a>/<b> #fmatch #fsession/<id> #tourney/<id> #tnew #me #me/stats #dev #devgame/<id> #devedit/<game>/<stage> #devkeys #game/<id> #play/<game>/<stage> #boss/<id> #bossplay/<id> #sim #sim/s=<code> #sim/target #drillnew #drilledit/<id> #content #cimport #cview/<ref> #cplay/<ref>[/<stage>] #cedit/<uid>[/<loc>]`) |
 | Challenge data model + geometry | `js/games/geometry.js`, `js/games/builders.js` (position, pot, lag, bank, kick, carom, safety, train) |
 | Game content | `js/games/data/*.js` (one file per game plus `bosses.js`), `js/games/registry.js` |
 | Engine (pure) | `js/games/engine.js`: sessions, scoring modes (zone, lives, kick, train, stars, binary, sniper, ladder, calibration, pattern), unlocks, PBs, bosses |
 | Teaching components | `js/tableDiagram.js` (shared table SVG + diamond grid), `js/games/stageTable.js` (routes/zones), `js/games/recipe.js` (Shot Recipe gauges, Setup line, Why), `js/games/aimView.js` (Aim View maths + SVG), `js/games/diamonds.js` (diamond readout), `js/games/cueBallDiagram.js`, `js/games/coaching.js` (Beginner → Expert) |
-| SPEED system | `js/games/speed.js`: SPEED 0.5–5.0 (1.0 = one table length of travel), personal calibration, table size and cloth |
+| SPEED system | `js/games/speed.js`: SPEED 0.25–5.00 in quarter steps (SPEED n = n table lengths of total travel from where the cue ball starts), plain meanings, personal calibration, table size and cloth; `js/games/speedDiagram.js`: mini-table speed diagram |
 | Screens | `js/ui/play.js` (every game, drill and boss), `js/ui/sheet.js`, `js/dashboard.js`, `js/ghost.js` |
 | Career / skills | `js/career.js` (game levels, Ghost wins, Boss Battles), `js/skills.js` (ratings computed from results) |
 | Shot Simulator | `js/sim/physics.js` (deterministic ball physics), `js/sim/layouts.js` (racks, random layouts, snap, validation), `js/sim/solver.js` (throw-compensated aim, Find a Shot, shape zones, Target Game), `js/sim/share.js` (URL/JSON share format), `js/sim/library.js` (saved shots + settings), `js/ui/simulator.js` (screen) |
@@ -123,7 +162,7 @@ The recipe card shows three round gauges:
 
 1. **Aim View** shows the object ball as seen from behind the cue ball, with the ghost cue ball overlapping it. θ is the angle between the cue ball's final approach (cue → ghost, or last rail → ghost on a kick) and the ghost → object-ball line. The sideways offset is sin θ × one ball diameter and the fullness is 1 − sin θ. Hitting the right side of the object ball sends it left. The label reads like "Right ½ · 30° cut". The gauge is left out when there is no object ball (lags). Intermediate coaching shows "?" in its place, and Advanced/Expert hide it until the plan is locked.
 2. **Tip** shows a shaded cue ball with the contact dot, labelled e.g. "Draw 1½ tips". Tap it for the full recipe.
-3. **Speed dial** shows the needle on Pool IQ's SPEED 0.5–5.0 scale.
+3. **Speed dial** shows the needle on Pool IQ's SPEED 0.5–5.0 scale (ticks every 0.25). The recipe card adds the plain speed meaning and the mini-table diagram; the tip rows add the clock reading ("1:30 o'clock").
 
 ### Camera-ready hook
 
@@ -136,7 +175,8 @@ A pool-table simulator for planning and studying shots. It is a **physics approx
 - **Table:** the shared true-scale renderer (100 × 50 playing surface, ball radius 1.125, diamond grid full/half/off). The SETUP readout lists every ball in diamonds.
 - **Placing balls:** drag a ball to move it (optional ¼-diamond snap, live position bubble, page never scrolls while dragging). Tap the tray to add or remove balls 1–15.
 - **Aiming:** drag the felt to aim, or tap an object ball to aim at it (tap again to cycle pockets, throw-compensated). You can also tap a pocket to aim the last ball there. ±1° / ±0.1° nudge buttons, aim readout, ghost ball, Aim View gauge, tangent line.
-- **Cue:** tip position uses the contact diagram (±1.5 tips, squirt included). SPEED 0.3–7 on Pool IQ's scale (Speed N ≈ N table lengths of centre-ball travel), with optional personal calibration.
+- **Cue:** tip position uses the contact diagram (±1.5 tips, squirt included). SPEED 0.30–7.00 on Pool IQ's scale (SPEED n = n table lengths of total travel from where the cue ball starts), ±0.25 buttons, plain meaning + mini-table diagram, with optional personal calibration. Under the tip text a clock reading ("1:30 o'clock" / "Center"). Tap the small cue ball to open the drag-to-set tip pop-up.
+- **Full-path aim preview (v11.1):** the real physics runs ahead at the current SPEED and tip; every ball's full path through every rail is drawn with numbered rail contacts and a POCKET / SCRATCH / STOP / MISS end marker. It matches SHOOT exactly (`js/sim/preview.js`).
 - **Playback:** SHOOT animates the shot and draws coloured tracks per ball. Controls: replay, pause/play, step to the next event, skip to end, ¼×/½×/1×/2× speed, tracks on/off. The result summary covers the first ball hit, balls pocketed, cue-ball rails, where it stopped, and scratches.
 - **Continue:** "Continue ▶" plays the next shot from where the balls stopped; after a scratch the cue ball is in hand on the head spot. Undo/redo cover every layout, aim, tip, speed and continue step. "Reset to start" restores the starting layout.
 - **Actions menu:**
@@ -158,7 +198,7 @@ A pool-table simulator for planning and studying shots. It is a **physics approx
 - **Cushions:** speed-dependent restitution (0.93 → 0.75 as impact speed rises). Cushion friction lets side spin change the rebound angle and kills part of the roll.
 - **Pockets:** real mouth geometry; corner and side jaws are angled segments. A ball can hit a facing and rattle out, or drop once past the drop radius.
 - **Cue strike:** the tip offset sets top/back spin and side spin. Squirt is 1.2° per tip.
-- **SPEED:** `SPEED_TABLE` maps SPEED → launch speed by simulating centre-ball lags, so Speed 1 travels exactly one table length. Regenerate it with `node scripts/gen-speed-table.mjs` after changing constants; `verify.mjs` fails if it goes stale.
+- **SPEED:** `SPEED_TABLE` maps SPEED → launch speed by simulating centre-ball lags, so SPEED n is exactly n table lengths of travel for a lag starting on the first diamond (x = 12.5). Regenerate it with `node scripts/gen-speed-table.mjs` after changing constants; `verify.mjs` fails if it goes stale.
 - **Deterministic:** the same layout and shot always give the same result.
 - **Not modelled:** cue elevation (massé/jump), swerve/curve from side spin, cloth wear, humidity, ball-to-ball differences, and table roll. Cushion and jaw responses are simplified.
 
@@ -182,11 +222,11 @@ Saved drills use the same challenge data model as Template 2 below. They are sto
 
 Drill cards have Edit / Duplicate / History / Export / Delete (with confirm) buttons. You can also export all drills or import a file. Drill files use `{format:'pool-iq-drills', version:1, drills:[challenge…]}`; imported ids that clash are re-numbered. Custom drill results feed skill ratings once played. Career ranks still depend only on games, Ghost and bosses.
 
-## Drill library (ships empty)
+## Drill library
 
-The built-in drill library is intentionally empty. Build drills in the app with **Create Drill** (above), or add them in code as described here. The Drills tab shows a clean empty state with a Create Drill button until drills exist.
+The built-in library holds the **Three-Lane Speed Exercise** (`js/games/data/threeLaneSpeed.js`, v11.1). Build more in the app with **Create Drill** (above), or add them in code as described here.
 
-Drills use the same challenge data model as the Arcade. Each new drill automatically gets:
+Drills use the same challenge data model as the Table Games. Each new drill automatically gets:
 
 - the table diagram
 - the Shot Recipe (contact, SPEED chip, aim, route)
@@ -246,7 +286,7 @@ Use this style for hand-drawn layouts. These fields are required:
 }
 ```
 
-Before shipping new drills, run `node scripts/verify.mjs`. It applies the same geometry checks to every drill that it applies to the Arcade stages. You can also call `geometryProblems(challenge)` from `scripts/geometryCheck.mjs` directly.
+Before shipping new drills, run `node scripts/verify.mjs`. It applies the same geometry checks to every drill that it applies to the Table Games stages. You can also call `geometryProblems(challenge)` from `scripts/geometryCheck.mjs` directly.
 
 ## My Content and .pooliq files (v10)
 
@@ -260,7 +300,7 @@ Before shipping new drills, run `node scripts/verify.mjs`. It applies the same g
 
 ## Career
 
-A rank's requirements are Arcade game levels, Ghost wins and that rank's Boss Battle; some higher ranks also require star totals or PBs. From v11 the boss is the rank's **Promotion Test**. It unlocks when every non-boss requirement is met **and** the rank's Rank XP is full (top ball, Skill Gates cleared), skill floors are reached and enough items are STRONG/MASTERED. Beating the boss is the only way to promote, and XP never promotes by itself. Details: [docs/RANKING_AND_XP.md](docs/RANKING_AND_XP.md) and [docs/SKILL_GATES_AND_PROMOTIONS.md](docs/SKILL_GATES_AND_PROMOTIONS.md).
+A rank's requirements are Table Games levels, Ghost wins and that rank's Boss Battle; some higher ranks also require star totals or PBs. From v11 the boss is the rank's **Promotion Test**. It unlocks when every non-boss requirement is met **and** the rank's Rank XP is full (top ball, Skill Gates cleared), skill floors are reached and enough items are STRONG/MASTERED. Beating the boss is the only way to promote, and XP never promotes by itself. Details: [docs/RANKING_AND_XP.md](docs/RANKING_AND_XP.md) and [docs/SKILL_GATES_AND_PROMOTIONS.md](docs/SKILL_GATES_AND_PROMOTIONS.md).
 
 ## Local player profile (v11)
 
@@ -303,7 +343,8 @@ It checks:
 - skill ratings
 - V3 → V4 migration, including archiving deleted drill ids
 - Shot Simulator physics:
-  - SPEED calibration (Speed N = N lengths; table not stale)
+  - SPEED calibration (SPEED n = n lengths from the first diamond; table not stale)
+  - v11.1: every speed meaning names the diamond the simulator and the mini diagram stop on; quarter steps in the schema; old calibration keys; Three-Lane drill lanes, per-lane pass rule and Drill XP; full-path preview final positions identical to SHOOT (SPEED 7 multi-rail kick, spin, pot, break); tip clock; tip picker limits (miscue circle, ¼ grid, ±1 side spin in Create Drill); quarter-tip wording; no user-visible "Arcade" text
   - straight-in stun stops on the contact spot
   - follow/draw
   - 30° half-ball natural-roll deflection
@@ -324,7 +365,7 @@ It checks:
 - data safety: every persisted key is mirrored (and every writer notifies the mirror); localStorage wiped / corrupted → restored from IndexedDB; single corrupt key repaired; newer-wins both ways; an empty/default state never overwrites a good copy (a deliberate reset may); snapshot rotation (3 kept, spaced out, none of empty data); backup export → import round trip restores every key identically (career, custom drills, sim shots, preset, draft) and snapshots what it replaces; old V3/V2 saves and older backup schemas migrate; invalid files rejected; reminder rules; Android manifest + icons
 - service worker precaches every module (cache `pool-iq-v11`)
 - **v11 progression:** ball from Rank XP, gate hold/release, Rank XP never promotes, first clear / PB / perfect bonuses, mastered-repeat and same-day reductions, fail cap, participation, tier caps (MAXED), Create Drill tier limit, Champion (MAX RANK, Rank XP stops, Lifetime continues, stats), overflow carry, multi-skill XP and skill-level rise, "<rank> <ball>" labels, mastery thresholds, gate latching, promotion checklist, `.pooliq` progression metadata (tier words, weights, base XP, unknown-skill error, v10 files still valid), Play Test never awards
-- **Drill Rank:** 8 names, thresholds, XP alone is not enough, mastered-repeat anti-farming, Arcade/Ghost/PvP never count
+- **Drill Rank:** 8 names, thresholds, XP alone is not enough, mastered-repeat anti-farming, Table Games/Ghost/PvP never count
 - **Migration:** runs once, idempotent, never demotes, Lifetime XP ≥ old XP, history replayed
 - **Friends / tournaments:** duplicates, live scoring, hill-hill, final-score rules, H2H, player stats, archive on remove, group session pairing, seed order, byes, auto-advance, champion, clear rules, round-robin schedule and tiebreakers
 - **Profile:** stable UUID, name cleaning, updatedAt, unsafe/oversized photo rejected, public stats shape
@@ -376,6 +417,7 @@ It covers:
 - Ghost: order rule visible for 3-ball and 9-ball; 8-Ball Ghost custom count remembered after reload, scored and saved, undo; Pro break → ball in hand → run-out, SCRATCHED ON BREAK → ball in hand (no Ghost point) + undo, break log saved, no stale toast over the buttons; Set up in Shot Simulator; no scrolling at 390×844 and 375×667
 - data safety: play a rack → wipe localStorage → reload → everything restored from IndexedDB (also after corrupting the save); Settings shows protected storage / usage / safety copy / last backup; Back Up Now downloads `PoolIQ-backup-YYYY-MM-DD.json` with every key (and uses the share sheet when files can be shared; a cancelled share isn't counted); Restore from Backup shows the summary and restores exactly; invalid file rejected; Restore previous snapshot undoes a restore; RESET ALL PROGRESS is two-step + typed, takes a snapshot, isn't undone by the mirror, and can be undone from the snapshot; Home backup nudge after 7+ days, dismissible; Install: iPhone steps, Android `beforeinstallprompt` → INSTALL APP, hidden when standalone; Android 412×915 and 360×800 Settings + score screens without scrolling
 - My Content: entry point; accept list; bad, malicious (`<script>`, `onerror=`, `javascript:`, `__proto__`), schema 3.0, oversized and non-JSON files rejected with readable errors; preview (same renderer, recipe, SPEED, attempts, attribution); PLAY TEST isolation (every official key byte-for-byte unchanged); install + reload; conflict CANCEL / KEEP BOTH / REPLACE; installed play → personal progress only; builder edit (touch drag, SPEED, instructions, marker, inputs ≥ 16px); Web Share export + download fallback + lossless re-import; delete with confirm; pack locks + progress %; lesson solve → lock → reveal; gauntlet hearts / game over / PB persistence; diamond answer tap / 0.1 nudge / difference / tolerance; player-solution comparison; Advanced coaching on imported drills; legacy v9 drill export import; backup / mirror include content; every play screen fits without scrolling at 375×667, 412×915 and 360×800
+- v11.1: "Table Games" nav label fits at all 4 sizes, `#tablegames` alias, no "Arcade" text on the main screens; Speed Ladder / Recipe / simulator speed meaning + mini diagram (`STOP · 3rd diamond`); SPEED 7 full-path preview with numbered rails, POCKET / STOP markers, live redraw on aim / SPEED / spin, and SHOOT ending exactly where the preview said (pot + multi-rail kick); preview hidden in the Target Game; tip clock under the tip text (simulator + Shot Recipe); tip picker pop-up at 390×844, 375×667, 412×915 and 360×800 (compact ≈30%-width ball near the small cue ball, ≥ 44 px dot hit area, touch + mouse drag, live text / clock / offsets / preview, miscue limit, CENTER, DONE, tap outside) and in Create Drill; Three-Lane Speed Exercise (3 lanes, lane switching, per-lane pass, Drill XP) fitting without scrolling at all 4 sizes; zero console errors
 - **v11:** Career ball badge, gate, Promotion Test locked → unlocked, Skill Breakdown, Recommended Training, Drill Rank, result-screen XP lines; profile name + photo upload (256×256) + public stats + backup key; Friends: players, live match to hill-hill, H2H, group session, single-elimination champion, round robin; PvP doesn't change XP; DEV MODE passcode / hash / lock / override save / export / reset / re-import / seed Champion / restore real; no sideways overflow at 4 phone sizes; zero console errors
 - service worker (cache v11) and offline reload
 

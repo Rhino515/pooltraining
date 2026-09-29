@@ -217,7 +217,7 @@ export function renderGhostLobby(state, preset = {}) {
   const recordRows = mode === 'rotation'
     ? `<div class="card history"><div class="historyRow head"><span>Balls</span><span>Played</span><span>Won</span><span>Win %</span><span>Rack %</span></div>${st.byBalls.map((b) => `<div class="historyRow"><span>${b.balls}-ball</span><span>${b.played}</span><span>${b.won}</span><span>${b.pct}%</span><span>${b.rackPct}%</span></div>`).join('')}</div>`
     : `<div class="card history"><div class="historyRow head"><span>8-Ball</span><span>Played</span><span>Won</span><span>Win %</span><span>Rack %</span></div>${st.byEight.map((b) => `<div class="historyRow"><span>${b.label}</span><span>${b.played}</span><span>${b.won}</span><span>${b.pct}%</span><span>${b.rackPct}%</span></div>`).join('')}</div>`;
-  return `<div class="title"><span class="eyebrow">ARCADE · GHOST</span><h1>Race the Ghost</h1><p>Clear the table = your rack. Any miss, foul or failed runout = Ghost's rack.</p></div>
+  return `<div class="title"><span class="eyebrow">TABLE GAMES · GHOST</span><h1>Race the Ghost</h1><p>Clear the table = your rack. Any miss, foul or failed runout = Ghost's rack.</p></div>
     ${active ? `<div class="card resumeCard"><b>Match in progress</b><p class="muted">${esc(ghostLabel(active))} · race to ${active.race} · ${active.you}–${active.ghost}</p><button type="button" class="bigBtn" data-action="go" data-href="#ghostmatch">RESUME MATCH</button></div>` : ''}
     ${modeTabs}
     ${setup}

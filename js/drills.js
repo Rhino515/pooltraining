@@ -1,8 +1,8 @@
 /**
  * Pool IQ drill library.
  *
- * The library ships EMPTY on purpose — Andrew will add his own drills. Every drill uses the same
- * reusable challenge data model as the Arcade games, so a new drill automatically gets the table
+ * The library ships only the drills Andrew asked for (v11.1: Three-Lane Speed Exercise) — he adds his own.
+ * Every drill uses the same reusable challenge data model as the Table Games, so a new drill automatically gets the table
  * diagram, Shot Recipe card, cue-ball contact diagram, SPEED chip, Why This Shot? sheet and scoring.
  *
  * HOW TO ADD A DRILL
@@ -35,6 +35,7 @@ import { buildChallenge } from './games/builders.js';
 import { loadCustomDrills } from './customDrills.js';
 import { loadContent } from './content/store.js';
 import { shotToChallenge } from './content/convert.js';
+import { threeLaneSpeedDrill } from './games/data/threeLaneSpeed.js';
 
 export const CATEGORIES = [
   'Shot Making',
@@ -53,8 +54,11 @@ export const CATEGORIES = [
   'Runouts'
 ];
 
-/** Author drills here. Intentionally empty — no sample content ships. */
-const DRILL_SPECS = [];
+/**
+ * Author drills here. The library ships only drills Andrew asked for (no sample content):
+ * v11.1 — the Three-Lane Speed Exercise (js/games/data/threeLaneSpeed.js), also linked from the Speed Ladder.
+ */
+const DRILL_SPECS = [threeLaneSpeedDrill()];
 
 const DEFAULT_SCORING = { mode: 'binary', attempts: 10, pass: { made: 7 } };
 
@@ -86,7 +90,7 @@ function buildAll() {
   return built;
 }
 
-/** Built-in library (ships empty) */
+/** Built-in library */
 export const drills = buildAll();
 
 // Custom drills made with Create Drill live in localStorage and are merged in at load.

@@ -45,7 +45,8 @@ export const PHASE_NAMES = { teach: 'TEACH', guided: 'GUIDED PRACTICE', solve: '
 export const ASK_FIELDS = ['technique', 'tip', 'english', 'speed', 'rails', 'rail', 'diamond'];
 export const STAGE_TYPES = ['lesson', 'practice', 'test', 'final'];
 export const MARKER_KINDS = ['reference', 'aim', 'contact', 'target'];
-export const SPEED_MIN = 0.5;
+export const SPEED_MIN = 0.25;
+export const SPEED_STEP = 0.25; // v11.1: quarter steps (older 0.5-step content stays valid)
 export const SPEED_MAX = 5;
 export const DEFAULT_TOLERANCE = { pass: 0.2, close: 0.5 };
 const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -207,7 +208,7 @@ const tips = (min, max) => (v, p, c) => {
 };
 function speedVal(v, p, c) {
   if (typeof v !== 'number' || !Number.isFinite(v)) return void c.err(p, 'must be a Pool IQ SPEED number, e.g. 1.5');
-  if (v < SPEED_MIN || v > SPEED_MAX || Math.abs(v * 2 - Math.round(v * 2)) > 1e-9) return void c.err(p, `SPEED ${v} is not on the Pool IQ SPEED scale (${SPEED_MIN.toFixed(1)}–${SPEED_MAX.toFixed(1)} in steps of 0.5)`);
+  if (v < SPEED_MIN - 1e-9 || v > SPEED_MAX + 1e-9 || Math.abs(v * 4 - Math.round(v * 4)) > 1e-9) return void c.err(p, `SPEED ${v} is not on the Pool IQ SPEED scale (${SPEED_MIN.toFixed(2)}–${SPEED_MAX.toFixed(2)} in steps of 0.25, e.g. 1.25 or 1.5)`);
   return v;
 }
 const zone = (v, p, c) => {

@@ -473,7 +473,7 @@ function solveRunner(ctx, env, spec) {
     const rows = [];
     if (ask.includes('technique')) rows.push(`<div class="plRow"><span>Technique</span><div class="chips">${TECHNIQUES.map((t) => `<button type="button" class="chip${d.technique === t.id ? ' active' : ''}" data-action="cs-tech" data-v="${t.id}">${t.label}</button>`).join('')}</div></div>`);
     if (ask.includes('english')) rows.push(`<div class="plRow"><span>English</span><div class="chips">${[[-0.5, 'Left'], [0, 'None'], [0.5, 'Right']].map(([h, l]) => `<button type="button" class="chip${d.eng === h ? ' active' : ''}" data-action="cs-eng" data-v="${h}">${l}</button>`).join('')}</div></div>`);
-    if (ask.includes('speed')) rows.push(`<div class="plRow"><span>SPEED</span><div class="chips">${SPEED_STEPS.map((s) => `<button type="button" class="chip${d.speed === s ? ' active' : ''}" data-action="cs-speed" data-v="${s}">${formatSpeed(s)}</button>`).join('')}</div></div>`);
+    if (ask.includes('speed')) rows.push(`<div class="plRow"><span>SPEED</span><div class="chips oneLine speedRow" data-speed-row>${SPEED_STEPS.map((s) => `<button type="button" class="chip${d.speed === s ? ' active' : ''}" data-action="cs-speed" data-v="${s}">${formatSpeed(s)}</button>`).join('')}</div></div>`);
     if (ask.includes('rails')) rows.push(`<div class="plRow"><span>Rails</span><div class="chips">${RAIL_CHOICES.map((n) => `<button type="button" class="chip${d.rails === n ? ' active' : ''}" data-action="cs-rails" data-v="${n}">${n}</button>`).join('')}</div></div>`);
     const tip = ask.includes('tip') ? `<div class="plTip"><div class="plBall" data-action="cs-tip">${cueBallSVG(d.touched ? { vTips: d.vTips, hTips: d.hTips } : null, { size: 'sm', interactive: true, id: 'csBall' })}</div><span>Tap the cue ball: tip</span><b data-tip-pick>${d.touched ? esc(contactText(d.vTips, d.hTips)) : '—'}</b></div>` : '';
     if (tip) rows.splice(0, rows.length, `<div class="plSplit">${tip}<div class="plRows">${rows.join('')}</div></div>`);
@@ -542,7 +542,14 @@ function solveRunner(ctx, env, spec) {
     if (ui.child) return ui.child.onAction(action, el, e);
     switch (action) {
       case 'cs-tech': ui.d.technique = el.dataset.v; render(); return true;
-      case 'cs-speed': ui.d.speed = Number(el.dataset.v); render(); return true;
+      case 'cs-speed': {
+        const sl = el.closest('[data-speed-row]')?.scrollLeft || 0;
+        ui.d.speed = Number(el.dataset.v);
+        render();
+        const row = document.querySelector('[data-speed-row]');
+        if (row) row.scrollLeft = sl;
+        return true;
+      }
       case 'cs-rails': ui.d.rails = Number(el.dataset.v); render(); return true;
       case 'cs-eng': ui.d.eng = Number(el.dataset.v); render(); return true;
       case 'cs-tip': {

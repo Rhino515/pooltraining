@@ -100,7 +100,7 @@ A `shot` describes one table layout and how to play it. It maps 1:1 to Pool IQ's
 | Field | Req. | Type / range | Meaning |
 |---|---|---|---|
 | `cueBallPosition` | **yes** | point | exactly **one** cue ball |
-| `speed` | **yes** | 0.5–5 in steps of 0.5 | Pool IQ **SPEED** (see §4) |
+| `speed` | **yes** | 0.25–5 in steps of 0.25 (0.5 steps still valid) | Pool IQ **SPEED** (see §4) |
 | `ballPositions` | no | ≤15 × `{"n":1-15,"x","y"}` | numbered object balls; each number once |
 | `blockers` | no | ≤15 × `{"n","x","y"}` | balls that are in the way (drawn with a red ring); numbers must not repeat object balls |
 | `targetBall` | no | 1–15 | must be one of `ballPositions` |
@@ -138,19 +138,47 @@ complete expected layout, so a future camera result source can compare expected 
 
 ## 4. SPEED
 
-`speed` uses Pool IQ's numeric **SPEED** scale (the same one the player calibrates in Settings): **SPEED n ≈ n table
-lengths of total cue-ball travel** on a clear table. Allowed values: `0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5`.
+`speed` uses Pool IQ's numeric **SPEED** scale (the same one the player calibrates in Settings and the Shot Simulator
+and Shot Recipe use). Since v11.1:
 
-| SPEED | Meaning |
+**SPEED n = n table lengths of total cue-ball travel, measured from where the cue ball starts.** One length is the
+cushion-to-cushion playing length, and rail rebounds count as part of the travel. The standard start is the **first
+diamond at the shooter's end**, the same lanes the ICA-style cue-ball speed exercise uses. From there every quarter
+step stops on an odd diamond. Diamonds are always counted from the shooter's end rail (1st = the start diamond,
+8th = the far rail), so "before" and "past" the side pockets never depend on which way the ball is rolling.
+
+Allowed values: **0.25 to 5 in steps of 0.25** (`0.25, 0.5, 0.75, 1, 1.25, … 4.75, 5`). Existing 0.5-step content
+(`1`, `1.5`, `2`, …) is unchanged and still valid. The app shows speeds with two decimals, like the ICA indicator
+(`SPEED 1.50`).
+
+| SPEED | Centre-ball lag from the first diamond (the same text the app shows next to every SPEED) |
 |---|---|
-| 0.5 | half a table length — dies around the side pockets |
-| 1 | one table length — just reaches the far rail |
-| 1.5 | far rail and back to the side pockets |
-| 2 | two lengths — far rail and back to the starting end |
-| 3 | three lengths |
-| 5 | five lengths — top of the controlled range |
+| 0.25 | Rolls up the table. Stops on the 3rd diamond from your end, just before it reaches the side pockets. |
+| 0.50 | Rolls up the table. Stops on the 5th diamond from your end, just past the side pockets. |
+| 0.75 | Rolls up the table. Stops on the 7th diamond from your end, 1 diamond short of the far rail. |
+| 1.00 | Up to the far rail and back. Stops on the 7th diamond from your end, 1 diamond off the far rail. |
+| 1.25 | Up to the far rail and back. Stops on the 5th diamond from your end, just before it reaches the side pockets. |
+| 1.50 | Up to the far rail and back. Stops on the 3rd diamond from your end, just past the side pockets on the way back to you. |
+| 1.75 | Up to the far rail and back. Stops on the 1st diamond from your end, back on the start spot. |
+| 2.00 | Up, back off your end rail, and out again. Stops on the 1st diamond from your end, right back on the start spot. |
+| 2.25 | Up, back off your end rail, and out again. Stops on the 3rd diamond from your end, just before it reaches the side pockets. |
+| 2.50 | Up, back off your end rail, and out again. Stops on the 5th diamond from your end, just past the side pockets. |
+| 2.75 | Up, back off your end rail, and out again. Stops on the 7th diamond from your end, 1 diamond short of the far rail. |
+| 3.00 | Up and back, then up and back again. Stops on the 7th diamond from your end, 1 diamond off the far rail. |
+| 3.25 | Up and back, then up and back again. Stops on the 5th diamond from your end, just before it reaches the side pockets. |
+| 3.50 | Up and back, then up and back again. Stops on the 3rd diamond from your end, just past the side pockets on the way back to you. |
+| 3.75 | Up and back, then up and back again. Stops on the 1st diamond from your end, back on the start spot. |
+| 4.00 | Up and back twice, then out again. Stops on the 1st diamond from your end, right back on the start spot. |
+| 4.25 | Up and back twice, then out again. Stops on the 3rd diamond from your end, just before it reaches the side pockets. |
+| 4.50 | Up and back twice, then out again. Stops on the 5th diamond from your end, just past the side pockets. |
+| 4.75 | Up and back twice, then out again. Stops on the 7th diamond from your end, 1 diamond short of the far rail. |
+| 5.00 | Up and back twice, then up and back again. Stops on the 7th diamond from your end, 1 diamond off the far rail. |
 
-Any other number (e.g. `1.7`, `6`, `"medium"`) is rejected: `SPEED 1.7 is not on the Pool IQ SPEED scale (0.5–5.0 in steps of 0.5)`.
+Every mini-table diagram in the app marks the same stop diamond (`STOP · 3rd diamond`). Real cushions soak up a little
+pace, so on most tables a stroke finishes slightly shorter than the text until the player calibrates (Settings → SPEED
+calibration stores a personal factor per speed).
+
+Any other number (e.g. `1.1`, `1.7`, `6`, `"medium"`) is rejected: `SPEED 1.7 is not on the Pool IQ SPEED scale (0.25–5.00 in steps of 0.25, e.g. 1.25 or 1.5)`.
 
 ---
 
@@ -319,7 +347,7 @@ field, for example `shot.ballPositions[1]: must be a ball {"n": 1, "x": …, "y"
 | Overlapping balls | `ball 1 and ball 2 overlap (centres 1.20 apart, need at least 2.25)` |
 | Ball numbers | `must be a whole number from 1 to 15` · `ball 3 is used twice — every ball number (1–15) can appear only once` |
 | Cue ball | `must be ONE point {"x": …, "y": …} — a layout has exactly one cue ball` · `the cue ball goes in cueBallPosition, not in the numbered balls` |
-| SPEED | `SPEED 1.7 is not on the Pool IQ SPEED scale (0.5–5.0 in steps of 0.5)` |
+| SPEED | `SPEED 1.7 is not on the Pool IQ SPEED scale (0.25–5.00 in steps of 0.25, e.g. 1.25 or 1.5)` |
 | Tip | `must be in ¼-tip steps (e.g. 0, 0.25, 0.5, 1)` |
 | Zones | `each star value (1, 2, 3) can be used only once` · `"zone" scoring needs at least one target zone in shot.targetZones` |
 | Scoring | `pass.made: must be between 1 and the number of attempts (10)` · `attempts: must be a whole number from 1 to 50` |
@@ -427,8 +455,8 @@ My Drills. Pool IQ **backup files** are rejected here (restore them from Setting
 > `id` = lowercase-with-dashes; `contentVersion` = "1.0". Table coordinates: x 0 (head rail, left) → 100 (foot rail),
 > y 0 (top rail) → 50 (bottom rail); 1 diamond = 12.5; ball centres between 1.125 and 98.875 (x) / 48.875 (y), at least
 > 2.25 apart; pockets TL TM TR BL BM BR; rails top bottom left right; you may write points as {"dx","dy"} in diamonds.
-> Exactly one `cueBallPosition`; numbered balls 1–15, each once. `speed` ∈ {0.5,1,…,5} (Pool IQ SPEED = table lengths of
-> cue-ball travel). `cueContact` vTips −1.5…1.5, hTips −1…1 in ¼ steps. Scoring: {"mode":"success","attempts":N,
+> Exactly one `cueBallPosition`; numbered balls 1–15, each once. `speed` ∈ {0.25,0.5,0.75,…,5} (quarter steps; Pool IQ SPEED n =
+> n table lengths of total cue-ball travel from where the cue ball starts). `cueContact` vTips −1.5…1.5, hTips −1…1 in ¼ steps. Scoring: {"mode":"success","attempts":N,
 > "pass":{"made":M}} with 1 ≤ M ≤ N ≤ 50. Only use the fields listed in the schema. Plain text only — no HTML, links other
 > than one http/https `attribution.sourceURL`, or code. Do **not** invent named systems or claim an author; if the content
 > is illustrative, say so in the description; leave `attribution.author` out when unknown. Rail/diamond answers and paths

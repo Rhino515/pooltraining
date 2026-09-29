@@ -25,7 +25,7 @@ export const RANK_REQUIREMENTS = [
   { rank: 6, name: 'Master', requirements: [GH(6, 5), L('landing', 8), L('draw', 7), L('follow', 7), L('stun', 7), L('speed', 7), L('bank', 7), L('kick', 6), L('train', 7), L('carom', 4), L('pattern', 3), L('rail', 3), BOSS(6)] },
   { rank: 7, name: 'Elite', requirements: [GH(7, 7), L('landing', 9), L('draw', 8), L('follow', 8), L('stun', 8), L('speed', 8), L('bank', 8), L('kick', 7), L('train', 8), L('safety', 6), L('carom', 5), L('pattern', 4), L('rail', 4), L('sniper', 7), BOSS(7)] },
   { rank: 8, name: 'Pro', requirements: [GH(8, 7), L('landing', 10), L('draw', 9), L('stun', 9), L('speed', 9), L('kick', 8), L('carom', 6), L('pattern', 5), L('rail', 5), L('sniper', 8), { type: 'pb', game: 'bank', key: 'endlessBest', value: 1000, label: 'Bank Vault Endless: 1,000 points' }, BOSS(8)] },
-  { rank: 9, name: 'Champion', requirements: [GH(9, 9), L('kick', 9), L('carom', 7), L('rail', 6), { type: 'pb', game: 'train', key: 'perfectRuns', value: 3, label: 'Position Train: 3 perfect runs' }, { type: 'stars', total: 240, label: 'Earn 240 Arcade stars' }, BOSS(9)] }
+  { rank: 9, name: 'Champion', requirements: [GH(9, 9), L('kick', 9), L('carom', 7), L('rail', 6), { type: 'pb', game: 'train', key: 'perfectRuns', value: 3, label: 'Position Train: 3 perfect runs' }, { type: 'stars', total: 240, label: 'Earn 240 Table Games stars' }, BOSS(9)] }
 ];
 
 export function ghostWins(state, balls = null) {
@@ -37,7 +37,7 @@ export function requirementLabel(req) {
   if (req.type === 'gameLevel') return `${getGame(req.game)?.name || req.game} Level ${req.level}`;
   if (req.type === 'ghost') return `Defeat the ${req.balls}-Ball Ghost (race to ${req.race})`;
   if (req.type === 'boss') return `Boss Battle: beat ${bossForRank(req.rank)?.name || 'the boss'}`;
-  if (req.type === 'stars') return `Earn ${req.total} Arcade stars`;
+  if (req.type === 'stars') return `Earn ${req.total} Table Games stars`;
   return 'Requirement';
 }
 
@@ -64,7 +64,7 @@ export function requirementLink(req, state) {
         const st = nextOpenStage(state, u.game);
         return { href: st ? `#play/${u.game}/${st.id}` : `#game/${u.game}`, text: `Unlock via ${unlockLabel(req.game)}` };
       }
-      return { href: '#arcade', text: 'Unlock in Arcade' };
+      return { href: '#arcade', text: 'Unlock in Table Games' };
     }
     const st = nextOpenStage(state, req.game);
     return st ? { href: `#play/${req.game}/${st.id}`, text: `${getGame(req.game).name} · ${st.name}` } : { href: `#game/${req.game}`, text: getGame(req.game).name };
@@ -75,7 +75,7 @@ export function requirementLink(req, state) {
     return { href: `#boss/${b.id}`, text: b.name };
   }
   if (req.type === 'pb') return { href: req.game === 'bank' ? '#play/bank/endless' : `#game/${req.game}`, text: getGame(req.game)?.name };
-  return { href: '#arcade', text: 'Arcade' };
+  return { href: '#arcade', text: 'Table Games' };
 }
 
 export function requirementChecklist(rankIndex, state) {
@@ -128,7 +128,7 @@ export function nextRankInfo(state) {
 /** The single next thing to do on the Career path */
 export function nextUp(state) {
   const info = nextRankInfo(state);
-  if (!info.next) return { done: true, title: 'Champion', text: 'Every rank earned. Replay the Arcade for personal bests.', href: '#arcade' };
+  if (!info.next) return { done: true, title: 'Champion', text: 'Every rank earned. Replay the Table Games for personal bests.', href: '#arcade' };
   const open = info.checklist.filter((c) => !c.met);
   const nonBoss = open.filter((c) => c.type !== 'boss');
   const item = nonBoss[0] || open[0];

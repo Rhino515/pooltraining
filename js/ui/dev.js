@@ -46,7 +46,7 @@ export function renderDev(state) {
       <button type="button" class="linkish" data-action="dev-change">Change passcode</button></div>
     ${state.devSeed ? `<div class="card devBanner" data-dev-seed>TEST STATE ACTIVE · ${esc(state.devSeed.label)}<button type="button" class="bigBtn" data-action="dev-restore-real">RESTORE MY REAL PROGRESS</button><small class="muted">Anything played while the test state is active is discarded when you restore.</small></div>` : ''}
     <h2>Edit built-in content</h2>
-    <div class="card devCard"><p class="muted small">Edits are saved as a local override layer keyed by content id — the built-in files never change. RESET TO ORIGINAL removes an override. (The built-in drill library is empty and Learn lessons are not built yet; Arcade stages with a single shot can be edited.)</p>
+    <div class="card devCard"><p class="muted small">Edits are saved as a local override layer keyed by content id — the built-in files never change. RESET TO ORIGINAL removes an override. (Built-in drills are edited in their source files and Learn lessons are not built yet; Table Games stages with a single shot can be edited.)</p>
       <div class="devGames">${GAMES.filter((g) => !g.special).map((g) => { const n = ov.filter((o) => o.id.startsWith(`stage:${g.id}:`)).length; return `<button type="button" class="chip" data-action="go" data-href="#devgame/${g.id}">${g.icon} ${esc(g.name)}${n ? ` <b class="gold">${n}</b>` : ''}</button>`; }).join('')}</div>
       <div class="kv"><span>Overrides</span><b data-override-count="${ov.length}">${ov.length}</b></div>
       <button type="button" class="bigBtn alt" data-action="dev-export" ${ov.length ? '' : 'disabled'}>EXPORT OVERRIDES (.pooliq pack)</button>

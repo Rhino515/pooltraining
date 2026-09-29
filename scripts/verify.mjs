@@ -1,7 +1,7 @@
 /**
  * Pool IQ headless verification (Node 18+, no dependencies).
  *   node scripts/verify.mjs
- * Checks: drill library (0+ drills), stage/boss geometry, why-text uniqueness, engine scoring,
+ * Checks: drill library (built-in Three-Lane Speed Exercise + saved drills), stage/boss geometry, why-text uniqueness, engine scoring,
  * unlock rules, Ghost undo, career requirements, boss pass/fail, skill ratings and storage migration.
  */
 import { pathToFileURL } from 'url';
@@ -178,8 +178,8 @@ assert(fieldDupes.length <= Math.ceil(stageCount * 0.1), `route/aim explanations
   const c = cbd.cueBallSVG({ vTips: -1, hTips: 0.5 }, { size: 'lg' });
   const m = c.match(/class="cb-dot"[^>]*cx="([\d.]+)"[^>]*cy="([\d.]+)"/) || c.match(/cx="([\d.]+)" cy="([\d.]+)"[^>]*class="cb-dot"/);
   assert(m && Math.abs(+m[1] - (50 + 0.5 * cbd.TIP_UNIT)) < 0.2 && Math.abs(+m[2] - (50 + 1 * cbd.TIP_UNIT)) < 0.2, 'contact dot sits 1 tip low, ½ tip right');
-  assert(speed.speedLabel(2) === 'SPEED 2.0', 'speed label format');
-  assert(speed.formatSpeed(2.5) === '2.5', 'formatSpeed');
+  assert(speed.speedLabel(2) === 'SPEED 2.00' && speed.speedLabel(1.25) === 'SPEED 1.25', 'speed label format (two decimals, like the ICA indicator)');
+  assert(speed.formatSpeed(2.5) === '2.50' && speed.formatSpeed(0.75) === '0.75', 'formatSpeed (two decimals)');
   let cal = speed.defaultCalibration();
   for (let i = 0; i < 3; i++) cal = speed.recordCalibration(cal, 2, 1.7);
   assert(speed.personalFactor(cal, 2) > 1 && /short/.test(speed.calibrationAdvice(cal, 2)), 'calibration: coming up short raises the personal factor and advice says "short"');
@@ -349,7 +349,7 @@ assert(fieldDupes.length <= Math.ceil(stageCount * 0.1), `route/aim explanations
   assert(lag && aimV.aimViewInfo(lag) === null && (recipe.recipeGaugesHTML(lag).match(/class="gauge /g) || []).length === 2, 'no object ball (lag) → aim view hidden, 2 gauges');
   const lz = reg.getStage('landing', 'lz-1');
   const gh = recipe.recipeGaugesHTML(lz);
-  assert((gh.match(/class="gauge /g) || []).length === 3 && /class="aim-view[^"]*"[^>]*data-cut="30" data-side="right"/.test(gh) && gh.includes('Right ½') && gh.includes('cb-dot') && gh.includes('Speed 1.0'), 'gauge card: Aim View (Right ½, 30°) · tip · speed dial');
+  assert((gh.match(/class="gauge /g) || []).length === 3 && /class="aim-view[^"]*"[^>]*data-cut="30" data-side="right"/.test(gh) && gh.includes('Right ½') && gh.includes('cb-dot') && gh.includes(`Speed ${speed.formatSpeed(lz.speed)}`), 'gauge card: Aim View (Right ½, 30°) · tip · speed dial');
   const hid = recipe.recipeGaugesHTML(lz, { hideAim: true });
   assert(!/data-cut=/.test(hid) && hid.includes('Your aim'), 'coaching hides the aim value (no numbers leak)');
   assert(recipe.speedAngle(0.5) === -135 && recipe.speedAngle(5) === 135 && Math.abs(recipe.speedAngle(2.75)) < 1e-9, 'speed dial needle maps SPEED 0.5–5.0 onto −135°…+135°');
@@ -750,7 +750,7 @@ let state = storage.defaultState();
   CD.upsertCustomDrill(ch);
   drillsMod.refreshCustomDrills();
   const got = drillsMod.getDrillById(ch.id);
-  assert(!!got && got.custom && drillsMod.allDrills().length === drills.length + 1 && drills.length === 0, 'saved drill merges into the (empty) built-in library via allDrills()/getDrillById()');
+  assert(!!got && got.custom && drillsMod.allDrills().length === drills.length + 1 && drills.length === 1 && drills[0].id === 'three-lane-speed', 'saved drill merges into the built-in library (Three-Lane Speed Exercise) via allDrills()/getDrillById()');
   const svg = stageTable.renderStageTable(got);
   assert(/<svg/.test(svg) && (svg.match(/class="ball[ "]/g) || []).length >= 3 && /diamond-grid/.test(svg) && /zone-ring/.test(svg), 'custom drill renders: table, grid, 3 balls, zone rings');
   const stage = engine.stageFor({ gameId: 'drills', stageId: ch.id });
@@ -1158,6 +1158,13 @@ let state = storage.defaultState();
     const r2 = V1(JSON.stringify(dshort));
     assert(r2.ok && r2.doc.shot.cueBallPosition.x === 50 && r2.doc.shot.cueBallPosition.y === 35, 'diamond shorthand {dx, dy} converts to canonical table units (1 diamond = 12.5)');
   }
+  // v11.1: quarter-step SPEED values are valid; existing 0.5-step content still is
+  {
+    const base = JSON.parse(ex['demo-single-drill.pooliq']);
+    const okFor = (v) => { const d = clone(base); d.shot.speed = v; const r = V1(JSON.stringify(d)); return r.ok; };
+    assert([0.25, 1.25, 1.75, 2.75, 4.75].every(okFor), 'schema: quarter-step SPEED values (0.25, 1.25, 1.75, 2.75, 4.75) validate');
+    assert([0.5, 1, 1.5, 2, 2.5, 3, 5].every(okFor) && V1(ex['demo-single-drill.pooliq']).ok, 'schema: existing 0.5-step SPEED content still validates');
+  }
   // invalid files
   {
     const base = JSON.parse(ex['demo-single-drill.pooliq']);
@@ -1173,6 +1180,8 @@ let state = storage.defaultState();
       ['ball 16', (d) => { d.shot.ballPositions[0].n = 16; }, /1 to 15/],
       ['SPEED 1.7', (d) => { d.shot.speed = 1.7; }, /not on the Pool IQ SPEED scale/],
       ['SPEED 6', (d) => { d.shot.speed = 6; }, /SPEED scale/],
+      ['SPEED 1.1', (d) => { d.shot.speed = 1.1; }, /steps of 0\.25/],
+      ['SPEED 0.1', (d) => { d.shot.speed = 0.1; }, /SPEED scale/],
       ['SPEED text', (d) => { d.shot.speed = 'medium'; }, /SPEED number/],
       ['pass > attempts', (d) => { d.scoringRules.pass.made = 12; }, /between 1 and the number of attempts/],
       ['attempts 0', (d) => { d.scoringRules.attempts = 0; }, /whole number from 1 to 50/],
@@ -1782,10 +1791,173 @@ let state = storage.defaultState();
   const pb2 = VLT.parseBackup(JSON.stringify(newBackup));
   assert(pb2.keys.poolIQFriendsV1 && pb2.summary.pvp === fd.matches.length && pb2.summary.friends > 0, 'vault: v11 backup summary counts friends + friend matches');
   assert(!VLT.parseBackup(JSON.stringify({ ...newBackup, keys: { ...newBackup.keys, poolIQFriendsV1: { nope: 1 } } })).keys.poolIQFriendsV1, 'vault: a damaged friends key is dropped (rest restores)');
-  assert(VLT.APP_VERSION === '11', 'vault: APP_VERSION is 11');
+  assert(VLT.APP_VERSION === '11.1', 'vault: APP_VERSION is 11.1');
   // docs exist
   for (const f of ['docs/RANKING_AND_XP.md', 'docs/SKILL_GATES_AND_PROMOTIONS.md', 'docs/FRIENDS_AND_TOURNAMENTS.md', 'docs/DEV_MODE.md']) assert(fs.existsSync(path.join(root, f)), `doc present: ${f}`);
   store.clear();
+}
+
+// ---------------------------------------------------------------- v11.1: speed scale, mini diagram, tip clock, preview, Three-Lane drill, Table Games
+{
+  const fsm = (await import('fs')).default;
+  const P = await import(js('sim/physics.js'));
+  const PV = await import(js('sim/preview.js'));
+  const SD = await import(js('games/speedDiagram.js'));
+  const RK = await import(js('progression/rank.js'));
+  const LAY = await import(js('sim/layouts.js'));
+  const { geometryProblems } = await import(pathToFileURL(path.join(root, 'scripts', 'geometryCheck.mjs')).href);
+  const src = (f) => fsm.readFileSync(path.join(root, f), 'utf8');
+
+  // speed meanings: one plain meaning per quarter step, stop diamond counted from your end rail
+  const T = Object.fromEntries(speed.speedTable().map((r) => [r.label, r.text]));
+  assert(Object.keys(T).length === 20 && T['0.25'] && T['5.00'], 'speed table: 20 quarter steps 0.25 … 5.00');
+  assert(T['1.50'] === 'Up to the far rail and back. Stops on the 3rd diamond from your end, just past the side pockets on the way back to you', `SPEED 1.50 meaning: 3rd diamond from your end, just past the side pockets on the way back ("${T['1.50']}")`);
+  assert(T['1.25'] === 'Up to the far rail and back. Stops on the 5th diamond from your end, just before it reaches the side pockets', `SPEED 1.25 meaning: 5th diamond, just before it reaches the side pockets ("${T['1.25']}")`);
+  assert(/out again\. Stops on the 5th diamond from your end, just past the side pockets$/.test(T['2.50']) && /up and back again\. Stops on the 7th diamond from your end, 1 diamond off the far rail$/.test(T['3.00']) && /Stops on the 1st diamond from your end, right back on the start spot$/.test(T['2.00']), 'SPEED 2.00 / 2.50 / 3.00 meanings (1st / 5th / 7th diamond from your end)');
+  const wordProbs = [];
+  for (const sp of speed.SPEED_STEPS) {
+    const t = T[speed.formatSpeed(sp)];
+    const pth = speed.speedPath(sp);
+    const m = /^[^.]+\. Stops on the ([1-7])(st|nd|rd|th) diamond from your end(, [^.]+)?$/.exec(t);
+    const svgS = SD.speedDiagramSVG(sp);
+    if (!m) { wordProbs.push(`${sp}: "${t}" does not name the stop diamond`); continue; }
+    if (Number(m[1]) !== pth.diamond) wordProbs.push(`${sp}: text says diamond ${m[1]}, rule says ${pth.diamond}`);
+    if (!svgS.includes(`data-stop-diamond="${pth.diamond}"`) || !svgS.includes(`STOP · ${m[1]}${m[2]} diamond`) || !svgS.includes(`sm-dnum sm-dnum-stop" x="${pth.diamond * 12.5}"`)) wordProbs.push(`${sp}: mini diagram STOP marker is not on diamond ${m[1]}`);
+    const g = SD.speedDiagramGeometry(sp);
+    if (Math.abs(g.end.x - pth.diamond * 12.5) > 1.2) wordProbs.push(`${sp}: STOP ring at x ${g.end.x}`);
+    if (t.length > 130) wordProbs.push(`${sp}: too long (${t.length})`);
+    if (/reaches the side pockets/.test(t) && !((pth.diamond === 3 && pth.outward) || (pth.diamond === 5 && !pth.outward))) wordProbs.push(`${sp}: "before it reaches the side pockets" used for the wrong side`);
+    if (/just past the side pockets/.test(t) && !((pth.diamond === 5 && pth.outward) || (pth.diamond === 3 && !pth.outward))) wordProbs.push(`${sp}: "just past the side pockets" used for the wrong side`);
+  }
+  assertAll('every speed meaning names its stop diamond from your end, matches the mini diagram STOP marker, and says before / past the side pockets the right way for the direction of travel', wordProbs);
+  assert(new Set(Object.values(T)).size === 20, 'every speed meaning is unique');
+  assert(speed.SPEED_STEPS.every((s) => { const p = speed.speedPath(s); return Math.abs(p.diamond - Math.round(p.diamond)) < 1e-9 && Math.round(p.diamond) % 2 === 1; }), 'from the first diamond every quarter step stops on an odd diamond (1, 3, 5, 7)');
+  assert(Math.abs(speed.travelFromStop(2, 3) - 1.5) < 1e-9 && speed.lagEndpoint(1.5).diamond === 3 && speed.lagEndpoint(1.5).leg === 2, 'calibration helpers measure from the start spot (pass 2, diamond 3 = 1.50 lengths)');
+  // simulator: SPEED n = n lengths of total travel from the start spot, and the stop matches the meaning
+  const simStop = (s) => P.simulate([{ id: 'cue', x: 12.5, y: 25 }], { aim: 0, speed: s }, { record: false, maxTime: 60 }).final[0].x / 12.5;
+  const simErr = speed.SPEED_STEPS.filter((s) => s >= 0.5).map((s) => [s, simStop(s), speed.speedPath(s).diamond]).filter(([, a, b]) => Math.abs(a - b) > 0.15);
+  assertAll('simulator lag from the first diamond stops on the diamond the speed meaning names (every quarter step 0.50–5.00, ±0.15 diamond)', simErr.map(([s, a, b]) => `SPEED ${s}: sim ${a.toFixed(2)} vs rule ${b}`));
+  assert(Math.abs(simStop(1.5) - 3) < 0.15 && Math.abs(simStop(2.5) - 5) < 0.15 && Math.abs(simStop(3) - 7) < 0.15, `simulator: SPEED 1.50 → 3rd diamond (${simStop(1.5).toFixed(2)}), 2.50 → 5th (${simStop(2.5).toFixed(2)}), 3.00 → 7th (${simStop(3).toFixed(2)})`);
+  // lag builder agrees with the simulator / rule
+  const lagProbs = [];
+  for (const st of reg.getStages('speed').filter((x) => x.kind === 'lag' && x.id !== 'sp-6')) {
+    const end = st.cueBallPath[st.cueBallPath.length - 1];
+    if (Math.abs(end.x / 12.5 - speed.speedPath(st.speed, st.cueBallPosition.x / 12.5).diamond) > 0.15) lagProbs.push(`${st.id}: stop ${end.x}`);
+    if (st.cueBallPosition.x !== 12.5) lagProbs.push(`${st.id}: starts at x=${st.cueBallPosition.x}, not the first diamond`);
+  }
+  assertAll('Speed Ladder lags start on the first diamond and their stop zones sit where the speed rule says (±0.15 diamond; lanes are angled slightly)', lagProbs);
+  assert(/Back to the 3rd Diamond/.test(reg.getStage('speed', 'sp-2').name) && /Far Rail Again/.test(reg.getStage('speed', 'sp-5').name) && reg.getStage('speed', 'sp-2').instructions.includes(speed.speedMeaning(1.5)), 'Speed Ladder stage names and texts follow the new meanings (1.50 — Back to the 3rd Diamond)');
+  // quarter steps everywhere speed is chosen
+  const allSpeeds = [...reg.allStages(), ...reg.getBosses().flatMap((b) => b.shots.map((x) => x.challenge))].filter((c) => c && typeof c.speed === 'number').map((c) => c.speed);
+  assert(allSpeeds.every((v) => Math.abs(v * 4 - Math.round(v * 4)) < 1e-9) && allSpeeds.some((v) => v % 0.5 !== 0), 'recipe speeds use quarter steps (some stages now call for x.25 / x.75)');
+  assert(allSpeeds.every((v) => coaching.SPEED_CHOICES.includes(v)) && coaching.SPEED_CHOICES.length === 19, 'coaching planner offers every quarter step 0.50–5.00, so every recipe speed can be answered exactly');
+  // saved calibration from before v11.1 keeps working
+  const oldCal = { tableSize: 9, cloth: 'normal', results: { '2.0': [{ actual: 1.7, date: '2026-01-01' }], '1.5': [{ actual: 1.5, date: '2026-01-01' }] }, factors: { '2.0': 1.18, '1.5': 1 }, updatedAt: '2026-01-01' };
+  assert(speed.personalFactor(oldCal, 2) === 1.18 && speed.calLookup(oldCal.results, 2).length === 1 && /short/.test(speed.calibrationAdvice(oldCal, 2)), 'old calibration keys ("2.0") still drive the personal factor and advice');
+  const c2 = speed.recordCalibration(oldCal, 2, 1.9);
+  const c3 = speed.recordCalibration(c2, 1.25, 1.2);
+  assert(c2.results['2.0'].length === 2 && !c2.results['2.00'] && c3.results['1.25'].length === 1 && c3.factors['1.25'] > 1, 'new calibration shots append to the old key; quarter steps get their own key');
+  // mini diagram
+  const d15 = SD.speedDiagramSVG(1.5);
+  const d7 = SD.speedDiagramSVG(7);
+  assert(/data-rails="1"/.test(d15) && /data-stop-diamond="3"/.test(d15) && (d15.match(/class="sm-turn"/g) || []).length === 1 && /STOP · 3rd diamond/.test(d15) && /START/.test(d15), 'mini diagram: SPEED 1.50 draws 1 numbered turn and STOP · 3rd diamond');
+  assert(/data-rails="7"/.test(d7) && (d7.match(/class="sm-turn"/g) || []).length === 7, 'mini diagram: SPEED 7.00 draws 7 numbered turns');
+  const lz = reg.getStage('landing', 'lz-1');
+  const card = recipe.recipeCardHTML(lz);
+  assert(/data-speed-diagram="/.test(card) && card.includes(recipe.esc(speed.speedMeaning(lz.speed))), 'Shot Recipe speed row: plain meaning + mini-table diagram');
+  const dial = recipe.speedDialSVG(2);
+  assert((dial.match(/class="sd-tick/g) || []).length === 19 && (dial.match(/sd-tick major/g) || []).length === 5, `speed dial ticks every 0.25 (19 ticks, 5 major)`);
+  assert(recipe.speedChip(1.25).includes(`title="${speed.speedMeaning(1.25)}"`) && recipe.speedChip(1.25).includes('SPEED 1.25'), 'SPEED chip tooltip is the same plain meaning as the speed table');
+  // tip clock (Andrew's tipClockLabel reused)
+  assert(recipe.tipClockLabel(1, 1, { oclock: true }) === "1:30 o'clock" && recipe.tipClockLabel(0, 0, { oclock: true }) === 'Center' && recipe.tipClockLabel(-1, 0, { oclock: true }) === "6:00 o'clock", "tip clock: 1:30 o'clock / Center / 6:00 o'clock");
+  const ghTip = recipe.recipeGaugesHTML({ ...lz, cueContact: { vTips: 1, hTips: 1 } }).replace(/\s+/g, ' ');
+  assert(/<b> Top Right <\/b> <small class="tipClock" data-tip-clock>1:30 o(&#39;|')clock<\/small>/.test(ghTip), 'Shot Recipe tip gauge: clock reading right under the tip text');
+  assert(/Cue-ball contact<\/span><b>[^<]*<small class="tipClock" data-tip-clock>/.test(recipe.recipeCardHTML(lz)), 'Shot Recipe card: clock reading under the cue-ball contact text');
+  // tip picker pop-up helpers (pure): miscue limit, quarter grid, offsets text, quarter-tip wording
+  const TP = await import(js('ui/tipPicker.js'));
+  const TX = await import(js('games/text.js'));
+  const lim = [[3, 3], [-3, 0.2], [0.4, -2.2], [1.5, 1.5], [0, 0]].map(([v, h]) => TP.snapTips(v, h));
+  assert(lim.every((t) => Math.hypot(t.vTips, t.hTips) <= TP.MISCUE_LIMIT_TIPS + 1e-9 && Math.abs(t.vTips * 4 - Math.round(t.vTips * 4)) < 1e-9 && Math.abs(t.hTips * 4 - Math.round(t.hTips * 4)) < 1e-9), `tip picker: values stay inside the 1½-tip miscue limit on a ¼-tip grid (${lim.map((t) => `${t.vTips},${t.hTips}`).join(' ')})`);
+  assert(TP.snapTips(0.1, 2, { maxH: 1 }).hTips === 1 && TP.snapTips(1, 1).vTips === 1 && TP.snapTips(1, 1).hTips === 1, 'tip picker: per-axis limit (drill builder side spin ±1) and exact 1·1 top-right');
+  assert(TP.tipOffsetText(1, -0.25) === '↑ 1 · ← 0.25 tips' && TP.tipOffsetText(0, 0) === 'Offset 0 · 0 tips', 'tip picker: offsets text');
+  assert(TX.fracTips(0.25) === '¼' && TX.fracTips(0.5) === '½' && TX.fracTips(1.25) === '1¼' && TX.fracTips(1.5) === '1½' && TX.contactText(0.05, 0) === 'Center ball' && TX.contactText(-0.75, 0.25) === '¾ tip below center, ¼ tip right', 'quarter tips read as ¼ / ¾ (not rounded up to ½)');
+  // full-path preview = the real shot
+  const cases = [
+    { name: 'SPEED 7 into a rail (multi-rail kick)', lay: [{ id: 'cue', x: 25, y: 25 }, { id: 1, x: 62.5, y: 18.75 }], shot: { aim: 60, speed: 7 } },
+    { name: 'SPEED 4 with right english off two rails', lay: [{ id: 'cue', x: 20, y: 40 }], shot: { aim: 30, speed: 4, hTips: 1, vTips: 0.5 } },
+    { name: 'cut into a pocket with draw', lay: [{ id: 'cue', x: 30, y: 30 }, { id: 1, x: 80, y: 12 }], shot: { speed: 2.5, vTips: -1 } },
+    { name: '9-ball break at SPEED 6', lay: LAY.rackLayout(9, 3), shot: { aim: 0, speed: 6 } }
+  ];
+  cases[2].shot.aim = P.ghostAim(cases[2].lay[0], cases[2].lay[1], 'TR').aim;
+  const pvProbs = [];
+  let multi = null;
+  let potted = null;
+  for (const c of cases) {
+    const shot = { vTips: 0, hTips: 0, ...c.shot };
+    shot.V = P.speedToV0(shot.speed);
+    const pv = PV.runPreview(c.lay, shot);
+    const real = P.simulate(c.lay, { aim: shot.aim, V: shot.V, vTips: shot.vTips, hTips: shot.hTips }, { maxTime: 40 }); // what SHOOT runs
+    const paths = PV.previewPaths(pv);
+    if (pv.truncated) pvProbs.push(`${c.name}: preview hit the step cap`);
+    for (const b of real.final) {
+      const p = paths.find((x) => String(x.id) === String(b.id));
+      const q = pv.final.find((x) => String(x.id) === String(b.id));
+      if (Math.abs(q.x - b.x) > 1e-9 || Math.abs(q.y - b.y) > 1e-9 || q.pocket !== b.pocket) pvProbs.push(`${c.name}: ball ${b.id} preview ${q.x},${q.y} vs shot ${b.x},${b.y}`);
+      if (p && (p.end.type === 'pocket' ? p.end.pocket !== b.pocket : Math.hypot(p.end.x - b.x, p.end.y - b.y) > 1e-9)) pvProbs.push(`${c.name}: drawn end of ${b.id} differs from the shot`);
+      const l0 = c.lay.find((l) => String(l.id) === String(b.id));
+      if (!p && (b.pocket || Math.hypot(b.x - l0.x, b.y - l0.y) > 0.05)) pvProbs.push(`${c.name}: moving ball ${b.id} has no preview path`);
+    }
+    if (c.name.startsWith('SPEED 7')) multi = paths.find((x) => x.role === 'cue');
+    if (c.name.startsWith('cut')) potted = paths.find((x) => x.id === 1);
+  }
+  assertAll('full-path preview: final positions and pockets match the real SHOOT result exactly (4 layouts incl. SPEED 7 and a break)', pvProbs);
+  assert(multi && multi.rails.length >= 3 && multi.rails.every((r, i) => r.n === i + 1), `SPEED 7 toward a rail: preview shows ${multi?.rails.length} numbered rail contacts (≥ 3)`);
+  const svg7 = PV.previewSVG(PV.previewPaths(PV.runPreview(cases[0].lay, { aim: 60, V: P.speedToV0(7) })));
+  assert((svg7.match(/class="pv-rail pv-rail-cue"/g) || []).length >= 3 && /data-end="(pocket|stop)"/.test(svg7) && /data-tag="(POCKET|SCRATCH|STOP)"/.test(svg7) && /pv-path pv-cue/.test(svg7), 'preview SVG: cue path, numbered rail labels, end marker with a POCKET / SCRATCH / STOP tag');
+  assert(potted && potted.end.type === 'pocket' && potted.end.pocket === 'TR' && PV.endTag(potted) === 'POCKET' && /data-tag="POCKET"/.test(PV.previewSVG([potted])), 'preview marks a potted object ball with the pocket highlight + POCKET tag');
+  const missPath = { ...potted, end: { type: 'stop', x: 70, y: 20 } };
+  assert(PV.endTag(missPath, { aimBall: 1, aimPocket: 'TR' }) === 'MISS' && PV.endTag({ ...missPath, role: 'cue', id: 'cue' }) === 'STOP', 'preview tags an aimed object ball that stays up as MISS, a resting cue ball as STOP');
+  assert(PV.previewSVG(PV.previewPaths(PV.runPreview(cases[2].lay, { aim: cases[2].shot.aim, V: P.speedToV0(2.5), vTips: -1 }))).includes('pv-path pv-ob'), 'object-ball path has its own style (pv-ob)');
+  const tBreak = Date.now();
+  PV.runPreview(LAY.rackLayout(8, 3), { aim: 0, V: P.speedToV0(7) });
+  const dtB = Date.now() - tBreak;
+  assert(dtB < 400, `preview of a 15-ball break at SPEED 7 stays fast (${dtB} ms in Node; throttled to one run per ${PV.PREVIEW_THROTTLE_MS} ms in the app)`);
+  const simSrc = src('js/ui/simulator.js');
+  assert(/PV\.runPreview\(layout\(\), previewShot\(\)\)/.test(simSrc) && /aim: st\.shot\.aim, V: effectiveV\(\), vTips: st\.shot\.vTips, hTips: st\.shot\.hTips/.test(simSrc), 'simulator: preview and SHOOT use the same layout, aim, launch speed and tip');
+  // Three-Lane Speed Exercise
+  const tl = drillsMod.getDrillById('three-lane-speed');
+  assert(tl && tl.category === 'Speed Control' && tl.lanes.length === 3 && tl.lanes.map((l) => l.speed).join() === '1.5,2.5,3' && tl.lanes.every((l) => l.cueBallPosition.x === 12.5) && tl.lanes.map((l) => l.cueBallPosition.y).join() === '12.5,25,37.5', 'Three-Lane drill: left/center/right lanes start on the first diamond at SPEED 1.50 / 2.50 / 3.00');
+  assert(tl.lanes.every((l) => Math.abs(l.targetZones[0].x / 12.5 - speed.speedPath(l.speed).diamond) < 0.12 && l.targetZones[0].type === 'rings' && l.cueContact.vTips === 0 && l.cueContact.hTips === 0), 'Three-Lane drill: target circles on the 3rd / 5th / 7th diamond from your end (the rule stops), centre ball');
+  assert(tl.credit === "Inspired by Ron the Pool Student's ICA cue-ball speed exercise." && tl.instructions.includes(tl.credit), 'Three-Lane drill: credit line in the drill notes');
+  assert([1.5, 2.5, 3].every((v) => tl.instructions.includes(speed.speedMeaning(v))) && tl.lanes.every((l, i) => l.goal.includes(`on the ${['3rd', '5th', '7th'][i]} diamond from your end`)), 'Three-Lane drill uses the same speed meanings as the speed table');
+  assert(geometryProblems(tl).length === 0 && tl.lanes.every((l) => geometryProblems(l).length === 0), 'Three-Lane drill: geometry checks pass (drill + every lane)');
+  let ts = engine.newSession('drills', 'three-lane-speed');
+  const lanesSeen = [];
+  for (let i = 0; i < 15; i++) {
+    const ev = engine.evaluateSession(ts, tl);
+    lanesSeen.push(engine.currentChallenge(ts, tl, ev).lane.index);
+    ts = engine.recordAttempt(ts, { stars: i < 10 ? 2 : i < 14 ? 1 : 2 });
+  }
+  const evTL = engine.evaluateSession(ts, tl);
+  assert(lanesSeen.join('') === '000001111122222' && evTL.over && evTL.laneStars.join() === '10,10,6' && !evTL.passed, 'Three-Lane drill: 5 attempts per lane in order; 6★ in one lane fails even with 26★ total');
+  let ts2 = engine.newSession('drills', 'three-lane-speed');
+  for (let i = 0; i < 15; i++) ts2 = engine.recordAttempt(ts2, { stars: i % 5 < 2 ? 2 : 1 });
+  const ev2 = engine.evaluateSession(ts2, tl);
+  assert(ev2.passed && ev2.laneStars.every((x) => x === 7) && ev2.needText === '7★ in each lane', 'Three-Lane drill: 7★ in every lane passes');
+  const fin = engine.finishSession(storage.defaultState(), ts2);
+  assert(fin.state.prog && fin.state.prog.drillXp > 0 && fin.state.prog.lifetimeXp > 0 && RK.drillRankStatus(fin.state).have.passed === 1, `Three-Lane drill earns Lifetime XP, Drill XP (${fin.state.prog?.drillXp}) and a Drill Rank pass`);
+  // Table Games rename (internal ids unchanged)
+  const idx = src('index.html');
+  assert(/<span>Table Games<\/span>/.test(idx) && !/Arcade/.test(idx) && /data-page="arcade"/.test(idx), 'bottom nav says Table Games (internal page id arcade kept)');
+  const dash = await import(js('dashboard.js'));
+  const hub = dash.renderArcade(storage.defaultState());
+  assert(hub.includes('TABLE GAMES') && !/Arcade/.test(hub), 'Table Games hub never says Arcade');
+  const userJs = ['js/dashboard.js', 'js/career.js', 'js/ghost.js', 'js/ui/progression.js', 'js/ui/dev.js', 'js/ui/play.js', 'js/app.js', 'js/skills.js'].map((f) => src(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/\/\/ [^'"`\n]*$/gm, '')).join('\n');
+  const leftovers = (userJs.replace(/renderArcade|arcade/g, '').match(/.{0,40}\bArcade\b.{0,40}/g) || []);
+  assertAll('no user-visible "Arcade" text left in the UI modules', leftovers);
+  assert(/'tablegames'/.test(src('js/app.js')) && /Table Games stars/.test(src('js/career.js')), 'Table Games: #tablegames alias route; career text renamed');
+  assert(/SPEED n = n table lengths of total cue-ball travel/.test(src('POOLIQ_CONTENT_SCHEMA.md')) && src('POOLIQ_CONTENT_SCHEMA.md').includes(speed.speedMeaning(1.5)) && src('POOLIQ_CONTENT_SCHEMA.md').includes(speed.speedMeaning(1.25)), 'schema doc section 4 has the v11.1 speed definition and meaning table');
+  assert(/v11\.1/.test(src('README.md')) && /Table Games/.test(src('README.md')) && src('README.md').includes(speed.speedMeaning(1.5)), 'README has the v11.1 changelog');
 }
 
 console.log('\n--- Summary ---');

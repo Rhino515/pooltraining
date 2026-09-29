@@ -1,6 +1,6 @@
 /**
  * Progression catalog — maps every piece of trainable content to { tier, skill weights, mastery rule, XP metadata }.
- * Built-in Arcade stages/bosses/Ghost use the central rules in config.js (GAME_SKILLS, STRAIGHT_RULE, overrides,
+ * Built-in Table Games stages/bosses/Ghost use the central rules in config.js (GAME_SKILLS, STRAIGHT_RULE, overrides,
  * TIER_BY_DIFFICULTY). Drills, Create Drill drills and .pooliq content expose their own metadata (difficulty, skills,
  * primarySkill, secondarySkills, skillWeights, baseXP, mastery, rankXpEligible) — the ranking engine never hard-codes content.
  *

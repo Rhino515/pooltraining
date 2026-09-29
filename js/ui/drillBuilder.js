@@ -9,10 +9,12 @@
  * EXPORT .pooliq. Custom drills can be exported as .pooliq too.
  */
 import { renderStageTable, legendHTML } from '../games/stageTable.js';
-import { recipeGaugesHTML, whyHTML, setupLineHTML, esc } from '../games/recipe.js';
-import { cueBallSVG, tipsFromTap } from '../games/cueBallDiagram.js';
+import { recipeGaugesHTML, whyHTML, setupLineHTML, esc, tipClockLabel } from '../games/recipe.js';
+import { cueBallSVG } from '../games/cueBallDiagram.js';
+import { openTipPicker, closeTipPicker, tipPickerOpen } from './tipPicker.js';
 import { contactText } from '../games/text.js';
-import { speedMeaning } from '../games/speed.js';
+import { speedMeaning, speedLabel, formatSpeed } from '../games/speed.js';
+import { speedDiagramSVG } from '../games/speedDiagram.js';
 import { toDiamonds, fmtDiamond } from '../games/diamonds.js';
 import { BALL_COLORS, POCKETS } from '../tableDiagram.js';
 import { SKILL_NAMES } from '../storage.js';
@@ -282,8 +284,8 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
         <div class="dbRow"><span class="lbl">Ring size</span><div class="chips">${Object.keys(CD.ZONE_SIZES).map((k) => `<button type="button" class="chip${b.zoneSize === k ? ' active' : ''}" data-action="db-zsize" data-k="${k}">${k === 'S' ? 'Small' : k === 'M' ? 'Medium' : 'Large'} (3★ ${CD.ZONE_SIZES[k][2]}")</button>`).join('')}</div></div>
         <small class="muted">${b.zones.length ? `${b.zones.length} zone${b.zones.length > 1 ? 's' : ''} — drag the dot in the middle to move one.` : 'No zone: the drill is scored on the pot only (or quality stars).'}</small>`, 'dbZones'),
       routeSection(),
-      section('3 · Shot recipe', `<div class="simTipSpeed"><button type="button" class="simTip" data-action="db-tip" aria-label="Cue-ball tip">${cueBallSVG(b.tip, { size: 'sm', interactive: true, id: 'dbTipBall' })}<small>${esc(contactText(b.tip.vTips, b.tip.hTips))}</small></button>
-        <div class="simSpeed"><div class="spRow"><button type="button" class="spBtn" data-action="db-speed" data-v="-0.5" aria-label="Slower">−</button><b data-speed="${b.speed.toFixed(1)}">SPEED ${b.speed.toFixed(1)}</b><button type="button" class="spBtn" data-action="db-speed" data-v="0.5" aria-label="Faster">+</button></div><small>${esc(speedMeaning(b.speed))}</small></div></div>
+      section('3 · Shot recipe', `<div class="simTipSpeed"><button type="button" class="simTip" data-action="db-tip" aria-label="Cue-ball tip">${cueBallSVG(b.tip, { size: 'sm', interactive: true, id: 'dbTipBall' })}<small>${esc(contactText(b.tip.vTips, b.tip.hTips))}</small><small class="tipClock" data-tip-clock>${esc(tipClockLabel(b.tip.vTips, b.tip.hTips, { oclock: true }))}</small></button>
+        <div class="simSpeed"><div class="spRow"><button type="button" class="spBtn" data-action="db-speed" data-v="-0.25" aria-label="Slower">−</button><b data-speed="${formatSpeed(b.speed)}">${speedLabel(b.speed)}</b><button type="button" class="spBtn" data-action="db-speed" data-v="0.25" aria-label="Faster">+</button></div><small>${esc(speedMeaning(b.speed))}</small>${speedDiagramSVG(b.speed)}</div></div>
         <div class="dbRow"><span class="lbl">Aim</span><div class="chips"><button type="button" class="chip" data-action="db-aim" data-v="-0.5">−0.5°</button><button type="button" class="chip" data-action="db-aim" data-v="-0.1">−0.1°</button><span class="aimOff">${b.aimOffset ? `${b.aimOffset > 0 ? '+' : ''}${f2(b.aimOffset)}° from auto` : 'auto (throw-compensated)'}</span><button type="button" class="chip" data-action="db-aim" data-v="0.1">+0.1°</button><button type="button" class="chip" data-action="db-aim" data-v="0.5">+0.5°</button></div></div>
         <div class="dbRow"><span class="lbl">Technique</span><div class="chips" data-tech-chips><button type="button" class="chip${!b.technique ? ' active' : ''}" data-action="db-tech" data-v="">Auto</button>${TECHNIQUES.map((t) => `<button type="button" class="chip${b.technique === t ? ' active' : ''}" data-action="db-tech" data-v="${t}">${esc(techniqueName(t))}</button>`).join('')}</div></div>
         <div class="dbRow"><span class="lbl">English</span><div class="chips" data-eng-chips><button type="button" class="chip${!b.englishType ? ' active' : ''}" data-action="db-eng" data-v="">Auto (from tip)</button>${ENGLISH_TYPES.map((t) => `<button type="button" class="chip${b.englishType === t ? ' active' : ''}" data-action="db-eng" data-v="${t}">${t === 'none' ? 'None' : t[0].toUpperCase() + t.slice(1)}</button>`).join('')}</div></div>
@@ -746,11 +748,24 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
       case 'db-zone-clear': b.zones = []; if (b.scoring.mode === 'zone') b.scoring = { ...b.scoring, mode: 'binary' }; ui.sel = null; ui.dirty = true; refresh(); return true;
       case 'db-zsize': b.zoneSize = el.dataset.k; ui.dirty = true; refresh(); return true;
       case 'db-tip': {
-        const svg = ctx.root.querySelector('#dbTipBall');
-        if (svg && e) { b.tip = tipsFromTap(svg, e.clientX, e.clientY); ui.dirty = true; refresh(); }
+        // v11.1: compact drag-to-set pop-up (side spin limited to ±1 tip like the .pooliq schema)
+        if (tipPickerOpen()) return true;
+        openTipPicker({
+          anchor: el,
+          vTips: b.tip.vTips,
+          hTips: b.tip.hTips,
+          maxV: 1.5,
+          maxH: 1,
+          onChange: (t) => {
+            if (destroyed) return;
+            b.tip = { vTips: t.vTips, hTips: t.hTips };
+            ui.dirty = true;
+            refresh();
+          }
+        });
         return true;
       }
-      case 'db-speed': b.speed = Math.max(0.5, Math.min(5, Math.round((b.speed + Number(el.dataset.v)) * 2) / 2)); ui.dirty = true; refresh(); return true;
+      case 'db-speed': b.speed = Math.max(0.25, Math.min(5, Math.round((b.speed + Number(el.dataset.v)) * 4) / 4)); ui.dirty = true; refresh(); return true;
       case 'db-aim': b.aimOffset = Math.max(-5, Math.min(5, Math.round(((Number(b.aimOffset) || 0) + Number(el.dataset.v)) * 100) / 100)); ui.dirty = true; refresh(); return true;
       case 'db-route': b.showRoute = b.showRoute === false; ui.dirty = true; refresh(); return true;
       case 'db-level': b.difficulty = Number(el.dataset.v); ui.touched.add('difficulty'); ui.dirty = true; refresh(); return true;
@@ -781,7 +796,7 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
   return {
     render,
     onAction,
-    destroy() { destroyed = true; },
+    destroy() { destroyed = true; closeTipPicker(); },
     get builder() { return b; },
     get contentDoc() { return cm ? contentDoc() : null; },
     get isDirty() { return ui.dirty; }

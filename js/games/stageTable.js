@@ -125,7 +125,15 @@ export function renderStageTable(ch, opt = {}) {
       for (const m of st.railContacts || []) over += railMarkSVG(m);
     }
   }
-  const cp = o.allSteps ? [] : src.cueBallPath || [];
+  // v11.1 multi-lane drills: every lane's start spot and route (overview diagram)
+  if (ch.laneOverlay && o.showCuePath) {
+    for (const l of ch.laneOverlay) {
+      if (l.path?.length >= 2) under += `<path class="cue-path cue-route lane-route" data-lane="${l.key}" d="${pathD(l.path)}" fill="none" stroke="#f2fdff" stroke-width="0.38" stroke-linecap="round" stroke-linejoin="round" opacity="${l.active === false ? 0.3 : l.active ? 0.95 : 0.7}" marker-end="url(#cueArrow)"/>`;
+      if (l.start && (l.start.x !== ch.cueBallPosition?.x || l.start.y !== ch.cueBallPosition?.y)) over += `<circle class="lane-start" data-lane="${l.key}" cx="${f(l.start.x)}" cy="${f(l.start.y)}" r="${BR}" fill="#f7fbff" stroke="#062a32" stroke-width="0.25"/>`;
+    }
+    for (const z of ch.targetZones || []) if (z.label) over += `<text class="lane-label" x="${f(z.x)}" y="${f(z.y + 0.6)}" text-anchor="middle" font-size="1.7" font-weight="900" fill="#062a32" font-family="system-ui,sans-serif">${z.label}</text>`;
+  }
+  const cp = o.allSteps || ch.laneOverlay ? [] : src.cueBallPath || [];
   const ci = src.contactIndex ?? ch.contactIndex ?? 1;
   if (cp.length >= 2 && (o.showAim || o.showCuePath)) {
     const pre = cp.slice(0, ci + 1);

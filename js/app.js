@@ -1,6 +1,6 @@
 /**
  * Pool IQ — hash router / boot.
- * Routes: #home #career #drills #analyze #arcade #profile (#stats alias) #settings
+ * Routes: #home #career #drills #analyze #arcade (shown as "Table Games"; #tablegames alias) #profile (#stats alias) #settings
  *         #ghost[/balls/race] #ghostmatch #game/<id> #play/<game>/<stage> #boss/<id> #bossplay/<id>
  *         #sim[/s=<code>|/target] (Shot Simulator) #drillnew[/fromsim] #drilledit/<id> (Create Drill)
  *         #content (My Content) #cimport (import error) #cview/<ref> #cplay/<ref>[/<stage>] #cedit/<uid>[/<loc>]  (.pooliq content, ui/content.js)
@@ -91,7 +91,7 @@ function parseHash() {
   return { name: name || 'home', args };
 }
 
-const NAV_FOR = { gate: 'career', promo: 'career', champion: 'career', training: 'career', skill: 'profile', skills: 'profile', me: 'profile', drillrank: 'drills', friends: 'arcade', friend: 'arcade', h2h: 'arcade', fmatch: 'arcade', fsession: 'arcade', tourney: 'arcade', tnew: 'arcade', dev: 'profile', devgame: 'profile', devedit: 'profile', devkeys: 'profile', content: 'drills', cimport: 'drills', cview: 'drills', cplay: 'drills', cedit: 'drills', sim: 'sim', drillnew: 'drills', drilledit: 'drills', home: 'home', career: 'career', drills: 'drills', analyze: 'analyze', arcade: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
+const NAV_FOR = { gate: 'career', promo: 'career', champion: 'career', training: 'career', skill: 'profile', skills: 'profile', me: 'profile', drillrank: 'drills', friends: 'arcade', friend: 'arcade', h2h: 'arcade', fmatch: 'arcade', fsession: 'arcade', tourney: 'arcade', tnew: 'arcade', dev: 'profile', devgame: 'profile', devedit: 'profile', devkeys: 'profile', content: 'drills', cimport: 'drills', cview: 'drills', cplay: 'drills', cedit: 'drills', sim: 'sim', drillnew: 'drills', drilledit: 'drills', home: 'home', career: 'career', drills: 'drills', analyze: 'analyze', arcade: 'arcade', tablegames: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
 
 function setChrome(playing, navName) {
   document.body.classList.toggle('playing', playing);
@@ -209,7 +209,7 @@ function renderRoute() {
   else if (name === 'analyze') {
     v.innerHTML = renderAnalyzePage();
     bindAnalyzeHandlers(v);
-  } else if (name === 'arcade') v.innerHTML = renderArcade(state);
+  } else if (name === 'arcade' || name === 'tablegames') v.innerHTML = renderArcade(state);
   else if (name === 'profile' || name === 'stats') v.innerHTML = renderProfile(state);
   else if (name === 'settings') {
     v.innerHTML = renderSettings(state, settingsInfo());

@@ -1,6 +1,6 @@
 /**
  * v11 progression migration — computes Lifetime XP, Rank XP, mastery and skill records from EXISTING history
- * (Arcade stage histories, drill histories, Ghost matches, Boss Battles) on first load. Idempotent + versioned
+ * (Table Games stage histories, drill histories, Ghost matches, Boss Battles) on first load. Idempotent + versioned
  * (state.prog.v = PROGRESSION_VERSION); app.js snapshots the data via the vault first.
  * Never demotes: the named Career rank is untouched; this rank's ball level comes from the replayed Rank XP
  * beyond the totals of the ranks below it (0 → 1-ball). Stage history keeps the last 20 sessions per stage;

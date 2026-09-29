@@ -16,7 +16,7 @@ DEV MODE is a hidden set of tools for building and testing content on your own d
 
 | Tool | What it does |
 |---|---|
-| **Built-in content overrides** (`#devgame/<game>`) | Opens any single-shot Arcade stage in the drill builder. Saving stores an **override layer** in `poolIQDevOverridesV1`; the built-in source files are never edited. Overridden stages show a DEV badge. **RESET TO ORIGINAL** removes one override. Calibration, ladder and train stages can't be edited. |
+| **Built-in content overrides** (`#devgame/<game>`) | Opens any single-shot Table Games stage in the drill builder. Saving stores an **override layer** in `poolIQDevOverridesV1`; the built-in source files are never edited. Overridden stages show a DEV badge. **RESET TO ORIGINAL** removes one override. Calibration, ladder and train stages can't be edited. |
 | **Export overrides** | Downloads every override as one `.pooliq` pack (stage ids `ov--<game>--<stage>`). Importing that pack in DEV MODE applies the overrides again. |
 | **My Content without restrictions** | While unlocked, pack stages are all playable (no unlock order) and installed content can be edited. |
 | **Mark content official / eligible** | Sets `metadata.official`, `careerEligible` and `rankXpEligible` on installed content. The content is still validated. |

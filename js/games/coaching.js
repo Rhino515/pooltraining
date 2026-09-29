@@ -35,7 +35,8 @@ export const TECHNIQUES = [
   { id: 'follow', label: 'Follow' },
   { id: 'draw', label: 'Draw' }
 ];
-export const SPEED_CHOICES = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5];
+/** Planner speed choices: quarter steps 0.50–5.00 (v11.1), matching the recipe's quarter-step speeds */
+export const SPEED_CHOICES = Array.from({ length: 19 }, (_, i) => 0.5 + i * 0.25);
 export const RAIL_CHOICES = [0, 1, 2, 3, 4];
 
 export function techniqueGroup(t) {

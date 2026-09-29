@@ -13,11 +13,14 @@ import * as S from '../sim/solver.js';
 import * as SH from '../sim/share.js';
 import * as LIB from '../sim/library.js';
 import { aimFromPoints, aimViewSVG, fullnessWord } from '../games/aimView.js';
-import { cueBallSVG, tipsFromTap } from '../games/cueBallDiagram.js';
+import { cueBallSVG } from '../games/cueBallDiagram.js';
+import { openTipPicker, closeTipPicker, tipPickerOpen } from './tipPicker.js';
 import { toDiamonds, fmtDiamond } from '../games/diamonds.js';
 import { contactText } from '../games/text.js';
-import { speedMeaning, personalFactor } from '../games/speed.js';
-import { esc } from '../games/recipe.js';
+import { speedMeaning, personalFactor, formatSpeed, speedLabel } from '../games/speed.js';
+import { esc, tipClockLabel } from '../games/recipe.js';
+import { speedDiagramSVG } from '../games/speedDiagram.js';
+import * as PV from '../sim/preview.js';
 import { openSheet, closeSheet, toast, stars } from './sheet.js';
 import { lsSet } from '../storage.js';
 
@@ -136,6 +139,52 @@ export function createSimScreen(ctx, args = []) {
     return { ...a, ob: { n: pred.ball.id, x: pred.ball.x, y: pred.ball.y }, ghost: pred.ghost, from: cue, frac, label, deg: Math.round(a.theta), plain: `${label} hit`, ballR: R };
   }
 
+  // ------------------------------------------------------------------ v11.1 full-path aim preview
+  // Same physics, same inputs as shoot(): the path shown is where the balls really go at this aim/SPEED/tip.
+  let pvCache = { key: '', res: null, paths: [] };
+  let pvTimer = 0;
+  let pvLastRun = 0;
+  const fullPathOn = () => set.fullPath !== false && !st.game && st.mode === 'edit';
+  function previewShot() {
+    return { aim: st.shot.aim, V: effectiveV(), vTips: st.shot.vTips, hTips: st.shot.hTips };
+  }
+  function previewKey() {
+    return JSON.stringify([layout(), previewShot()]);
+  }
+  function previewData() {
+    if (!fullPathOn() || !cueBall()) return null;
+    const key = previewKey();
+    if (pvCache.key === key) return pvCache;
+    if (L.validateLayout(layout()).length) { pvCache = { key, res: null, paths: [] }; return pvCache; }
+    const res = PV.runPreview(layout(), previewShot());
+    pvLastRun = performance.now();
+    pvCache = { key, res, paths: PV.previewPaths(res) };
+    return pvCache;
+  }
+  function previewLayer() {
+    const d = previewData();
+    if (!d || !d.res) return '';
+    return PV.previewSVG(d.paths, { aimBall: st.aimBall, aimPocket: st.aimPocket, truncated: d.res.truncated });
+  }
+  function previewSummaryText() {
+    const d = pvCache.key === previewKey() ? pvCache : null;
+    if (!d || !d.res) return 'Preview: working…';
+    return PV.previewSummary(d.paths, { aimBall: st.aimBall, aimPocket: st.aimPocket });
+  }
+  /** Throttled redraw while aim / SPEED / tip change (keeps phones smooth: at most one physics run per 80 ms) */
+  function schedulePreview() {
+    if (!fullPathOn()) return;
+    clearTimeout(pvTimer);
+    const wait = Math.max(0, PV.PREVIEW_THROTTLE_MS - (performance.now() - pvLastRun));
+    pvTimer = setTimeout(() => {
+      if (destroyed) return;
+      const g = ctx.root.querySelector('#simPreview');
+      if (g) g.innerHTML = previewLayer();
+      const sm = ctx.root.querySelector('#pvSummary');
+      if (sm) sm.textContent = previewSummaryText();
+    }, wait);
+  }
+
   // ------------------------------------------------------------------ SVG pieces
   function aimOverlay() {
     const cue = cueBall();
@@ -154,11 +203,11 @@ export function createSimScreen(ctx, args = []) {
       }
     } else if (pred?.type === 'rail') {
       const p = pred.point;
-      s += `<line class="aim-line" x1="${f2(cue.x)}" y1="${f2(cue.y)}" x2="${f2(p.x)}" y2="${f2(p.y)}" stroke="#f4fbff" stroke-width="0.32" stroke-dasharray="1 0.6" opacity="0.9"/>`;
+      s += `<line class="aim-line" x1="${f2(cue.x)}" y1="${f2(cue.y)}" x2="${f2(p.x)}" y2="${f2(p.y)}" stroke="#f4fbff" stroke-width="0.32" stroke-dasharray="1 0.6" opacity="${fullPathOn() ? 0.35 : 0.9}"/>`;
       const d = P.aimVector(st.shot.aim);
       const onX = Math.abs(p.x - R) < 0.01 || Math.abs(p.x - (100 - R)) < 0.01;
       const r = onX ? { x: -d.x, y: d.y } : { x: d.x, y: -d.y };
-      s += `<line class="rail-preview" x1="${f2(p.x)}" y1="${f2(p.y)}" x2="${f2(p.x + r.x * 10)}" y2="${f2(p.y + r.y * 10)}" stroke="#f4fbff" stroke-width="0.24" stroke-dasharray="0.5 0.6" opacity="0.5"/>`;
+      if (!fullPathOn()) s += `<line class="rail-preview" x1="${f2(p.x)}" y1="${f2(p.y)}" x2="${f2(p.x + r.x * 10)}" y2="${f2(p.y + r.y * 10)}" stroke="#f4fbff" stroke-width="0.24" stroke-dasharray="0.5 0.6" opacity="0.5"/>`;
     }
     if (st.aimPocket && POCKETS[st.aimPocket]) {
       const pk = POCKETS[st.aimPocket];
@@ -232,7 +281,7 @@ export function createSimScreen(ctx, args = []) {
   function tableSVG() {
     const balls = st.balls.map((b) => ({ id: b.id, x: b.x, y: b.y }));
     const under = `<g id="simZones">${zonesSVG()}</g><g id="simTracks">${st.mode === 'play' ? tracksSVG(frameIndex()) : ''}</g><g id="simUnder">${aimOverlay()}</g>`;
-    let over = `<g id="simAnno">${st.annotations.map(annoSVG).join('')}</g><g id="simDraft"></g>`;
+    let over = `<g id="simPreview">${previewLayer()}</g><g id="simAnno">${st.annotations.map(annoSVG).join('')}</g><g id="simDraft"></g>`;
     if (st.sel != null && st.mode === 'edit') {
       const b = st.balls.find((q) => q.id === st.sel);
       if (b) over += `<circle class="sel-ring" cx="${f2(b.x)}" cy="${f2(b.y)}" r="${R + 0.55}" fill="none" stroke="#55e5ff" stroke-width="0.3" pointer-events="none"/>`;
@@ -249,18 +298,19 @@ export function createSimScreen(ctx, args = []) {
       : pred?.type === 'rail' ? 'Straight to the rail (no ball in line)' : 'Place the cue ball';
     return `<div class="simAim">
       <div class="simAimView">${info ? aimViewSVG(info) : aimViewSVG(null)}</div>
-      <div class="simAimText"><span class="eyebrow">AIM</span><b data-aim="${f2(st.shot.aim)}">${f1(st.shot.aim)}°</b><small>${esc(what)}</small></div>
+      <div class="simAimText"><span class="eyebrow">AIM</span><b data-aim="${f2(st.shot.aim)}">${f1(st.shot.aim)}°</b><small>${esc(what)}</small>${fullPathOn() ? `<small class="pvSummary" id="pvSummary" data-preview-summary>${esc(previewSummaryText())}</small>` : ''}</div>
       <div class="nudges"><button type="button" class="nudge" data-action="sim-nudge" data-v="-1" aria-label="Aim −1°">−1°</button><button type="button" class="nudge" data-action="sim-nudge" data-v="-0.1" aria-label="Aim −0.1°">−.1</button><button type="button" class="nudge" data-action="sim-nudge" data-v="0.1" aria-label="Aim +0.1°">+.1</button><button type="button" class="nudge" data-action="sim-nudge" data-v="1" aria-label="Aim +1°">+1°</button></div>
     </div>`;
   }
   function tipSpeedHTML() {
     const s = st.shot;
     return `<div class="simTipSpeed">
-      <button type="button" class="simTip" data-action="sim-tip" aria-label="Cue-ball tip position">${cueBallSVG({ vTips: s.vTips, hTips: s.hTips }, { size: 'sm', interactive: true, id: 'simTipBall' })}<small data-tip="${s.vTips},${s.hTips}">${esc(contactText(s.vTips, s.hTips))}</small></button>
+      <button type="button" class="simTip" data-action="sim-tip" aria-label="Cue-ball tip position">${cueBallSVG({ vTips: s.vTips, hTips: s.hTips }, { size: 'sm', interactive: true, id: 'simTipBall' })}<small data-tip="${s.vTips},${s.hTips}">${esc(contactText(s.vTips, s.hTips))}</small><small class="tipClock" data-tip-clock>${esc(tipClockLabel(s.vTips, s.hTips, { oclock: true }))}</small></button>
       <div class="simSpeed">
-        <div class="spRow"><button type="button" class="spBtn" data-action="sim-speed" data-v="-0.5" aria-label="Slower">−</button><b data-speed="${s.speed.toFixed(1)}">SPEED ${s.speed.toFixed(1)}</b><button type="button" class="spBtn" data-action="sim-speed" data-v="0.5" aria-label="Faster">+</button></div>
-        <input type="range" class="spRange" id="simSpeedRange" min="0.3" max="${P.SPEED_MAX}" step="0.1" value="${s.speed}" aria-label="Speed"/>
-        <small>${esc(speedMeaning(s.speed))}${set.useCal ? ' · your calibration' : ''}</small>
+        <div class="spRow"><button type="button" class="spBtn" data-action="sim-speed" data-v="-0.25" aria-label="Slower">−</button><b data-speed="${formatSpeed(s.speed)}">${speedLabel(s.speed)}</b><button type="button" class="spBtn" data-action="sim-speed" data-v="0.25" aria-label="Faster">+</button></div>
+        <input type="range" class="spRange" id="simSpeedRange" min="0.3" max="${P.SPEED_MAX}" step="0.05" value="${s.speed}" aria-label="Speed"/>
+        <small class="spMean">${esc(speedMeaning(s.speed))}.${set.useCal ? ' · your calibration' : ''}</small>
+        <div class="spDiagram" id="simSpeedDiagram">${speedDiagramSVG(s.speed)}</div>
       </div>
     </div>`;
   }
@@ -367,6 +417,7 @@ export function createSimScreen(ctx, args = []) {
   function overlayOnly() {
     const u = ctx.root.querySelector('#simUnder');
     if (u) u.innerHTML = aimOverlay();
+    schedulePreview();
     const z = ctx.root.querySelector('#simZones');
     if (z) z.innerHTML = zonesSVG();
     const a = ctx.root.querySelector('.simAim');
@@ -409,11 +460,14 @@ export function createSimScreen(ctx, args = []) {
       r.dataset.bound = '1';
       r.addEventListener('input', () => {
         pushUndo('speed');
-        st.shot.speed = Math.round(Number(r.value) * 10) / 10;
+        st.shot.speed = Math.round(Number(r.value) * 100) / 100;
         const b = ctx.root.querySelector('.simSpeed b');
-        if (b) { b.textContent = `SPEED ${st.shot.speed.toFixed(1)}`; b.dataset.speed = st.shot.speed.toFixed(1); }
+        if (b) { b.textContent = speedLabel(st.shot.speed); b.dataset.speed = formatSpeed(st.shot.speed); }
         const sm = ctx.root.querySelector('.simSpeed small');
-        if (sm) sm.textContent = speedMeaning(st.shot.speed) + (set.useCal ? ' · your calibration' : '');
+        if (sm) sm.textContent = `${speedMeaning(st.shot.speed)}.${set.useCal ? ' · your calibration' : ''}`;
+        const dg = ctx.root.querySelector('#simSpeedDiagram');
+        if (dg) dg.innerHTML = speedDiagramSVG(st.shot.speed);
+        schedulePreview();
         persist();
       });
       r.addEventListener('change', () => {
@@ -685,7 +739,7 @@ export function createSimScreen(ctx, args = []) {
     showFindResults();
   }
   function recipeLine(r) {
-    return `${r.ob} → ${POCKET_WORDS[r.pocket]} · ${contactText(r.shot.vTips, r.shot.hTips)} · SPEED ${r.shot.speed.toFixed(1)} · ${f1(r.miss)}" from target`;
+    return `${r.ob} → ${POCKET_WORDS[r.pocket]} · ${contactText(r.shot.vTips, r.shot.hTips)} · ${speedLabel(r.shot.speed)} · ${f1(r.miss)}" from target`;
   }
   function showFindResults() {
     const out = st.findResults;
@@ -823,14 +877,15 @@ export function createSimScreen(ctx, args = []) {
   function settingsSheet() {
     const tog = (k, label) => `<button type="button" class="chip${set[k] ? ' active' : ''}" data-action="sim-set" data-k="${k}">${label}: ${set[k] ? 'on' : 'off'}</button>`;
     openSheet(`<div class="eyebrow">SIMULATOR SETTINGS</div><h2 class="sheetTitle">Settings</h2>
-      <div class="setRow"><span>Lines</span><div class="chips">${tog('tangent', 'Tangent &amp; object-ball lines')}${tog('paths', 'Ball tracks')}</div></div>
+      <div class="setRow"><span>Lines</span><div class="chips">${tog('fullPath', 'Full path preview')}${tog('tangent', 'Tangent &amp; object-ball lines')}${tog('paths', 'Ball tracks')}</div></div>
+      <p class="muted small">Full path preview runs the real physics at your aim, SPEED and tip: every rail contact is numbered and the end shows POCKET, STOP or MISS — exactly what SHOOT will do. (Hidden during the Target Game.)</p>
       <div class="setRow"><span>Grid</span><div class="chips">${['full', 'half', 'off'].map((g) => `<button type="button" class="chip${set.grid === g ? ' active' : ''}" data-action="sim-set" data-k="grid" data-v="${g}">${g === 'full' ? 'Diamonds' : g === 'half' ? 'Half diamonds' : 'Off'}</button>`).join('')}</div></div>
       <div class="setRow"><span>Placing</span><div class="chips">${tog('snap', 'Snap to ¼ diamond')}</div></div>
       <div class="setRow"><span>Shape zone max cut</span><div class="chips">${[30, 45, 60, 75].map((v) => `<button type="button" class="chip${set.maxCut === v ? ' active' : ''}" data-action="sim-set" data-k="maxCut" data-v="${v}">${v}°</button>`).join('')}</div></div>
       <div class="setRow"><span>Find a Shot</span><div class="chips">${['fast', 'precise'].map((v) => `<button type="button" class="chip${set.findMode === v ? ' active' : ''}" data-action="sim-set" data-k="findMode" data-v="${v}">${v === 'fast' ? 'Speed (quick search)' : 'Precision (thorough)'}</button>`).join('')}</div></div>
       <div class="setRow"><span>Playback</span><div class="chips">${RATES.map((v) => `<button type="button" class="chip${set.playback === v ? ' active' : ''}" data-action="sim-set" data-k="playback" data-v="${v}">${v}×</button>`).join('')}</div></div>
       <div class="setRow"><span>SPEED</span><div class="chips">${tog('useCal', 'Use my speed calibration')}</div></div>
-      <p class="muted small">SPEED n ≈ n table lengths of cue-ball travel (centre ball, clear table) — the same scale as the rest of Pool IQ. With calibration on, the simulator plays YOUR stroke for that number.</p>
+      <p class="muted small">SPEED n = n table lengths of total cue-ball travel from where the cue ball starts (centre ball, clear table; calibrated from the first diamond, rail rebounds included) — the same scale as the rest of Pool IQ. With calibration on, the simulator plays YOUR stroke for that number.</p>
       <button type="button" class="bigBtn" data-action="sheet-close">DONE</button>`, { id: 'simsettings' });
   }
   function saveSheet() {
@@ -966,7 +1021,7 @@ export function createSimScreen(ctx, args = []) {
     g.drawImage(img, 0, 0, W, H);
     g.fillStyle = '#8199aa';
     g.font = '28px system-ui, sans-serif';
-    g.fillText(`Pool IQ · Shot Simulator${st.name ? ` · ${st.name}` : ''} · aim ${f1(st.shot.aim)}° · ${contactText(st.shot.vTips, st.shot.hTips)} · SPEED ${st.shot.speed.toFixed(1)}`, 24, H + 45);
+    g.fillText(`Pool IQ · Shot Simulator${st.name ? ` · ${st.name}` : ''} · aim ${f1(st.shot.aim)}° · ${contactText(st.shot.vTips, st.shot.hTips)} · ${speedLabel(st.shot.speed)}`, 24, H + 45);
     const blob = await new Promise((res) => c.toBlob(res, 'image/png'));
     if (!blob) { toast('Image export is not supported here'); return; }
     const file = typeof File === 'function' ? new File([blob], 'pool-iq-shot.png', { type: 'image/png' }) : null;
@@ -1002,7 +1057,7 @@ export function createSimScreen(ctx, args = []) {
       pockets: [pocket],
       zones: cueEnd && cueEnd.on && pot ? [{ x: f2(cueEnd.x), y: f2(cueEnd.y) }] : [],
       tip: { vTips: Math.max(-1.5, Math.min(1.5, Math.round(st.shot.vTips * 2) / 2)), hTips: Math.max(-1, Math.min(1, Math.round(st.shot.hTips * 2) / 2)) },
-      speed: Math.max(0.5, Math.min(5, Math.round(st.shot.speed * 2) / 2)),
+      speed: Math.max(0.25, Math.min(5, Math.round(st.shot.speed * 4) / 4)),
       fromSim: true
     };
     lsSet(DRAFT_KEY, JSON.stringify(draft));
@@ -1122,20 +1177,28 @@ export function createSimScreen(ctx, args = []) {
         refresh(['table', 'panel']);
         return true;
       case 'sim-tip': {
-        const svg = ctx.root.querySelector('#simTipBall');
-        if (svg && e) {
-          pushUndo('tip');
-          const t = tipsFromTap(svg, e.clientX, e.clientY);
-          st.shot.vTips = t.vTips;
-          st.shot.hTips = t.hTips;
-          relaim();
-          refresh(['table', 'panel']);
-        }
+        // v11.1: compact pop-up next to the small cue ball; drag the dot, the preview line follows live
+        if (tipPickerOpen()) return true;
+        pushUndo('tip');
+        openTipPicker({
+          anchor: el,
+          vTips: st.shot.vTips,
+          hTips: st.shot.hTips,
+          maxV: P.MAX_TIPS_V,
+          maxH: P.MAX_TIPS_H,
+          onChange: (t) => {
+            if (destroyed) return;
+            st.shot.vTips = t.vTips;
+            st.shot.hTips = t.hTips;
+            relaim();
+            refresh(['table', 'panel']);
+          }
+        });
         return true;
       }
       case 'sim-speed':
         pushUndo('speed');
-        st.shot.speed = Math.max(0.3, Math.min(P.SPEED_MAX, Math.round((st.shot.speed + Number(el.dataset.v)) * 10) / 10));
+        st.shot.speed = Math.max(0.25, Math.min(P.SPEED_MAX, Math.round((st.shot.speed + Number(el.dataset.v)) * 4) / 4));
         relaim();
         refresh(['table', 'panel']);
         return true;
@@ -1280,6 +1343,8 @@ export function createSimScreen(ctx, args = []) {
 
   function destroy() {
     destroyed = true;
+    closeTipPicker();
+    clearTimeout(pvTimer);
     cancelAnimationFrame(raf);
     clearInterval(timer);
     if (findSignal) findSignal.cancelled = true;

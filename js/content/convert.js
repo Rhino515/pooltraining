@@ -1,6 +1,6 @@
 /**
  * .pooliq ⇄ Pool IQ challenge objects (pure, no DOM).
- * A .pooliq "shot" uses the exact field names of the challenge data model the drill library, Arcade and
+ * A .pooliq "shot" uses the exact field names of the challenge data model the drill library, Table Games and
  * Create Drill already use (cueBallPosition, ballPositions, targetZones, cueBallPath, cueContact, speed, …),
  * so shotToChallenge() only fills in derived fields (ghost, aim, route, technique) that the file left out.
  */

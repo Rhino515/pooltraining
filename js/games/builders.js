@@ -6,7 +6,7 @@
  */
 import * as G from './geometry.js';
 import * as T from './text.js';
-import { speedLabel, speedMeaning, formatSpeed } from './speed.js';
+import { speedLabel, speedMeaning, formatSpeed, roundQuarter } from './speed.js';
 
 const { R } = G;
 const toBall = (a) => (Array.isArray(a) ? { n: a[0], x: a[1], y: a[2], pocket: a[3] || null } : { ...a });
@@ -199,7 +199,7 @@ function whyPosition(spec, c, ctx) {
 
   const f = energyPct(info, sol.k);
   const cap = info.dCue + sol.travel / f;
-  const step = r0(45 * f);
+  const step = r0(22.5 * f);
   let whySpeed = `${speedLabel(speed)} — ${speedMeaning(speed)}. `;
   if (technique === 'stop') {
     whySpeed += `A stop needs just enough pace to keep the cue ball skidding for all ${r0(info.dCue)} in; any softer and friction turns the skid into roll and the cue ball creeps forward.`;
@@ -213,13 +213,13 @@ function whyPosition(spec, c, ctx) {
       const reason = technique === 'draw'
         ? `draw only works if the cue ball still has backspin when it reaches the ${n}, and a softer stroke lets the cloth wear that spin off on the way`
         : `the cue ball has to reach the ${n} still sliding rather than rolling, and a softer stroke lets it pick up forward roll before contact`;
-      whySpeed += `Distance alone would only take about SPEED ${G.round1(raw).toFixed(1)}, but ${reason}. That is why the recipe calls for ${speedLabel(speed)}.`;
+      whySpeed += `Distance alone would only take about ${speedLabel(Math.max(0.25, roundQuarter(raw)))}, but ${reason}. That is why the recipe calls for ${speedLabel(speed)}.`;
     } else if (raw > speed + 0.25) {
-      whySpeed += `The distance works out to roughly SPEED ${G.round1(raw).toFixed(1)}; this stage sets ${speedLabel(speed)}, so expect to land on the short side of the zone until your calibration says otherwise.`;
+      whySpeed += `The distance works out to roughly ${speedLabel(roundQuarter(raw))}; this stage sets ${speedLabel(speed)}, so expect to land on the short side of the zone until your calibration says otherwise.`;
     } else {
       whySpeed += `That adds up to about ${speedLabel(speed)} on a calibrated table.`;
     }
-    whySpeed += ` Each half-step of speed moves the finish about ${step} in.`;
+    whySpeed += ` Each quarter step of speed moves the finish about ${step} in.`;
   }
   whySpeed += note(spec, 'speed');
 
@@ -262,9 +262,11 @@ export function buildLag(spec, defaults = {}) {
   const cue = G.toPoint(spec.cue || [6.5, 25]);
   const dir = G.norm(G.toPoint(spec.dir || [1, (spec.cue && spec.cue[1] > 25 ? -1 : 1) * 0.045]));
   const speed = spec.speed;
-  // Lag lengths are measured cushion to cushion; a ball starting near the head rail reaches the far cushion at SPEED 1.
+  // v11.1: SPEED n = n table lengths of TOTAL travel measured from where the cue ball starts (one length =
+  // cushion-to-cushion centre travel). From the first diamond, SPEED 1.50 reaches the far rail and comes back
+  // to the 3rd diamond from your end — the same rule the Shot Simulator's speed table is calibrated to.
   const span = G.CUSHION.maxX - G.CUSHION.minX;
-  const travel = Math.max(5, speed * span - Math.max(0, cue.x - G.CUSHION.minX) * (dir.x > 0 ? 1 : 0));
+  const travel = Math.max(5, speed * span);
   const route = G.straightRoute(cue, dir, travel);
   const end = route.points[route.points.length - 1];
   const alongLength = Math.abs(dir.x) > 0.9;
@@ -300,7 +302,7 @@ export function buildLag(spec, defaults = {}) {
   const endTxt = T.areaName(end);
   c.whyExplanation = {
     whyContact: `${T.contactText(c.cueContact.vTips, 0)}: a centre hit rolls the cue ball naturally, so every lag at ${formatSpeed(speed)} behaves the same and the result measures your stroke, not your spin.${note(spec, 'contact')}`,
-    whySpeed: `${speedLabel(speed)} means ${speedMeaning(speed)}: about ${r0(travel)} in of rolling, ${legs ? `rebounding ${legs} time${legs > 1 ? 's' : ''}` : 'with no rebound'} and dying ${endTxt}. Being half a speed step off moves the stop by about ${r0(G.TABLE_LENGTH / 2)} in — four diamonds.${note(spec, 'speed')}`,
+    whySpeed: `${speedLabel(speed)}: ${speedMeaning(speed)}. That is ${formatSpeed(speed)} table lengths — about ${r0(travel)} in of rolling from where the cue ball starts, ${legs ? `rebounding ${legs} time${legs > 1 ? 's' : ''}` : 'with no rebound'} and dying ${endTxt}. Being a quarter step off moves the stop by about ${r0(span / 4)} in — two diamonds.${note(spec, 'speed')}`,
     whySpin: `No sidespin: english changes the rebound angle and the rail's grab, which would blur the speed reading at ${formatSpeed(speed)}.${note(spec, 'spin')}`,
     whyRoute: legs
       ? `The route ${G.railListText(route.contacts)} uses ${legs} cushion${legs > 1 ? 's' : ''}; each rebound costs pace, which is already built into the ${formatSpeed(speed)} number.${note(spec, 'route')}`

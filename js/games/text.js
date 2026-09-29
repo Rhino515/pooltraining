@@ -1,13 +1,13 @@
 /** Pure text helpers for recipes (no DOM). */
 import { POCKET_NAMES, RAILS, round1, DIAMOND } from './geometry.js';
 
+/** "½", "1", "1½" — and since v11.1 (drag-to-set tip picker) quarter tips too: "¼", "¾", "1¼" */
 export function fracTips(v) {
-  const a = Math.abs(v);
-  const whole = Math.floor(a);
-  const half = a - whole >= 0.25;
-  if (!whole && half) return '½';
-  if (whole && half) return `${whole}½`;
-  return String(whole);
+  const q = Math.round(Math.abs(v) * 4) / 4;
+  const whole = Math.floor(q);
+  const frac = { 0: '', 0.25: '¼', 0.5: '½', 0.75: '¾' }[q - whole] ?? '';
+  if (!whole) return frac || '0';
+  return `${whole}${frac}`;
 }
 
 function tipWord(v) {
@@ -17,8 +17,8 @@ function tipWord(v) {
 
 /** "1 tip below center", "Center ball", "½ tip above, ½ tip right" */
 export function contactText(vTips = 0, hTips = 0) {
-  const v = Number(vTips) || 0;
-  const h = Number(hTips) || 0;
+  const v = Math.abs(Number(vTips) || 0) < 0.125 ? 0 : Number(vTips);
+  const h = Math.abs(Number(hTips) || 0) < 0.125 ? 0 : Number(hTips);
   if (!v && !h) return 'Center ball';
   const parts = [];
   if (v) parts.push(`${fracTips(v)} ${tipWord(v)} ${v > 0 ? 'above' : 'below'} center`);

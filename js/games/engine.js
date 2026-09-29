@@ -4,7 +4,7 @@
  * Every attempt carries resultSource ('manual' today; a camera adapter can supply 'camera' later).
  */
 import { getGame, getStages, getStage, stageSpecs, GAMES, getBoss } from './registry.js';
-import { recordCalibration, travelFromStop, lagEndpoint } from './speed.js';
+import { recordCalibration, travelFromStop, lagEndpoint, formatSpeed } from './speed.js';
 import { buildLag } from './builders.js';
 import { getDrillById } from '../drills.js';
 import { awardSession, awardBoss } from '../progression/sessions.js';
@@ -143,7 +143,7 @@ const ladderCache = {};
 export function ladderRungChallenge(speed) {
   const key = String(speed);
   if (!ladderCache[key]) {
-    ladderCache[key] = buildLag({ id: `ladder-${key}`, name: `Ladder SPEED ${speed.toFixed(1)}`, speed, cue: [5, speed % 1 ? 18 : 32], difficulty: Math.round(speed * 2), note: { route: `Rung ${speed.toFixed(1)} of the ladder.` } }, { game: 'speed' });
+    ladderCache[key] = buildLag({ id: `ladder-${key}`, name: `Ladder SPEED ${formatSpeed(speed)}`, speed, cue: [12.5, speed % 1 ? 18 : 32], difficulty: Math.round(speed * 2), note: { route: `Rung ${formatSpeed(speed)} of the ladder.` } }, { game: 'speed' });
   }
   return ladderCache[key];
 }
@@ -193,6 +193,18 @@ export function evaluateSession(session, stage = stageFor(session)) {
     r.passed = r.over && stars >= (pass.stars || 0) && (!requirePocket || pockets >= (pass.pockets || 0));
     r.needText = `${pass.stars || 0}★${requirePocket && pass.pockets ? ` & ${pass.pockets} pots` : ''}`;
     r.progressText = `${stars}★${requirePocket ? ` · ${pockets} pots` : ''}`;
+    // v11.1 multi-lane zone drills (Three-Lane Speed Exercise): perLane attempts in each lane, in order
+    if (rules.lanes && rules.perLane) {
+      const laneStars = Array(rules.lanes).fill(0);
+      A.forEach((a, i) => { laneStars[Math.min(rules.lanes - 1, Math.floor(i / rules.perLane))] += a.stars || 0; });
+      r.laneStars = laneStars;
+      r.lane = Math.min(rules.lanes - 1, Math.floor(A.length / rules.perLane));
+      if (pass.starsPerLane) {
+        r.passed = r.passed && laneStars.every((x) => x >= pass.starsPerLane);
+        r.needText = `${pass.starsPerLane}★ in each lane`;
+      }
+      r.progressText = `Lane ${r.lane + 1}/${rules.lanes} · ${laneStars.map((x) => `${x}★`).join(' · ')}`;
+    }
   } else if (mode === 'lives') {
     const L = rules.lives || 3;
     let made = 0;
@@ -316,7 +328,7 @@ export function evaluateSession(session, stage = stageFor(session)) {
     r.maxScore = rungs.length * 100 + 500;
     r.over = complete || A.length >= N;
     r.passed = complete;
-    r.needText = `reach SPEED ${rungs[rungs.length - 1].toFixed(1)}`;
+    r.needText = `reach SPEED ${formatSpeed(rungs[rungs.length - 1])}`;
     r.progressText = `rung ${Math.min(rung + 1, rungs.length)}/${rungs.length}`;
   } else if (mode === 'calibration') {
     const speeds = stage.speeds;
@@ -447,6 +459,7 @@ export function resultButtons(session, stage, ev = evaluateSession(session, stag
 export function currentChallenge(session, stage, ev = evaluateSession(session, stage)) {
   if (session.endless) return endlessChallenge(session, session.attempts.length);
   if (stage?.kind === 'ladder') return ladderRungChallenge(ev.currentSpeed);
+  if (stage?.lanes?.length) return stage.lanes[Math.min(ev.lane ?? 0, stage.lanes.length - 1)];
   return stage;
 }
 
