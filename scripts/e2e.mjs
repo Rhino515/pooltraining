@@ -2112,18 +2112,8 @@ await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile
     rand: !!document.querySelector('[data-action="sim-rand"]'),
     ico: document.querySelector('nav [data-page="arcade"] svg')?.innerHTML || ''
   }));
-  check(!gone.aim && gone.setup === 0 && gone.scan && gone.cap === 'environment' && gone.run && gone.view && gone.full && gone.rand, 'v14: cleaned simulator still has scan, runout, 3D, full screen and random shot');
+  check(!gone.aim && gone.setup === 0 && gone.scan && gone.cap === 'environment' && gone.run && !gone.view && gone.full && gone.rand, 'v14-5c: simulator has scan, runout, full screen and random shot, and no 3D view button');
   check(!/M7\.4 6\.6/.test(gone.ico) && /rect/.test(gone.ico), 'v14: Table Games nav icon is a table, not the controller');
-  const before = await page.evaluate(() => window.PoolIQ.screen.state.balls.map((b) => ({ ...b })));
-  await tap('[data-action="sim-3d"]');
-  await sleep(250);
-  const d3 = await page.evaluate(() => ({ c: !!document.querySelector('#sim3d'), balls: window.PoolIQ.screen.state.balls.map((b) => b.x + ',' + b.y).join('|') }));
-  check(d3.c && d3.balls === before.map((b) => b.x + ',' + b.y).join('|'), 'v14: 3D view uses the same ball positions');
-  await shot('v14-3d');
-  await tap('[data-action="sim-2d"]');
-  await sleep(150);
-  const back = await page.evaluate(() => ({ svg: !!document.querySelector('#simSvg'), balls: window.PoolIQ.screen.state.balls.map((b) => b.x + ',' + b.y).join('|') }));
-  check(back.svg && back.balls === before.map((b) => b.x + ',' + b.y).join('|'), 'v14: 2D TOP VIEW returns without moving balls');
   await tap('[data-action="sim-full"]');
   await sleep(150);
   const fs = await page.evaluate(() => {
@@ -2184,7 +2174,7 @@ const swOk = await page.evaluate(async () => {
 });
 check(swOk, 'service worker registered and active');
 const cacheName = await page.evaluate(async () => (await caches.keys()).join(','));
-check(/pool-iq-v14-5b/.test(cacheName) && !/pool-iq-v10|pool-iq-v11|pool-iq-v12|pool-iq-v13/.test(cacheName), `cache bumped to pool-iq-v14-5b (${cacheName})`);
+check(/pool-iq-v14-5c/.test(cacheName) && !/pool-iq-v10|pool-iq-v11|pool-iq-v12|pool-iq-v13|pool-iq-v14-5b/.test(cacheName), `cache bumped to pool-iq-v14-5c (${cacheName})`);
 check(await page.evaluate(async () => !!(await caches.match('./js/vendor/supabase.js'))), 'v13: the supabase-js file is precached for offline use');
 await page.setOfflineMode(true);
 await page.goto(BASE + 'index.html#arcade', { waitUntil: 'domcontentloaded' });

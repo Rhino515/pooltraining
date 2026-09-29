@@ -26,7 +26,6 @@ import { lsSet } from '../storage.js';
 import * as TC from '../sim/tableCal.js';
 import { offsetDragPoint } from '../sim/drag.js';
 import { SCAN_PLACE_LABEL, detectBalls, perspectiveWarp, defaultCorners } from '../sim/scan.js';
-import { drawTable3D, pickBall3D, feltFromScreen3D } from '../sim/view3d.js';
 import { planRunoutOptions, groupChoices } from '../sim/runout.js';
 import { SHOT_TYPES, POCKET_CHOICES, generateShot, wayLabel } from '../sim/randomShot.js';
 
@@ -89,9 +88,6 @@ export function createSimScreen(ctx, args = []) {
     placing: null, // 'find' when waiting for a target tap
     game: null,
     full: false,
-    view3d: false,
-    yaw: 0,
-    pitch: 0,
     scan: null,
     runout: null
   };
@@ -164,7 +160,7 @@ export function createSimScreen(ctx, args = []) {
   let pvCache = { key: '', res: null, paths: [] };
   let pvTimer = 0;
   let pvLastRun = 0;
-  const fullPathOn = () => set.fullPath !== false && !st.game && st.mode === 'edit' && !st.runout && !st.scan && !st.view3d;
+  const fullPathOn = () => set.fullPath !== false && !st.game && st.mode === 'edit' && !st.runout && !st.scan;
   function previewShot() {
     return { aim: st.shot.aim, V: effectiveV(), vTips: st.shot.vTips, hTips: st.shot.hTips, table: tableSpec() };
   }
@@ -391,7 +387,7 @@ export function createSimScreen(ctx, args = []) {
   }
   function toolsHTML() {
     if (st.game || st.full) return '';
-    return `<div class="simTools" role="group" aria-label="Simulator tools"><button type="button" data-action="sim-scan">SCAN TABLE</button><button type="button" data-action="sim-runout">RUNOUT</button><button type="button" data-action="sim-3d">3D VIEW</button><button type="button" data-action="sim-full">FULL SCREEN</button><button type="button" data-action="sim-rand">RANDOM SHOT</button></div>`;
+    return `<div class="simTools" role="group" aria-label="Simulator tools"><button type="button" data-action="sim-scan">SCAN TABLE</button><button type="button" data-action="sim-runout">RUNOUT</button><button type="button" data-action="sim-full">FULL SCREEN</button><button type="button" data-action="sim-rand">RANDOM SHOT</button></div>`;
   }
   function previewNote() {
     if (!fullPathOn()) return '';
@@ -426,7 +422,6 @@ export function createSimScreen(ctx, args = []) {
       </div><div class="pbMain${g ? ' one' : ''}">${main}</div></div>`;
     }
     if (st.full) return '';
-    if (st.view3d) return `<div class="simBar"><button type="button" class="bigBtn" data-action="sim-2d">2D TOP VIEW</button><p class="runNote" style="margin:8px 0 0">Drag a ball to move it. Drag the cloth to turn the table.</p></div>`;
     if (st.scan || st.runout) return '';
     return `<div class="simBar"><button type="button" class="toolBtn${st.tool ? ' on' : ''}" data-action="sim-draw" aria-label="Draw on the table">✎<small>Draw</small></button>${st.game ? '' : `<button type="button" class="toolBtn${st.shape ? ' on' : ''}" data-action="sim-shape" aria-label="Shape zone">◭<small>Zone</small></button>`}<button type="button" class="bigBtn shootBtn" data-action="sim-shoot" ${cueBall() ? '' : 'disabled'}>SHOOT ▶</button></div>`;
   }
@@ -436,19 +431,16 @@ export function createSimScreen(ctx, args = []) {
     if (destroyed) return;
     const root = ctx.root;
     document.body.classList.toggle('sim-full', !!st.full);
-    const tableInner = st.view3d
-      ? `<canvas id="sim3d" class="sim3d" aria-label="3D table, behind the cue ball"></canvas>${exitBtn()}`
-      : `${tableSVG()}<div class="dragBubble" id="dragBubble"></div>${exitBtn()}`;
-    root.innerHTML = `<div class="simScreen${st.full ? ' is-full' : ''}${st.view3d ? ' is-3d' : ''}" data-mode="${st.mode}" data-game="${st.game ? 1 : 0}" data-table-ft="${tableSpec().ft}" data-offset-drag="1" data-scan="${st.scan?.phase || ''}" data-runout="${st.runout ? 1 : 0}">
+    const tableInner = `${tableSVG()}<div class="dragBubble" id="dragBubble"></div>${exitBtn()}`;
+    root.innerHTML = `<div class="simScreen${st.full ? ' is-full' : ''}" data-mode="${st.mode}" data-game="${st.game ? 1 : 0}" data-table-ft="${tableSpec().ft}" data-offset-drag="1" data-scan="${st.scan?.phase || ''}" data-runout="${st.runout ? 1 : 0}">
       <div id="simHeadWrap">${headHTML()}</div>
       <div class="simTable" id="simTable">${tableInner}</div>
-      <div id="simSetup">${st.view3d ? '' : tableSizeHTML()}</div>
+      <div id="simSetup">${tableSizeHTML()}</div>
       <div class="simPanel" id="simPanel">${panelHTML()}</div>
       <div id="simBarWrap">${barHTML()}</div>
       <input id="simScanFile" class="srOnly" type="file" accept="image/*" capture="environment" aria-label="Table photo"/>
     </div>`;
     bind();
-    if (st.view3d) requestAnimationFrame(paint3d);
     persist();
   }
   function refresh(parts = 'all') {
@@ -459,19 +451,17 @@ export function createSimScreen(ctx, args = []) {
     scr.dataset.mode = st.mode;
     scr.dataset.game = st.game ? '1' : '0';
     const has = (p) => parts === 'all' || parts.includes(p);
-    if (has('table')) root.querySelector('#simTable').innerHTML = st.view3d ? `<canvas id="sim3d" class="sim3d" aria-label="3D table"></canvas>${exitBtn()}` : `${tableSVG()}<div class="dragBubble" id="dragBubble"></div>${exitBtn()}`;
+    if (has('table')) root.querySelector('#simTable').innerHTML = `${tableSVG()}<div class="dragBubble" id="dragBubble"></div>${exitBtn()}`;
     if (has('table') || has('head')) root.querySelector('#simHeadWrap').innerHTML = headHTML();
-    if (has('table') || has('setup')) root.querySelector('#simSetup').innerHTML = st.view3d ? '' : tableSizeHTML();
+    if (has('table') || has('setup')) root.querySelector('#simSetup').innerHTML = tableSizeHTML();
     if (has('panel')) root.querySelector('#simPanel').innerHTML = panelHTML();
     if (has('bar') || has('table')) root.querySelector('#simBarWrap').innerHTML = barHTML();
     bindRange();
     document.body.classList.toggle('sim-full', !!st.full);
     scr.classList.toggle('is-full', !!st.full);
-    scr.classList.toggle('is-3d', !!st.view3d);
     scr.dataset.tableFt = String(tableSpec().ft);
     scr.dataset.scan = st.scan?.phase || '';
     scr.dataset.runout = st.runout ? '1' : '0';
-    if (st.view3d && has('table')) requestAnimationFrame(paint3d);
     if (st.scan?.phase === 'corners') mountCorners();
     persist();
   }
@@ -524,7 +514,6 @@ export function createSimScreen(ctx, args = []) {
       img.onload = async () => {
         await detectBalls(img);
         st.scan = { phase: 'corners', url, img, corners: defaultCorners(img.naturalWidth, img.naturalHeight) };
-        st.view3d = false;
         refresh();
       };
       img.src = url;
@@ -577,21 +566,6 @@ export function createSimScreen(ctx, args = []) {
       drag = { kind: 'anno', start: p, cur: p };
       return;
     }
-    if (st.view3d) {
-      const cnv = ctx.root.querySelector('#sim3d');
-      const rect = cnv ? cnv.getBoundingClientRect() : { left: 0, top: 0, width: 1, height: 1 };
-      const sx = e.clientX - rect.left;
-      const sy = e.clientY - rect.top;
-      const id = pickBall3D(sx, sy, rect.width, rect.height, activeBalls(), rad(), st.yaw || 0, st.pitch || 0);
-      if (id != null && !st.game) {
-        const b = activeBalls().find((q) => q.id === id);
-        drag = { kind: 'ball3d', id, from: { x: b.x, y: b.y }, sx: e.clientX, sy: e.clientY, moved: false };
-        st.sel = id;
-        return;
-      }
-      drag = { kind: 'orbit', sx: e.clientX, sy: e.clientY, yaw: st.yaw || 0, pitch: st.pitch || 0 };
-      return;
-    }
     document.documentElement.classList.add('sim-dragging');
     const b = ballAt(p);
     if (b && !st.game) {
@@ -638,24 +612,6 @@ export function createSimScreen(ctx, args = []) {
         bub.style.top = `${Math.max(0, e.clientY - rect.top - 60)}px`;
         bub.classList.add('show');
       }
-    } else if (drag.kind === 'ball3d') {
-      if (!drag.moved && movedPx < 6) return;
-      drag.moved = true;
-      const cnv = ctx.root.querySelector('#sim3d');
-      const rect = cnv ? cnv.getBoundingClientRect() : { left: 0, top: 0, width: 1, height: 1 };
-      const felt = feltFromScreen3D(e.clientX - rect.left, e.clientY - rect.top, rect.width, rect.height, st.yaw || 0, st.pitch || 0, rad());
-      if (!felt) return;
-      let q = L.clampToTable(felt, rad());
-      if (set.snap) q = L.snapPoint(q, L.QUARTER, rad());
-      drag.to = q;
-      const list = activeBalls();
-      const b = list.find((x) => x.id === drag.id);
-      if (b) { b.x = f2(q.x); b.y = f2(q.y); }
-      paint3d();
-    } else if (drag.kind === 'orbit') {
-      st.yaw = Math.max(-1.2, Math.min(1.2, drag.yaw + (e.clientX - drag.sx) * 0.006));
-      st.pitch = Math.max(-10, Math.min(18, drag.pitch + (drag.sy - e.clientY) * 0.04));
-      paint3d();
     } else if (drag.kind === 'aim') {
       if (!drag.moved && movedPx < 5) return;
       drag.moved = true;
@@ -697,7 +653,7 @@ export function createSimScreen(ctx, args = []) {
       refresh(['table', 'panel']);
       return;
     }
-    if (d.kind === 'ball' || d.kind === 'ball3d') {
+    if (d.kind === 'ball') {
       if (!d.moved) {
         st.sel = d.id;
         if (d.id !== 'cue' && st.scan?.phase !== 'confirm') aimAtBall(d.id);
@@ -1238,20 +1194,6 @@ export function createSimScreen(ctx, args = []) {
     }
   };
 
-  function paint3d() {
-    const c = ctx.root.querySelector('#sim3d');
-    if (!c) return;
-    const rect = c.parentElement.getBoundingClientRect();
-    const w = Math.max(180, Math.floor(rect.width));
-    const h = Math.max(160, Math.floor(rect.height || w * 0.55));
-    c.width = w * 2;
-    c.height = h * 2;
-    c.style.width = w + 'px';
-    c.style.height = h + 'px';
-    const g = c.getContext('2d');
-    g.setTransform(2, 0, 0, 2, 0, 0);
-    drawTable3D(g, w, h, { balls: st.balls.map((b) => ({ id: b.id, x: b.x, y: b.y })), ballR: rad(), yaw: st.yaw || 0, pitch: st.pitch || 0 });
-  }
   function scanCornerHTML() {
     return `<div class="scanBox" data-scan-box="corners"><p class="scanHint">Drag the 4 corners onto the edges of the table, then straighten. This does not find the balls.</p><div class="scanPhoto" id="scanPhoto"><img id="scanImg" alt="Table photo" src="${st.scan.url}"/></div><div class="simTools"><button type="button" data-action="sim-scan-straight">STRAIGHTEN</button><button type="button" data-action="sim-scan-asis">USE PHOTO</button><button type="button" data-action="sim-scan-cancel">CANCEL</button></div></div>`;
   }
@@ -1369,7 +1311,6 @@ export function createSimScreen(ctx, args = []) {
     plan.options = options;
     plan.pick = 0;
     st.runout = plan;
-    st.view3d = false;
     applyRunStep();
     closeSheet();
     refresh();
@@ -1408,17 +1349,6 @@ export function createSimScreen(ctx, args = []) {
       }
       case 'sim-full':
         st.full = !st.full;
-        if (!st.full) st.view3d = false;
-        refresh();
-        return true;
-      case 'sim-3d':
-        st.view3d = true;
-        st.yaw = 0;
-        st.pitch = 0;
-        refresh();
-        return true;
-      case 'sim-2d':
-        st.view3d = false;
         refresh();
         return true;
       case 'sim-scan': {
