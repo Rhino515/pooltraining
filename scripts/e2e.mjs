@@ -2116,17 +2116,30 @@ await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile
   check(!/M7\.4 6\.6/.test(gone.ico) && /rect/.test(gone.ico), 'v14: Table Games nav icon is a table, not the controller');
   const before = await page.evaluate(() => window.PoolIQ.screen.state.balls.map((b) => ({ ...b })));
   await tap('[data-action="sim-3d"]');
-  await sleep(200);
+  await sleep(250);
   const d3 = await page.evaluate(() => ({ c: !!document.querySelector('#sim3d'), balls: window.PoolIQ.screen.state.balls.map((b) => b.x + ',' + b.y).join('|') }));
   check(d3.c && d3.balls === before.map((b) => b.x + ',' + b.y).join('|'), 'v14: 3D view uses the same ball positions');
+  await shot('v14-3d');
   await tap('[data-action="sim-2d"]');
   await sleep(150);
   const back = await page.evaluate(() => ({ svg: !!document.querySelector('#simSvg'), balls: window.PoolIQ.screen.state.balls.map((b) => b.x + ',' + b.y).join('|') }));
   check(back.svg && back.balls === before.map((b) => b.x + ',' + b.y).join('|'), 'v14: 2D TOP VIEW returns without moving balls');
   await tap('[data-action="sim-full"]');
   await sleep(150);
-  const fs = await page.evaluate(() => ({ on: document.body.classList.contains('sim-full'), exit: /EXIT/.test(document.body.innerText) }));
-  check(fs.on && fs.exit, 'v14: full screen hides the app chrome and shows EXIT');
+  const fs = await page.evaluate(() => {
+    const hide = (el) => !el || getComputedStyle(el).display === 'none';
+    return {
+      on: document.body.classList.contains('sim-full'),
+      exit: !!document.querySelector('.fullExit'),
+      shoot: !!document.querySelector('.shootBtn'),
+      size: !!document.querySelector('.tsBtn'),
+      tip: !!document.querySelector('.simTip'),
+      tray: !!document.querySelector('.simTray'),
+      nav: hide(document.querySelector('nav')),
+      head: hide(document.querySelector('header'))
+    };
+  });
+  check(fs.on && fs.exit && !fs.shoot && !fs.size && !fs.tip && !fs.tray && fs.nav && fs.head, 'v14-1: full screen is the table and an EXIT button only');
   await shot('v14-fullscreen');
   await tap('[data-action="sim-full"]');
   await tap('[data-action="sim-runout"]');
@@ -2134,7 +2147,25 @@ await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile
   const games = await page.evaluate(() => [...document.querySelectorAll('[data-action="sim-run-game"]')].map((b) => b.dataset.g).join(','));
   check(games === '8,9,10', 'v14: runout asks 8-ball, 9-ball, 10-ball');
   await shot('v14-runout');
-  await page.evaluate(() => document.querySelector('.sheetWrap')?.classList.remove('show'));
+  await page.evaluate(() => {
+    const s = window.PoolIQ.screen.state;
+    s.balls = [
+      { id: 'cue', x: 28, y: 25 },
+      { id: 1, x: 18, y: 10 }, { id: 2, x: 20.2, y: 11.2 },
+      { id: 4, x: 62, y: 25 }, { id: 8, x: 78, y: 36 }, { id: 9, x: 40, y: 12 }
+    ];
+  });
+  await tap('[data-action="sim-run-game"][data-g="8"]');
+  await sleep(200);
+  if (await page.$('[data-action="sim-run-group"][data-g="solids"]')) await tap('[data-action="sim-run-group"][data-g="solids"]');
+  await page.waitForSelector('[data-run-step]', { timeout: 8000 });
+  const planTxt = await page.evaluate(() => ({
+    step: document.querySelector('.runStep')?.textContent || '',
+    note: document.querySelector('[data-runout-note]')?.textContent || ''
+  }));
+  check(planTxt.step.length > 0 && !/^1-ball/.test(planTxt.step) && !/1-ball/.test(planTxt.note), `v14-1: 8-ball plan is not "pocket the 1" (${planTxt.step} / ${planTxt.note})`);
+  await shot('v14-runout-plan');
+  await tap('[data-action="sim-run-close"]');
   await tap('[data-action="sim-rand"]');
   await sleep(200);
   const types = await page.evaluate(() => [...document.querySelectorAll('[data-action="sim-rand-type"]')].map((b) => b.dataset.v).join(','));
@@ -2153,7 +2184,7 @@ const swOk = await page.evaluate(async () => {
 });
 check(swOk, 'service worker registered and active');
 const cacheName = await page.evaluate(async () => (await caches.keys()).join(','));
-check(/pool-iq-v14/.test(cacheName) && !/pool-iq-v10|pool-iq-v11|pool-iq-v12|pool-iq-v13/.test(cacheName), `cache bumped to pool-iq-v14 (${cacheName})`);
+check(/pool-iq-v14-1/.test(cacheName) && !/pool-iq-v10|pool-iq-v11|pool-iq-v12|pool-iq-v13/.test(cacheName), `cache bumped to pool-iq-v14-1 (${cacheName})`);
 check(await page.evaluate(async () => !!(await caches.match('./js/vendor/supabase.js'))), 'v13: the supabase-js file is precached for offline use');
 await page.setOfflineMode(true);
 await page.goto(BASE + 'index.html#arcade', { waitUntil: 'domcontentloaded' });

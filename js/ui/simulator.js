@@ -372,8 +372,12 @@ export function createSimScreen(ctx, args = []) {
       <div class="simHeadBtns">${g ? '' : `<button type="button" class="hBtn" data-action="sim-undo" ${past.length ? '' : 'disabled'} aria-label="Undo">↶</button><button type="button" class="hBtn" data-action="sim-redo" ${future.length ? '' : 'disabled'} aria-label="Redo">↷</button>`}<button type="button" class="hBtn act" data-action="sim-actions" aria-label="Actions">${g ? 'Quit' : 'Actions'}</button></div></div>`;
   }
   function tableSizeHTML() {
+    if (st.full) return '';
     const ft = tableSpec().ft;
     return `<div class="tableSize" id="tableSize" role="group" aria-label="Table size"><span class="tsLabel">TABLE SIZE</span>${[7, 8, 9].map((n) => `<button type="button" class="tsBtn${ft === n ? ' on' : ''}" data-action="sim-size" data-ft="${n}" data-table-ft="${n}" aria-pressed="${ft === n ? 'true' : 'false'}">${n} FT</button>`).join('')}</div>`;
+  }
+  function exitBtn() {
+    return st.full ? '<button type="button" class="fullExit" data-action="sim-full">EXIT</button>' : '';
   }
   function toolsHTML() {
     if (st.game || st.full) return '';
@@ -385,6 +389,7 @@ export function createSimScreen(ctx, args = []) {
   }
   function panelHTML() {
     if (st.mode === 'play') return resultHTML();
+    if (st.full) return '';
     const findBar = st.findTarget && !st.game ? `<div class="findBar"><span>🎯 Cue-ball target set</span><button type="button" class="chip" data-action="sim-find-run">Find again</button><button type="button" class="chip" data-action="sim-find-clear">Clear target</button></div>` : '';
     const placing = st.placing === 'find' ? '<div class="placeBanner">Tap the table where the cue ball should finish</div>' : '';
     const gameInfo = st.game ? `<div class="gameInfo">Pocket the ${st.balls.find((b) => b.id !== 'cue')?.id} and stop the cue ball on the target. One shot per round.</div>` : '';
@@ -410,9 +415,10 @@ export function createSimScreen(ctx, args = []) {
         <button type="button" class="pbBtn${st.showTracks ? ' on' : ''}" data-action="sim-tracks" aria-label="Show tracks">〰<small>Tracks</small></button>
       </div><div class="pbMain${g ? ' one' : ''}">${main}</div></div>`;
     }
+    if (st.full) return '';
     if (st.view3d) return `<div class="simBar"><button type="button" class="bigBtn" data-action="sim-2d">2D TOP VIEW</button></div>`;
     if (st.scan || st.runout) return '';
-    return `<div class="simBar${st.full ? ' full' : ''}">${st.full ? '<button type="button" class="bigBtn alt exitFull" data-action="sim-full">EXIT FULL SCREEN</button>' : `<button type="button" class="toolBtn${st.tool ? ' on' : ''}" data-action="sim-draw" aria-label="Draw on the table">✎<small>Draw</small></button>${st.game ? '' : `<button type="button" class="toolBtn${st.shape ? ' on' : ''}" data-action="sim-shape" aria-label="Shape zone">◭<small>Zone</small></button>`}`}<button type="button" class="bigBtn shootBtn" data-action="sim-shoot" ${cueBall() ? '' : 'disabled'}>SHOOT ▶</button></div>`;
+    return `<div class="simBar"><button type="button" class="toolBtn${st.tool ? ' on' : ''}" data-action="sim-draw" aria-label="Draw on the table">✎<small>Draw</small></button>${st.game ? '' : `<button type="button" class="toolBtn${st.shape ? ' on' : ''}" data-action="sim-shape" aria-label="Shape zone">◭<small>Zone</small></button>`}<button type="button" class="bigBtn shootBtn" data-action="sim-shoot" ${cueBall() ? '' : 'disabled'}>SHOOT ▶</button></div>`;
   }
 
   // ------------------------------------------------------------------ render
@@ -421,8 +427,8 @@ export function createSimScreen(ctx, args = []) {
     const root = ctx.root;
     document.body.classList.toggle('sim-full', !!st.full);
     const tableInner = st.view3d
-      ? `<canvas id="sim3d" class="sim3d" aria-label="3D table, behind the cue ball"></canvas><button type="button" class="view3dExit" data-action="sim-2d">2D TOP VIEW</button>`
-      : `${tableSVG()}<div class="dragBubble" id="dragBubble"></div>`;
+      ? `<canvas id="sim3d" class="sim3d" aria-label="3D table, behind the cue ball"></canvas>${exitBtn()}`
+      : `${tableSVG()}<div class="dragBubble" id="dragBubble"></div>${exitBtn()}`;
     root.innerHTML = `<div class="simScreen${st.full ? ' is-full' : ''}${st.view3d ? ' is-3d' : ''}" data-mode="${st.mode}" data-game="${st.game ? 1 : 0}" data-table-ft="${tableSpec().ft}" data-offset-drag="1" data-scan="${st.scan?.phase || ''}" data-runout="${st.runout ? 1 : 0}">
       <div id="simHeadWrap">${headHTML()}</div>
       <div class="simTable" id="simTable">${tableInner}</div>
@@ -443,7 +449,7 @@ export function createSimScreen(ctx, args = []) {
     scr.dataset.mode = st.mode;
     scr.dataset.game = st.game ? '1' : '0';
     const has = (p) => parts === 'all' || parts.includes(p);
-    if (has('table')) root.querySelector('#simTable').innerHTML = st.view3d ? '<canvas id="sim3d" class="sim3d" aria-label="3D table"></canvas><button type="button" class="view3dExit" data-action="sim-2d">2D TOP VIEW</button>' : `${tableSVG()}<div class="dragBubble" id="dragBubble"></div>`;
+    if (has('table')) root.querySelector('#simTable').innerHTML = st.view3d ? `<canvas id="sim3d" class="sim3d" aria-label="3D table"></canvas>${exitBtn()}` : `${tableSVG()}<div class="dragBubble" id="dragBubble"></div>${exitBtn()}`;
     if (has('table') || has('head')) root.querySelector('#simHeadWrap').innerHTML = headHTML();
     if (has('table') || has('setup')) root.querySelector('#simSetup').innerHTML = st.view3d ? '' : tableSizeHTML();
     if (has('panel')) root.querySelector('#simPanel').innerHTML = panelHTML();

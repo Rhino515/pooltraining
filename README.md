@@ -25,7 +25,8 @@ Shot Simulator simplification. Playing-surface sizes (ball stays 2.25 in): 7 ft 
 - SCAN TABLE is a photo plus a confirm screen. There is no ball detector in this static app, so the screen says "Place the balls to match your photo".
 - RUNOUT, a behind-the-cue-ball 3D view of the same positions, full screen, and a random-shot generator that only shows shots the physics pockets.
 - Table Games nav icon is a pool table. The app icon is the POOL IQ wordmark.
-- Cache `pool-iq-v14`, app version 14.
+- Cache `pool-iq-v14-1`, app version 14.
+- v14-1: 8-ball runout plays the group (not the 1-ball), shows a breakout for a tied-up ball, 3D is a low view from behind the cue ball, and full screen is the table plus EXIT.
 
 ## What's new in v13 (changelog)
 

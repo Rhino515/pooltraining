@@ -1377,3 +1377,48 @@ body.sim-full .simScreen{height:100dvh}
 @media (orientation:landscape) and (max-height:520px){
   body.sim-full nav{display:none}
 }
+
+/* v14-1: full screen is the table only. One floating EXIT. */
+body.sim-full #simHeadWrap,
+body.sim-full #simSetup,
+body.sim-full #simPanel,
+body.sim-full #simBarWrap,
+body.sim-full header,
+body.sim-full nav{display:none !important}
+body.sim-full .simScreen,
+body.sim-full .simScreen.is-full{
+  display:flex !important;
+  grid-template-columns:none !important;
+  grid-template-rows:none !important;
+  padding:0 !important;
+  height:100dvh;
+  width:100%;
+}
+body.sim-full .simTable{
+  position:relative;
+  flex:1 1 auto !important;
+  grid-column:auto !important;
+  grid-row:auto !important;
+  width:100%;
+  min-height:0;
+  align-items:center;
+  justify-content:center;
+}
+body.sim-full .simTable .table-diagram{width:100%;max-height:100dvh}
+.simTable{position:relative}
+.fullExit{
+  position:absolute;z-index:6;
+  top:calc(10px + env(safe-area-inset-top));
+  left:10px;
+  min-height:48px;min-width:84px;
+  padding:0 16px;
+  border-radius:14px;
+  border:1px solid #f6c453;
+  background:#050b14ee;
+  color:#f6c453;
+  font-weight:900;
+  letter-spacing:1px;
+  font-size:16px;
+}
+.simScreen.is-3d .simTable{min-height:56vh}
+.sim3d{background:#07080c;border-radius:0}

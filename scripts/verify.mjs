@@ -796,7 +796,7 @@ let state = storage.defaultState();
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
   const missing = walk(path.join(root, 'js')).filter((f) => f.endsWith('.js')).map((f) => './' + path.relative(root, f)).filter((f) => !sw.includes(`'${f}'`));
-  assert(/'pool-iq-v14'/.test(sw), 'service worker cache is pool-iq-v14');
+  assert(/'pool-iq-v14-1'/.test(sw), 'service worker cache is pool-iq-v14');
   assertAll('service worker precaches every JS module (incl. simulator + Create Drill)', missing.map((m) => `missing ${m}`));
   const wordN = { one: 1, two: 2, three: 3, four: 4 };
   const probs = [];
@@ -2037,7 +2037,7 @@ let state = storage.defaultState();
   const dash = src('js/dashboard.js');
   const friends = src('js/ui/friends.js');
   const vendor = src('js/vendor/supabase.js');
-  assert(/'pool-iq-v14'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw), 'v14: service worker cache is pool-iq-v14');
+  assert(/'pool-iq-v14-1'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw), 'v14: service worker cache is pool-iq-v14');
   assert(sw.includes(`'./js/vendor/supabase.js'`) && sw.includes(`'./js/cloud/controller.js'`) && sw.includes(`'./js/ui/account.js'`), 'v13: sw precaches the bundled supabase-js and the cloud modules');
   assert(/supabase-js\/2\.117\.2/.test(vendor) && /createClient/.test(vendor) && !/cdn\.jsdelivr|unpkg\.com|esm\.sh/.test(idx + sw), 'v13: official supabase-js v2 UMD build is bundled locally (no CDN)');
   assert(/nqfwlpfyccbqetcyjijf/.test(cfg) && /sb_publishable_/.test(cfg) && !/sb_secret_|service_role|sbp_[0-9a-f]{10}/.test(cfg + sql + docs), 'v13: config carries the project ref + publishable key only (no secrets anywhere)');
@@ -2132,6 +2132,13 @@ let state = storage.defaultState();
   assert(det.available === false && det.balls == null && det.label === 'Place the balls to match your photo', 'v14: detector hook does not invent balls');
   const plan = RO.planRunout([{ id: 'cue', x: 30, y: 30 }, { id: 1, x: 70, y: 22 }], { game: 9, table: TC.spec(8) });
   assert(Array.isArray(plan.steps) && plan.steps.length >= 1 && plan.steps[0].pocket && plan.steps[0].text, `v14: runout returns a physics step (${plan.steps[0]?.text || plan.note})`);
+  const eight = RO.planRunout([
+    { id: 'cue', x: 28, y: 25 },
+    { id: 1, x: 18, y: 10 }, { id: 2, x: 20.2, y: 11.2 },
+    { id: 4, x: 62, y: 25 }, { id: 8, x: 78, y: 36 }, { id: 9, x: 40, y: 12 }
+  ], { game: 8, group: 'solids', table: TC.spec(8) });
+  assert(eight.steps.length >= 2 && eight.steps[0].ball !== 1 && eight.steps[0].ball !== '1' && !/1-ball/.test(eight.note), `v14-1: 8-ball does not start at the 1 (${eight.steps[0]?.text || eight.note})`);
+  assert(eight.steps.some((s) => String(s.ball) === '4'), 'v14-1: 8-ball plans another solid, not numerical order');
   const balls = [{ id: 'cue', x: 25, y: 30 }, { id: 1, x: 60, y: 20 }];
   const before = JSON.stringify(balls);
   const ctx = new Proxy({}, { get: () => () => {}, set: () => true });
