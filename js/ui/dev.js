@@ -12,6 +12,7 @@ import { RANK_LADDER, DRILL_RANK } from '../progression/config.js';
 import { typeLabel } from '../content/schema.js';
 import { openSheet, closeSheet, toast } from './sheet.js';
 import { allDrills } from '../drills.js';
+import { loadDrillEdits } from '../drills/ownerEdits.js';
 import * as CP from '../dev/copy.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -136,7 +137,7 @@ export function devEditOptions(gameId, stageId, env) {
 export function renderDevDrills() {
   if (!D.isUnlocked()) return gate();
   const list = allDrills().filter((d) => d && !d.custom && !d.contentUid);
-  const edits = new Set(Object.keys((() => { try { return JSON.parse(localStorage.getItem('poolIQDrillEditsV1') || '{}').items || {}); } catch { return {}; } })()));
+  const edits = new Set(Object.keys(loadDrillEdits().items));
   return `${head('Drills')}<p class="muted small">Every built-in drill. EDIT opens the phone editor. Nothing here is a new drill.</p><div class="stageList">${list.map((d, i) => {
     const has = edits.has(d.id);
     return `<div class="stageRow card devStage${has ? ' overridden' : ''}" data-dev-drill="${esc(d.id)}" data-overridden="${has ? 1 : 0}"><span class="srNum">${i + 1}</span><span class="srMain"><b>${esc(d.name)}</b><small>${has ? '<span class="tag gold">SAVED ON THIS PHONE</span> ' : ''}${esc(d.category || '')}</small></span><span class="srSide devBtns"><button type="button" class="miniAct" data-action="go" data-href="#drillfix/${esc(d.id)}">EDIT</button></span></div>`;
