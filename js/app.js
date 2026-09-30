@@ -22,6 +22,10 @@ import { createDrillBuilder } from './ui/drillBuilder.js';
 import { createDrillFix } from './ui/drillFix.js';
 import { drillEditorAllowed } from './drills/ownerEdits.js';
 import { loadPublishedDrills, publishedSignature } from './drills/published.js';
+import { loadHiddenDrills, hiddenSignature } from './drills/hidden.js';
+import { createTableMatch } from './ui/tableMatch.js';
+import { timerAction, mountTimers } from './ui/shotTimer.js';
+import { ownerAccountSignedIn } from './dev/dev.js';
 import { customDrills, refreshCustomDrills } from './drills.js';
 import * as CD from './customDrills.js';
 import { openSheet, closeSheet, toast, clearToast } from './ui/sheet.js';
@@ -114,7 +118,7 @@ function parseHash() {
   return { name: name || 'home', args };
 }
 
-const NAV_FOR = { account: 'profile', leaderboard: 'profile', gate: 'career', promo: 'career', champion: 'career', training: 'career', skill: 'profile', skills: 'profile', me: 'profile', drillrank: 'drills', friends: 'arcade', friend: 'arcade', h2h: 'arcade', fmatch: 'arcade', fsession: 'arcade', tourney: 'arcade', tnew: 'arcade', dev: 'profile', devgame: 'profile', devdrills: 'profile', devedit: 'profile', devkeys: 'profile', content: 'drills', cimport: 'drills', cview: 'drills', cplay: 'drills', cedit: 'drills', sim: 'sim', drillnew: 'drills', drilledit: 'drills', drillfix: 'drills', home: 'home', career: 'career', drills: 'drills', learn: 'learn', analyze: 'sim', arcade: 'arcade', tablegames: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
+const NAV_FOR = { account: 'profile', leaderboard: 'profile', gate: 'career', promo: 'career', champion: 'career', training: 'career', skill: 'profile', skills: 'profile', me: 'profile', drillrank: 'drills', friends: 'arcade', friend: 'arcade', h2h: 'arcade', fmatch: 'arcade', fsession: 'arcade', tourney: 'arcade', tnew: 'arcade', dev: 'profile', devgame: 'profile', devdrills: 'profile', devedit: 'profile', devkeys: 'profile', content: 'drills', cimport: 'drills', cview: 'drills', cplay: 'drills', cedit: 'drills', sim: 'sim', drillnew: 'drills', drilledit: 'drills', drillfix: 'drills', home: 'home', career: 'career', drills: 'drills', learn: 'learn', analyze: 'sim', arcade: 'arcade', tablegames: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', tgame: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
 
 function setChrome(playing, navName) {
   document.body.classList.toggle('playing', playing);
@@ -258,7 +262,11 @@ function renderRoute() {
     }
     v.innerHTML = renderDrillsPage(state, drillFilter, bpViewLevel);
   }
-  else if (name === 'learn') v.innerHTML = renderLearn();
+  else if (name === 'tgame') {
+    screen = createTableMatch(ctx, args[0]);
+    screen.render();
+    playing = true;
+  } else if (name === 'learn') v.innerHTML = renderLearn(args);
   else if (name === 'analyze') {
     v.innerHTML = renderAnalyzePage();
     bindAnalyzeHandlers(v);
@@ -280,6 +288,7 @@ function renderRoute() {
   if (!playing) window.scrollTo(0, 0);
   else window.scrollTo(0, 0);
   if (!playing) cloud.showPendingOffer(); // v13: a waiting "cloud save found" offer never interrupts a game
+  mountTimers();
   paintCopy();
 }
 
@@ -311,6 +320,11 @@ function handleAction(action, el, e) {
   if (action === 'sheet-close') {
     closeSheet();
     return;
+  }
+  if (action.startsWith('tm-')) {
+    const r = timerAction(action, el);
+    if (r === 'rerender') rerender();
+    if (r) return;
   }
   if (screen && screen.onAction(action, el, e)) return;
   if (action.startsWith('c-') && C.contentAction(action, el, e, ctx)) return;
@@ -346,11 +360,13 @@ function handleAction(action, el, e) {
       break;
     }
     case 'drill-del': {
+      if (!ownerAccountSignedIn()) { toast('Only the owner account can delete. Nothing was changed.'); break; }
       const d = customDrills().find((x) => x.id === el.dataset.id);
-      if (d) openSheet(`<h2 class="sheetTitle">Delete “${escHTML(d.name)}”?</h2><p class="muted">The drill is removed from this device. Your past results stay in your history. Export it first if you might want it back.</p><button type="button" class="bigBtn danger" data-action="drill-del-do" data-id="${escHTML(d.id)}">DELETE DRILL</button><button type="button" class="bigBtn alt" data-action="sheet-close">CANCEL</button>`, { id: 'confirm' });
+      if (d) openSheet(`<h2 class="sheetTitle">Delete “${escHTML(d.name)}”?</h2><p class="muted">This removes the drill from this phone. It does not delete a file from the app. Your past results stay in your history. Export it first if you might want it back.</p><button type="button" class="bigBtn danger" data-action="drill-del-do" data-id="${escHTML(d.id)}">DELETE DRILL</button><button type="button" class="bigBtn alt" data-action="sheet-close">CANCEL</button>`, { id: 'confirm' });
       break;
     }
     case 'drill-del-do':
+      if (!ownerAccountSignedIn()) { toast('Only the owner account can delete. Nothing was changed.'); break; }
       CD.deleteCustomDrill(el.dataset.id);
       refreshCustomDrills();
       if (state.activeSession?.gameId === 'drills' && state.activeSession.stageId === el.dataset.id) commit({ ...state, activeSession: null }, { silent: true });
@@ -840,6 +856,7 @@ async function boot() {
   onDataWrite((key) => { vault.touch(); cloud.noteDataChange(key); });
   refreshCustomDrills();
   try { await loadPublishedDrills(); } catch { /* shipped drills stay if Supabase is unreachable */ }
+  try { await loadHiddenDrills(); } catch { /* shipped drills stay visible if the list cannot be read */ }
   let st0 = archiveUnknownDrills(loadState(), allDrills().map((d) => d.id));
   // v11 progression migration: snapshot first, replay saved history, never demote the Career rank
   if (needsMigration(st0)) {
@@ -871,12 +888,12 @@ async function boot() {
   checkPersist(true).then((st) => {
     if (st === 'off') window.addEventListener('pointerdown', () => checkPersist(true), { once: true, passive: true });
   });
-  let pubSig = publishedSignature();
+  let pubSig = publishedSignature() + '\n' + hiddenSignature();
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') vault.flush().catch(() => {});
     if (document.visibilityState !== 'visible') return;
-    loadPublishedDrills().then(() => {
-      const next = publishedSignature();
+    Promise.all([loadPublishedDrills(), loadHiddenDrills()]).then(() => {
+      const next = publishedSignature() + '\n' + hiddenSignature();
       if (next === pubSig) return;
       pubSig = next;
       if (route.name === 'drillfix' || route.name === 'devedit') return;

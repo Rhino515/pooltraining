@@ -39,6 +39,7 @@ import { threeLaneSpeedDrill } from './games/data/threeLaneSpeed.js';
 import { pkfDrillChallenges } from './content/pkfBuiltins.js';
 import { ballPocketDrills } from './content/ballPocket.js';
 import { applyDrillEdit } from './drills/ownerEdits.js';
+import { isDrillHidden } from './drills/hidden.js';
 
 export const CATEGORIES = [
   'Shot Making',
@@ -155,12 +156,17 @@ export function allDrills() {
 }
 
 export function getDrillById(id) {
-  return allDrills().find((d) => d.id === id) || null;
+  const d = allDrills().find((x) => x.id === id) || null;
+  if (d && !d.custom && isDrillHidden(d.id)) return null;
+  return d;
 }
 
 export function drillsByCategory() {
   const out = {};
-  for (const d of allDrills()) (out[d.category] ||= []).push(d);
+  for (const d of allDrills()) {
+    if (!d.custom && isDrillHidden(d.id)) continue;
+    (out[d.category] ||= []).push(d);
+  }
   return out;
 }
 

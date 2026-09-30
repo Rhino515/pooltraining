@@ -23,6 +23,8 @@ import {
   drillEditorAllowed, removeDrillEdit, exportAllEdits, shippedDoc, drillLink, drillFromImport
 } from '../drills/ownerEdits.js';
 import { publishedDoc, publishDrill } from '../drills/published.js';
+import { hideDrill } from '../drills/hidden.js';
+import { ownerAccountSignedIn } from '../dev/dev.js';
 import { getDrillById } from '../drills.js';
 import { getGame, stageSpecs, getStage, clearStageCache } from '../games/registry.js';
 import { editDocForStage } from '../dev/dev.js';
@@ -609,6 +611,7 @@ export function createDrillFix(ctx, idOrSpec) {
         ${isDrill ? `<button type="button" class="bigBtn alt" data-action="df-import">IMPORT DRILL</button>
         <input id="fixImport" type="file" accept=".pooliq,.json,application/json,application/octet-stream,text/plain,*/*" hidden>` : ''}
         <button type="button" class="bigBtn alt" data-action="df-export-all">EXPORT ALL</button>
+        ${isDrill ? '<button type="button" class="bigBtn danger" data-action="df-delete">DELETE</button>' : ''}
       </div>
     </div>`;
     paintHandles();
@@ -954,6 +957,17 @@ export function createDrillFix(ctx, idOrSpec) {
     if (how !== 'cancelled') toast(how === 'shared' ? 'Share sheet opened' : `Downloaded ${out.count} correction${out.count === 1 ? '' : 's'}`);
   }
 
+  async function confirmDelete() {
+    if (!isDrill || !drillEditorAllowed()) return;
+    if (!ownerAccountSignedIn()) { toast('Sign in as the owner account to delete this drill. Nothing was changed.'); return; }
+    const out = await hideDrill(id);
+    if (!alive) return;
+    if (out.error) { toast(out.error); return; }
+    closeSheet();
+    toast('Hidden for everyone. The file is still in the app.');
+    ctx.go('#drills');
+  }
+
   function onAction(action, el) {
     if (!drillEditorAllowed()) return false;
     if (action === 'df-full') {
@@ -1017,6 +1031,12 @@ export function createDrillFix(ctx, idOrSpec) {
       return true;
     }
     if (action === 'df-export-all') { exportAll(); return true; }
+    if (action === 'df-delete') {
+      if (!isDrill) return true;
+      openSheet(`<h2 class="sheetTitle">Delete this drill?</h2><p class="muted">This does not remove the file from the app. After you confirm, the drill is hidden for every account. Tap DELETE DRILL to confirm, or CANCEL to keep it.</p><button type="button" class="bigBtn danger" data-action="df-delete-do">DELETE DRILL</button><button type="button" class="bigBtn alt" data-action="sheet-close">CANCEL</button>`, { id: 'confirm' });
+      return true;
+    }
+    if (action === 'df-delete-do') { confirmDelete(); return true; }
     return false;
   }
 

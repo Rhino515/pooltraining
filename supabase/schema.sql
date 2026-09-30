@@ -189,3 +189,40 @@ drop policy if exists "drill_overrides: owner delete" on public.drill_overrides;
 create policy "drill_overrides: owner delete" on public.drill_overrides
   for delete to authenticated
   using (lower(coalesce((select auth.jwt() ->> 'email'), '')) = 'andrewaphay@gmail.com');
+
+-- ---------------------------------------------------------------- drill_hidden (v14-29)
+-- Everyone, including signed-out visitors, can read the ids.
+-- Only the owner account can insert or delete. The shipped drill file is not removed.
+create table if not exists public.drill_hidden (
+  drill_id text primary key check (char_length(drill_id) between 1 and 80),
+  updated_by uuid default auth.uid() references auth.users (id),
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists drill_hidden_touch on public.drill_hidden;
+create trigger drill_hidden_touch before insert or update on public.drill_hidden
+  for each row execute function public.pooliq_touch_updated_at();
+
+alter table public.drill_hidden enable row level security;
+
+revoke all on public.drill_hidden from anon, authenticated;
+grant select on public.drill_hidden to anon, authenticated;
+grant insert, update, delete on public.drill_hidden to authenticated;
+
+drop policy if exists "drill_hidden: public read" on public.drill_hidden;
+create policy "drill_hidden: public read" on public.drill_hidden
+  for select to anon, authenticated
+  using (true);
+
+drop policy if exists "drill_hidden: owner insert" on public.drill_hidden;
+create policy "drill_hidden: owner insert" on public.drill_hidden
+  for insert to authenticated
+  with check (
+    lower(coalesce((select auth.jwt() ->> 'email'), '')) = 'andrewaphay@gmail.com'
+    and (select auth.uid()) = updated_by
+  );
+
+drop policy if exists "drill_hidden: owner delete" on public.drill_hidden;
+create policy "drill_hidden: owner delete" on public.drill_hidden
+  for delete to authenticated
+  using (lower(coalesce((select auth.jwt() ->> 'email'), '')) = 'andrewaphay@gmail.com');

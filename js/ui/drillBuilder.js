@@ -33,6 +33,7 @@ import { techniqueName } from '../games/text.js';
 import * as S from '../content/store.js';
 import { shareOrDownload } from './share.js';
 import { drillEditorAllowed, drillLink } from '../drills/ownerEdits.js';
+import { ownerAccountSignedIn } from '../dev/dev.js';
 
 const f2 = (v) => Math.round(v * 100) / 100;
 const fmtD = (v) => (Math.round(Number(v) * 10) / 10).toFixed(1);
@@ -310,7 +311,8 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
         ${sc.mode === 'zone' && sc.requirePocket !== false ? num('pockets', sc.pockets, 0, sc.attempts, 'Pots to pass') : ''}</div>
         ${sc.mode === 'zone' ? `<div class="chips"><button type="button" class="chip${sc.requirePocket !== false ? ' active' : ''}" data-action="db-reqpot">Must pocket the ball: ${sc.requirePocket !== false ? 'yes' : 'no'}</button></div>` : ''}
         <small class="muted">${sc.mode === 'zone' ? 'Each attempt: missed / pocketed / 1–3★ by where the cue ball stops.' : sc.mode === 'stars' ? 'Each attempt is rated 0–3★ by you.' : sc.mode === 'success' ? 'Each attempt: SUCCESS or MISS.' : 'Each attempt: miss / contact only / made.'}</small>`}`, 'dbScoring'),
-      msgsHTML()
+      msgsHTML(),
+      editId && !cm && drillEditorAllowed() ? '<button type="button" class="bigBtn danger" data-action="db-delete">DELETE</button><p class="muted small">Delete asks you to confirm. A custom drill is removed from this phone. Other accounts cannot delete.</p>' : ''
     ].join('');
   }
   function msgsHTML() {
@@ -684,6 +686,18 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
       case 'db-ans-rail': if (b.answer) { b.answer.rail = el.dataset.v; b.answer.diamond = Math.min(b.answer.diamond, RAIL_DIAMONDS[el.dataset.v]); } ui.dirty = true; refresh(); return true;
       case 'db-preview': previewSheet(); return true;
       case 'db-save': save(); return true;
+      case 'db-delete':
+        if (!editId || cm || !drillEditorAllowed()) return true;
+        openSheet(`<h2 class="sheetTitle">Delete this drill?</h2><p class="muted">This removes it from this phone. The app files are not changed. Tap DELETE DRILL to confirm.</p><button type="button" class="bigBtn danger" data-action="db-delete-do">DELETE DRILL</button><button type="button" class="bigBtn alt" data-action="sheet-close">KEEP DRILL</button>`, { id: 'confirm' });
+        return true;
+      case 'db-delete-do':
+        if (!editId || !ownerAccountSignedIn()) { toast('Only the owner account can delete. Nothing was changed.'); return true; }
+        CD.deleteCustomDrill(editId);
+        refreshCustomDrills();
+        closeSheet();
+        toast('Drill removed from this phone');
+        ctx.go('#drills');
+        return true;
       case 'db-ball': {
         const n = Number(el.dataset.n);
         const inBalls = b.balls.find((o) => o.n === n);

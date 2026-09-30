@@ -27,6 +27,7 @@ import { createPlayScreen } from './play.js';
 import { shareOrDownload } from './share.js';
 import * as CD from '../customDrills.js';
 import { customDrills, refreshCustomDrills, contentDrillId } from '../drills.js';
+import { ownerAccountSignedIn } from '../dev/dev.js';
 
 export const ACCEPT = '.pooliq,.json,application/json,application/octet-stream,text/plain';
 export const EXAMPLES = [
@@ -172,7 +173,7 @@ export function contentHubHTML() {
   };
   const customCard = (d) => `<div class="cItem card" data-custom-drill="${esc(d.id)}" data-type="drill">
       <div class="cTop"><div class="cMini">${renderStageTable(d, { className: 'table-diagram micro', showAim: false })}</div><div class="cMain"><div class="cBadges"><span class="tag mine" data-badge="custom">CUSTOM</span><span class="tag">Drill</span><span class="tag">${esc(d.category)}</span></div><h3>${esc(d.name)}</h3><small class="muted">Made with Create Drill · counts in your training history</small></div></div>
-      <div class="cActs"><button type="button" class="miniAct go" data-action="go" data-href="#play/drills/${esc(d.id)}">PLAY</button><button type="button" class="miniAct" data-action="drill-edit" data-id="${esc(d.id)}">EDIT</button><button type="button" class="miniAct" data-action="c-export-custom" data-id="${esc(d.id)}">EXPORT</button><button type="button" class="miniAct danger" data-action="drill-del" data-id="${esc(d.id)}">DELETE</button></div></div>`;
+      <div class="cActs"><button type="button" class="miniAct go" data-action="go" data-href="#play/drills/${esc(d.id)}">PLAY</button><button type="button" class="miniAct" data-action="drill-edit" data-id="${esc(d.id)}">EDIT</button><button type="button" class="miniAct" data-action="c-export-custom" data-id="${esc(d.id)}">EXPORT</button>${ownerAccountSignedIn() ? `<button type="button" class="miniAct danger" data-action="drill-del" data-id="${esc(d.id)}">DELETE</button>` : ''}</div></div>`;
   const sec = (key, title, list, empty) => `<section class="cSec" data-section="${key}"><h2 class="cSecTitle">${title} <small>${list.length}</small></h2>${list.length ? list.join('') : `<p class="muted small cEmpty">${empty}</p>`}</section>`;
   const drillsL = [...items.filter((i) => i.contentType === 'drill').map(card), ...customs.map(customCard)];
   const packsL = items.filter((i) => i.contentType === 'pack').map(card);

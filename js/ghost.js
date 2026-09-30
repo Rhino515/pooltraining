@@ -19,6 +19,7 @@ import { maxGhostBalls } from './games/engine.js';
 import { esc } from './games/recipe.js';
 import { awardGhost } from './progression/sessions.js';
 import { awardHTML } from './ui/progression.js';
+import { timerHTML } from './ui/shotTimer.js';
 import { revertAward } from './progression/award.js';
 
 export const GHOST_BALL_OPTIONS = [3, 4, 5, 6, 7, 8, 9];
@@ -195,7 +196,7 @@ export function rulesSheetHTML(session) {
   const n = session.balls;
   return `<div class="eyebrow">RULES · ${n}-BALL GHOST</div><h2 class="sheetTitle">Balls in numerical order</h2>
     <ol class="rulesList">
-      <li>Rack balls 1–${n} and break. Take ball in hand after the break.</li>
+      <li>Rack balls 1–${n}. Ball in hand on the break.</li>
       <li>Pocket the balls in order, lowest number first: <b>${orderList(n)}</b>.</li>
       <li>Every ball down in order = <b>your rack</b>.</li>
       <li>A miss, a foul (scratch) or pocketing a ball out of order = <b>Ghost wins the rack</b>.</li>
@@ -218,8 +219,8 @@ export function renderGhostLobby(state, preset = {}) {
     ? `<div class="card ghostSetup" data-mode="rotation">
       <div class="eyebrow">BALLS</div>
       <div class="ballPick">${GHOST_BALL_OPTIONS.map((n) => `<button type="button" class="ballOpt${n === selBalls ? ' active' : ''}${n > max ? ' locked' : ''}" data-action="ghost-balls" data-v="${n}" ${n > max ? 'disabled' : ''}><b>${n}</b><small>${n > max ? '🔒' : 'ball'}</small></button>`).join('')}</div>
-      <p class="muted small">${max < 9 ? `Beat the ${max}-ball Ghost in a race to 3 or longer to unlock ${max + 1}-ball.` : 'Every ball count unlocked.'}</p>
-      <div class="ruleBox" data-rule="order"><b>RULES</b> ${esc(rotationRule(selBalls))}</div>
+      <p class="muted small">Ball in hand on the break. ${max < 9 ? `Beat the ${max}-ball Ghost in a race to 3 or longer to unlock ${max + 1}-ball.` : 'Every ball count unlocked.'}</p>
+      <div class="ruleBox" data-rule="order"><b>RULES</b> Ball in hand on the break. ${esc(rotationRule(selBalls))}</div>
       ${race}
       <button type="button" class="bigBtn" data-action="ghost-start">START ${selBalls}-BALL · RACE TO ${selRace}</button>
     </div>`
@@ -262,7 +263,7 @@ export function renderGhostMatch(state) {
   const breakPhase = eight && g.phase === 'break' && !over;
   const rackNo = g.log.length + 1;
   let rule;
-  if (!eight) rule = `<p class="instructions ruleLine" data-rule="order"><b>Rack ${rackNo}:</b> break, then ball in hand. ${esc(rotationRule(g.balls))}</p>`;
+  if (!eight) rule = `<p class="instructions ruleLine" data-rule="order"><b>Rack ${rackNo}:</b> Ball in hand on the break. ${esc(rotationRule(g.balls))}</p>`;
   else if (breakPhase) rule = `<p class="instructions ruleLine" data-rule="break"><b>Rack ${rackNo} · Break:</b> full 15-ball rack, you break. Ball in hand on the break does not count. Balls made stay down. 8 on the break = you win the rack. Scratch on the break: take ball in hand and run out, no penalty.</p>`;
   else rule = `<p class="instructions ruleLine" data-rule="eight" data-bih-left="${g.bihLeft ?? 0}"><b>Rack ${rackNo} · Run-out:</b> full 15-ball rack. Ball in hand left: ${g.bihLeft ?? 0}. Pick solids or stripes. Pocket your group in any order, then the 8 in a called pocket. Miss, scratch or 8 early = Ghost wins the rack.</p>`;
   let bar;
@@ -283,6 +284,7 @@ export function renderGhostMatch(state) {
   return `<div class="playScreen ghostMatch" data-over="${over ? 1 : 0}" data-mode="${eight ? 'eight' : 'rotation'}"${eight ? ` data-phase="${esc(g.phase || 'break')}" data-bih="${g.bih ?? 0}"` : ''}>
     <div class="playHead"><button type="button" class="phBack" data-action="go" data-href="#ghost" aria-label="Back">‹</button><div class="phTitle"><small>GHOST</small><b>${esc(ghostLabel(g))} · Race to ${g.race}</b></div><div class="phStatus"><button type="button" class="rulesBtn" data-action="ghost-rules">RULES</button><span class="score">R${g.log.length + (over ? 0 : 1)}</span></div></div>
     <div class="playBody">
+      ${(eight || g.balls === 9) ? timerHTML(eight ? 'ghost-8' : 'ghost-9') : ''}
       <div class="ghostScore"><div><b data-you>${g.you}</b><span>YOU</span></div><em>—</em><div><b data-ghost>${g.ghost}</b><span>GHOST</span></div></div>
       ${over ? `<div class="resultPanel ${won ? 'pass' : 'fail'} inline" data-result="${won ? 'pass' : 'fail'}"><h1>${won ? 'YOU WIN' : 'GHOST WINS'} ${g.you}–${g.ghost}</h1>${awardHTML(g.progAward)}<p class="muted">Match saved to history. Tapped the wrong button? UNDO LAST RACK reopens the match.</p><div class="resultBtns"><button type="button" class="bigBtn" data-action="ghost-again">REMATCH</button><button type="button" class="bigBtn alt" data-action="go" data-href="#ghost">GHOST HOME</button></div></div>`
         : rule}

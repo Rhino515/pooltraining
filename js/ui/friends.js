@@ -10,6 +10,7 @@ import { PVP } from '../progression/config.js';
 import { avatarHTML } from '../progression/badge.js';
 import { getProfile, displayNameOf, avatarFromFile } from '../profile.js';
 import { openSheet, closeSheet, toast } from './sheet.js';
+import { timerHTML } from './shotTimer.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const winsText = (d, id) => (F.playerById(d, id)?.isMe ? 'You win' : `${pName(d, id)} wins`);
@@ -149,8 +150,10 @@ function liveHTML(d, m) {
   const over = m.status === 'final';
   const statBtns = (pid) => (m.adv ? `<div class="statBtns">${PVP.advancedStats.map((k) => `<button type="button" class="chip" data-action="fr-stat" data-id="${esc(pid)}" data-k="${k}">${esc(PVP.statLabels[k])} <b>${m.stats[pid]?.[k] || 0}</b></button>`).join('')}</div>` : '');
   const side = (pid) => `<div class="liveSide${m.winner === pid ? ' won' : ''}" data-side="${esc(pid)}">${av(d, pid, 56)}<b class="lsName">${esc(pName(d, pid))}</b><b class="lsScore" data-score="${m.score[pid]}">${m.score[pid]}</b>${over ? '' : `<button type="button" class="bigBtn rackBtn" data-action="fr-rack" data-id="${esc(pid)}">RACK WON</button>`}${statBtns(pid)}</div>`;
+  const timed = ['8-ball', '9-ball', '10-ball', 'bank'].includes(m.game);
   return `<div class="title">${backBtn('#friends', 'Friends')}<span class="eyebrow">${esc(F.gameName(m.game).toUpperCase())} · RACE TO ${m.raceTo}${F.isHillHill(m) || (!over && m.score[a] === m.raceTo - 1 && m.score[b] === m.raceTo - 1) ? ' · HILL-HILL' : ''}</span></div>
-    <div class="card liveMatch" data-live="${esc(m.id)}" data-over="${over ? 1 : 0}">${side(a)}<div class="lsVs">VS</div>${side(b)}</div>
+    ${timed ? timerHTML(`pvp-${m.game}`) : ''}
+    <div class="card liveMatch" data-live="${esc(m.id)}" data-over="${over ? 1 : 0}"${timed ? ' data-timer="1"' : ''}>${side(a)}<div class="lsVs">VS</div>${side(b)}</div>
     ${over ? `<div class="resultPanel pass inline" data-result="pvp"><h1>${esc(winsText(d, m.winner).toUpperCase())} ${m.score[m.winner]}–${m.score[m.players.find((x) => x !== m.winner)]}</h1><div class="resultBtns"><button type="button" class="bigBtn" data-action="fr-save-match">SAVE MATCH</button><button type="button" class="bigBtn alt" data-action="fr-undo">UNDO LAST RACK</button></div></div>` : `<div class="liveTools"><button type="button" class="bigBtn alt" data-action="fr-undo" ${m.racks.length ? '' : 'disabled'}>↶ UNDO LAST RACK</button><button type="button" class="bigBtn alt danger" data-action="fr-abandon">ABANDON MATCH</button></div>`}
     <div class="racklog">${m.racks.map((w, i) => `<span class="${w === a ? 'win' : 'loss'}">R${i + 1} ${esc(pName(d, w))}</span>`).join('')}</div>`;
 }

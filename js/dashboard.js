@@ -19,6 +19,9 @@ import { getProfile } from './profile.js';
 import { loadFriends, activePlayers } from './friends/model.js';
 import { COACH_LEVELS, COACH_LABEL, coachingLevel } from './games/coaching.js';
 import { TABLE_SIZES, CLOTH_SPEEDS, CALIBRATION_SPEEDS, speedLabel, formatSpeed, personalFactor, clothNote, calLookup } from './games/speed.js';
+import { learnHTML } from './learn.js';
+import { isDrillHidden } from './drills/hidden.js';
+import { ownerAccountSignedIn } from './dev/dev.js';
 
 function nextUpCard(state) {
   const n = nextUp(state);
@@ -38,8 +41,8 @@ function homeExtrasHTML(x = {}) {
   return out;
 }
 
-export function renderLearn() {
-  return `<div class="title learnPage" data-page-learn><h1>Learn</h1><p class="muted">Lessons will show here.</p></div>`;
+export function renderLearn(args = []) {
+  return learnHTML(args);
 }
 
 export function renderHome(state, extras = {}) {
@@ -127,9 +130,19 @@ function gameCard(state, g) {
   </button>`;
 }
 
+const TABLE_MATCHES = [
+  ['8', '8-Ball', 'Rack counter. Optional timer, off until you turn it on.'],
+  ['9', '9-Ball', 'Rack counter. Optional timer, off until you turn it on.'],
+  ['10', '10-Ball', 'Rack counter. Optional timer, off until you turn it on.'],
+  ['bank', 'Bank Pool', 'WPA bank pool. Short rack to 5, full rack to 8. Optional timer.'],
+  ['upusa', 'Ultimate Pool USA', '30-minute match clock. 30-second shot clock.']
+];
 export function renderArcade(state) {
+  const matches = TABLE_MATCHES.map(([id, name, sub]) => `<button type="button" class="gameCard card" data-action="go" data-href="#tgame/${id}" data-game="${esc(id)}"><span class="gcIcon">${id === 'upusa' ? '⏱' : id === 'bank' ? '▣' : id}</span><span class="gcMain"><b>${esc(name)}</b><small>${esc(sub)}</small></span></button>`).join('');
   return `<div class="title"><span class="eyebrow">TABLE GAMES</span><h1>Skill Games</h1><p>Replay any unlocked stage for stars, streaks and personal bests. Every result feeds your skill ratings.</p></div>
     <button type="button" class="card simPromo friendsPromo" data-action="go" data-href="#friends"><span class="simPromoIcon">⚔</span><span class="simPromoText"><span class="eyebrow">PvP</span><b>Play with Friends</b><small>Score real matches head-to-head, run a group night or a tournament. Separate from your training ranks.</small></span><span class="simPromoGo">›</span></button>
+    <h2>At the table</h2>
+    <div class="arcadeGrid" data-table-matches>${matches}</div>
     <div class="arcadeGrid">${GAMES.map((g) => gameCard(state, g)).join('')}</div>`;
 }
 
@@ -241,7 +254,7 @@ export function renderProfile(state) {
 
 // ------------------------------------------------------------------------------ drills
 export function renderDrillsPage(state, filter = 'All', bpViewLevel = null) {
-  const list0 = allDrills();
+  const list0 = allDrills().filter((d) => d.custom || !isDrillHidden(d.id));
   const head = `<div class="title drillsTitle"><span class="eyebrow">DRILL LIBRARY</span><h1>Drills</h1></div>
     ${drillRankCardHTML(state)}
     <div class="drillTools"><div class="drillBig"><button type="button" class="bigBtn createDrill" data-action="drill-create">＋ CREATE DRILL</button><button type="button" class="bigBtn myContentBtn" data-action="go" data-href="#content">▤ MY CONTENT<small>import .pooliq · packs · lessons · games</small></button></div>
@@ -289,7 +302,7 @@ function ballPocketBadgeSVG(level) {
 function ballPocketCategory(state, bpViewLevel) {
   const status = ballPocketStatus(state);
   const viewing = BALL_POCKET_LEVELS.includes(Number(bpViewLevel)) ? Number(bpViewLevel) : status.current;
-  const list = ballPocketDrills().filter((d) => d.level === viewing);
+  const list = ballPocketDrills().filter((d) => d.level === viewing && !isDrillHidden(d.id));
   const done = list.filter((d) => state.games?.drills?.stages?.[d.id]?.passed).length;
   const locked = viewing > status.current;
   const text = BALL_POCKET_TEXT[viewing] || '';
@@ -321,7 +334,8 @@ function drillCard(state, d, opts = {}) {
   const meta = `${d.custom ? '<span class="tag mine">MY DRILL</span> ' : ''}${d.contentUid ? `<span class="tag imp" data-badge="${d.imported ? 'imported' : 'custom'}">${d.imported ? 'IMPORTED' : 'MY CONTENT'}</span> ` : ''}<span class="tag">${esc(d.category)}</span>${d.difficulty ? ` <span class="tag">Level ${d.difficulty}</span>` : ''}`;
   const ms = rec ? masteryOf(state, drillItem(d).key) : 0;
   const pb = rec ? `<small class="pbLine">${starsHTML(ms)} Best ${rec.bestScore || 0} pts${rec.bestStars ? ` · ${'★'.repeat(rec.bestStars)}` : ''} · ${rec.tries || 0} session${rec.tries === 1 ? '' : 's'}${rec.passed ? ' · passed ✓' : ''}</small>` : '';
-  const tools = d.custom ? `<div class="drillBtns"><button type="button" class="miniAct" data-action="drill-edit" data-id="${esc(d.id)}">Edit</button><button type="button" class="miniAct" data-action="drill-dup" data-id="${esc(d.id)}">Duplicate</button><button type="button" class="miniAct" data-action="drill-history" data-id="${esc(d.id)}">History</button><button type="button" class="miniAct" data-action="drill-export" data-id="${esc(d.id)}">Export</button><button type="button" class="miniAct danger" data-action="drill-del" data-id="${esc(d.id)}">Delete</button></div>` : d.contentUid ? `<div class="drillBtns"><button type="button" class="miniAct" data-action="go" data-href="#cview/${esc(d.contentUid)}">My Content</button><button type="button" class="miniAct" data-action="go" data-href="#cedit/${esc(d.contentUid)}">Edit</button><button type="button" class="miniAct" data-action="drill-history" data-id="${esc(d.id)}">History</button></div>` : '';
+  const del = ownerAccountSignedIn() ? `<button type="button" class="miniAct danger" data-action="drill-del" data-id="${esc(d.id)}">Delete</button>` : '';
+  const tools = d.custom ? `<div class="drillBtns"><button type="button" class="miniAct" data-action="drill-edit" data-id="${esc(d.id)}">Edit</button><button type="button" class="miniAct" data-action="drill-dup" data-id="${esc(d.id)}">Duplicate</button><button type="button" class="miniAct" data-action="drill-history" data-id="${esc(d.id)}">History</button><button type="button" class="miniAct" data-action="drill-export" data-id="${esc(d.id)}">Export</button>${del}</div>` : d.contentUid ? `<div class="drillBtns"><button type="button" class="miniAct" data-action="go" data-href="#cview/${esc(d.contentUid)}">My Content</button><button type="button" class="miniAct" data-action="go" data-href="#cedit/${esc(d.contentUid)}">Edit</button><button type="button" class="miniAct" data-action="drill-history" data-id="${esc(d.id)}">History</button></div>` : '';
   return `<div class="drill card ${open ? '' : 'locked'}" data-drill="${esc(d.id)}"><div class="diagramWrap mini">${renderStageTable(d, { className: 'table-diagram mini' })}</div>${meta}<h3>${esc(d.name)}</h3><p>${esc(d.goal || d.instructions || '')}</p>${d.lanes ? `<div class="laneChips">${d.lanes.map((l) => speedChip(l.speed)).join('')}</div>` : (typeof d.speed === 'number' ? speedChip(d.speed) : '')}${d.credit ? `<small class="muted credit">${esc(d.credit)}</small>` : ''}${pb}<button type="button" class="${rec?.passed ? 'done' : ''}" data-action="go" data-href="#play/drills/${esc(d.id)}" ${open ? '' : 'disabled'}>${rec?.passed ? 'Passed ✓ — Train again' : 'Train'}</button>${tools}</div>`;
 }
 

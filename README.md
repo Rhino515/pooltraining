@@ -28,6 +28,7 @@ Shot Simulator simplification. Playing-surface sizes (ball stays 2.25 in): 7 ft 
 - Cache `pool-iq-v14-2`, app version 14.
 - v14-1: 8-ball runout plays the group (not the 1-ball), shows a breakout for a tied-up ball, 3D is a low view from behind the cue ball, and full screen is the table plus EXIT.
 - v14-2: 3D view is a shaded table from behind the cue ball (wood rails, lit cloth, round balls, cue).
+- v14-29: Dev Mode can hide a built-in drill for everyone (confirm, then a public deleted-id row). Learn lists Fundamentals, How to Play, and Rules. Table Games adds 8-ball, 9-ball, 10-ball, WPA Bank Pool, and Ultimate Pool USA. Optional timer on 8, 9, 10, and bank. Cache `pool-iq-v14-29`.
 - v14-7: while DEV MODE is unlocked, a shipped PKF drill can be corrected on the phone (balls, paths, pocket, tip, speed, technique, title, description, category). The correction overrides that drill id locally. Cache `pool-iq-v14-7`.
 
 ## What's new in v13 (changelog)
