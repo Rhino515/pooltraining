@@ -16,6 +16,7 @@ import { aimInfo, fullnessLabel, shortFullness, POCKET_NAMES } from './games/geo
 import { railsText, railsShort, contactText, englishText, techniqueName } from './games/text.js';
 import { speedMeaning, formatSpeed } from './games/speed.js';
 import { SKILL_NAMES, dataWritten } from './storage.js';
+import { drillLink } from './drills/ownerEdits.js';
 
 export const CUSTOM_KEY = 'poolIQCustomDrillsV1';
 export const EXPORT_FORMAT = 'pool-iq-drills';
@@ -204,6 +205,14 @@ function englishType(b, route) {
 }
 
 /** Full challenge object from a builder state (routes from the physics simulation) */
+function cleanAttribution(at) {
+  const src = at && typeof at === 'object' ? { ...at } : {};
+  const link = drillLink(src.sourceURL);
+  if (link) src.sourceURL = link;
+  else delete src.sourceURL;
+  return src;
+}
+
 export function buildCustomDrill(b, { id = null, now = Date.now(), route: given } = {}) {
   const route = given !== undefined ? given : computeRoute(b);
   const drillId = id || b.id || `cd-${now.toString(36)}${Math.floor(Math.random() * 1296).toString(36)}`;
@@ -288,8 +297,9 @@ export function buildCustomDrill(b, { id = null, now = Date.now(), route: given 
     route: { rails: cueRails.length, text: railsText(cueRails), short: railsShort(cueRails) },
     whyExplanation: why,
     custom: true,
+    attribution: drillLink(b.attribution?.sourceURL) ? { sourceURL: drillLink(b.attribution.sourceURL) } : undefined,
     simulated: route ? { made: route.made, scratch: route.scratch, cueEnd: route.cueEnd, aimDeg: r2(route.aim) } : null,
-    builder: JSON.parse(JSON.stringify({ ...b, id: drillId })),
+    builder: JSON.parse(JSON.stringify({ ...b, id: drillId, attribution: cleanAttribution(b.attribution) })),
     created: b.created || now,
     updated: now
   };

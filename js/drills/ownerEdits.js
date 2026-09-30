@@ -67,6 +67,17 @@ export function shippedDoc(id) {
 }
 
 /** Built-in PKF drill with a single-shot layout (not a custom drill, not a multi-lane drill). */
+/** http(s) only. Empty, javascript:, or a link with a password is rejected. Nothing is uploaded. */
+export function drillLink(value) {
+  const v = String(value || '').trim();
+  if (!v || v.length > 500) return '';
+  let u;
+  try { u = new URL(v); } catch { return ''; }
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') return '';
+  if (u.username || u.password) return '';
+  return v;
+}
+
 export function canFixDrill(ch) {
   if (!ch || ch.custom || ch.contentUid || ch.lanes || ch.laneOverlay) return false;
   if (!ch.cueBallPosition || !ch.id) return false;

@@ -32,6 +32,7 @@ import { tapToRail, RAIL_WORDS } from '../content/templates.js';
 import { techniqueName } from '../games/text.js';
 import * as S from '../content/store.js';
 import { shareOrDownload } from './share.js';
+import { drillEditorAllowed, drillLink } from '../drills/ownerEdits.js';
 
 const f2 = (v) => Math.round(v * 100) / 100;
 const fmtD = (v) => (Math.round(Number(v) * 10) / 10).toFixed(1);
@@ -259,14 +260,17 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
   function moreDetailsHTML() {
     const at = b.attribution || {};
     const why = [['whyContact', 'Why this tip contact'], ['whySpeed', 'Why this SPEED'], ['whySpin', 'Why this spin'], ['whyRoute', 'Why this route'], ['whyAim', 'Why this aim']];
-    return `<label class="fld"><span>Setup instructions <small class="muted">(optional)</small></span><textarea id="db-setupInstructions" rows="2" maxlength="1500">${esc(b.setupInstructions || '')}</textarea></label>
+    const ownerLink = isRoot && drillEditorAllowed();
+    const linkField = ownerLink ? `<label class="fld" data-drill-link-field><span>Link <small class="muted">(video, resource, or YouTube — saved on this phone, nothing uploaded)</small></span><input id="db-att-sourceURL" type="url" inputmode="url" maxlength="500" placeholder="https://" value="${esc(at.sourceURL || '')}"/></label>` : '';
+    const buriedLink = ownerLink ? '' : `<label class="fld"><span>Source link (http/https)</span><input id="db-att-sourceURL" type="url" maxlength="500" value="${esc(at.sourceURL || '')}"/></label>`;
+    return `${linkField}<label class="fld"><span>Setup instructions <small class="muted">(optional)</small></span><textarea id="db-setupInstructions" rows="2" maxlength="1500">${esc(b.setupInstructions || '')}</textarea></label>
       <label class="fld"><span>Hints <small class="muted">(one per line)</small></span><textarea id="db-hints" rows="2" maxlength="3000">${esc(b.hints || '')}</textarea></label>
       ${isRoot ? `<label class="fld"><span>Description <small class="muted">(optional)</small></span><textarea id="db-description" rows="2" maxlength="2000">${esc(b.description || '')}</textarea></label>` : ''}
       <details class="dbMore"><summary>More “Why this shot?” notes</summary>${why.map(([k, l]) => `<label class="fld"><span>${l}</span><textarea id="db-${k}" rows="2" maxlength="1500">${esc(b[k] || '')}</textarea></label>`).join('')}</details>
       ${isRoot ? `<details class="dbMore"${at.author || at.sourceName || at.sourceURL || at.notes ? ' open' : ''}><summary>Attribution &amp; version (for sharing)</summary>
         <label class="fld"><span>Author <small class="muted">(leave blank if unknown)</small></span><input id="db-att-author" type="text" maxlength="80" value="${esc(at.author || '')}"/></label>
         <label class="fld"><span>Source name</span><input id="db-att-sourceName" type="text" maxlength="120" value="${esc(at.sourceName || '')}"/></label>
-        <label class="fld"><span>Source link (http/https)</span><input id="db-att-sourceURL" type="url" maxlength="500" value="${esc(at.sourceURL || '')}"/></label>
+        ${buriedLink}
         <label class="fld"><span>Notes</span><textarea id="db-att-notes" rows="2" maxlength="600">${esc(at.notes || '')}</textarea></label>
         <label class="fld"><span>Content version</span><input id="db-contentVersion" type="text" maxlength="14" value="${esc(b.contentVersion || '1.0')}" inputmode="decimal"/></label>
       </details>` : ''}`;
@@ -359,7 +363,12 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
     }
     for (const k of ['author', 'sourceName', 'sourceURL', 'notes']) {
       const el = root.querySelector(`#db-att-${k}`);
-      if (el) el.addEventListener('input', () => { b.attribution = { ...b.attribution, [k]: el.value }; ui.dirty = true; refreshMsgs(); });
+      if (el) el.addEventListener('input', () => {
+        const value = k === 'sourceURL' ? (drillLink(el.value) || el.value.trim().slice(0, 500)) : el.value;
+        b.attribution = { ...b.attribution, [k]: value };
+        ui.dirty = true;
+        refreshMsgs();
+      });
     }
     const ansNum = (id, fn) => { const el = root.querySelector(`#${id}`); if (el) el.addEventListener('input', () => { fn(el.value); ui.dirty = true; refreshMsgs(); }); };
     ansNum('db-ans-diamond', (v) => { b.answer.diamond = Math.round(Number(v) * 100) / 100 || 0; });

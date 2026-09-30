@@ -19,7 +19,7 @@ import { openSheet, closeSheet, toast } from './sheet.js';
 import { shareOrDownload } from './share.js';
 import {
   drillEditorAllowed, canFixDrill, editingDoc, setDrillEdit, removeDrillEdit,
-  getDrillEdit, exportAllEdits, shippedDoc
+  getDrillEdit, exportAllEdits, shippedDoc, drillLink
 } from '../drills/ownerEdits.js';
 import { getDrillById } from '../drills.js';
 import { getGame, stageSpecs, getStage, clearStageCache } from '../games/registry.js';
@@ -571,6 +571,8 @@ export function createDrillFix(ctx, idOrSpec) {
         <label class="fixFld">Title<input id="fixTitle" maxlength="80" value="${esc(doc.title || '')}"/></label>
         <label class="fixFld">Description<textarea id="fixDesc" maxlength="2000" rows="3">${esc(doc.description || '')}</textarea></label>
         <label class="fixFld">Category<input id="fixCat" maxlength="40" value="${esc(doc.category || '')}"/></label>
+        ${isDrill ? `<label class="fixFld">Link<input id="fixLink" type="url" inputmode="url" maxlength="500" placeholder="https:// YouTube, video, or a resource" value="${esc(doc.attribution?.sourceURL || '')}"/></label>
+        <p class="muted small">A video, a page, or a YouTube address. Saved on this phone with this drill. Nothing is uploaded. Only shown while Dev Mode is unlocked.</p>` : ''}
         <div class="eyebrow">SPEED</div>
         <div class="stepper"><button type="button" data-action="df-speed" data-d="-1" aria-label="Slower">−</button><b>${formatSpeed(s.speed)}</b><button type="button" data-action="df-speed" data-d="1" aria-label="Faster">+</button></div>
         <div class="eyebrow">TECHNIQUE</div>
@@ -788,8 +790,25 @@ export function createDrillFix(ctx, idOrSpec) {
     title?.addEventListener('input', () => { doc.title = title.value.slice(0, 80); });
     desc?.addEventListener('input', () => { doc.description = desc.value.slice(0, 2000); });
     cat?.addEventListener('input', () => { doc.category = cat.value.slice(0, 40); });
+    ctx.root.querySelector('#fixLink')?.addEventListener('input', () => { readLink(false); });
   }
 
+  function readLink(strict) {
+    const el = ctx.root.querySelector('#fixLink');
+    if (!el || !isDrill) return true;
+    const raw = el.value.trim().slice(0, 500);
+    const link = drillLink(raw);
+    if (raw && !link) {
+      if (strict) { ui.msg = 'Link must start with http:// or https://. A YouTube address is fine.'; return false; }
+      return true;
+    }
+    const at = { ...(doc.attribution || {}) };
+    if (link) at.sourceURL = link;
+    else delete at.sourceURL;
+    if (Object.keys(at).length) doc.attribution = at;
+    else delete doc.attribution;
+    return true;
+  }
   function readText() {
     const title = ctx.root.querySelector('#fixTitle');
     const desc = ctx.root.querySelector('#fixDesc');
@@ -797,12 +816,13 @@ export function createDrillFix(ctx, idOrSpec) {
     if (title) doc.title = title.value.slice(0, 80);
     if (desc) doc.description = desc.value.slice(0, 2000);
     if (cat) doc.category = cat.value.slice(0, 40);
+    if (isDrill && readLink(true) === false) return false;
     if (doc.shot && String(doc.description || '') !== loadedDesc) doc.shot.goal = String(doc.description || '').slice(0, 240);
     if (!isDrill && doc.shot) doc.shot.instructions = String(doc.description || '').slice(0, 1500);
   }
   function save() {
     if (!drillEditorAllowed()) return;
-    readText();
+    if (readText() === false) { render(); return; }
     if (!String(doc.title || '').trim()) { ui.msg = 'Title cannot be empty.'; render(); return; }
     if (!String(doc.category || '').trim()) { ui.msg = 'Category cannot be empty.'; render(); return; }
     if (isDrill) {
@@ -857,7 +877,7 @@ export function createDrillFix(ctx, idOrSpec) {
     render();
   }
   async function exportOne() {
-    readText();
+    if (readText() === false) { render(); return; }
     const copy = JSON.parse(JSON.stringify(doc));
     copy.id = id;
     copy.format = 'pooliq';

@@ -15,7 +15,7 @@ import { speedLabel, formatSpeed, lagEndpoint, CALIBRATION_SPEEDS, personalFacto
 import { speedExplainHTML, speedDiagramSVG } from '../games/speedDiagram.js';
 import { openSheet, closeSheet, toast, stars } from './sheet.js';
 import { getDrillById } from '../drills.js';
-import { drillEditorAllowed } from '../drills/ownerEdits.js';
+import { drillEditorAllowed, drillLink } from '../drills/ownerEdits.js';
 import { columnsFor, addTallyColumn, bumpTallyColumn, removeTallyColumn } from '../drills/tallyColumns.js';
 import { RANK_NAMES } from '../storage.js';
 import { getResultAdapter } from '../analyze.js';
@@ -107,6 +107,14 @@ export function createPlayScreen(ctx, key) {
       : '';
     const edit = editHref ? `<button type="button" class="phEdit" data-owner-edit="1" data-action="go" data-href="${editHref}">EDIT</button>` : '';
     return `<div class="playHead"><button type="button" class="phBack" data-action="play-exit" aria-label="Exit">‹</button><div class="phTitle"><small>${esc(title)}</small><b>${esc(sub)}</b></div><div class="phStatus">${edit}${status}</div></div>`;
+  }
+  function drillLinkHTML() {
+    if (!drillEditorAllowed() || session.gameId !== 'drills' || !stage) return '';
+    const href = drillLink(stage.attribution?.sourceURL || stage.builder?.attribution?.sourceURL);
+    if (!href) return '';
+    let host = href;
+    try { host = new URL(href).hostname.replace(/^www\./, ''); } catch { /* keep the address */ }
+    return `<a class="drillLink" data-drill-link href="${esc(href)}" target="_blank" rel="noopener noreferrer nofollow"><small>Link</small><b>${esc(host)}</b></a>`;
   }
 
   function countMakeMiss(attempts) {
@@ -209,6 +217,7 @@ export function createPlayScreen(ctx, key) {
         : `<div class="resultBar n${btns.length}">${btns.map((b, i) => `<button type="button" class="rb ${b.cls}${b.wide ? ' wide' : ''}" data-action="record" data-i="${i}"><b>${esc(b.label)}</b>${b.sub ? `<small>${esc(b.sub)}</small>` : ''}</button>`).join('')}${session.attempts.length ? '<button type="button" class="rbUndo" data-action="undo-attempt" aria-label="Undo last attempt">↶ Undo</button>' : ''}</div>`;
     root.innerHTML = `<div class="playScreen" data-game="${esc(session.gameId)}" data-stage="${esc(session.stageId)}" data-mode="${ev.mode}" data-coach="${level}">
       ${headerHTML(ev, title, sub)}
+      ${drillLinkHTML()}
       <div class="playTable">${tableSVG}</div>
       ${setupLineHTML(tableSrc)}
       ${patternPlanning ? '<div class="legend small">Tap the balls in the order you would run them.</div>' : legendHTML(ch)}

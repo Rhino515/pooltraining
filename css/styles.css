@@ -131,6 +131,8 @@ body.playing #app{padding-bottom:0}
 body.playing main{padding:0}
 .playScreen{min-height:100vh;padding-bottom:calc(150px + env(safe-area-inset-bottom));max-width:720px;margin:0 auto}
 .playHead{position:sticky;top:0;z-index:6;display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:8px;padding:calc(6px + env(safe-area-inset-top)) 10px 6px;background:#050b14f2;border-bottom:1px solid #16222f;backdrop-filter:blur(12px)}
+.drillLink{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 14px;background:#071018;border-bottom:1px solid #152131;color:#8fd6c4;font-weight:700;font-size:13px;text-decoration:none}
+.drillLink small{color:#89a;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:10px}
 .phBack{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:#0b1522;color:var(--cyan);font-size:26px;line-height:1}
 .phTitle small{display:block;font-size:10px;letter-spacing:1.5px;color:var(--cyan);font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .phTitle b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
