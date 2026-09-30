@@ -124,7 +124,7 @@ function gameCard(state, g) {
   return `<button type="button" class="gameCard card ${unlocked ? '' : 'locked'}" data-action="go" data-href="${g.special === 'ghost' ? '#ghost' : `#game/${g.id}`}" data-game="${g.id}" data-locked="${unlocked ? 0 : 1}">
     <span class="gcIcon">${g.icon}</span>
     <span class="gcMain"><b>${esc(g.name)}</b><small>${esc(g.tagline)}</small>
-      <span class="gcStats">${unlocked ? `<span>LVL ${lvl}/${total}</span>${g.special === 'ghost' ? `<span>${gs.pct}% WINS</span><span>${gs.won} WON</span>` : `<span>${st}/${total * 3}★</span><span>PB ${pb}</span>`}` : `<span class="lock">🔒 ${esc(E.unlockLabel(g.id))}</span>`}</span>
+      <span class="gcStats">${unlocked ? `<span>LVL ${lvl}/${total}</span>${g.special === 'ghost' ? `<span>${gs.pct}% WINS</span><span>${gs.won} GAMES</span>` : `<span>${st}/${total * 3}★</span><span>PB ${pb}</span>`}` : `<span class="lock">🔒 ${esc(E.unlockLabel(g.id))}</span>`}</span>
     </span>
     <span class="gcProg"><i style="width:${Math.round((lvl / total) * 100)}%"></i></span>
   </button>`;
@@ -248,7 +248,7 @@ export function renderProfile(state) {
     <h2>Recommended Training</h2>
     <div class="recList">${recommendedHTML(state, 3)}</div>
     <h2>Ghost</h2>
-    <div class="card stats"><div><b>${st.pct}%</b><span>WIN RATE</span></div><div><b>${st.won}</b><span>WON</span></div><div><b>${maxUnlockedBalls(state)}</b><span>MAX BALLS</span></div></div>
+    <div class="card stats"><div><b>${st.pct}%</b><span>WIN RATE</span></div><div><b>${st.won}</b><span>GAMES WON</span></div><div><b>${maxUnlockedBalls(state)}</b><span>MAX BALLS</span></div></div>
     <button type="button" class="bigBtn alt" data-action="go" data-href="#settings">SETTINGS & CALIBRATION</button>`;
 }
 

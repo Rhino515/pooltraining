@@ -797,7 +797,7 @@ let state = storage.defaultState();
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
   const missing = walk(path.join(root, 'js')).filter((f) => f.endsWith('.js')).map((f) => './' + path.relative(root, f)).filter((f) => !sw.includes(`'${f}'`));
-  assert(/'pool-iq-v14-35'/.test(sw), 'service worker cache is pool-iq-v14-34');
+  assert(/'pool-iq-v14-36'/.test(sw), 'service worker cache is pool-iq-v14-36');
   assertAll('service worker precaches every JS module (incl. simulator + Create Drill)', missing.map((m) => `missing ${m}`));
   const wordN = { one: 1, two: 2, three: 3, four: 4 };
   const probs = [];
@@ -878,7 +878,19 @@ let state = storage.defaultState();
   out = GH.applyRack(st, s, 'W');
   assert(out.ended && out.match.level === 'pro' && out.match.breaks.length === 4 && GH.ghostLabel(out.match) === '8-Ball Ghost · Pro', 'Pro match saved with break history');
   const stats = GH.ghostStats(out.state);
-  assert(stats.byEight.find((x) => x.level === 'pro').won === 1 && stats.byBalls.every((b) => b.played === 0), '8-ball stats kept separate from 3–9-ball stats');
+  const proRow = stats.byEight.find((x) => x.level === 'pro');
+  assert(proRow.won === 3 && proRow.played === 1 && proRow.pct === 100 && out.match.you === 3 && out.match.ghost === 1 && out.match.log.length === 4 && stats.won === 3 && stats.byBalls.every((b) => b.played === 0), '8-ball stats kept separate from 3–9-ball stats; a won 3–1 set adds 3 games, not 1 and not 4');
+  const shared = GH.ghostStats({
+    ghostMatches: [
+      { mode: 'eight', level: 'beginner', you: 3, ghost: 0, won: true, log: ['W', 'W', 'W'], race: 3 },
+      { mode: 'eight', level: 'beginner', you: 2, ghost: 3, won: false, log: ['W', 'W', 'L', 'L', 'L'], race: 3 },
+      { balls: 9, you: 3, ghost: 1, won: true, log: ['W', 'L', 'W', 'W'], race: 3 },
+      { balls: 9, you: 1, ghost: 3, won: false, log: ['W', 'L', 'L', 'L'], race: 3 }
+    ]
+  });
+  assert(shared.byEight.find((x) => x.level === 'beginner').won === 3, '8-ball: 3–0 adds 3 games won; a lost set adds 0');
+  assert(shared.byBalls.find((b) => b.balls === 9).won === 3 && shared.byBalls.find((b) => b.balls === 9).played === 2, '9-ball shares the games-won counter: 3–1 adds 3, a loss adds 0');
+  assert(GH.gamesWonInWinningSet({ won: false, you: 2, log: ['W', 'W', 'L'] }) === 0 && GH.gamesWonInWinningSet({ won: true, you: 3, ghost: 1 }) === 3, 'games won uses his score in a set he won, never a loss');
   // Shot Simulator layouts for 8-Ball Ghost
   const probs = [];
   for (let seed = 1; seed <= 10; seed++) {
@@ -2039,7 +2051,7 @@ let state = storage.defaultState();
   const dash = src('js/dashboard.js');
   const friends = src('js/ui/friends.js');
   const vendor = src('js/vendor/supabase.js');
-  assert(/'pool-iq-v14-35'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw) && !/'pool-iq-v14-5c'/.test(sw), 'v14: service worker cache is pool-iq-v14-34');
+  assert(/'pool-iq-v14-36'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw) && !/'pool-iq-v14-5c'/.test(sw), 'v14: service worker cache is pool-iq-v14-36');
   assert(sw.includes(`'./js/vendor/supabase.js'`) && sw.includes(`'./js/cloud/controller.js'`) && sw.includes(`'./js/ui/account.js'`), 'v13: sw precaches the bundled supabase-js and the cloud modules');
   assert(/supabase-js\/2\.117\.2/.test(vendor) && /createClient/.test(vendor) && !/cdn\.jsdelivr|unpkg\.com|esm\.sh/.test(idx + sw), 'v13: official supabase-js v2 UMD build is bundled locally (no CDN)');
   assert(/nqfwlpfyccbqetcyjijf/.test(cfg) && /sb_publishable_/.test(cfg) && !/sb_secret_|service_role|sbp_[0-9a-f]{10}/.test(cfg + sql + docs), 'v13: config carries the project ref + publishable key only (no secrets anywhere)');
@@ -2248,7 +2260,7 @@ let state = storage.defaultState();
   assert(!fixSrc.includes('drill_overrides') && !saveFn.includes('.delete('), 'v14-26: the editor never deletes the published row');
   assert(oeSrc.includes('publishedDoc(ch.id)') && !oeSrc.slice(oeSrc.indexOf('export function applyDrillEdit'), oeSrc.indexOf('export function editCount')).includes('getDrillEdit'), 'v14-26: the live drill is the published row, not the phone copy');
   assert(pubSrc.includes('andrewaphay') === false && pubSrc.includes('ownerAccountSignedIn'), 'v14-26: the client refuses publish unless the owner account is signed in');
-  assert(swSrc.includes('pool-iq-v14-35') && swSrc.includes('skipWaiting') && swSrc.includes('clients.claim'), 'v14-28: new cache skipWaiting and clients.claim');
+  assert(swSrc.includes('pool-iq-v14-36') && swSrc.includes('skipWaiting') && swSrc.includes('clients.claim'), 'v14-28: new cache skipWaiting and clients.claim');
   assert(fixSrc.includes('id="fixImport"') && fixSrc.includes('accept=".pooliq,.json,application/json,application/octet-stream,text/plain,*/*"') && !fixSrc.includes('text/json'), 'v14-27: IMPORT DRILL accept lets Android select .pooliq and .json');
   assert(appSrc.includes('controllerchange') && appSrc.includes('pooliq-sw-reloaded') && appSrc.includes('location.reload()'), 'v14-26: an open app reloads once when the new worker activates');
   const PUB = await import(js('drills/published.js'));

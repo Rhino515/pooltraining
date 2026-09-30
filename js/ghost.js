@@ -150,19 +150,35 @@ export function applyUndo(state, session) {
   return { state: { ...base, ghostMatches, xp, activeGhost: s }, session: s };
 }
 
+/**
+ * Games the player won inside a set he won.
+ * A lost set adds 0 (it is not flipped into a win, and the ghost's games are not his).
+ * The set itself is not 1. A 3–1 win adds 3, not 1 and not 4.
+ * `you` is the recorded game score; the rack log is only a fallback when that score is missing.
+ */
+export function gamesWonInWinningSet(m) {
+  if (!m || !m.won) return 0;
+  const score = Number(m.you);
+  if (Number.isFinite(score) && score >= 0) return Math.round(score);
+  if (Array.isArray(m.log)) return m.log.reduce((n, x) => n + (x === 'W' ? 1 : 0), 0);
+  return 0;
+}
+
 export function ghostStats(state) {
   const ms = state.ghostMatches || [];
-  const won = ms.filter((m) => m.won).length;
+  const matchWins = ms.filter((m) => m.won).length;
+  const won = ms.reduce((a, m) => a + gamesWonInWinningSet(m), 0);
   const row = (l) => {
-    const w = l.filter((m) => m.won).length;
+    const w = l.reduce((a, m) => a + gamesWonInWinningSet(m), 0);
+    const setsWon = l.filter((m) => m.won).length;
     const racks = l.reduce((a, m) => a + (m.log || []).length, 0);
     const rw = l.reduce((a, m) => a + (m.log || []).filter((x) => x === 'W').length, 0);
-    return { played: l.length, won: w, pct: l.length ? Math.round((100 * w) / l.length) : 0, rackPct: racks ? Math.round((100 * rw) / racks) : 0 };
+    return { played: l.length, won: w, pct: l.length ? Math.round((100 * setsWon) / l.length) : 0, rackPct: racks ? Math.round((100 * rw) / racks) : 0 };
   };
   const byBalls = GHOST_BALL_OPTIONS.map((n) => ({ balls: n, ...row(ms.filter((m) => !isEight(m) && m.balls === n)) }));
   const eight = ms.filter(isEight);
   const byEight = EIGHT_LEVELS.map((L) => ({ level: L.id, label: L.label, ...row(eight.filter((m) => m.level === L.id)) }));
-  return { played: ms.length, won, pct: ms.length ? Math.round((100 * won) / ms.length) : 0, byBalls, eight: row(eight), byEight };
+  return { played: ms.length, won, pct: ms.length ? Math.round((100 * matchWins) / ms.length) : 0, byBalls, eight: row(eight), byEight };
 }
 
 // ------------------------------------------------------------------------------------ rules text
@@ -234,14 +250,14 @@ export function renderGhostLobby(state, preset = {}) {
       <button type="button" class="bigBtn alt" data-action="go" data-href="#sim/eight/pro">SET UP IN SHOT SIMULATOR</button>
     </div>`;
   const recordRows = mode === 'rotation'
-    ? `<div class="card history"><div class="historyRow head"><span>Balls</span><span>Played</span><span>Won</span><span>Win %</span><span>Rack %</span></div>${st.byBalls.map((b) => `<div class="historyRow"><span>${b.balls}-ball</span><span>${b.played}</span><span>${b.won}</span><span>${b.pct}%</span><span>${b.rackPct}%</span></div>`).join('')}</div>`
-    : `<div class="card history"><div class="historyRow head"><span>8-Ball</span><span>Played</span><span>Won</span><span>Win %</span><span>Rack %</span></div>${st.byEight.map((b) => `<div class="historyRow"><span>${b.label}</span><span>${b.played}</span><span>${b.won}</span><span>${b.pct}%</span><span>${b.rackPct}%</span></div>`).join('')}</div>`;
+    ? `<div class="card history"><div class="historyRow head"><span>Balls</span><span>Played</span><span>Games</span><span>Win %</span><span>Rack %</span></div>${st.byBalls.map((b) => `<div class="historyRow"><span>${b.balls}-ball</span><span>${b.played}</span><span>${b.won}</span><span>${b.pct}%</span><span>${b.rackPct}%</span></div>`).join('')}</div>`
+    : `<div class="card history"><div class="historyRow head"><span>8-Ball</span><span>Played</span><span>Games</span><span>Win %</span><span>Rack %</span></div>${st.byEight.map((b) => `<div class="historyRow"><span>${b.label}</span><span>${b.played}</span><span>${b.won}</span><span>${b.pct}%</span><span>${b.rackPct}%</span></div>`).join('')}</div>`;
   return `<div class="title"><span class="eyebrow">TABLE GAMES · GHOST</span><h1>Race the Ghost</h1><p>Clear the table = your rack. Any miss, foul or failed runout = Ghost's rack.</p></div>
     ${active ? `<div class="card resumeCard"><b>Match in progress</b><p class="muted">${esc(ghostLabel(active))} · race to ${active.race} · ${active.you}–${active.ghost}</p><button type="button" class="bigBtn" data-action="go" data-href="#ghostmatch">RESUME MATCH</button></div>` : ''}
     ${modeTabs}
     ${setup}
     <h2>Your Ghost record</h2>
-    <div class="card stats ghostStats"><div><b data-ghost-pct>${st.pct}%</b><span>WIN RATE</span></div><div><b>${st.won}</b><span>MATCHES WON</span></div><div><b>${st.played}</b><span>PLAYED</span></div></div>
+    <div class="card stats ghostStats"><div><b data-ghost-pct>${st.pct}%</b><span>WIN RATE</span></div><div><b>${st.won}</b><span>GAMES WON</span></div><div><b>${st.played}</b><span>PLAYED</span></div></div>
     ${recordRows}
     <h2>Recent matches</h2>
     <div class="card history" id="ghostHistory">${(state.ghostMatches || []).slice(-8).reverse().map((m) => `<div class="historyRow" data-match="${esc(m.id)}"><span>${esc(ghostLabel(m))} · race ${m.race}</span><span class="${m.won ? 'green' : 'red'}">${m.won ? 'WON' : 'LOST'} ${m.you}–${m.ghost}</span><span class="muted">${new Date(m.date).toLocaleDateString()}</span></div>`).join('') || '<p class="muted">No matches yet.</p>'}</div>`;
