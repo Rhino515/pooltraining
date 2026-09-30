@@ -124,16 +124,20 @@ export function drillFromImport(input, currentId) {
   } else candidate = raw;
 
   if (candidate.contentType && candidate.contentType !== 'drill') return { error: NOT_A_DRILL };
+  const rejected = (v) => {
+    const lines = v && Array.isArray(v.errors) ? v.errors.filter(Boolean).slice(0, 4) : [];
+    return { error: lines.length ? lines.join('\n') : NOT_A_DRILL };
+  };
   let v;
   try { v = validatePooliq(JSON.stringify(candidate)); } catch { return { error: NOT_A_DRILL }; }
-  if (!v.ok || !v.doc || v.doc.contentType !== 'drill') return { error: NOT_A_DRILL };
+  if (!v.ok || !v.doc || v.doc.contentType !== 'drill') return rejected(v);
   let doc = v.doc;
   const id = String(currentId || '');
   if (id && doc.id !== id) {
     const swapped = JSON.parse(JSON.stringify(doc));
     swapped.id = id;
     try { v = validatePooliq(JSON.stringify(swapped)); } catch { return { error: NOT_A_DRILL }; }
-    if (!v.ok || !v.doc || v.doc.contentType !== 'drill' || v.doc.id !== id) return { error: NOT_A_DRILL };
+    if (!v.ok || !v.doc || v.doc.contentType !== 'drill' || v.doc.id !== id) return rejected(v);
     doc = v.doc;
   }
   return { doc: JSON.parse(JSON.stringify(doc)) };

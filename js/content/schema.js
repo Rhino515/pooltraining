@@ -344,7 +344,7 @@ const HEADER = {
   contentVersion: versionStr,
   attribution: T.obj({ author: text(80), sourceName: text(120), sourceURL: urlStr, notes: text(600) }),
   careerEligible: T.bool,
-  metadata: T.obj({ tags: T.arr(T.str(30, 1), 12), created: text(40), updated: text(40), language: text(16), demo: T.bool, generator: text(80), official: T.bool }),
+  metadata: T.obj({ tags: T.arr(T.str(30, 1), 12), created: text(40), updated: text(40), corrected: text(40), sourceFigure: text(40), language: text(16), demo: T.bool, generator: text(80), official: T.bool }),
   ...COMMON_ITEM
 };
 const STAGE_BASE = { id: idStr, stageType: T.oneOf(STAGE_TYPES), requires: T.arr(idStr, 10), contentType: T.oneOf(STAGE_CONTENT_TYPES), ...COMMON_ITEM };

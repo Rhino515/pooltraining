@@ -797,7 +797,7 @@ let state = storage.defaultState();
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
   const missing = walk(path.join(root, 'js')).filter((f) => f.endsWith('.js')).map((f) => './' + path.relative(root, f)).filter((f) => !sw.includes(`'${f}'`));
-  assert(/'pool-iq-v14-27'/.test(sw), 'service worker cache is pool-iq-v14-27');
+  assert(/'pool-iq-v14-28'/.test(sw), 'service worker cache is pool-iq-v14-28');
   assertAll('service worker precaches every JS module (incl. simulator + Create Drill)', missing.map((m) => `missing ${m}`));
   const wordN = { one: 1, two: 2, three: 3, four: 4 };
   const probs = [];
@@ -2037,7 +2037,7 @@ let state = storage.defaultState();
   const dash = src('js/dashboard.js');
   const friends = src('js/ui/friends.js');
   const vendor = src('js/vendor/supabase.js');
-  assert(/'pool-iq-v14-27'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw) && !/'pool-iq-v14-5c'/.test(sw), 'v14: service worker cache is pool-iq-v14-27');
+  assert(/'pool-iq-v14-28'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw) && !/'pool-iq-v14-5c'/.test(sw), 'v14: service worker cache is pool-iq-v14-28');
   assert(sw.includes(`'./js/vendor/supabase.js'`) && sw.includes(`'./js/cloud/controller.js'`) && sw.includes(`'./js/ui/account.js'`), 'v13: sw precaches the bundled supabase-js and the cloud modules');
   assert(/supabase-js\/2\.117\.2/.test(vendor) && /createClient/.test(vendor) && !/cdn\.jsdelivr|unpkg\.com|esm\.sh/.test(idx + sw), 'v13: official supabase-js v2 UMD build is bundled locally (no CDN)');
   assert(/nqfwlpfyccbqetcyjijf/.test(cfg) && /sb_publishable_/.test(cfg) && !/sb_secret_|service_role|sbp_[0-9a-f]{10}/.test(cfg + sql + docs), 'v13: config carries the project ref + publishable key only (no secrets anywhere)');
@@ -2244,12 +2244,78 @@ let state = storage.defaultState();
   assert(!fixSrc.includes('drill_overrides') && !saveFn.includes('.delete('), 'v14-26: the editor never deletes the published row');
   assert(oeSrc.includes('publishedDoc(ch.id)') && !oeSrc.slice(oeSrc.indexOf('export function applyDrillEdit'), oeSrc.indexOf('export function editCount')).includes('getDrillEdit'), 'v14-26: the live drill is the published row, not the phone copy');
   assert(pubSrc.includes('andrewaphay') === false && pubSrc.includes('ownerAccountSignedIn'), 'v14-26: the client refuses publish unless the owner account is signed in');
-  assert(swSrc.includes('pool-iq-v14-27') && swSrc.includes('skipWaiting') && swSrc.includes('clients.claim'), 'v14-27: new cache skipWaiting and clients.claim');
+  assert(swSrc.includes('pool-iq-v14-28') && swSrc.includes('skipWaiting') && swSrc.includes('clients.claim'), 'v14-28: new cache skipWaiting and clients.claim');
   assert(fixSrc.includes('id="fixImport"') && fixSrc.includes('accept=".pooliq,.json,application/json,application/octet-stream,text/plain,*/*"') && !fixSrc.includes('text/json'), 'v14-27: IMPORT DRILL accept lets Android select .pooliq and .json');
   assert(appSrc.includes('controllerchange') && appSrc.includes('pooliq-sw-reloaded') && appSrc.includes('location.reload()'), 'v14-26: an open app reloads once when the new worker activates');
   const PUB = await import(js('drills/published.js'));
   const locked = await PUB.publishDrill('pkf-draw-1d', { title: 'nope' });
   assert(locked.error && /owner account/i.test(locked.error) && !locked.ok, 'v14-26: publish without the owner account does not write');
+}
+
+
+// ---------------------------------------------------------------- v14-28: ChatGPT .pooliq with extra metadata replaces the editor diagram
+{
+  const fs = await import('fs');
+  const OE = await import(js('drills/ownerEdits.js'));
+  const PKF = await import(js('content/pkfBuiltins.js'));
+  const ST = await import(js('games/stageTable.js'));
+  const DEV = await import(js('dev/dev.js'));
+  if (!DEV.isUnlocked()) await DEV.unlock('cue-9ball');
+  const fixSrc = fs.readFileSync(path.join(root, 'js/ui/drillFix.js'), 'utf8');
+  const top = fixSrc.slice(fixSrc.indexOf('class="fixTop"'), fixSrc.indexOf('class="fixScroll"'));
+  assert(top.includes('id="fixMsg"') && top.indexOf('id="fixMsg"') < top.indexOf('fixTools'), 'v14-28: an import error is in the row with the table, not only below the fold');
+  const applyBody = fixSrc.slice(fixSrc.indexOf('function applyImported'), fixSrc.indexOf('function bindFields'));
+  assert(applyBody.includes('showMsg(out.error') && applyBody.includes('doc = out.doc') && applyBody.includes('render()') && !applyBody.includes('publishDrill'), 'v14-28: a rejected file shows its error; a kept file only previews');
+  const id = 'pkf-low-action-straight-1';
+  const shipped = OE.shippedDoc(id);
+  const file = {
+    format: 'pooliq', schemaVersion: '1.0', contentType: 'drill', id,
+    contentVersion: '1.1', title: 'PKF · Low Action Straight · Near',
+    description: 'Pocket the straight-in 1-ball using maximum low and the softest effective speed, stopping the cue ball at the contact point.',
+    category: 'PKF · Center Ball', difficulty: 1, skill: 'Shot Making',
+    attribution: { sourceName: 'P.K.F. — Pattern Play / Cue Ball Control (Zero-X Billiards)', notes: 'Converted from the user-provided PKF handbook.' },
+    careerEligible: true,
+    metadata: { tags: ['pkf', 'center-ball', 'low-action', 'stop-shot', 'figure-3-52'], created: '2026-09-29', language: 'en', demo: false, generator: 'ChatGPT', corrected: '2026-09-30', sourceFigure: '3-52' },
+    shot: {
+      kind: 'position',
+      cueBallPosition: { x: 62.5, y: 43.75 },
+      ballPositions: [{ n: 1, x: 25, y: 43.75 }],
+      targetBall: 1, targetPocket: 'BL',
+      targetZones: [{ x: 25, y: 43.75, rings: [{ r: 2.5, stars: 3 }, { r: 4, stars: 2 }, { r: 6, stars: 1 }], label: 'STOP' }],
+      cueBallPath: [{ x: 62.5, y: 43.75 }, { x: 25, y: 43.75 }],
+      contactIndex: 1,
+      objectBallPaths: [{ n: 1, points: [{ x: 25, y: 43.75 }, { x: 0, y: 50 }] }],
+      cueContact: { vTips: -1.5, hTips: 0 },
+      technique: 'stun', speed: 1,
+      goal: 'Pocket the 1-ball and stop the cue ball as close to the contact point as possible.'
+    },
+    scoringRules: { mode: 'zone', attempts: 5, pass: { stars: 7, pockets: 3 } },
+    xp: 45,
+    skillEffects: { 'Shot Making': 0.4, 'Cue-Ball Control': 0.4 }
+  };
+  const parsed = OE.drillFromImport(JSON.stringify(file), id);
+  assert(parsed.doc && !parsed.error && parsed.doc.shot.cueBallPosition.x === 62.5 && parsed.doc.shot.ballPositions[0].x === 25 && parsed.doc.shot.targetPocket === 'BL' && parsed.doc.metadata.corrected === '2026-09-30' && parsed.doc.metadata.sourceFigure === '3-52', 'v14-28: ChatGPT metadata (corrected, sourceFigure) does not reject the drill');
+  assert(shipped.shot.cueBallPosition.x !== 62.5 && shipped.shot.ballPositions[0].x !== 25 && shipped.shot.targetPocket === 'BR', 'v14-28: shipped low-action drill is the old layout');
+  const opt = { showCuePath: true, showAim: true, showObPath: true, showZones: true, className: 'table-diagram stage-table' };
+  const before = ST.renderStageTable(PKF.challengeFromPkfDoc(shipped), opt);
+  const after = ST.renderStageTable(PKF.challengeFromPkfDoc(parsed.doc), opt);
+  const ballAt = (svg, n) => {
+    const m = svg.match(new RegExp(`data-n="${n}"[\\s\\S]*?class="ball-body" cx="([^"]+)" cy="([^"]+)"`));
+    return m ? { x: Number(m[1]), y: Number(m[2]) } : null;
+  };
+  const cue0 = ballAt(before, 'cue');
+  const ob0 = ballAt(before, '1');
+  const cue1 = ballAt(after, 'cue');
+  const ob1 = ballAt(after, '1');
+  assert(cue0 && ob0 && cue1 && ob1 && cue1.x === 62.5 && cue1.y === 43.75 && ob1.x === 25 && ob1.y === 43.75 && (cue1.x !== cue0.x || cue1.y !== cue0.y) && (ob1.x !== ob0.x || ob1.y !== ob0.y), `v14-28: importing moved balls changes the editor diagram (${cue0 && cue0.x},${cue0 && cue0.y} -> ${cue1 && cue1.x},${cue1 && cue1.y}; ob ${ob0 && ob0.x} -> ${ob1 && ob1.x})`);
+  const targetPocket = (svg) => (svg.match(/data-pocket="([A-Z]+)"[^>]*stroke="#55e5ff"/) || [])[1];
+  assert(targetPocket(before) === 'BR' && targetPocket(after) === 'BL' && after.includes('62.5') && after.includes('43.75'), 'v14-28: imported pocket and path coordinates are on the diagram');
+  const badShot = JSON.parse(JSON.stringify(file));
+  badShot.metadata = { created: '2026-09-29' };
+  badShot.shot.cueBallPosition = { x: 0, y: 0 };
+  const refused = OE.drillFromImport(JSON.stringify(badShot), id);
+  assert(!refused.doc && refused.error && /off the table|overlaps the cushion/.test(refused.error) && refused.error !== 'That file is not a drill this app understands.', 'v14-28: a rejected drill shows the validator error, not a silent generic no-op');
+  DEV.lock();
 }
 
 console.log('\n--- Summary ---');

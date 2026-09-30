@@ -519,6 +519,7 @@ export function createDrillFix(ctx, idOrSpec) {
           <button type="button" class="fixSave" data-action="df-save">SAVE</button>
         </div>
         <div class="fixFit"><div id="fixTable" class="fixTable">${table}</div></div>
+        <div id="fixMsg" class="fixMsg${ui.msg ? ' show' : ''}">${esc(ui.msg).replace(/\n/g, '<br>')}</div>
         <div class="fixFullBot">
           <div class="nudge">
             <button type="button" data-action="df-nudge" data-dx="-0.25" data-dy="0">◀ HEAD</button>
@@ -554,6 +555,7 @@ export function createDrillFix(ctx, idOrSpec) {
       </div>
       <div class="fixTop">
         ${s.cueBallPosition || (s.targetZones || []).length ? `<div class="fixTableWrap"><button type="button" class="fixExpand" data-action="df-full">FULL TABLE</button><div id="fixTable" class="fixTable">${table}</div></div>` : ''}
+        <div id="fixMsg" class="fixMsg${ui.msg ? ' show' : ''}">${esc(ui.msg).replace(/\n/g, '<br>')}</div>
         <div class="fixTools" role="group" aria-label="What to drag">
           <button type="button" class="${ui.tool === 'move' ? 'on' : ''}" data-action="df-tool" data-tool="move">BALLS</button>
           <button type="button" class="${ui.tool === 'cue' ? 'on' : ''}" data-action="df-tool" data-tool="cue">CUE PATH</button>
@@ -599,7 +601,6 @@ export function createDrillFix(ctx, idOrSpec) {
         <p class="muted small">Vertical: above centre is follow (+), below is draw (−). Side: right is +, left is −. Steps of ¼ tip.</p>
         ${ui.tool === 'cue' ? `<div class="eyebrow">CUE BALL PATH</div>${pathList('cuePath')}` : ''}
         ${ui.tool === 'ob' ? `<div class="eyebrow">OBJECT BALL PATH</div>${pathList('obPath')}` : ''}
-        <div id="fixMsg" class="fixMsg${ui.msg ? ' show' : ''}">${esc(ui.msg).replace(/\n/g, '<br>')}</div>
       </div>
       <div class="fixBar">
         <button type="button" class="bigBtn" data-action="df-save">SAVE</button>
@@ -808,6 +809,7 @@ export function createDrillFix(ctx, idOrSpec) {
     if (!el) { render(); return; }
     el.innerHTML = esc(msg).replace(/\n/g, '<br>');
     el.classList.toggle('show', !!msg);
+    if (msg && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
   }
   function bindImport() {
     const input = ctx.root.querySelector('#fixImport');
