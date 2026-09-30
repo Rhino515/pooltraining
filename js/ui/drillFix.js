@@ -606,7 +606,7 @@ export function createDrillFix(ctx, idOrSpec) {
         <button type="button" class="bigBtn alt" data-action="df-reset">RESET</button>
         <button type="button" class="bigBtn alt" data-action="df-export">EXPORT THIS</button>
         ${isDrill ? `<button type="button" class="bigBtn alt" data-action="df-import">IMPORT DRILL</button>
-        <input id="fixImport" type="file" accept=".pooliq,.json,application/json,text/json" hidden>` : ''}
+        <input id="fixImport" type="file" accept=".pooliq,.json,application/json,application/octet-stream,text/plain,*/*" hidden>` : ''}
         <button type="button" class="bigBtn alt" data-action="df-export-all">EXPORT ALL</button>
       </div>
     </div>`;
