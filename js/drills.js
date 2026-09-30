@@ -37,6 +37,7 @@ import { loadContent } from './content/store.js';
 import { shotToChallenge } from './content/convert.js';
 import { threeLaneSpeedDrill } from './games/data/threeLaneSpeed.js';
 import { pkfDrillChallenges } from './content/pkfBuiltins.js';
+import { ballPocketDrills } from './content/ballPocket.js';
 import { applyDrillEdit } from './drills/ownerEdits.js';
 
 export const CATEGORIES = [
@@ -60,7 +61,8 @@ export const CATEGORIES = [
   'PKF · Half Table Patterns',
   'PKF · Full Table Patterns',
   'PKF · Full Table with Sidespin',
-  'PKF · Tips & Tricks · Safeties'
+  'PKF · Tips & Tricks · Safeties',
+  'Ball Pocketing'
 ];
 
 /**
@@ -147,8 +149,9 @@ export function refreshCustomDrills() {
 /** Built-in + custom drills (custom ids never clash: they start with "cd-") */
 export function allDrills() {
   const base = drills.map((d) => applyDrillEdit(d));
-  const custom = customDrills().filter((c) => !base.some((d) => d.id === c.id));
-  return [...base, ...custom];
+  const pocket = ballPocketDrills().filter((c) => !base.some((d) => d.id === c.id));
+  const custom = customDrills().filter((c) => !base.some((d) => d.id === c.id) && !pocket.some((d) => d.id === c.id));
+  return [...base, ...pocket, ...custom];
 }
 
 export function getDrillById(id) {

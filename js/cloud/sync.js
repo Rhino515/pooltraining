@@ -5,7 +5,7 @@
  * Cloud bookkeeping (device id, which cloud save this device has seen, last upload) lives in the vault's UI meta
  * key (poolIQMetaV1 → .cloud). That key is never part of backups / restores, so it stays per-device.
  */
-import { readMeta, writeMeta, buildBackup, parseBackup, summarize, localBundle, isMeaningful, APP_VERSION, BACKUP_FORMAT } from '../vault.js';
+import { readMeta, writeMeta, buildBackup, parseBackup, summarize, localBundle, isMeaningful, APP_VERSION, BACKUP_FORMAT, KEYS } from '../vault.js';
 
 export const AUTO_UPLOAD_DELAY_MS = 20000; // debounce: upload ~20 s after the last session / result is saved
 export const SORTS = { xp: 'Lifetime XP', career: 'Career rank', drill: 'Drill Rank' };
@@ -55,6 +55,7 @@ export function activitySig(summary) {
 /** saves table row: one pool-iq-backup JSON (the same format as Settings → Back Up Now) */
 export function buildSaveRow(kv, { userId, deviceId: dev, deviceLabel: label, now = Date.now() } = {}) {
   const data = buildBackup(kv, { now });
+  if (data.keys) delete data.keys[KEYS.tallyColumns];
   const b = localBundle(kv);
   return { user_id: userId, data, summary: data.summary, app_version: APP_VERSION, device_id: dev || null, device_label: label || null, local_saved_at: b.savedAt || now };
 }

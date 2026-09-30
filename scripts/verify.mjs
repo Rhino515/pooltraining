@@ -750,7 +750,8 @@ let state = storage.defaultState();
   CD.upsertCustomDrill(ch);
   drillsMod.refreshCustomDrills();
   const got = drillsMod.getDrillById(ch.id);
-  assert(!!got && got.custom && drillsMod.allDrills().length === drills.length + 1 && drills.some((d) => d.id === 'three-lane-speed'), 'saved drill merges into the built-in library (Three-Lane Speed Exercise) via allDrills()/getDrillById()');
+  const pocketN = drillsMod.allDrills().filter((d) => d.category === 'Ball Pocketing').length;
+  assert(pocketN === 62 && !!got && got.custom && drillsMod.allDrills().length === drills.length + pocketN + 1 && drills.some((d) => d.id === 'three-lane-speed') && !drills.some((d) => d.category === 'Ball Pocketing'), 'saved drill merges into the built-in library (Three-Lane Speed Exercise) via allDrills()/getDrillById(); Ball Pocketing is merged there and not in the shipped drills array');
   const svg = stageTable.renderStageTable(got);
   assert(/<svg/.test(svg) && (svg.match(/class="ball[ "]/g) || []).length >= 3 && /diamond-grid/.test(svg) && /zone-ring/.test(svg), 'custom drill renders: table, grid, 3 balls, zone rings');
   const stage = engine.stageFor({ gameId: 'drills', stageId: ch.id });
@@ -796,7 +797,7 @@ let state = storage.defaultState();
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
   const missing = walk(path.join(root, 'js')).filter((f) => f.endsWith('.js')).map((f) => './' + path.relative(root, f)).filter((f) => !sw.includes(`'${f}'`));
-  assert(/'pool-iq-v14-12'/.test(sw), 'service worker cache is pool-iq-v14-12');
+  assert(/'pool-iq-v14-13'/.test(sw), 'service worker cache is pool-iq-v14-13');
   assertAll('service worker precaches every JS module (incl. simulator + Create Drill)', missing.map((m) => `missing ${m}`));
   const wordN = { one: 1, two: 2, three: 3, four: 4 };
   const probs = [];
@@ -827,19 +828,18 @@ let state = storage.defaultState();
   assert(/lowest number first/.test(GH.rulesSheetHTML(GH.newGhostSession(4, 5))), 'rotation rules sheet explains lowest number first');
   // 8-Ball Ghost sessions
   const lv = Object.fromEntries(['beginner', 'intermediate', 'advanced', 'pro'].map((l) => [l, GH.newEightSession(l, 5)]));
-  const cu = GH.newEightSession('custom', 7, 4);
-  assert(lv.beginner.group === 3 && lv.intermediate.group === 5 && lv.advanced.group === 7 && lv.pro.group === 7 && lv.pro.phase === 'break' && cu.group === 4 && cu.race === 7 && lv.beginner.mode === 'eight', '8-Ball Ghost presets: Beginner 3+8, Intermediate 5+8, Advanced 7+8, Pro full rack (break phase), Custom 1–7');
-  const lob8 = GH.renderGhostLobby(base, { mode: 'eight', level: 'custom', group: 4, race: 5 });
-  assert(/Beginner/.test(lob8) && /Intermediate/.test(lob8) && /Advanced/.test(lob8) && />Pro</.test(lob8) && /Custom/.test(lob8) && /any order/.test(lob8) && /called pocket/.test(lob8) && /#sim\/eight\/4/.test(lob8), '8-Ball Ghost setup: level presets, custom count, plain rules, Set up in Shot Simulator link');
+  assert(lv.beginner.bih === 5 && lv.intermediate.bih === 3 && lv.advanced.bih === 2 && lv.pro.bih === 0 && [lv.beginner, lv.intermediate, lv.advanced, lv.pro].every((s) => s.group === 7 && s.phase === 'break') && lv.beginner.mode === 'eight', '8-Ball Ghost: full rack at every level; ball-in-hand takes are Beginner 5, Intermediate 3, Advanced 2, Pro 0; break phase is free');
+  const lob8 = GH.renderGhostLobby(base, { mode: 'eight', level: 'beginner', race: 5 });
+  assert(/Beginner/.test(lob8) && /5 ball-in-hand/.test(lob8) && /Intermediate/.test(lob8) && /3 ball-in-hand/.test(lob8) && /Advanced/.test(lob8) && /2 ball-in-hand/.test(lob8) && />Pro</.test(lob8) && /0 ball-in-hand/.test(lob8) && /any order/.test(lob8) && /called pocket/.test(lob8) && /#sim\/eight\/pro/.test(lob8) && !/Custom/.test(lob8), '8-Ball Ghost setup: four levels, ball-in-hand labels, full-rack simulator link');
   const lobPro = GH.renderGhostLobby(base, { mode: 'eight', level: 'pro', race: 5 });
   assert(/you break/i.test(lobPro) && /solids or stripes/.test(lobPro) && /8 on the break = you win the rack/.test(lobPro) && /#sim\/eight\/pro/.test(lobPro), 'Pro rules state the break, open table and the 8-on-the-break house rule');
   // scoring: race to 3 with a custom 4+8 session
-  let st = { ...base, activeGhost: GH.newEightSession('custom', 3, 4) };
+  let st = { ...base, activeGhost: GH.newEightSession('beginner', 3) };
   let s = st.activeGhost;
   for (const r of ['W', 'L', 'W']) ({ state: st, session: s } = GH.applyRack(st, s, r));
   let out = GH.applyRack(st, s, 'W');
   st = out.state;
-  assert(out.ended && out.match.won && out.match.mode === 'eight' && out.match.group === 4 && st.ghostMatches.length === 1 && st.xp > 0, `8-Ball Ghost match to 3 saves with its ball count (${out.match.you}–${out.match.ghost}, +${st.xp} XP)`);
+  assert(out.ended && out.match.won && out.match.mode === 'eight' && out.match.group === 7 && out.match.bih === undefined && st.ghostMatches.length === 1 && st.xp > 0, `8-Ball Ghost match to 3 saves a full-rack match (${out.match.you}–${out.match.ghost}, +${st.xp} XP)`);
   assert(career.ghostWins(st) === 1 && career.ghostWins(st, 3) === 0 && !engine.ghostBeaten(st, 3, 3), '8-Ball Ghost win counts as a general Ghost win but never as an N-ball Ghost requirement');
   const sk0 = skills.computeSkillRatings(base);
   const sk1 = skills.computeSkillRatings(st);
@@ -881,16 +881,15 @@ let state = storage.defaultState();
   assert(stats.byEight.find((x) => x.level === 'pro').won === 1 && stats.byBalls.every((b) => b.played === 0), '8-ball stats kept separate from 3–9-ball stats');
   // Shot Simulator layouts for 8-Ball Ghost
   const probs = [];
-  for (let g = 1; g <= 7; g++) for (let seed = 1; seed <= 10; seed++) {
-    const lay = L.eightGhostLayout(g, seed);
-    const ids = lay.filter((b) => b.id !== 'cue').map((b) => b.id).sort((a, b) => a - b);
-    const want = [...Array.from({ length: g }, (_, i) => i + 1), 8].sort((a, b) => a - b);
-    if (JSON.stringify(ids) !== JSON.stringify(want)) probs.push(`group ${g} seed ${seed}: ${ids}`);
+  for (let seed = 1; seed <= 10; seed++) {
+    const lay = L.eightGhostLayout(3, seed);
+    const ids = lay.filter((b) => b.id !== 'cue').map((b) => b.id);
+    if (ids.length !== 15) probs.push(`seed ${seed}: ${ids.length} object balls`);
     const v = L.validateLayout(lay);
-    if ((v.errors || v).length) probs.push(`group ${g} seed ${seed}: ${(v.errors || v).join('; ')}`);
+    if ((v.errors || v).length) probs.push(`seed ${seed}: ${(v.errors || v).join('; ')}`);
   }
-  if (L.eightGhostLayout(7, 3, true).length !== 16) probs.push('pro layout is not a full rack');
-  assertAll('8-Ball Ghost simulator layouts: your group + the 8 (legal), Pro = full 15-ball rack', probs);
+  if (L.eightGhostLayout(7, 3, true).length !== 16) probs.push('layout is not a full rack');
+  assertAll('8-Ball Ghost simulator layouts: full 15-ball rack at every level', probs);
 }
 
 // ---------------------------------------------------------------- data safety: IndexedDB mirror, snapshots, backup file
@@ -2038,7 +2037,7 @@ let state = storage.defaultState();
   const dash = src('js/dashboard.js');
   const friends = src('js/ui/friends.js');
   const vendor = src('js/vendor/supabase.js');
-  assert(/'pool-iq-v14-12'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw) && !/'pool-iq-v14-5c'/.test(sw), 'v14: service worker cache is pool-iq-v14-12');
+  assert(/'pool-iq-v14-13'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw) && !/'pool-iq-v14-5c'/.test(sw), 'v14: service worker cache is pool-iq-v14-13');
   assert(sw.includes(`'./js/vendor/supabase.js'`) && sw.includes(`'./js/cloud/controller.js'`) && sw.includes(`'./js/ui/account.js'`), 'v13: sw precaches the bundled supabase-js and the cloud modules');
   assert(/supabase-js\/2\.117\.2/.test(vendor) && /createClient/.test(vendor) && !/cdn\.jsdelivr|unpkg\.com|esm\.sh/.test(idx + sw), 'v13: official supabase-js v2 UMD build is bundled locally (no CDN)');
   assert(/nqfwlpfyccbqetcyjijf/.test(cfg) && /sb_publishable_/.test(cfg) && !/sb_secret_|service_role|sbp_[0-9a-f]{10}/.test(cfg + sql + docs), 'v13: config carries the project ref + publishable key only (no secrets anywhere)');

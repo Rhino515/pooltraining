@@ -1762,12 +1762,9 @@ export function createSimScreen(ctx, args = []) {
       render();
       if (args[0] === 'target' && !st.game) { history.replaceState(null, '', '#sim'); startGame(); }
       if (args[0] === 'eight' && !st.game) {
-        // from 8-Ball Ghost: #sim/eight/<group 1-7> or #sim/eight/pro
+        // from 8-Ball Ghost: full 15-ball rack at every level
         history.replaceState(null, '', '#sim');
-        const pro = args[1] === 'pro';
-        const g = pro ? 7 : Math.max(1, Math.min(7, Number(args[1]) || 3));
-        if (pro) newLayout(L.eightGhostLayout(7, Date.now(), true, rad()), { aim: 0, speed: 6, vTips: 0, hTips: 0 }, '8-Ball Ghost · Pro break', '15-ball rack — break, then ball in hand');
-        else newLayout(L.eightGhostLayout(g, Date.now(), false, rad()), { speed: 2, vTips: 0, hTips: 0 }, `8-Ball Ghost · ${g} + 8`, `Ball in hand: run your ${g} in any order, then the 8`);
+        newLayout(L.eightGhostLayout(7, Date.now(), true, rad()), { aim: 0, speed: 6, vTips: 0, hTips: 0 }, '8-Ball Ghost', 'Full 15-ball rack');
       }
     },
     onAction,

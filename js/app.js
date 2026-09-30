@@ -14,7 +14,7 @@ import { withSkills } from './skills.js';
 import { drills, getDrillById, allDrills } from './drills.js';
 import { renderHome, renderCareerPage, renderDrillsPage, renderArcade, renderGameLobby, renderBossPage, renderProfile, renderSettings, renderLearn } from './dashboard.js';
 import { renderAnalyzePage, bindAnalyzeHandlers } from './analyze.js';
-import { renderGhostLobby, renderGhostMatch, newGhostSession, newEightSession, applyRack, applyUndo, applyBreak, setBreakMade, rulesSheetHTML, maxUnlockedBalls, matchOver } from './ghost.js';
+import { renderGhostLobby, renderGhostMatch, newGhostSession, newEightSession, applyRack, applyUndo, applyBreak, setBreakMade, useBallInHand, rulesSheetHTML, maxUnlockedBalls, matchOver } from './ghost.js';
 import { createPlayScreen } from './ui/play.js';
 import { createSimScreen } from './ui/simulator.js';
 import { createDrillBuilder } from './ui/drillBuilder.js';
@@ -440,6 +440,12 @@ function handleAction(action, el, e) {
       break;
     case 'ghost-bmade': {
       const out = setBreakMade(state, state.activeGhost, Number(el.dataset.v));
+      commit(out.state, { silent: true });
+      renderRoute();
+      break;
+    }
+    case 'ghost-bih': {
+      const out = useBallInHand(state, state.activeGhost);
       commit(out.state, { silent: true });
       renderRoute();
       break;

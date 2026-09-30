@@ -124,14 +124,12 @@ export function randomLayout(game, seed = Date.now(), opt = {}) {
   return out;
 }
 /**
- * 8-Ball Ghost practice layout: your group (solids 1…group) plus the 8, scattered, cue ball in hand anywhere.
- * group 7 with pro = a full 15-ball rack to break.
+ * 8-Ball Ghost practice layout: a full 15-ball rack at every difficulty.
+ * Difficulty does not remove balls.
  */
 export function eightGhostLayout(group, seed = Date.now(), pro = false, radius = R) {
-  if (pro) return rackLayout(8, seed, radius);
-  const g = Math.max(1, Math.min(7, Math.round(Number(group) || 3)));
-  const ids = [...Array.from({ length: g }, (_, i) => i + 1), 8];
-  return randomLayout(8, seed, { ids, cueAnywhere: true, r: radius });
+  void group; void pro;
+  return rackLayout(8, seed, radius);
 }
 function nearPocket(p) {
   const corners = [[0, 0], [100, 0], [0, 50], [100, 50]];

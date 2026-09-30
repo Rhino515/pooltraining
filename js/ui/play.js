@@ -16,6 +16,7 @@ import { speedExplainHTML, speedDiagramSVG } from '../games/speedDiagram.js';
 import { openSheet, closeSheet, toast, stars } from './sheet.js';
 import { getDrillById } from '../drills.js';
 import { drillEditorAllowed } from '../drills/ownerEdits.js';
+import { columnsFor, addTallyColumn, bumpTallyColumn, removeTallyColumn } from '../drills/tallyColumns.js';
 import { RANK_NAMES } from '../storage.js';
 import { getResultAdapter } from '../analyze.js';
 import { awardHTML } from './progression.js';
@@ -128,13 +129,22 @@ export function createPlayScreen(ctx, key) {
     return null;
   }
   function tallyHTML(attempts, basis) {
-    const { makes, misses } = countMakeMiss(attempts);
-    const rank = basis ? E.medalName(makes, basis.total) : '';
-    return `<div class="shotTally" data-makes="${makes}" data-misses="${misses}" data-attempts="${basis ? basis.total : ''}" data-rank="${rank}">
-      <span class="tallyMake"><b>${makes}</b><small>Makes</small></span>
-      <span class="tallyMiss"><b>${misses}</b><small>Misses</small></span>
+    const all = attempts || [];
+    const windowed = basis ? all.slice(0, basis.total) : all;
+    const shown = countMakeMiss(all);
+    const ranked = countMakeMiss(windowed);
+    const rank = basis ? E.medalName(ranked.makes, basis.total) : '';
+    return `<div class="shotTally" data-makes="${shown.makes}" data-misses="${shown.misses}" data-window-makes="${ranked.makes}" data-window-misses="${ranked.misses}" data-attempts="${basis ? basis.total : ''}" data-rank="${rank}">
+      <span class="tallyMake"><b>${shown.makes}</b><small>Makes</small></span>
+      <span class="tallyMiss"><b>${shown.misses}</b><small>Misses</small></span>
       <span class="tallyRank${rank ? '' : ' is-none'}" data-rank="${rank}"><b>${rank || '—'}</b><small>${rank ? 'Rank' : 'Pass at Bronze'}</small></span>
     </div>`;
+  }
+  function extraTallyHTML() {
+    if (!stage || !stage.isDrill || session.bossId || session.gameId !== 'drills' || !drillEditorAllowed()) return '';
+    const cols = columnsFor(session.stageId);
+    const cells = cols.map((c) => `<span class="tallyCol" data-col="${esc(c.id)}"><b>${c.makes || 0}</b><small>Makes</small><b>${c.misses || 0}</b><small>Misses</small><button type="button" data-action="tally-col-make" data-col="${esc(c.id)}">Make</button><button type="button" data-action="tally-col-miss" data-col="${esc(c.id)}">Miss</button><button type="button" data-action="tally-col-remove" data-col="${esc(c.id)}" aria-label="Remove tally column">×</button></span>`).join('');
+    return `<div class="tallyCols" data-dev-tally="1">${cells}<button type="button" class="tallyAdd" data-action="tally-add-col">Add tally column</button></div>`;
   }
   function progressHTML(ev) {
     if (ev.mode === 'boss') {
@@ -142,7 +152,7 @@ export function createPlayScreen(ctx, key) {
       const track = `<div class="bossTrack">${ev.shots.map((s, i) => `<i class="${s.passed ? 'ok' : s.done ? 'bad' : i === ev.shotIndex ? 'cur' : ''}" title="${esc(s.shot.title)}">${i + 1}</i>`).join('')}</div>`;
       return track + tallyHTML(cur.attempts, E.medalThresholds(cur.shot.attempts || 20));
     }
-    return tallyHTML(session.attempts, attemptBasis(ev));
+    return tallyHTML(session.attempts, attemptBasis(ev)) + extraTallyHTML();
   }
 
   function render() {
@@ -411,6 +421,15 @@ export function createPlayScreen(ctx, key) {
           render();
         });
       }
+      return true;
+    }
+    if (action === 'tally-add-col' || action === 'tally-col-make' || action === 'tally-col-miss' || action === 'tally-col-remove') {
+      if (!drillEditorAllowed() || session.gameId !== 'drills') return true;
+      const id = session.stageId;
+      if (action === 'tally-add-col') addTallyColumn(id);
+      else if (action === 'tally-col-remove') removeTallyColumn(id, el.dataset.col);
+      else bumpTallyColumn(id, el.dataset.col, action === 'tally-col-make' ? 'make' : 'miss');
+      render();
       return true;
     }
     if (action === 'undo-attempt') {

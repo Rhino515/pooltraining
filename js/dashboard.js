@@ -4,6 +4,7 @@
 import { nextRankInfo, RANK_NAMES, RANK_REQUIREMENTS, requirementChecklist, nextUp, isBossUnlocked } from './career.js';
 import { skillBarsHTML, weakestSkills, recommendations } from './skills.js';
 import { allDrills, drillsByCategory, isDrillUnlocked, CATEGORIES, getDrillById } from './drills.js';
+import { ballPocketDrills } from './content/ballPocket.js';
 import { maxUnlockedBalls, ghostStats } from './ghost.js';
 import { GAMES, getGame, stageSpecs, getStages, getBosses, getBoss } from './games/registry.js';
 import * as E from './games/engine.js';
@@ -96,6 +97,7 @@ export function renderCareerPage(state) {
   });
   const cs = careerStatus(state);
   return `${devSeedBannerHTML(state)}<div class="title"><span class="eyebrow">CAREER MODE</span><h1>${esc(RANK_NAMES[cur])}</h1><p>Rank XP fills the ball levels inside each rank (the ball is your level). Skill Gates hold the ball until foundations are passed. Beat the rank's Promotion Test (Boss Battle) to promote — XP never promotes by itself.</p></div>
+    ${ballPocketSection(state)}
     ${careerHeaderHTML(state, { link: false })}
     ${gateCardHTML(state)}
     ${promotionCardHTML(state)}
@@ -103,6 +105,17 @@ export function renderCareerPage(state) {
     ${tierCapsHTML(state)}
     <div class="chLinks"><button type="button" class="chip" data-action="go" data-href="#training">Recommended Training</button><button type="button" class="chip" data-action="go" data-href="#skills">Skill Breakdown</button><button type="button" class="chip" data-action="go" data-href="#champion">${cs.champion ? 'Champion Stats' : 'Road to Champion'}</button></div>
     <h2>Ranks</h2><div class="ranklist">${rows.join('')}</div>`;
+}
+
+function ballPocketSection(state) {
+  const list = ballPocketDrills();
+  const blocks = [1, 2, 3, 4, 5].map((lv) => {
+    const rows = list.filter((d) => d.level === lv);
+    if (!rows.length) return '';
+    const label = rows[0].levelLabel || `LEVEL ${lv}`;
+    return `<h3 class="bpLevel">${esc(label)}</h3><div class="grid">${rows.map((d) => drillCard(state, d)).join('')}</div>`;
+  }).join('');
+  return `<section class="ballPocket" id="ball-pocketing" data-section="Ball Pocketing"><h2>Ball Pocketing</h2>${blocks}</section>`;
 }
 
 const RANK_BALLS_TEXT = (i) => { const b = RANK_LADDER.balls[i]; return b ? `· ${b} balls` : '· MAX RANK'; };
@@ -262,7 +275,7 @@ function drillCard(state, d) {
   const ms = rec ? masteryOf(state, drillItem(d).key) : 0;
   const pb = rec ? `<small class="pbLine">${starsHTML(ms)} Best ${rec.bestScore || 0} pts${rec.bestStars ? ` · ${'★'.repeat(rec.bestStars)}` : ''} · ${rec.tries || 0} session${rec.tries === 1 ? '' : 's'}${rec.passed ? ' · passed ✓' : ''}</small>` : '';
   const tools = d.custom ? `<div class="drillBtns"><button type="button" class="miniAct" data-action="drill-edit" data-id="${esc(d.id)}">Edit</button><button type="button" class="miniAct" data-action="drill-dup" data-id="${esc(d.id)}">Duplicate</button><button type="button" class="miniAct" data-action="drill-history" data-id="${esc(d.id)}">History</button><button type="button" class="miniAct" data-action="drill-export" data-id="${esc(d.id)}">Export</button><button type="button" class="miniAct danger" data-action="drill-del" data-id="${esc(d.id)}">Delete</button></div>` : d.contentUid ? `<div class="drillBtns"><button type="button" class="miniAct" data-action="go" data-href="#cview/${esc(d.contentUid)}">My Content</button><button type="button" class="miniAct" data-action="go" data-href="#cedit/${esc(d.contentUid)}">Edit</button><button type="button" class="miniAct" data-action="drill-history" data-id="${esc(d.id)}">History</button></div>` : '';
-  return `<div class="drill card ${open ? '' : 'locked'}" data-drill="${esc(d.id)}"><div class="diagramWrap mini">${renderStageTable(d, { className: 'table-diagram mini' })}</div>${meta}<h3>${esc(d.name)}</h3><p>${esc(d.goal || d.instructions || '')}</p>${d.lanes ? `<div class="laneChips">${d.lanes.map((l) => speedChip(l.speed)).join('')}</div>` : speedChip(d.speed)}${d.credit ? `<small class="muted credit">${esc(d.credit)}</small>` : ''}${pb}<button type="button" class="${rec?.passed ? 'done' : ''}" data-action="go" data-href="#play/drills/${esc(d.id)}" ${open ? '' : 'disabled'}>${rec?.passed ? 'Passed ✓ — Train again' : 'Train'}</button>${tools}</div>`;
+  return `<div class="drill card ${open ? '' : 'locked'}" data-drill="${esc(d.id)}"><div class="diagramWrap mini">${renderStageTable(d, { className: 'table-diagram mini' })}</div>${meta}<h3>${esc(d.name)}</h3><p>${esc(d.goal || d.instructions || '')}</p>${d.lanes ? `<div class="laneChips">${d.lanes.map((l) => speedChip(l.speed)).join('')}</div>` : (typeof d.speed === 'number' ? speedChip(d.speed) : '')}${d.credit ? `<small class="muted credit">${esc(d.credit)}</small>` : ''}${pb}<button type="button" class="${rec?.passed ? 'done' : ''}" data-action="go" data-href="#play/drills/${esc(d.id)}" ${open ? '' : 'disabled'}>${rec?.passed ? 'Passed ✓ — Train again' : 'Train'}</button>${tools}</div>`;
 }
 
 // ------------------------------------------------------------------------------ settings

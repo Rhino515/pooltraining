@@ -25,11 +25,14 @@ function dotColor(v, h) {
  */
 export function cueBallSVG(contact, opt = {}) {
   const size = opt.size || 'lg';
+  const contacts = Array.isArray(opt.contacts) && opt.contacts.length ? opt.contacts : (contact ? [contact] : []);
+  const multi = contacts.length > 1;
   const v = contact ? Number(contact.vTips) || 0 : 0;
   const h = contact ? Number(contact.hTips) || 0 : 0;
   const p = dotPosition(v, h);
   const small = size !== 'lg';
-  let s = `<svg class="cb-diagram cb-${size}${opt.interactive ? ' cb-interactive' : ''}" viewBox="0 0 100 100" role="img" aria-label="Cue-ball contact: ${contact ? contactText(v, h) : 'tap to choose'}"${opt.id ? ` id="${opt.id}"` : ''}>`;
+  const label = multi ? 'Cue-ball tip positions' : `Cue-ball contact: ${contact ? contactText(v, h) : 'tap to choose'}`;
+  let s = `<svg class="cb-diagram cb-${size}${opt.interactive ? ' cb-interactive' : ''}${multi ? ' cb-multi' : ''}" viewBox="0 0 100 100" role="img" aria-label="${label}"${opt.id ? ` id="${opt.id}"` : ''}>`;
   s += `<defs><radialGradient id="cbShade${size}" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#ffffff"/><stop offset=".7" stop-color="#e9f1f5"/><stop offset="1" stop-color="#b9c8d1"/></radialGradient></defs>`;
   s += `<circle cx="${CX}" cy="${CY}" r="44" fill="url(#cbShade${size})" stroke="#9fb4c1" stroke-width="1.2"/>`;
   if (!small || size === 'sm') {
@@ -44,7 +47,14 @@ export function cueBallSVG(contact, opt = {}) {
     const q = dotPosition(opt.compare.vTips, opt.compare.hTips);
     s += `<circle class="cb-dot-compare" cx="${q.x}" cy="${q.y}" r="${small ? 9 : 6.5}" fill="none" stroke="#ffc75b" stroke-width="2" stroke-dasharray="3 2"/>`;
   }
-  if (contact) {
+  if (multi) {
+    for (const c of contacts) {
+      const cv = Number(c.vTips) || 0;
+      const ch = Number(c.hTips) || 0;
+      const q = dotPosition(cv, ch);
+      s += `<circle class="cb-dot" data-vtips="${cv}" data-htips="${ch}" cx="${q.x}" cy="${q.y}" r="${small ? 4.2 : 4.4}" fill="#e21b2d" stroke="#05111b" stroke-width="0.8"/>`;
+    }
+  } else if (contact) {
     s += `<circle class="cb-dot" data-vtips="${v}" data-htips="${h}" cx="${p.x}" cy="${p.y}" r="${small ? 11 : 6.5}" fill="${dotColor(v, h)}" stroke="#05111b" stroke-width="${small ? 2.5 : 1.4}"/>`;
   }
   s += `</svg>`;

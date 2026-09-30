@@ -1,4 +1,4 @@
-const CACHE = 'pool-iq-v14-12';
+const CACHE = 'pool-iq-v14-13';
 const ASSETS = [
   './',
   './index.html',
@@ -38,6 +38,7 @@ const ASSETS = [
   './js/content/templates.js',
   './js/content/pkfLibrary.js',
   './js/content/pkfBuiltins.js',
+  './js/content/ballPocket.js',
   './js/customDrills.js',
   './js/dashboard.js',
   './js/dev/dev.js',
@@ -45,6 +46,7 @@ const ASSETS = [
   './js/dev/copy.js',
   './js/drills.js',
   './js/drills/ownerEdits.js',
+  './js/drills/tallyColumns.js',
   './js/drillsExtra.js',
   './js/friends/model.js',
   './js/friends/tournament.js',
@@ -70,6 +72,7 @@ const ASSETS = [
   './js/games/diamonds.js',
   './js/games/engine.js',
   './js/games/geometry.js',
+  './js/games/headOn.js',
   './js/games/recipe.js',
   './js/games/registry.js',
   './js/games/speed.js',

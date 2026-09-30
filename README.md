@@ -178,7 +178,7 @@ There are also 9 Boss Battles, one per rank from Club Player to Champion.
   - RUNOUT means every ball went down in order; anything else goes to the Ghost.
   - Beating the N-ball Ghost in a race to 3+ unlocks N+1.
 - **8-Ball Ghost:**
-  - Levels: Beginner (3 + 8), Intermediate (5 + 8), Advanced (7 + 8, ball in hand, no break), Pro (full rack, you break), and Custom (1–7 balls + the 8). Your choice is remembered (`poolIQGhostPreset`).
+  - Every level is a full 15-ball rack. Difficulty is ball-in-hand takes after the break: Beginner 5, Intermediate 3, Advanced 2, Pro 0. Ball in hand on the break does not count. Your choice is remembered (`poolIQGhostPreset`).
   - Rules: ball in hand, pocket your group in any order, then the 8 in a called pocket. Miss, scratch or 8 early = Ghost wins the rack.
   - **Pro** has a break step:
     - log balls made on the break (optional)

@@ -137,8 +137,18 @@ export function renderStageTable(ch, opt = {}) {
       under += `<path class="cue-path cue-route" d="${pathD(post)}" fill="none" stroke="#f2fdff" stroke-width="0.45" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#cueArrow)"/>`;
     }
   }
-  if (o.showAim && src.ghost && ch.kind !== 'lag') {
-    under += `<circle class="ghost-spot" cx="${f(src.ghost.x)}" cy="${f(src.ghost.y)}" r="${BR}" fill="#ffffff1c" stroke="#cff9ff" stroke-width="0.2" stroke-dasharray="0.45 0.3"/>`;
+  const ghostPt = src.ghost || ch.ghost;
+  if ((o.showAim || src.headOnFixed || ch.headOnFixed) && ghostPt && ch.kind !== 'lag') {
+    under += `<circle class="ghost-spot" cx="${f(ghostPt.x)}" cy="${f(ghostPt.y)}" r="${BR}" fill="#ffffff1c" stroke="#cff9ff" stroke-width="0.2" stroke-dasharray="0.45 0.3"/>`;
+  }
+  for (const ln of ch.guideLines || []) {
+    if (!ln.points || ln.points.length < 2) continue;
+    const col = /^#[0-9a-fA-F]{6}$/.test(ln.color || '') ? ln.color : '#f4f7fb';
+    under += `<path class="guide-line" d="${pathD(ln.points)}" fill="none" stroke="${col}" stroke-width="0.32" stroke-linecap="round"/>`;
+  }
+  for (const spot of ch.cueSpots || []) {
+    const ghost = !!spot.ghost;
+    over += `<circle class="cue-spot${ghost ? ' is-ghost' : ''}" cx="${f(spot.x)}" cy="${f(spot.y)}" r="${BR}" fill="${ghost ? '#ffffff33' : '#f7fbff'}" stroke="${ghost ? '#d7e2ea' : '#062a32'}" stroke-width="0.22"${ghost ? ' stroke-dasharray="0.45 0.32"' : ''}/>`;
   }
   const marks = (step ? step.railContacts : ch.railContacts) || [];
   for (const m of marks) {

@@ -358,6 +358,8 @@ export function evaluateSession(session, stage = stageFor(session)) {
   }
   r.stars = r.stars ?? 0;
   r.stageStars = stageStarsFor(r);
+  // A drill keeps accepting shots after its ranked window. Rank uses only that window.
+  if (stage?.isDrill && !stage.lanes && !(stage.scoringRules || {}).lanes && !session?.endless && !session?.bossId) r.over = false;
   return r;
 }
 

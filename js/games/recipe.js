@@ -43,28 +43,37 @@ export function recipeFields(ch) {
 }
 
 /** Full Shot Recipe card */
+function tipContacts(ch) {
+  return Array.isArray(ch?.cueContacts) && ch.cueContacts.length > 1 ? ch.cueContacts : null;
+}
+function hasSpeed(ch) {
+  return typeof ch?.speed === 'number' && Number.isFinite(ch.speed);
+}
+
 export function recipeCardHTML(
   ch,
   { cal = null, hideAim = false, hideRoute = false } = {}
 ) {
   const r = recipeFields(ch);
+  const contacts = tipContacts(ch);
+  const multi = !!contacts;
 
   const row = (k, v, cls = '') =>
     `<div class="rc-row ${cls}"><span>${k}</span><b>${v}</b></div>`;
 
   return `<div class="recipeCard" data-recipe="${esc(ch.id)}">
-    <div class="rc-ball">${cueBallSVG(ch.cueContact, { size: 'lg' })}</div>
+    <div class="rc-ball">${cueBallSVG(ch.cueContact, { size: 'lg', ...(contacts ? { contacts } : {}) })}</div>
 
     <div class="rc-rows">
       <div class="eyebrow">SHOT RECIPE · ${esc(r.technique.toUpperCase())}</div>
 
-      ${row('Cue-ball contact', `${esc(r.contact)}<small class="tipClock" data-tip-clock>${esc(tipClockLabel(ch.cueContact?.vTips || 0, ch.cueContact?.hTips || 0, { oclock: true }))}</small>`)}
+      ${multi ? '' : row('Cue-ball contact', `${esc(r.contact)}<small class="tipClock" data-tip-clock>${esc(tipClockLabel(ch.cueContact?.vTips || 0, ch.cueContact?.hTips || 0, { oclock: true }))}</small>`)}
       ${row('English', esc(r.english))}
 
-      ${row(
+      ${hasSpeed(ch) ? row(
         'Speed',
         `${speedChip(ch.speed, cal)}<small class="rc-mean">${esc(r.speedMeaning)}.</small>${speedDiagramSVG(ch.speed)}`
-      )}
+      ) : ''}
 
       ${hideAim ? '' : row('Object-ball contact', esc(r.obContact))}
       ${hideAim ? '' : aimRowHTML(ch)}
@@ -93,13 +102,13 @@ export function recipeStripHTML(
   return `<button type="button" class="recipeStrip" data-action="recipe-open" aria-label="Open full shot recipe">
 
     <span class="rs-ball">
-      ${cueBallSVG(ch.cueContact, { size: 'xs' })}
+      ${cueBallSVG(ch.cueContact, { size: 'xs', ...(tipContacts(ch) ? { contacts: tipContacts(ch) } : {}) })}
     </span>
 
     <span class="rs-chips">
-      <span class="speedChip" data-speed="${formatSpeed(ch.speed)}">
+      ${hasSpeed(ch) ? `<span class="speedChip" data-speed="${formatSpeed(ch.speed)}">
         ${speedLabel(ch.speed)}
-      </span>
+      </span>` : ''}
 
       ${
         hideAim || !ch.aim?.short
@@ -214,8 +223,9 @@ export function tipClockLabel(vTips = 0, hTips = 0, { oclock = false } = {}) {
  * 3D cue ball with a cyan contact dot.
  * Dot uses the same tip scale as the detailed diagram.
  */
-export function tipGaugeSVG(contact) {
+export function tipGaugeSVG(contact, contacts = null) {
   const uid = `tg${++gUid}`;
+  const many = Array.isArray(contacts) && contacts.length > 1;
 
   const v = Number(contact?.vTips) || 0;
   const h = Number(contact?.hTips) || 0;
@@ -226,7 +236,7 @@ export function tipGaugeSVG(contact) {
     class="cb-diagram tip-gauge"
     viewBox="0 0 100 100"
     role="img"
-    aria-label="Cue-ball tip: ${esc(contactText(v, h))}"
+    aria-label="${many ? 'Cue-ball tip positions' : `Cue-ball tip: ${esc(contactText(v, h))}`}"
   >`;
 
   s += `<defs>
@@ -277,6 +287,14 @@ export function tipGaugeSVG(contact) {
     transform="rotate(-30 34 30)"
   />`;
 
+  if (many) {
+    for (const c of contacts) {
+      const cv = Number(c.vTips) || 0;
+      const chh = Number(c.hTips) || 0;
+      const q = dotPosition(cv, chh);
+      s += `<circle class="cb-dot" data-vtips="${cv}" data-htips="${chh}" cx="${r2(q.x)}" cy="${r2(q.y)}" r="4.6" fill="#e21b2d" stroke="#05111b" stroke-width="1.1"/>`;
+    }
+  } else {
   s += `<circle
     class="cb-dot"
     data-vtips="${v}"
@@ -296,6 +314,7 @@ export function tipGaugeSVG(contact) {
     fill="#dff8ff"
     opacity="0.8"
   />`;
+  }
 
   return s + `</svg>`;
 }
@@ -482,6 +501,7 @@ export function recipeGaugesHTML(
     vTips: 0,
     hTips: 0
   };
+  const contacts = tipContacts(ch);
 
   const info = aimViewInfo(ch);
   const cells = [];
@@ -525,6 +545,14 @@ export function recipeGaugesHTML(
    * Low Left
    * 7:30 on cue ball · Draw
    */
+  if (contacts) {
+    cells.push(
+      `<button type="button" class="gauge gauge-tip" data-action="recipe-open" data-tips="${contacts.length}" aria-label="Cue-ball tip positions">
+        ${tipGaugeSVG(cc, contacts)}
+        <b>${contacts.length} tip positions</b>
+      </button>`
+    );
+  } else {
   cells.push(
     `<button
       type="button"
@@ -549,8 +577,9 @@ export function recipeGaugesHTML(
       </small>
     </button>`
   );
+  }
 
-  cells.push(
+  if (hasSpeed(ch)) cells.push(
     `<button
       type="button"
       class="gauge gauge-speed"

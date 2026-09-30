@@ -1497,3 +1497,12 @@ body.fix-full #app{height:100dvh;padding:0}
 .tallyRank b{color:#f6c453;font-size:18px}
 .tallyRank.is-none b{color:#7d8da3;font-size:20px}
 .lg-zone{background:#2fbe4a!important;border-color:#127a32!important}
+
+.tallyCols{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin:8px 0}
+.tallyCol{display:grid;grid-template-columns:auto auto auto;gap:4px 6px;align-items:center;background:#0b1522;border:1px solid #22364c;border-radius:14px;padding:6px 8px}
+.tallyCol b{font-size:16px;font-weight:800;color:#fff}
+.tallyCol small{font-size:9px;letter-spacing:.6px;text-transform:uppercase;color:#9aa8bc;font-weight:700}
+.tallyAdd,.tallyCol button{border:0;border-radius:10px;background:#16324a;color:#e8f4ff;font-weight:700;padding:6px 8px}
+.ballPocket{margin:8px 0 18px}
+.ballPocket h2{margin:0 0 8px}
+.bpLevel{margin:14px 0 8px;font-size:13px;letter-spacing:.8px}

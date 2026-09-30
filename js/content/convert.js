@@ -8,6 +8,7 @@ import { aimInfo, fullnessLabel, shortFullness, POCKET_NAMES } from '../games/ge
 import { railsText, railsShort } from '../games/text.js';
 import { FORMAT, SCHEMA_VERSION, BALL_R, SHOT_KINDS, TECHNIQUES, ENGLISH_TYPES, SCORING_MODES, validatePooliq } from './schema.js';
 import { SKILL_NAMES } from '../storage.js';
+import { correctHeadOn } from '../games/headOn.js';
 
 const r2 = (v) => Math.round(v * 100) / 100;
 const pt = (p) => ({ x: p.x, y: p.y });
@@ -53,7 +54,22 @@ export function deriveRoute(s) {
  * meta: { id, title, category, difficulty, skill, scoringRules, xp, skillEffects }
  */
 export function shotToChallenge(shot, meta = {}) {
-  const s = shot || {};
+  let s = shot || {};
+  let headOnFixed = false;
+  const cat = meta.category || '';
+  const id = String(meta.id || '');
+  if (cat.startsWith('PKF') || cat === 'Ball Pocketing' || id.startsWith('pkf-') || id.startsWith('bp-')) {
+    const copy = {
+      ...s,
+      id,
+      category: cat,
+      cueBallPath: (s.cueBallPath || []).map((pt0) => ({ x: pt0.x, y: pt0.y }))
+    };
+    if (correctHeadOn(copy)) {
+      headOnFixed = true;
+      s = { ...s, cueBallPath: copy.cueBallPath, ghost: copy.ghost, contactIndex: copy.contactIndex };
+    }
+  }
   const cc = s.cueContact ? { vTips: s.cueContact.vTips, hTips: s.cueContact.hTips } : { vTips: 0, hTips: 0 };
   const ghost = deriveGhost(s);
   const aim = deriveAim(s, ghost);
@@ -94,6 +110,7 @@ export function shotToChallenge(shot, meta = {}) {
     targetPocket: s.targetPocket || null,
     acceptPockets: s.acceptPockets ? s.acceptPockets.slice() : s.targetPocket ? [s.targetPocket] : [],
     ghost,
+    headOnFixed,
     targetZones: zones,
     cueBallPath: (s.cueBallPath || []).map(pt),
     contactIndex: s.contactIndex ?? 1,
