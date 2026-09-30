@@ -49,9 +49,26 @@ export function snapTips(v, h, opt = {}) {
   return { vTips: r(sv), hTips: r(sh) };
 }
 
+function cutLine(cut) {
+  if (!cut?.label) return '';
+  if (cut.label === 'Full') return 'Full ball';
+  if (/thin/i.test(cut.label)) return `${cut.label} cut`;
+  return `${cut.label} ball`;
+}
+/** Ghost sits behind the cue ball. Sideways offset is the cut (0 = full, one radius = ½ ball). Tip does not move it. */
+function ghostBehind(opt) {
+  const cut = opt.cut;
+  if (!cut || cut.fullness == null || Number.isNaN(Number(cut.fullness))) return '';
+  const sin = Math.max(0, Math.min(1, 1 - Number(cut.fullness)));
+  const sign = cut.side === 'left' ? -1 : cut.side === 'right' ? 1 : 0;
+  const dx = sign * sin * 2 * BALL_R;
+  const dy = 8;
+  return `<g class="tp-ghost" data-cut-ghost pointer-events="none" transform="translate(${dx.toFixed(2)} ${dy.toFixed(2)})"><circle cx="${C}" cy="${C}" r="${BALL_R}" fill="#eaf8ff" fill-opacity="0.34" stroke="#cff9ff" stroke-width="1.6" stroke-dasharray="4 2.6"/></g>`;
+}
 function ballSVG(opt) {
   const lim = (opt.limit ?? MISCUE_LIMIT_TIPS) * TIP_UNIT;
   let s = `<svg class="tipPopBall" viewBox="-6 -6 112 112" role="slider" tabindex="0" aria-label="Drag the contact point on the cue ball" data-tip-pad>`;
+  s += ghostBehind(opt);
   s += `<defs><radialGradient id="tpShade" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#ffffff"/><stop offset=".7" stop-color="#e9f1f5"/><stop offset="1" stop-color="#b9c8d1"/></radialGradient></defs>`;
   s += `<circle cx="${C}" cy="${C}" r="${BALL_R}" fill="url(#tpShade)" stroke="#9fb4c1" stroke-width="1.2"/>`;
   for (const t of [0.5, 1]) s += `<circle cx="${C}" cy="${C}" r="${t * TIP_UNIT}" fill="none" stroke="#7d93a3" stroke-width="${t === 1 ? 0.9 : 0.6}" stroke-dasharray="${t === 1 ? '0' : '2 2'}"/>`;
@@ -96,7 +113,7 @@ export function openTipPicker(opt) {
   pop.style.setProperty('--tp-ball', `${size}px`);
   pop.innerHTML = `<div class="tpHead">${esc(o.title || 'CUE-BALL TIP')}<small>drag the dot</small></div>
     ${ballSVG(o)}
-    <div class="tpText"><b class="tpLabel" data-tip-label></b><small class="tipClock tpClock" data-tip-clock></small><small class="tpOff" data-tip-offsets></small></div>
+    <div class="tpText"><b class="tpLabel" data-tip-label></b><small class="tipClock tpClock" data-tip-clock></small><small class="tpCut" data-tip-cut>${esc(cutLine(o.cut))}</small><small class="tpOff" data-tip-offsets></small></div>
     <div class="tpBtns"><button type="button" class="tpCenter" data-tip-center>CENTER</button><button type="button" class="tpDone" data-tip-done>DONE</button></div>`;
   document.body.appendChild(back);
   document.body.appendChild(pop);

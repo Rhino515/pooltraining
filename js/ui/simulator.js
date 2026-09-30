@@ -142,8 +142,9 @@ export function createSimScreen(ctx, args = []) {
   function prediction() {
     const cue = cueBall();
     if (!cue) return null;
-    // the line shows where the cue ball actually travels: stick aim + squirt from side spin
-    return P.predictContact(layout(), st.shot.aim + (Number(st.shot.hTips) || 0) * P.SQUIRT_DEG_PER_TIP, rad());
+    // Ghost is the stick-aim contact point. Tip (spin) must not move it.
+    // Squirt and throw still change the simulated cue path after contact.
+    return P.predictContact(layout(), st.shot.aim, rad());
   }
   function aimInfoFor(pred) {
     const cue = cueBall();
@@ -1588,17 +1589,18 @@ export function createSimScreen(ctx, args = []) {
         // v11.1: compact pop-up next to the small cue ball; drag the dot, the preview line follows live
         if (tipPickerOpen()) return true;
         pushUndo('tip');
+        const cut = aimInfoFor(prediction());
         openTipPicker({
           anchor: el,
           vTips: st.shot.vTips,
           hTips: st.shot.hTips,
           maxV: P.MAX_TIPS_V,
           maxH: P.MAX_TIPS_H,
+          cut: cut ? { label: cut.label, side: cut.side, fullness: cut.fullness } : null,
           onChange: (t) => {
             if (destroyed) return;
             st.shot.vTips = t.vTips;
             st.shot.hTips = t.hTips;
-            relaim();
             refresh(['table', 'panel']);
           }
         });
