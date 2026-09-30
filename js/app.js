@@ -21,6 +21,7 @@ import { createSimScreen } from './ui/simulator.js';
 import { createDrillBuilder } from './ui/drillBuilder.js';
 import { createDrillFix } from './ui/drillFix.js';
 import { drillEditorAllowed } from './drills/ownerEdits.js';
+import { loadPublishedDrills, publishedSignature } from './drills/published.js';
 import { customDrills, refreshCustomDrills } from './drills.js';
 import * as CD from './customDrills.js';
 import { openSheet, closeSheet, toast, clearToast } from './ui/sheet.js';
@@ -838,6 +839,7 @@ async function boot() {
   try { rec = await vault.reconcile(); } catch (e) { console.warn('Pool IQ vault reconcile failed', e); }
   onDataWrite((key) => { vault.touch(); cloud.noteDataChange(key); });
   refreshCustomDrills();
+  try { await loadPublishedDrills(); } catch { /* shipped drills stay if Supabase is unreachable */ }
   let st0 = archiveUnknownDrills(loadState(), allDrills().map((d) => d.id));
   // v11 progression migration: snapshot first, replay saved history, never demote the Career rank
   if (needsMigration(st0)) {
@@ -869,12 +871,43 @@ async function boot() {
   checkPersist(true).then((st) => {
     if (st === 'off') window.addEventListener('pointerdown', () => checkPersist(true), { once: true, passive: true });
   });
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') vault.flush().catch(() => {}); });
+  let pubSig = publishedSignature();
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') vault.flush().catch(() => {});
+    if (document.visibilityState !== 'visible') return;
+    loadPublishedDrills().then(() => {
+      const next = publishedSignature();
+      if (next === pubSig) return;
+      pubSig = next;
+      if (route.name === 'drillfix' || route.name === 'devedit') return;
+      renderRoute();
+    }).catch(() => {});
+  });
   window.addEventListener('pagehide', () => { vault.flush().catch(() => {}); });
 }
 
 window.addEventListener('load', () => {
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
+  if (!('serviceWorker' in navigator)) return;
+  // One reload when a new worker takes the open page. A second controllerchange
+  // in the first few seconds after that reload is ignored so it cannot loop.
+  const RELOAD_KEY = 'pooliq-sw-reloaded';
+  let ignore = false;
+  try {
+    ignore = sessionStorage.getItem(RELOAD_KEY) === '1';
+    if (ignore) sessionStorage.removeItem(RELOAD_KEY);
+  } catch { /* ignore */ }
+  if (ignore) setTimeout(() => { ignore = false; }, 4000);
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (ignore) { ignore = false; return; }
+    try { sessionStorage.setItem(RELOAD_KEY, '1'); } catch { /* ignore */ }
+    location.reload();
+  });
+  navigator.serviceWorker.register('./sw.js').then((reg) => {
+    const kick = () => reg.update().catch(() => {});
+    kick();
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') kick(); });
+    setInterval(() => { if (document.visibilityState === 'visible') kick(); }, 60000);
+  }).catch(() => {});
 });
 
 window.PoolIQ = { cloud, prog: { careerStatus, promotionStatus, drillRankStatus, computeSkillLevels, migrateProgression, needsMigration }, friends: { model: FM, tournament: FT }, profile: PR, dev: D, getState: () => state, drills, getDrillById, allDrills, commit, navigate, rerender, vault, V, backupPayload, installMode, get screen() { return screen; }, content: { store: CS, getPending: C.getPending, processImport: (text, name) => C.processImport(text, name || 'test.pooliq', ctx) } };

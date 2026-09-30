@@ -1,4 +1,4 @@
-const CACHE = 'pool-iq-v14-25';
+const CACHE = 'pool-iq-v14-26';
 const ASSETS = [
   './',
   './index.html',
@@ -46,6 +46,7 @@ const ASSETS = [
   './js/dev/copy.js',
   './js/drills.js',
   './js/drills/ownerEdits.js',
+  './js/drills/published.js',
   './js/drills/tallyColumns.js',
   './js/drillsExtra.js',
   './js/friends/model.js',
@@ -123,6 +124,7 @@ const ASSETS = [
   './js/vault.js'
 ];
 self.addEventListener('install', (e) => {
+  // take over as soon as this cache is published; the page reloads once on controllerchange
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', (e) => {

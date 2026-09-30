@@ -5,8 +5,9 @@
  * FULL TABLE fills the phone so the same drag, nudge, size, and save work standing at the table.
  * The table is rotated with an SVG transform (not CSS) so the finger position maps on every phone.
  * Exit returns here.
- * Saves are local overrides. Shipped files do not change.
+ * SAVE on a drill publishes it for every visitor (Supabase). Shipped files do not change.
  * IMPORT DRILL previews a .pooliq (or one-drill JSON) on the table. Nothing is stored until SAVE.
+ * Leaving without SAVE does not publish and does not remove the live drill.
  */
 import { renderStageTable } from '../games/stageTable.js';
 import { techniqueName } from '../games/text.js';
@@ -19,9 +20,9 @@ import { challengeFromPkfDoc } from '../content/pkfBuiltins.js';
 import { openSheet, closeSheet, toast } from './sheet.js';
 import { shareOrDownload } from './share.js';
 import {
-  drillEditorAllowed, canFixDrill, editingDoc, setDrillEdit, removeDrillEdit,
-  getDrillEdit, exportAllEdits, shippedDoc, drillLink, drillFromImport
+  drillEditorAllowed, removeDrillEdit, exportAllEdits, shippedDoc, drillLink, drillFromImport
 } from '../drills/ownerEdits.js';
+import { publishedDoc, publishDrill } from '../drills/published.js';
 import { getDrillById } from '../drills.js';
 import { getGame, stageSpecs, getStage, clearStageCache } from '../games/registry.js';
 import { editDocForStage } from '../dev/dev.js';
@@ -87,7 +88,10 @@ export function createDrillFix(ctx, idOrSpec) {
     if (isDrill) {
       const ch0 = getDrillById(id);
       if (!ch0 || ch0.custom || ch0.contentUid) return null;
-      return editingDoc(id);
+      const pub = publishedDoc(id);
+      if (pub?.shot) return pub;
+      const shipped = shippedDoc(id);
+      return shipped ? JSON.parse(JSON.stringify(shipped)) : null;
     }
     const meta = stageMeta();
     if (!meta) return null;
@@ -278,21 +282,24 @@ export function createDrillFix(ctx, idOrSpec) {
     ui.msg = '';
     render();
   }
-  function removeLine() {
+  function removeCueLine() {
     const s = shot();
-    const ob = ui.tool === 'ob' || ui.sel?.kind === 'obPath';
-    if (ob) {
-      const op = obEntry();
-      if (!op) { ui.msg = 'No object line to remove.'; render(); return; }
-      s.objectBallPaths = (s.objectBallPaths || []).filter((p) => p !== op);
-      if (!s.objectBallPaths.length) delete s.objectBallPaths;
-      ui.sel = { kind: 'ball', n: s.targetBall ?? s.ballPositions?.[0]?.n };
-    } else {
-      if (!(s.cueBallPath || []).length) { ui.msg = 'No cue line to remove.'; render(); return; }
-      delete s.cueBallPath;
-      delete s.contactIndex;
-      ui.sel = { kind: 'cue' };
-    }
+    if (!(s.cueBallPath || []).length) { ui.msg = 'No cue line to remove.'; render(); return; }
+    delete s.cueBallPath;
+    delete s.contactIndex;
+    if (ui.sel?.kind === 'cuePath') ui.sel = { kind: 'cue' };
+    ui.msg = '';
+    render();
+  }
+  function removeObjectLine() {
+    const s = shot();
+    const op = obEntry();
+    if (!op) { ui.msg = 'No object line to remove.'; render(); return; }
+    const cue = s.cueBallPath ? JSON.stringify(s.cueBallPath) : '';
+    s.objectBallPaths = (s.objectBallPaths || []).filter((p) => p !== op);
+    if (!s.objectBallPaths.length) delete s.objectBallPaths;
+    if (cue && JSON.stringify(s.cueBallPath) !== cue) s.cueBallPath = JSON.parse(cue);
+    if (ui.sel?.kind === 'obPath') ui.sel = { kind: 'ball', n: s.targetBall ?? s.ballPositions?.[0]?.n };
     ui.msg = '';
     render();
   }
@@ -425,7 +432,7 @@ export function createDrillFix(ctx, idOrSpec) {
   let loadedDesc = String(doc.description || '');
   function backHref() { return isDrill ? `#play/drills/${esc(id)}` : `#devgame/${esc(gameId)}`; }
   function overriddenNow() {
-    if (isDrill) return !!getDrillEdit(id);
+    if (isDrill) return !!publishedDoc(id);
     const ov = getOverride(stageOverrideId(gameId, spec.stageId));
     return !!(ov?.doc || ov?.patch);
   }
@@ -524,12 +531,13 @@ export function createDrillFix(ctx, idOrSpec) {
             <button type="button" data-action="df-add-cue">ADD CUE BALL</button>
             <button type="button" data-action="df-add-ob">ADD OBJECT BALL</button>
             <button type="button" data-action="df-add" data-kind="cuePath">ADD CUE LINE</button>
+            <button type="button" data-action="df-remove-cue-line">REMOVE CUE LINE</button>
             <button type="button" data-action="df-add" data-kind="obPath">ADD OBJECT LINE</button>
-            <button type="button" data-action="df-remove-line">REMOVE LINE</button>
+            <button type="button" data-action="df-remove-ob-line">REMOVE OBJECT LINE</button>
             <button type="button" data-action="df-remove-ball">REMOVE BALL</button>
           </div>
           <div class="pockets">${PKEYS.map((k) => `<button type="button" class="${markedPockets().includes(k) ? 'on' : ''}" data-action="df-pocket" data-p="${k}">${PSHORT[k]}</button>`).join('')}</div>
-          <p class="muted small">Drag a ball freely, or the bullseye. Nudge moves ¼ diamond. SAVE keeps it on this phone.</p>
+          <p class="muted small">Drag a ball freely, or the bullseye. Nudge moves ¼ diamond. SAVE publishes this drill for everyone.</p>
         </div>
       </div>
     </div>`;
@@ -542,15 +550,24 @@ export function createDrillFix(ctx, idOrSpec) {
     ctx.root.innerHTML = `<div class="playScreen drillFix" data-drill-fix="${esc(id)}" data-overridden="${overridden ? 1 : 0}">
       <div class="playHead">
         <button type="button" class="phBack" data-action="go" data-href="${backHref()}" aria-label="Back">‹</button>
-        <div class="phTitle"><small>OWNER EDIT${overridden ? ' · SAVED ON THIS PHONE' : ''}</small><b>${esc(doc.title || 'Drill')}</b></div>
+        <div class="phTitle"><small>OWNER EDIT${overridden ? ' · LIVE' : ''}</small><b>${esc(doc.title || 'Drill')}</b></div>
       </div>
-      <div class="fixScroll">
+      <div class="fixTop">
         ${s.cueBallPosition || (s.targetZones || []).length ? `<div class="fixTableWrap"><button type="button" class="fixExpand" data-action="df-full">FULL TABLE</button><div id="fixTable" class="fixTable">${table}</div></div>` : ''}
         <div class="fixTools" role="group" aria-label="What to drag">
           <button type="button" class="${ui.tool === 'move' ? 'on' : ''}" data-action="df-tool" data-tool="move">BALLS</button>
           <button type="button" class="${ui.tool === 'cue' ? 'on' : ''}" data-action="df-tool" data-tool="cue">CUE PATH</button>
           <button type="button" class="${ui.tool === 'ob' ? 'on' : ''}" data-action="df-tool" data-tool="ob">OBJECT PATH</button>
         </div>
+        <button type="button" class="bigBtn fixSaveMain" data-action="df-save">SAVE</button>
+        <div class="fixAdd fixLines">
+          <button type="button" data-action="df-add" data-kind="cuePath">ADD CUE LINE</button>
+          <button type="button" data-action="df-remove-cue-line">REMOVE CUE LINE</button>
+          <button type="button" data-action="df-add" data-kind="obPath">ADD OBJECT LINE</button>
+          <button type="button" data-action="df-remove-ob-line">REMOVE OBJECT LINE</button>
+        </div>
+      </div>
+      <div class="fixScroll">
         <p class="fixSel">${esc(selLabel())}</p>
         <div class="nudge">
           <button type="button" data-action="df-nudge" data-dx="-0.25" data-dy="0">◀ HEAD</button>
@@ -561,20 +578,17 @@ export function createDrillFix(ctx, idOrSpec) {
         <div class="fixAdd">
           <button type="button" data-action="df-add-cue">ADD CUE BALL</button>
           <button type="button" data-action="df-add-ob">ADD OBJECT BALL</button>
-          <button type="button" data-action="df-add" data-kind="cuePath">ADD CUE LINE</button>
-          <button type="button" data-action="df-add" data-kind="obPath">ADD OBJECT LINE</button>
-          <button type="button" data-action="df-remove-line">REMOVE LINE</button>
           <button type="button" data-action="df-remove-ball">REMOVE BALL</button>
         </div>
         ${s.cueBallPosition ? `<div class="eyebrow">POCKETS</div>
         <div class="pockets">${PKEYS.map((k) => `<button type="button" class="${markedPockets().includes(k) ? 'on' : ''}" data-action="df-pocket" data-p="${k}">${PSHORT[k]}</button>`).join('')}</div>
-        <p class="muted small">Tap a pocket to add or remove it. Every marked pocket shows on the diagram and in play.</p>` : '<p class="muted small">No balls to drag on this one. Title and description still save on this phone.</p>'}
+        <p class="muted small">Tap a pocket to add or remove it. Every marked pocket shows on the diagram and in play.</p>` : '<p class="muted small">No balls to drag on this one. Title and description publish when you tap SAVE.</p>'}
         ${zonePanel()}
         <label class="fixFld">Title<input id="fixTitle" maxlength="80" value="${esc(doc.title || '')}"/></label>
         <label class="fixFld">Description<textarea id="fixDesc" maxlength="2000" rows="3">${esc(doc.description || '')}</textarea></label>
         <label class="fixFld">Category<input id="fixCat" maxlength="40" value="${esc(doc.category || '')}"/></label>
         ${isDrill ? `<label class="fixFld">Link<input id="fixLink" type="url" inputmode="url" maxlength="500" placeholder="https:// YouTube, video, or a resource" value="${esc(doc.attribution?.sourceURL || '')}"/></label>
-        <p class="muted small">A video, a page, or a YouTube address. Saved on this phone with this drill. Nothing is uploaded. Only shown while Dev Mode is unlocked.</p>` : ''}
+        <p class="muted small">A video, a page, or a YouTube address. It publishes with this drill when you tap SAVE. Only shown while Dev Mode is unlocked.</p>` : ''}
         <div class="eyebrow">SPEED</div>
         <div class="stepper"><button type="button" data-action="df-speed" data-d="-1" aria-label="Slower">−</button><b>${formatSpeed(s.speed)}</b><button type="button" data-action="df-speed" data-d="1" aria-label="Faster">+</button></div>
         <div class="eyebrow">TECHNIQUE</div>
@@ -588,7 +602,7 @@ export function createDrillFix(ctx, idOrSpec) {
         <div id="fixMsg" class="fixMsg${ui.msg ? ' show' : ''}">${esc(ui.msg).replace(/\n/g, '<br>')}</div>
       </div>
       <div class="fixBar">
-        <button type="button" class="bigBtn" data-action="df-save">SAVE ON THIS PHONE</button>
+        <button type="button" class="bigBtn" data-action="df-save">SAVE</button>
         <button type="button" class="bigBtn alt" data-action="df-reset">RESET</button>
         <button type="button" class="bigBtn alt" data-action="df-export">EXPORT THIS</button>
         ${isDrill ? `<button type="button" class="bigBtn alt" data-action="df-import">IMPORT DRILL</button>
@@ -820,7 +834,7 @@ export function createDrillFix(ctx, idOrSpec) {
     ui.sel = { kind: 'cue' };
     ui.tool = 'move';
     ui.full = false;
-    ui.msg = 'Showing the imported drill. Nothing is saved until you tap SAVE ON THIS PHONE.';
+    ui.msg = 'Showing the imported drill. Nothing is saved until you tap SAVE.';
     render();
   }
   function bindFields() {
@@ -860,17 +874,17 @@ export function createDrillFix(ctx, idOrSpec) {
     if (doc.shot && String(doc.description || '') !== loadedDesc) doc.shot.goal = String(doc.description || '').slice(0, 240);
     if (!isDrill && doc.shot) doc.shot.instructions = String(doc.description || '').slice(0, 1500);
   }
-  function save() {
+  async function save() {
     if (!drillEditorAllowed()) return;
     if (readText() === false) { render(); return; }
     if (!String(doc.title || '').trim()) { ui.msg = 'Title cannot be empty.'; render(); return; }
     if (!String(doc.category || '').trim()) { ui.msg = 'Category cannot be empty.'; render(); return; }
     if (isDrill) {
       doc.metadata = { ...(doc.metadata || {}), updated: new Date().toISOString().slice(0, 10) };
-      const out = setDrillEdit(id, doc);
+      const out = await publishDrill(id, doc);
       if (out.error) { ui.msg = out.error; render(); return; }
       doc = JSON.parse(JSON.stringify(out.doc));
-      toast('Saved on this phone. This drill now uses your correction.');
+      toast('Saved. Everyone sees this drill now.');
     } else if (doc.patchOnly) {
       const out = setStagePatch(stageOverrideId(gameId, spec.stageId), {
         title: doc.title.trim(),
@@ -896,15 +910,17 @@ export function createDrillFix(ctx, idOrSpec) {
     render();
   }
   function resetAsk() {
-    const clean = isDrill ? (!getDrillEdit(id) && JSON.stringify(doc) === JSON.stringify(shippedDoc(id))) : !overriddenNow();
-    if (clean) { toast(isDrill ? 'Already the shipped drill' : 'Already the shipped stage'); return; }
-    openSheet(`<h2 class="sheetTitle">Reset to the shipped ${isDrill ? 'drill' : 'stage'}?</h2><p class="muted">Your correction is removed from this phone. The original comes back. Export it first if you want a copy.</p><button type="button" class="bigBtn danger" data-action="df-reset-do">RESET</button><button type="button" class="bigBtn alt" data-action="sheet-close">CANCEL</button>`, { id: 'fix-reset' });
+    const live = isDrill ? (publishedDoc(id) || shippedDoc(id)) : null;
+    const clean = isDrill ? JSON.stringify(doc) === JSON.stringify(live) : !overriddenNow();
+    if (clean) { toast(isDrill ? 'Already the live drill' : 'Already the shipped stage'); return; }
+    openSheet(`<h2 class="sheetTitle">Drop these unsaved edits?</h2><p class="muted">${isDrill ? 'The table goes back to the live drill. Nothing is unpublished, and the drill everyone sees stays as it is.' : 'Your correction is removed from this phone. The original stage comes back.'} Export it first if you want a copy.</p><button type="button" class="bigBtn danger" data-action="df-reset-do">RESET</button><button type="button" class="bigBtn alt" data-action="sheet-close">CANCEL</button>`, { id: 'fix-reset' });
   }
   function resetDo() {
     closeSheet();
     if (isDrill) {
       const out = removeDrillEdit(id);
       if (out.error) { toast(out.error); return; }
+      // phone copy only — the published row is what everyone sees, and RESET does not delete it
     } else {
       if (!drillEditorAllowed()) { toast('DEV MODE is locked'); return; }
       removeOverride(stageOverrideId(gameId, spec.stageId));
@@ -913,7 +929,7 @@ export function createDrillFix(ctx, idOrSpec) {
     doc = loadDoc();
     ui.msg = '';
     ui.sel = { kind: 'cue' };
-    toast(isDrill ? 'Restored the shipped drill' : 'Restored the shipped stage');
+    toast(isDrill ? 'Back to the live drill' : 'Restored the shipped stage');
     render();
   }
   async function exportOne() {
@@ -972,7 +988,8 @@ export function createDrillFix(ctx, idOrSpec) {
     if (action === 'df-add-cue') { addCueBall(); return true; }
     if (action === 'df-add-ob') { addObjectBall(); return true; }
     if (action === 'df-remove-ball') { removeBall(); return true; }
-    if (action === 'df-remove-line') { removeLine(); return true; }
+    if (action === 'df-remove-cue-line') { removeCueLine(); return true; }
+    if (action === 'df-remove-ob-line') { removeObjectLine(); return true; }
     if (action === 'df-add') { addPoint(el.dataset.kind); return true; }
     if (action === 'df-delpt') {
       const kind = el.dataset.kind;

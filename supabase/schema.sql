@@ -136,3 +136,56 @@ create policy "avatars: owner update" on storage.objects for update to authentic
 drop policy if exists "avatars: owner delete" on storage.objects;
 create policy "avatars: owner delete" on storage.objects for delete to authenticated
   using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+-- ---------------------------------------------------------------- drill_overrides (v14-26 published drills)
+-- Everyone, including signed-out visitors, can read. Only the owner account can write.
+-- The phone cannot git-push. SAVE upserts one row; a row replaces that shipped drill on load.
+create table if not exists public.drill_overrides (
+  drill_id text primary key check (char_length(drill_id) between 1 and 80),
+  doc jsonb not null,
+  updated_by uuid default auth.uid() references auth.users (id),
+  updated_at timestamptz not null default now(),
+  constraint drill_overrides_shape check (
+    doc ->> 'format' = 'pooliq'
+    and doc ->> 'contentType' = 'drill'
+    and doc ->> 'id' = drill_id
+  ),
+  constraint drill_overrides_size check (pg_column_size(doc) <= 512 * 1024)
+);
+
+drop trigger if exists drill_overrides_touch on public.drill_overrides;
+create trigger drill_overrides_touch before insert or update on public.drill_overrides
+  for each row execute function public.pooliq_touch_updated_at();
+
+alter table public.drill_overrides enable row level security;
+
+revoke all on public.drill_overrides from anon, authenticated;
+grant select on public.drill_overrides to anon, authenticated;
+grant insert, update, delete on public.drill_overrides to authenticated;
+
+drop policy if exists "drill_overrides: public read" on public.drill_overrides;
+create policy "drill_overrides: public read" on public.drill_overrides
+  for select to anon, authenticated
+  using (true);
+
+drop policy if exists "drill_overrides: owner insert" on public.drill_overrides;
+create policy "drill_overrides: owner insert" on public.drill_overrides
+  for insert to authenticated
+  with check (
+    lower(coalesce((select auth.jwt() ->> 'email'), '')) = 'andrewaphay@gmail.com'
+    and (select auth.uid()) = updated_by
+  );
+
+drop policy if exists "drill_overrides: owner update" on public.drill_overrides;
+create policy "drill_overrides: owner update" on public.drill_overrides
+  for update to authenticated
+  using (lower(coalesce((select auth.jwt() ->> 'email'), '')) = 'andrewaphay@gmail.com')
+  with check (
+    lower(coalesce((select auth.jwt() ->> 'email'), '')) = 'andrewaphay@gmail.com'
+    and (select auth.uid()) = updated_by
+  );
+
+drop policy if exists "drill_overrides: owner delete" on public.drill_overrides;
+create policy "drill_overrides: owner delete" on public.drill_overrides
+  for delete to authenticated
+  using (lower(coalesce((select auth.jwt() ->> 'email'), '')) = 'andrewaphay@gmail.com');

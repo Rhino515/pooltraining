@@ -797,7 +797,7 @@ let state = storage.defaultState();
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
   const missing = walk(path.join(root, 'js')).filter((f) => f.endsWith('.js')).map((f) => './' + path.relative(root, f)).filter((f) => !sw.includes(`'${f}'`));
-  assert(/'pool-iq-v14-25'/.test(sw), 'service worker cache is pool-iq-v14-24');
+  assert(/'pool-iq-v14-26'/.test(sw), 'service worker cache is pool-iq-v14-24');
   assertAll('service worker precaches every JS module (incl. simulator + Create Drill)', missing.map((m) => `missing ${m}`));
   const wordN = { one: 1, two: 2, three: 3, four: 4 };
   const probs = [];
@@ -2037,7 +2037,7 @@ let state = storage.defaultState();
   const dash = src('js/dashboard.js');
   const friends = src('js/ui/friends.js');
   const vendor = src('js/vendor/supabase.js');
-  assert(/'pool-iq-v14-25'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw) && !/'pool-iq-v14-5c'/.test(sw), 'v14: service worker cache is pool-iq-v14-24');
+  assert(/'pool-iq-v14-26'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw) && !/'pool-iq-v14-5c'/.test(sw), 'v14: service worker cache is pool-iq-v14-24');
   assert(sw.includes(`'./js/vendor/supabase.js'`) && sw.includes(`'./js/cloud/controller.js'`) && sw.includes(`'./js/ui/account.js'`), 'v13: sw precaches the bundled supabase-js and the cloud modules');
   assert(/supabase-js\/2\.117\.2/.test(vendor) && /createClient/.test(vendor) && !/cdn\.jsdelivr|unpkg\.com|esm\.sh/.test(idx + sw), 'v13: official supabase-js v2 UMD build is bundled locally (no CDN)');
   assert(/nqfwlpfyccbqetcyjijf/.test(cfg) && /sb_publishable_/.test(cfg) && !/sb_secret_|service_role|sbp_[0-9a-f]{10}/.test(cfg + sql + docs), 'v13: config carries the project ref + publishable key only (no secrets anywhere)');
@@ -2173,7 +2173,7 @@ let state = storage.defaultState();
   const fixSrc = fs.readFileSync(path.join(root, 'js/ui/drillFix.js'), 'utf8');
   const barAt = fixSrc.indexOf('class="fixBar"');
   const bar = fixSrc.slice(barAt, barAt + 900);
-  assert(bar.includes('data-action="df-save"') && bar.includes('SAVE ON THIS PHONE') && bar.includes('data-action="df-export"') && bar.includes('EXPORT THIS') && bar.includes('data-action="df-import"') && bar.includes('IMPORT DRILL'), 'v14-25: IMPORT DRILL sits with SAVE ON THIS PHONE and EXPORT THIS');
+  assert(bar.includes('data-action="df-save"') && bar.includes('>SAVE<') && !bar.includes('SAVE ON THIS PHONE') && bar.includes('data-action="df-export"') && bar.includes('EXPORT THIS') && bar.includes('data-action="df-import"') && bar.includes('IMPORT DRILL') && bar.includes('RESET') && bar.includes('EXPORT ALL'), 'v14-26: SAVE sits with RESET, EXPORT THIS, IMPORT DRILL, and EXPORT ALL');
   const applyBody = fixSrc.slice(fixSrc.indexOf('function applyImported'), fixSrc.indexOf('function bindFields'));
   assert(applyBody.includes('drillFromImport(text, id)') && !applyBody.includes('setDrillEdit') && !applyBody.includes('saveDrillEdits') && !applyBody.includes('localStorage'), 'v14-25: import previews through drillFromImport and does not write the edit store');
   const id = 'pkf-draw-1d';
@@ -2220,6 +2220,35 @@ let state = storage.defaultState();
   assert(OE.editingDoc(id).title === shipped.title, 'v14-25: reset removes the override and the shipped drill returns');
   DEV.lock();
   assert(OE.setDrillEdit(id, preview.doc).error === 'DEV MODE is locked' && OE.getDrillEdit(id) == null, 'v14-25: a locked phone cannot save an import');
+}
+
+// ---------------------------------------------------------------- v14-26: SAVE publishes, object line is separate, open app updates once
+{
+  const fs = await import('fs');
+  const fixSrc = fs.readFileSync(path.join(root, 'js/ui/drillFix.js'), 'utf8');
+  const appSrc = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+  const swSrc = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+  const pubSrc = fs.readFileSync(path.join(root, 'js/drills/published.js'), 'utf8');
+  const oeSrc = fs.readFileSync(path.join(root, 'js/drills/ownerEdits.js'), 'utf8');
+  const top = fixSrc.slice(fixSrc.indexOf('class="fixTop"'), fixSrc.indexOf('class="fixScroll"'));
+  assert(top.includes('fixSaveMain') && top.includes('>SAVE<') && top.includes('fixTable'), 'v14-26: SAVE is in the row under the table, not only at the bottom');
+  assert(fixSrc.includes('REMOVE OBJECT LINE') && fixSrc.includes('data-action="df-remove-ob-line"') && fixSrc.includes('REMOVE CUE LINE'), 'v14-26: REMOVE OBJECT LINE sits with the line controls');
+  const obFn = fixSrc.slice(fixSrc.indexOf('function removeObjectLine'), fixSrc.indexOf('function setSpeed'));
+  assert(obFn.includes('objectBallPaths') && !obFn.includes('delete s.cueBallPath'), 'v14-26: REMOVE OBJECT LINE does not delete the cue path');
+  const cueFn = fixSrc.slice(fixSrc.indexOf('function removeCueLine'), fixSrc.indexOf('function removeObjectLine'));
+  assert(cueFn.includes('delete s.cueBallPath') && !cueFn.includes('objectBallPaths'), 'v14-26: only REMOVE CUE LINE deletes the cue path');
+  const saveFn = fixSrc.slice(fixSrc.indexOf('async function save'), fixSrc.indexOf('function resetAsk'));
+  const imp = fixSrc.slice(fixSrc.indexOf('function applyImported'), fixSrc.indexOf('function bindFields'));
+  assert(saveFn.includes('publishDrill(id, doc)') && !saveFn.includes('setDrillEdit'), 'v14-26: SAVE publishes and does not write the phone-only edit store');
+  assert(imp.includes('drillFromImport') && !imp.includes('publishDrill') && !imp.includes('setDrillEdit'), 'v14-26: import still only previews');
+  assert(!fixSrc.includes('drill_overrides') && !saveFn.includes('.delete('), 'v14-26: the editor never deletes the published row');
+  assert(oeSrc.includes('publishedDoc(ch.id)') && !oeSrc.slice(oeSrc.indexOf('export function applyDrillEdit'), oeSrc.indexOf('export function editCount')).includes('getDrillEdit'), 'v14-26: the live drill is the published row, not the phone copy');
+  assert(pubSrc.includes('andrewaphay') === false && pubSrc.includes('ownerAccountSignedIn'), 'v14-26: the client refuses publish unless the owner account is signed in');
+  assert(swSrc.includes('pool-iq-v14-26') && swSrc.includes('skipWaiting') && swSrc.includes('clients.claim'), 'v14-26: new cache skipWaiting and clients.claim');
+  assert(appSrc.includes('controllerchange') && appSrc.includes('pooliq-sw-reloaded') && appSrc.includes('location.reload()'), 'v14-26: an open app reloads once when the new worker activates');
+  const PUB = await import(js('drills/published.js'));
+  const locked = await PUB.publishDrill('pkf-draw-1d', { title: 'nope' });
+  assert(locked.error && /owner account/i.test(locked.error) && !locked.ok, 'v14-26: publish without the owner account does not write');
 }
 
 console.log('\n--- Summary ---');

@@ -1,20 +1,20 @@
 /**
- * Local corrections for shipped PKF drills (v14-7).
+ * Local phone copies for shipped PKF drills, plus the gate for the editor.
  *
- * The built-in .pooliq files are baked into the static site, so a phone cannot rewrite them.
- * A save stores a full .pooliq document under the same drill id in poolIQDrillEditsV1.
- * On load the override replaces that built-in drill. Reset deletes the override and the
- * shipped drill comes back. Nothing is uploaded.
+ * What everyone plays is NOT this phone key. SAVE publishes to Supabase
+ * (js/drills/published.js). applyDrillEdit uses that published row when one
+ * exists, otherwise the shipped file. poolIQDrillEditsV1 is only a phone copy
+ * (export / older tests). It does not replace the live drill.
  *
- * Who can edit: DEV MODE must be unlocked on this device (js/dev/dev.js isUnlocked).
- * There is no proven owner account in the app, so the editor is not tied to an email.
- * The override still applies after DEV MODE locks again — otherwise a reload would hide the fix.
+ * Who can open the editor: DEV MODE unlocked (js/dev/dev.js isUnlocked).
+ * Who can publish: the owner account only, enforced again by row-level security.
  */
 import { dataWritten } from '../storage.js';
 import { isUnlocked } from '../dev/dev.js';
 import { PKF_DOCS } from '../content/pkfLibrary.js';
 import { validatePooliq, serialize, MAX_FILE_BYTES } from '../content/schema.js';
 import { challengeFromPkfDoc } from '../content/pkfBuiltins.js';
+import { publishedDoc } from './published.js';
 
 export const DRILL_EDITS_KEY = 'poolIQDrillEditsV1';
 
@@ -165,12 +165,12 @@ export function removeDrillEdit(id, now = Date.now()) {
   return { ok: true, removed: true };
 }
 
-/** Replace a built-in challenge with the local override of the same id, when one is stored. */
+/** Replace a built-in challenge with the published override of the same id, when one is loaded. */
 export function applyDrillEdit(ch) {
-  const rec = ch && getDrillEdit(ch.id);
-  if (!rec?.doc?.shot) return ch;
+  const doc = ch && publishedDoc(ch.id);
+  if (!doc?.shot) return ch;
   try {
-    const v = validatePooliq(JSON.stringify(rec.doc));
+    const v = validatePooliq(JSON.stringify(doc));
     if (!v.ok || v.doc.id !== ch.id) return ch;
     const next = challengeFromPkfDoc(v.doc);
     next.game = ch.game || 'drills';

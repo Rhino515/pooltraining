@@ -1442,6 +1442,12 @@ body.sim-full .simTable .table-diagram{width:100%;max-height:100dvh}
 /* v14-7 owner drill editor — large controls, 390px phone */
 .phEdit{min-height:44px;padding:0 12px;border-radius:12px;border:1px solid #25476a;background:#102033;color:var(--cyan);font-weight:800;font-size:13px;letter-spacing:.4px}
 .drillFix{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;min-height:0}
+body.playing main:has(.drillFix){padding:0}
+body.playing #app:has(.drillFix){padding-bottom:0;min-height:0}
+.drillFix.playScreen{padding-bottom:0;min-height:0}
+.fixTop{flex:none;padding:8px 12px 0}
+.fixTop .fixTable svg{max-height:32dvh;width:100%;height:auto}
+.fixSaveMain{margin:8px 0 0}
 .fixScroll{flex:1;overflow:auto;padding:8px 12px 16px;-webkit-overflow-scrolling:touch}
 .fixTable{touch-action:none;background:#061018;border-radius:16px;border:1px solid #1c2a3b;overflow:hidden}
 .fixTable svg{width:100%;height:auto;display:block}
