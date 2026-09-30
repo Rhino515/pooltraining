@@ -1,7 +1,7 @@
 /**
  * Phone editor for one shipped PKF drill (#drillfix/<id>) or one built-in stage (#devedit/<game>/<stage>).
  * Mounted only while drillEditorAllowed() is true. Drag balls on the table (¼-diamond nudge is the backup).
- * Bullseyes are color-coded; drag the center disc to move one, or EXPAND / DECREASE its rings.
+ * Bullseye matches the photo (green, red, dark center). Drag the center to move it, or EXPAND / DECREASE its rings.
  * FULL TABLE fills the phone so the same drag works standing at the table. Exit returns here.
  * Saves are local overrides. Shipped files do not change.
  */
@@ -342,7 +342,7 @@ export function createDrillFix(ctx, idOrSpec) {
       <p class="fixSel" data-bullseye-size="${outer}">${esc(zones.length > 1 ? `Target ${i + 1} of ${shot().targetZones.length}` : 'Target')} · outer ring ${outer}</p>
       ${sizeButtons()}
       ${shot().targetZones.length > 1 ? `<div class="pockets">${shot().targetZones.map((zz, n) => zz?.rings ? `<button type="button" class="${n === i ? 'on' : ''}" data-action="df-zone-pick" data-i="${n}">Target ${n + 1}</button>` : '').join('')}</div>` : ''}
-      <p class="muted small">Drag the center disc to move the target. Rings stay color coded (red 3★, gold 2★, green 1★). Size is saved with this ${isDrill ? 'drill' : 'stage'}.</p>`;
+      <p class="muted small">Drag the center to move the target. EXPAND and DECREASE change its size. No numbers on the rings. Size is saved with this ${isDrill ? 'drill' : 'stage'}.</p>`;
   }
   const loadedDesc = String(doc.description || '');
   function backHref() { return isDrill ? `#play/drills/${esc(id)}` : `#devgame/${esc(gameId)}`; }
@@ -502,16 +502,10 @@ export function createDrillFix(ctx, idOrSpec) {
       disc.setAttribute('cx', String(c.x));
       disc.setAttribute('cy', String(c.y));
       disc.setAttribute('r', '4.2');
-      disc.setAttribute('fill', 'rgba(255,59,84,0.38)');
-      disc.setAttribute('stroke', on ? '#ffffff' : '#ff3b54');
-      disc.setAttribute('stroke-width', on ? '0.75' : '0.55');
-      const dot = document.createElementNS(NS, 'circle');
-      dot.setAttribute('cx', String(c.x));
-      dot.setAttribute('cy', String(c.y));
-      dot.setAttribute('r', '1.35');
-      dot.setAttribute('fill', '#ff3b54');
+      disc.setAttribute('fill', 'transparent');
+      disc.setAttribute('stroke', on ? '#ffffff' : 'transparent');
+      disc.setAttribute('stroke-width', on ? '0.55' : '0');
       wrap.appendChild(disc);
-      wrap.appendChild(dot);
       g.appendChild(wrap);
     });
     svg.appendChild(g);

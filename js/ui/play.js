@@ -105,22 +105,44 @@ export function createPlayScreen(ctx, key) {
     return `<div class="playHead"><button type="button" class="phBack" data-action="play-exit" aria-label="Exit">‹</button><div class="phTitle"><small>${esc(title)}</small><b>${esc(sub)}</b></div><div class="phStatus">${edit}${status}</div></div>`;
   }
 
+  function countMakeMiss(attempts) {
+    let makes = 0;
+    let misses = 0;
+    for (const a of attempts || []) {
+      if (E.attemptIsMake(a)) makes++;
+      else misses++;
+    }
+    return { makes, misses };
+  }
+  /** Attempt count the medal uses: the drill's own number, else 20 only when a drill does not say. */
+  function attemptBasis(ev) {
+    if (ev?.mode === 'boss') {
+      const n = ev.shots?.[ev.shotIndex]?.shot?.attempts;
+      return E.medalThresholds(Number.isFinite(Number(n)) && Number(n) > 0 ? n : 20);
+    }
+    const src = stage || {};
+    const own = [src.attemptCount, src.scoringRules?.attempts].map(Number).find((n) => Number.isFinite(n) && n > 0);
+    if (own) return E.medalThresholds(own);
+    if (session.gameId === 'drills' || C) return E.medalThresholds(20);
+    if (Number.isFinite(ev?.attemptsTotal) && ev.attemptsTotal > 0) return E.medalThresholds(ev.attemptsTotal);
+    return null;
+  }
+  function tallyHTML(attempts, basis) {
+    const { makes, misses } = countMakeMiss(attempts);
+    const rank = basis ? E.medalName(makes, basis.total) : '';
+    return `<div class="shotTally" data-makes="${makes}" data-misses="${misses}" data-attempts="${basis ? basis.total : ''}" data-rank="${rank}">
+      <span class="tallyMake"><b>${makes}</b><small>Makes</small></span>
+      <span class="tallyMiss"><b>${misses}</b><small>Misses</small></span>
+      <span class="tallyRank${rank ? '' : ' is-none'}" data-rank="${rank}"><b>${rank || '—'}</b><small>${rank ? 'Rank' : 'Pass at Bronze'}</small></span>
+    </div>`;
+  }
   function progressHTML(ev) {
     if (ev.mode === 'boss') {
       const cur = ev.shots[ev.shotIndex];
-      const cd = cur.attempts.map((a) => (a.pocketed && a.stars ? `<i class="hit">${'★'.repeat(a.stars)}</i>` : a.result === 'made' ? '<i class="hit">✓</i>' : a.pocketed ? '<i class="partial">✓</i>' : '<i class="miss">✕</i>'));
-      for (let i = cur.attempts.length; i < cur.shot.attempts; i++) cd.push('<i></i>');
-      return `<div class="bossTrack">${ev.shots.map((s, i) => `<i class="${s.passed ? 'ok' : s.done ? 'bad' : i === ev.shotIndex ? 'cur' : ''}" title="${esc(s.shot.title)}">${i + 1}</i>`).join('')}</div><div class="attemptDots compact" style="grid-template-columns:repeat(${cur.shot.attempts},1fr)">${cd.join('')}</div>`;
+      const track = `<div class="bossTrack">${ev.shots.map((s, i) => `<i class="${s.passed ? 'ok' : s.done ? 'bad' : i === ev.shotIndex ? 'cur' : ''}" title="${esc(s.shot.title)}">${i + 1}</i>`).join('')}</div>`;
+      return track + tallyHTML(cur.attempts, E.medalThresholds(cur.shot.attempts || 20));
     }
-    const A = session.attempts;
-    const total = ev.mode === 'train' ? null : ev.attemptsTotal;
-    const dots = A.map((a) => {
-      const good = a.pocketed === true && a.stars > 0 ? 'hit' : a.result === 'made' || a.result === 'madePos' || a.result === 'hit' || a.result === 'bonus' || a.result === 'zone' || a.result === 'ran' || (a.stars || 0) >= 2 ? 'hit' : a.result === 'pocket' || a.pocketed || a.result === 'partial' || a.stars === 1 ? 'partial' : 'miss';
-      const label = a.stars != null && a.stars > 0 ? '★'.repeat(a.stars) : a.result === 'madePos' || a.result === 'bonus' ? '+' : a.pocketed || a.result ? (good === 'miss' ? '✕' : '✓') : '✕';
-      return `<i class="${good}">${label}</i>`;
-    });
-    if (total && Number.isFinite(total)) for (let i = A.length; i < total; i++) dots.push('<i></i>');
-    return `<div class="attemptDots compact" style="grid-template-columns:repeat(${Math.min(dots.length > 12 && dots.length <= 16 ? dots.length : 12, Math.max(dots.length, 1))},1fr)">${dots.join('')}</div>`;
+    return tallyHTML(session.attempts, attemptBasis(ev));
   }
 
   function render() {
@@ -293,11 +315,13 @@ export function createPlayScreen(ctx, key) {
   function finishContent() {
     const r = evaluate();
     const extra = (C.onFinish && C.onFinish(r, session)) || {};
+    const medal = tallyHTML(session.attempts, attemptBasis(r));
     const statsMade = r.made != null ? `<div><b>${r.made}/${r.attemptsTotal}</b><span>MADE</span></div>` : r.stars != null ? `<div><b>${r.stars}★</b><span>STARS</span></div>` : '';
     const body = `<div class="resultPanel ${r.passed ? 'pass' : 'fail'}" data-result="${r.passed ? 'pass' : 'fail'}" data-content-result="1">
         <div class="eyebrow">${esc(C.title)}</div>
         <h1>${r.passed ? 'PASSED' : 'NOT PASSED'}</h1>
         <div class="resultStats"><div><b data-final-score="${r.score}">${r.score}</b><span>SCORE</span></div>${statsMade}</div>
+        ${medal}
         ${extra.newBest ? '<p class="pb">★ NEW PERSONAL BEST</p>' : ''}
         ${extra.award ? awardHTML(extra.award) : ''}
         <p class="muted">Needed: ${esc(r.needText || '')} · You: ${esc(r.progressText || '')}</p>
@@ -343,6 +367,7 @@ export function createPlayScreen(ctx, key) {
         ${r.newPB ? '<p class="pb">★ NEW PERSONAL BEST</p>' : ''}
         ${awardBlock}
         ${r.mode === 'calibration' ? calibrationSummary(after.speedCal) : ''}
+        ${tallyHTML(session.attempts, attemptBasis(r))}
         ${!session.endless ? `<p class="muted">Needed: ${esc(r.needText)} · You: ${esc(r.progressText)}</p>` : ''}
         ${unlocked}${gamesU}
         <div class="resultBtns">

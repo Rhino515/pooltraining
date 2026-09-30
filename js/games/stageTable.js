@@ -1,7 +1,7 @@
 /**
  * Stage table renderer — route visualisation on top of the shared tableDiagram SVG.
  * Cue-ball route: solid white with arrowhead. Object-ball route: dashed yellow with arrowhead.
- * Rail contacts: small diamonds on the cushion. Target zones: concentric rings with star labels.
+ * Rail contacts: small diamonds on the cushion. Target zones: a photo bullseye (green, red, dark center) with no numbers.
  */
 import { renderTableDiagram, BALL_RADIUS } from '../tableDiagram.js';
 
@@ -10,48 +10,24 @@ const BR = BALL_RADIUS;
 const f = (v) => Math.round(v * 100) / 100;
 const pathD = (pts) => pts.map((p, i) => `${i ? 'L' : 'M'}${f(p.x)} ${f(p.y)}`).join(' ');
 
-/** Distinct bullseye colors by star ring (3 red, 2 gold, 1 green). Not one gray circle. */
-const STAR_COLOR = { 3: '#ff3b54', 2: '#ffc430', 1: '#2ddc8c' };
-const ZONE_EXTRA = ['#4cc9ff', '#c084fc', '#fb923c', '#f472b6'];
-function ringColor(stars, zoneIndex) {
-  if (zoneIndex > 0 && stars === 1) return ZONE_EXTRA[(zoneIndex - 1) % ZONE_EXTRA.length];
-  return STAR_COLOR[stars] || ZONE_EXTRA[zoneIndex % ZONE_EXTRA.length];
-}
-function hexRgb(hex) {
-  const n = parseInt(hex.slice(1), 16);
-  return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
+/** Photo bullseye. Stars stay on the ring data (3 center, 2 middle, 1 outer) but are not drawn. */
+const PHOTO_RING = { 1: '#2fbe4a', 2: '#e21b2d', 3: '#14161a' };
+function photoColor(stars) {
+  return PHOTO_RING[stars] || PHOTO_RING[1];
 }
 function zoneSVG(z, { dim = false, label = true, current = false, index = 0 } = {}) {
   let s = `<g class="zone bullseye${z.obZone ? ' ob-zone' : ''}" data-zone-i="${index}" clip-path="url(#feltClip)" opacity="${dim ? 0.45 : 1}">`;
   if (z.type === 'band') {
     const rs = z.rings.slice().sort((a, b) => b.r - a.r);
     for (const r of rs) {
-      const col = z.obZone ? '#ffd34d' : ringColor(r.stars, index);
-      const rgb = hexRgb(col);
-      const a = r.stars === 3 ? 0.5 : r.stars === 2 ? 0.28 : 0.16;
-      s += `<rect class="zone-ring" data-stars="${r.stars}" data-bullseye-color="${col}" x="${f(z.center - r.r)}" y="0" width="${f(r.r * 2)}" height="50" fill="rgba(${rgb},${a})" stroke="${col}" stroke-width="${r.stars === 3 ? 0.5 : 0.32}" stroke-dasharray="${r.stars === 3 ? '0' : '1.2 0.8'}"/>`;
-    }
-    if (label) {
-      const right = z.center > 50;
-      rs.forEach((r, i) => {
-        const lx = right ? z.center - r.r + 0.5 : z.center + r.r - 0.5;
-        s += `<text x="${f(lx)}" y="${f(6.1 + (2 - i) * 0)}" dy="${f((3 - r.stars) * 2.2)}" text-anchor="${right ? 'start' : 'end'}" font-size="1.7" font-weight="800" fill="#e8fbff" font-family="system-ui,sans-serif" stroke="#062a32" stroke-width="0.3" paint-order="stroke">${r.stars}★</text>`;
-      });
+      const col = photoColor(r.stars);
+      s += `<rect class="zone-ring" data-stars="${r.stars}" data-bullseye-color="${col}" x="${f(z.center - r.r)}" y="0" width="${f(r.r * 2)}" height="50" fill="${col}" stroke="${col}" stroke-width="0.15"/>`;
     }
   } else {
     const rs = z.rings.slice().sort((a, b) => b.r - a.r);
     for (const r of rs) {
-      const col = z.obZone ? '#ffd34d' : ringColor(r.stars, index);
-      const rgb = hexRgb(col);
-      const a = r.stars === 3 ? 0.55 : r.stars === 2 ? 0.3 : 0.16;
-      s += `<circle class="zone-ring" data-stars="${r.stars}" data-bullseye-color="${col}" cx="${f(z.x)}" cy="${f(z.y)}" r="${f(r.r)}" fill="rgba(${rgb},${a})" stroke="${col}" stroke-width="${r.stars === 3 ? 0.55 : 0.34}" stroke-dasharray="${r.stars === 3 ? '0' : '1.2 0.8'}"/>`;
-    }
-    if (label) {
-      for (const r of rs) {
-        if (r.stars === 3) continue;
-        const ly = z.y - r.r + 1.5;
-        s += `<text x="${f(z.x)}" y="${f(ly)}" text-anchor="middle" font-size="1.45" font-weight="800" fill="#e8fbff" font-family="system-ui,sans-serif" stroke="#062a32" stroke-width="0.28" paint-order="stroke">${r.stars}★</text>`;
-      }
+      const col = photoColor(r.stars);
+      s += `<circle class="zone-ring" data-stars="${r.stars}" data-bullseye-color="${col}" cx="${f(z.x)}" cy="${f(z.y)}" r="${f(r.r)}" fill="${col}" stroke="${col}" stroke-width="0.12"/>`;
     }
   }
   s += `</g>`;
@@ -145,7 +121,7 @@ export function renderStageTable(ch, opt = {}) {
       if (l.path?.length >= 2) under += `<path class="cue-path cue-route lane-route" data-lane="${l.key}" d="${pathD(l.path)}" fill="none" stroke="#f2fdff" stroke-width="0.38" stroke-linecap="round" stroke-linejoin="round" opacity="${l.active === false ? 0.3 : l.active ? 0.95 : 0.7}" marker-end="url(#cueArrow)"/>`;
       if (l.start && (l.start.x !== ch.cueBallPosition?.x || l.start.y !== ch.cueBallPosition?.y)) over += `<circle class="lane-start" data-lane="${l.key}" cx="${f(l.start.x)}" cy="${f(l.start.y)}" r="${BR}" fill="#f7fbff" stroke="#062a32" stroke-width="0.25"/>`;
     }
-    for (const z of ch.targetZones || []) if (z.label) over += `<text class="lane-label" x="${f(z.x)}" y="${f(z.y + 0.6)}" text-anchor="middle" font-size="1.7" font-weight="900" fill="#062a32" font-family="system-ui,sans-serif">${z.label}</text>`;
+    // Lane speed stays in the lane tag. Do not print numbers inside the bullseye.
   }
   const cp = o.allSteps || ch.laneOverlay ? [] : src.cueBallPath || [];
   const ci = src.contactIndex ?? ch.contactIndex ?? 1;

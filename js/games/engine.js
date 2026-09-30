@@ -629,6 +629,36 @@ export function finishBoss(state, session) {
   return { state: aw.state, result: { ...ev, firstPass: ev.passed && !old.passed, award: aw.award } };
 }
 
+/**
+ * Medal from makes out of the drill's attempt count.
+ * 12/20 bronze, 15/20 silver, 20/20 gold. Scaled with ceil so a rank never starts below that share.
+ * Passing the medal scale starts at bronze. Ring stars (3/2/1) are a separate, unchanged score.
+ * Callers pass the drill's own attempt count; 20 is only the default when the drill does not say.
+ */
+export function medalThresholds(attempts) {
+  const n = Number(attempts);
+  const total = Number.isFinite(n) && n > 0 ? Math.max(1, Math.round(n)) : 20;
+  const bronze = Math.min(total, Math.max(1, Math.ceil((total * 12) / 20 - 1e-9)));
+  const silver = Math.min(total, Math.max(bronze, Math.ceil((total * 15) / 20 - 1e-9)));
+  return { total, bronze, silver, gold: total };
+}
+export function medalName(makes, attempts) {
+  const t = medalThresholds(attempts);
+  const m = Number(makes) || 0;
+  if (m >= t.gold) return 'Gold';
+  if (m >= t.silver) return 'Silver';
+  if (m >= t.bronze) return 'Bronze';
+  return '';
+}
+/** A recorded attempt is a make or a miss. Stars stay on the attempt; they are not a third tally. */
+export function attemptIsMake(a) {
+  if (!a || a.result === 'miss' || a.result === 'partial') return false;
+  if (a.result === 'made' || a.result === 'madePos' || a.result === 'hit' || a.result === 'bonus' || a.result === 'zone' || a.result === 'ran' || a.result === 'pocket') return true;
+  if (a.pocketed === true) return true;
+  if ((a.stars || 0) > 0) return true;
+  return false;
+}
+
 // ------------------------------------------------------------------ calibration helpers
 export function calibrationOutcome(targetSpeed, leg, diamond) {
   return { speed: targetSpeed, leg, diamond, actual: Math.round(travelFromStop(leg, diamond) * 100) / 100 };

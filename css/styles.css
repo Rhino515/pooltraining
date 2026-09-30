@@ -1482,3 +1482,14 @@ body.fix-full #app{height:100dvh;padding:0}
 .fixStage .fixTable{position:absolute;inset:0;border:0;background:transparent;overflow:visible;border-radius:0}
 .fixFullBot .fixPair{margin:0}
 .fixFullBot .muted{margin:6px 2px 0;text-align:center}
+
+/* v14-10: make/miss tally and word ranks (no circle attempt marks) */
+.shotTally{display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:8px;margin:8px 0 2px}
+.shotTally > span{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:52px;border-radius:14px;background:#0b1522;border:1px solid #22364c;padding:6px 4px}
+.shotTally b{font-size:22px;font-weight:800;line-height:1;color:#fff}
+.shotTally small{margin-top:4px;font-size:10px;letter-spacing:.7px;text-transform:uppercase;color:#9aa8bc;font-weight:700}
+.tallyMake b{color:#3ddc84}
+.tallyMiss b{color:#ff7387}
+.tallyRank b{color:#f6c453;font-size:18px}
+.tallyRank.is-none b{color:#7d8da3;font-size:20px}
+.lg-zone{background:#2fbe4a!important;border-color:#127a32!important}
