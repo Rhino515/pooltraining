@@ -1596,7 +1596,7 @@ export function createSimScreen(ctx, args = []) {
           hTips: st.shot.hTips,
           maxV: P.MAX_TIPS_V,
           maxH: P.MAX_TIPS_H,
-          cut: cut ? { label: cut.label, side: cut.side, fullness: cut.fullness } : null,
+          cut: cut ? { frac: cut.frac, side: cut.side, fullness: cut.fullness } : null,
           onChange: (t) => {
             if (destroyed) return;
             st.shot.vTips = t.vTips;

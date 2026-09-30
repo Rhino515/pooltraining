@@ -49,21 +49,24 @@ export function snapTips(v, h, opt = {}) {
   return { vTips: r(sv), hTips: r(sh) };
 }
 
+const CUT_AMOUNT = { 'Full': 'Full', '¾': '3/4', '½': '1/2', '¼': '1/4', 'Thin': 'Thin' };
+/** Amount only: "1/4", never "Left 1/4". */
 function cutLine(cut) {
-  if (!cut?.label) return '';
-  if (cut.label === 'Full') return 'Full ball';
-  if (/thin/i.test(cut.label)) return `${cut.label} cut`;
-  return `${cut.label} ball`;
+  if (!cut?.frac) return '';
+  return CUT_AMOUNT[cut.frac] || String(cut.frac);
 }
-/** Ghost sits behind the cue ball. Sideways offset is the cut (0 = full, one radius = ½ ball). Tip does not move it. */
+/**
+ * Ghost is the object ball's shadow, drawn behind the cue ball on the side the object ball is cut.
+ * Same vertical center. side "left" means the object ball leaves to the viewer's right.
+ * Offset 0 = full hit; one radius = a 1/2-ball cut. Tip does not move it.
+ */
 function ghostBehind(opt) {
   const cut = opt.cut;
   if (!cut || cut.fullness == null || Number.isNaN(Number(cut.fullness))) return '';
   const sin = Math.max(0, Math.min(1, 1 - Number(cut.fullness)));
-  const sign = cut.side === 'left' ? -1 : cut.side === 'right' ? 1 : 0;
+  const sign = cut.side === 'left' ? 1 : cut.side === 'right' ? -1 : 0;
   const dx = sign * sin * 2 * BALL_R;
-  const dy = 8;
-  return `<g class="tp-ghost" data-cut-ghost pointer-events="none" transform="translate(${dx.toFixed(2)} ${dy.toFixed(2)})"><circle cx="${C}" cy="${C}" r="${BALL_R}" fill="#eaf8ff" fill-opacity="0.34" stroke="#cff9ff" stroke-width="1.6" stroke-dasharray="4 2.6"/></g>`;
+  return `<g class="tp-ghost" data-cut-ghost pointer-events="none" transform="translate(${dx.toFixed(2)} 0)"><circle cx="${C}" cy="${C}" r="${BALL_R}" fill="#eaf8ff" fill-opacity="0.34" stroke="#cff9ff" stroke-width="1.6" stroke-dasharray="4 2.6"/></g>`;
 }
 function ballSVG(opt) {
   const lim = (opt.limit ?? MISCUE_LIMIT_TIPS) * TIP_UNIT;
