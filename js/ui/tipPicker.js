@@ -56,25 +56,21 @@ function cutLine(cut) {
   return CUT_AMOUNT[cut.frac] || String(cut.frac);
 }
 /**
- * Faded shadow of the object ball. A cut to the right sits on the right of the cue ball,
- * a cut to the left on the left. How far it sticks out is the cut. It also tilts with
- * where the ball sits, and stays level only when the ball is level with the cue. Tip does not move it.
+ * Faded shadow of the object ball, same height and bottom as the cue ball.
+ * A cut to the right sits on the right, a cut to the left on the left.
+ * How far it sticks out left or right is the cut. It does not shift up or down,
+ * and it has no ball number. Tip does not move it.
  */
 function ghostBehind(opt) {
   const cut = opt.cut;
   if (!cut || !Number.isFinite(cut.lateral)) return '';
   const scale = BALL_R / (Number(cut.ballR) > 0 ? Number(cut.ballR) : 1.125);
   const peek = Math.abs(cut.lateral) * scale;
+  // lateral < 0 is a cut to his right (screen right). Do not flip.
   const sign = cut.lateral < -1e-6 ? 1 : cut.lateral > 1e-6 ? -1 : 0;
-  const along = (Number(cut.obX) || 0) - (Number(cut.cueX) || 0);
-  const rise = (Number(cut.obY) || 0) - (Number(cut.cueY) || 0);
-  const tilt = Math.atan2(rise, Math.abs(along) < 1e-6 ? 1 : Math.abs(along));
-  const dx = Math.cos(tilt) * sign * peek;
-  const dy = Math.sin(tilt) * peek;
+  const dx = sign * peek;
   const col = /^#[0-9a-fA-F]{6}$/.test(cut.color || '') ? cut.color : '#f5d76e';
-  const n = Number.isInteger(cut.n) && cut.n >= 1 && cut.n <= 15 ? String(cut.n) : '';
-  const num = n ? `<text x="${C}" y="${C + 7}" text-anchor="middle" font-size="20" font-weight="800" fill="#1a1408" fill-opacity="0.55" font-family="system-ui,sans-serif">${n}</text>` : '';
-  return `<g class="tp-ghost" data-cut-ghost pointer-events="none" transform="translate(${dx.toFixed(2)} ${dy.toFixed(2)})"><circle cx="${C}" cy="${C}" r="${BALL_R}" fill="${col}" fill-opacity="0.5" stroke="${col}" stroke-opacity="0.85" stroke-width="1.2"/>${num}</g>`;
+  return `<g class="tp-ghost" data-cut-ghost pointer-events="none" transform="translate(${dx.toFixed(2)} 0)"><circle cx="${C}" cy="${C}" r="${BALL_R}" fill="${col}" fill-opacity="0.5" stroke="${col}" stroke-opacity="0.85" stroke-width="1.2"/></g>`;
 }
 function ballSVG(opt) {
   const lim = (opt.limit ?? MISCUE_LIMIT_TIPS) * TIP_UNIT;
