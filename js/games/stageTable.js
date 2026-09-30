@@ -10,14 +10,26 @@ const BR = BALL_RADIUS;
 const f = (v) => Math.round(v * 100) / 100;
 const pathD = (pts) => pts.map((p, i) => `${i ? 'L' : 'M'}${f(p.x)} ${f(p.y)}`).join(' ');
 
-function zoneSVG(z, { dim = false, label = true, current = false } = {}) {
-  let s = `<g class="zone${z.obZone ? ' ob-zone' : ''}" clip-path="url(#feltClip)" opacity="${dim ? 0.45 : 1}">`;
-  const base = z.obZone ? '255,211,77' : '85,229,255';
+/** Distinct bullseye colors by star ring (3 red, 2 gold, 1 green). Not one gray circle. */
+const STAR_COLOR = { 3: '#ff3b54', 2: '#ffc430', 1: '#2ddc8c' };
+const ZONE_EXTRA = ['#4cc9ff', '#c084fc', '#fb923c', '#f472b6'];
+function ringColor(stars, zoneIndex) {
+  if (zoneIndex > 0 && stars === 1) return ZONE_EXTRA[(zoneIndex - 1) % ZONE_EXTRA.length];
+  return STAR_COLOR[stars] || ZONE_EXTRA[zoneIndex % ZONE_EXTRA.length];
+}
+function hexRgb(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
+}
+function zoneSVG(z, { dim = false, label = true, current = false, index = 0 } = {}) {
+  let s = `<g class="zone bullseye${z.obZone ? ' ob-zone' : ''}" data-zone-i="${index}" clip-path="url(#feltClip)" opacity="${dim ? 0.45 : 1}">`;
   if (z.type === 'band') {
     const rs = z.rings.slice().sort((a, b) => b.r - a.r);
     for (const r of rs) {
-      const a = r.stars === 3 ? 0.45 : r.stars === 2 ? 0.26 : 0.14;
-      s += `<rect class="zone-ring" data-stars="${r.stars}" x="${f(z.center - r.r)}" y="0" width="${f(r.r * 2)}" height="50" fill="rgba(${base},${a})" stroke="rgba(${base},0.9)" stroke-width="${r.stars === 3 ? 0.45 : 0.3}" stroke-dasharray="${r.stars === 3 ? '0' : '1.2 0.8'}"/>`;
+      const col = z.obZone ? '#ffd34d' : ringColor(r.stars, index);
+      const rgb = hexRgb(col);
+      const a = r.stars === 3 ? 0.5 : r.stars === 2 ? 0.28 : 0.16;
+      s += `<rect class="zone-ring" data-stars="${r.stars}" data-bullseye-color="${col}" x="${f(z.center - r.r)}" y="0" width="${f(r.r * 2)}" height="50" fill="rgba(${rgb},${a})" stroke="${col}" stroke-width="${r.stars === 3 ? 0.5 : 0.32}" stroke-dasharray="${r.stars === 3 ? '0' : '1.2 0.8'}"/>`;
     }
     if (label) {
       const right = z.center > 50;
@@ -29,8 +41,10 @@ function zoneSVG(z, { dim = false, label = true, current = false } = {}) {
   } else {
     const rs = z.rings.slice().sort((a, b) => b.r - a.r);
     for (const r of rs) {
-      const a = r.stars === 3 ? 0.5 : r.stars === 2 ? 0.26 : 0.13;
-      s += `<circle class="zone-ring" data-stars="${r.stars}" cx="${f(z.x)}" cy="${f(z.y)}" r="${f(r.r)}" fill="rgba(${base},${a})" stroke="rgba(${base},0.95)" stroke-width="${r.stars === 3 ? 0.45 : 0.3}" stroke-dasharray="${r.stars === 3 ? '0' : '1.2 0.8'}"/>`;
+      const col = z.obZone ? '#ffd34d' : ringColor(r.stars, index);
+      const rgb = hexRgb(col);
+      const a = r.stars === 3 ? 0.55 : r.stars === 2 ? 0.3 : 0.16;
+      s += `<circle class="zone-ring" data-stars="${r.stars}" data-bullseye-color="${col}" cx="${f(z.x)}" cy="${f(z.y)}" r="${f(r.r)}" fill="rgba(${rgb},${a})" stroke="${col}" stroke-width="${r.stars === 3 ? 0.55 : 0.34}" stroke-dasharray="${r.stars === 3 ? '0' : '1.2 0.8'}"/>`;
     }
     if (label) {
       for (const r of rs) {
@@ -104,10 +118,10 @@ export function renderStageTable(ch, opt = {}) {
   let over = '';
   if (o.showZones) {
     const zones = ch.targetZones || [];
-    for (const z of zones) {
+    zones.forEach((z, i) => {
       const isCur = step ? z.step === o.step + 1 : true;
-      under += zoneSVG(z, { dim: step && !isCur, current: isCur && !!step });
-    }
+      under += zoneSVG(z, { dim: step && !isCur, current: isCur && !!step, index: i });
+    });
   }
   if (o.showObPath) {
     const obPaths = step ? [{ points: step.objectBallPath }] : ch.objectBallPaths || [];

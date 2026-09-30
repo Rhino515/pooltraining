@@ -11,6 +11,8 @@ import { APP_VERSION } from '../vault.js';
 import { RANK_LADDER, DRILL_RANK } from '../progression/config.js';
 import { typeLabel } from '../content/schema.js';
 import { openSheet, closeSheet, toast } from './sheet.js';
+import { allDrills } from '../drills.js';
+import * as CP from '../dev/copy.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const HONEST = 'DEV MODE is a convenience lock on this device, not server security: anyone with this phone and browser tools can read or change local data. It keeps test tools out of everyday use.';
@@ -41,12 +43,14 @@ export function renderDev(state) {
   const items = S.loadContent();
   return `${head()}
     <div class="card devCard" data-dev-state="unlocked"><div class="eyebrow">🔓 UNLOCKED</div><p class="muted small">${HONEST}</p>
+      ${D.ownerAccountSignedIn() ? '<p class="muted small" data-owner-account>This signed-in account stays unlocked.</p>' : ''}
       <div class="eyebrow">AUTO-LOCK AFTER</div><div class="chips">${D.AUTO_LOCK_OPTIONS.map((m) => `<button type="button" class="chip${dev.autoLockMin === m ? ' active' : ''}" data-action="dev-autolock" data-v="${m}">${m ? `${m} min idle` : 'Only when closed'}</button>`).join('')}</div>
       <button type="button" class="bigBtn danger" data-action="dev-lock">🔒 LOCK</button>
       <button type="button" class="linkish" data-action="dev-change">Change passcode</button></div>
     ${state.devSeed ? `<div class="card devBanner" data-dev-seed>TEST STATE ACTIVE · ${esc(state.devSeed.label)}<button type="button" class="bigBtn" data-action="dev-restore-real">RESTORE MY REAL PROGRESS</button><small class="muted">Anything played while the test state is active is discarded when you restore.</small></div>` : ''}
     <h2>Edit built-in content</h2>
-    <div class="card devCard"><p class="muted small">Edits are saved as a local override layer keyed by content id — the built-in files never change. RESET TO ORIGINAL removes an override. (Built-in drills are edited in their source files and Learn lessons are not built yet; Table Games stages with a single shot can be edited.)</p>
+    <div class="card devCard"><p class="muted small">Edits stay on this phone. Shipped files do not change. RESET brings the original back. Open any built-in drill or stage: rename the title and description, and drag balls when the table has them.</p>
+      <button type="button" class="bigBtn alt" data-action="go" data-href="#devdrills">BUILT-IN DRILLS</button>
       <div class="devGames">${GAMES.filter((g) => !g.special).map((g) => { const n = ov.filter((o) => o.id.startsWith(`stage:${g.id}:`)).length; return `<button type="button" class="chip" data-action="go" data-href="#devgame/${g.id}">${g.icon} ${esc(g.name)}${n ? ` <b class="gold">${n}</b>` : ''}</button>`; }).join('')}</div>
       <div class="kv"><span>Overrides</span><b data-override-count="${ov.length}">${ov.length}</b></div>
       <button type="button" class="bigBtn alt" data-action="dev-export" ${ov.length ? '' : 'disabled'}>EXPORT OVERRIDES (.pooliq pack)</button>
@@ -55,6 +59,12 @@ export function renderDev(state) {
     <div class="card devCard"><p class="muted small">While unlocked, pack stages can be played in any order. Mark imported content official / eligible to test how it counts.</p>
       ${items.length ? items.map((it) => { const d = it.doc; return `<div class="devItem" data-dev-item="${esc(it.uid)}"><div><b>${esc(it.title)}</b><small class="muted">${esc(typeLabel(d.contentType))}${d.metadata?.official ? ' · OFFICIAL' : ''}</small></div><div class="chips"><button type="button" class="chip${d.careerEligible ? ' active' : ''}" data-action="dev-mark" data-uid="${esc(it.uid)}" data-k="careerEligible">Career-eligible</button><button type="button" class="chip${d.rankXpEligible ? ' active' : ''}" data-action="dev-mark" data-uid="${esc(it.uid)}" data-k="rankXpEligible">Rank XP</button><button type="button" class="chip${d.metadata?.official ? ' active' : ''}" data-action="dev-mark" data-uid="${esc(it.uid)}" data-k="official">Official</button><button type="button" class="chip" data-action="go" data-href="#cedit/${esc(it.uid)}">Edit</button><button type="button" class="chip danger" data-action="dev-del-content" data-uid="${esc(it.uid)}">Delete</button></div></div>`; }).join('') : '<p class="muted">No installed content.</p>'}
       <button type="button" class="bigBtn alt" data-action="go" data-href="#content">OPEN MY CONTENT</button></div>
+    <h2>On-screen words</h2>
+    <div class="card devCard" data-copy-panel>${CP.otherAccountSignedIn() ? '<p class="muted small">Another account is signed in. Word renames stay hidden.</p>' : `<p class="muted small">Hold a page title, nav label, button or other words to rename them. Saved on this phone. A different signed-in account does not see the new words.</p>
+      <button type="button" class="bigBtn" data-action="dev-copy-on">HOLD WORDS TO RENAME</button>
+      <div class="kv"><span>Renamed</span><b>${CP.copyCount()}</b></div>
+      ${Object.entries(CP.loadCopy().items).slice(0, 12).map(([k, v]) => `<div class="devItem"><div><b>${esc(v.text)}</b></div><button type="button" class="miniAct danger" data-action="dev-copy-clear" data-key="${esc(k)}">USE ORIGINAL</button></div>`).join('')}
+      <button type="button" class="bigBtn alt" data-action="dev-copy-reset" ${CP.copyCount() ? '' : 'disabled'}>RESET ALL WORDS</button>`}</div>
     <h2>Test progression</h2>
     <div class="card devCard"><p class="muted small">Jump to a test state. It is flagged DEV (banner shown, excluded from public stats). Your real data is stashed first — RESTORE MY REAL PROGRESS brings it back.</p>
       <div class="eyebrow">CAREER RANK</div><div class="chips">${RANK_LADDER.names.map((n, i) => `<button type="button" class="chip${seedSel.rank === i ? ' active' : ''}" data-action="dev-seed-rank" data-v="${i}">${esc(n)}</button>`).join('')}</div>
@@ -83,8 +93,9 @@ export function renderDevGame(gameId) {
   return `${head(g.name)}<div class="stageList">${specs.map((s, i) => {
     const id = O.stageOverrideId(gameId, s.id);
     const has = !!O.getOverride(id);
-    const ok = O.isEditableSpec(s, s.kind || g.kind);
-    return `<div class="stageRow card devStage${has ? ' overridden' : ''}" data-dev-stage="${esc(s.id)}" data-overridden="${has ? 1 : 0}"><span class="srNum">${i + 1}</span><span class="srMain"><b>${esc(getStage(gameId, s.id)?.name || s.name)}</b><small>${has ? '<span class="tag gold">OVERRIDDEN</span> ' : ''}${ok ? esc(id) : 'Multi-ball / calibration stage — not editable with the drill builder'}</small></span><span class="srSide devBtns">${ok ? `<button type="button" class="miniAct" data-action="go" data-href="#devedit/${gameId}/${esc(s.id)}">EDIT</button>` : ''}${has ? `<button type="button" class="miniAct danger" data-action="dev-reset" data-id="${esc(id)}" data-game="${gameId}">RESET TO ORIGINAL</button>` : ''}${ok ? `<button type="button" class="miniAct" data-action="go" data-href="#play/${gameId}/${esc(s.id)}">PLAY</button>` : ''}</span></div>`;
+    const ch = getStage(gameId, s.id);
+    const balls = !!(ch?.cueBallPosition || ch?.ballPositions?.length);
+    return `<div class="stageRow card devStage${has ? ' overridden' : ''}" data-dev-stage="${esc(s.id)}" data-overridden="${has ? 1 : 0}"><span class="srNum">${i + 1}</span><span class="srMain"><b>${esc(ch?.name || s.name)}</b><small>${has ? '<span class="tag gold">OVERRIDDEN</span> ' : ''}${esc(id)}${balls ? '' : ' · text only'}</small></span><span class="srSide devBtns"><button type="button" class="miniAct" data-action="go" data-href="#devedit/${gameId}/${esc(s.id)}">EDIT</button>${has ? `<button type="button" class="miniAct danger" data-action="dev-reset" data-id="${esc(id)}" data-game="${gameId}">RESET TO ORIGINAL</button>` : ''}<button type="button" class="miniAct" data-action="go" data-href="#play/${gameId}/${esc(s.id)}">PLAY</button></span></div>`;
   }).join('')}</div>`;
 }
 export function renderDevKeys() {
@@ -119,6 +130,17 @@ export function devEditOptions(gameId, stageId, env) {
       return out;
     }
   };
+}
+
+
+export function renderDevDrills() {
+  if (!D.isUnlocked()) return gate();
+  const list = allDrills().filter((d) => d && !d.custom && !d.contentUid);
+  const edits = new Set(Object.keys((() => { try { return JSON.parse(localStorage.getItem('poolIQDrillEditsV1') || '{}').items || {}); } catch { return {}; } })()));
+  return `${head('Drills')}<p class="muted small">Every built-in drill. EDIT opens the phone editor. Nothing here is a new drill.</p><div class="stageList">${list.map((d, i) => {
+    const has = edits.has(d.id);
+    return `<div class="stageRow card devStage${has ? ' overridden' : ''}" data-dev-drill="${esc(d.id)}" data-overridden="${has ? 1 : 0}"><span class="srNum">${i + 1}</span><span class="srMain"><b>${esc(d.name)}</b><small>${has ? '<span class="tag gold">SAVED ON THIS PHONE</span> ' : ''}${esc(d.category || '')}</small></span><span class="srSide devBtns"><button type="button" class="miniAct" data-action="go" data-href="#drillfix/${esc(d.id)}">EDIT</button></span></div>`;
+  }).join('')}</div>`;
 }
 
 export function devAction(a, el, env) {
@@ -189,6 +211,30 @@ export function devAction(a, el, env) {
     }
     case 'dev-restore-real': env.restoreReal(); return true;
     case 'dev-clear-caches': env.clearCaches(); return true;
+    case 'dev-copy-on': CP.setCopyEditing(true); toast('Hold any words to rename them'); env.rerender(); return true;
+    case 'dev-copy-off': CP.setCopyEditing(false); env.rerender(); return true;
+    case 'dev-copy-save': {
+      const r = CP.saveCopyText(el.dataset.key, document.getElementById('copyText')?.value || '');
+      if (r.error) { toast(r.error); return true; }
+      CP.finishRename(true);
+      env.rerender();
+      return true;
+    }
+    case 'dev-copy-clear': {
+      const r = CP.clearCopyKey(el.dataset.key);
+      if (r.error) { toast(r.error); return true; }
+      CP.finishRename(false);
+      toast('Original words restored');
+      env.rerender();
+      return true;
+    }
+    case 'dev-copy-reset': {
+      const r = CP.resetAllCopy();
+      if (r.error) { toast(r.error); return true; }
+      toast('All renamed words restored');
+      env.rerender();
+      return true;
+    }
     default: return false;
   }
 }

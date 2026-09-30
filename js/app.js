@@ -19,7 +19,7 @@ import { createPlayScreen } from './ui/play.js';
 import { createSimScreen } from './ui/simulator.js';
 import { createDrillBuilder } from './ui/drillBuilder.js';
 import { createDrillFix } from './ui/drillFix.js';
-import { canFixDrill, drillEditorAllowed } from './drills/ownerEdits.js';
+import { drillEditorAllowed } from './drills/ownerEdits.js';
 import { customDrills, refreshCustomDrills } from './drills.js';
 import * as CD from './customDrills.js';
 import { openSheet, closeSheet, toast, clearToast } from './ui/sheet.js';
@@ -40,6 +40,7 @@ import * as FU from './ui/friends.js';
 import * as MU from './ui/me.js';
 import * as DU from './ui/dev.js';
 import * as D from './dev/dev.js';
+import { applyCopy, copyBarHTML, onCopyPointerDown, onCopyPointerMove, onCopyPointerUp, consumeCopyClick } from './dev/copy.js';
 import * as FM from './friends/model.js';
 import * as FT from './friends/tournament.js';
 import * as PR from './profile.js';
@@ -110,7 +111,7 @@ function parseHash() {
   return { name: name || 'home', args };
 }
 
-const NAV_FOR = { account: 'profile', leaderboard: 'profile', gate: 'career', promo: 'career', champion: 'career', training: 'career', skill: 'profile', skills: 'profile', me: 'profile', drillrank: 'drills', friends: 'arcade', friend: 'arcade', h2h: 'arcade', fmatch: 'arcade', fsession: 'arcade', tourney: 'arcade', tnew: 'arcade', dev: 'profile', devgame: 'profile', devedit: 'profile', devkeys: 'profile', content: 'drills', cimport: 'drills', cview: 'drills', cplay: 'drills', cedit: 'drills', sim: 'sim', drillnew: 'drills', drilledit: 'drills', drillfix: 'drills', home: 'home', career: 'career', drills: 'drills', analyze: 'analyze', arcade: 'arcade', tablegames: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
+const NAV_FOR = { account: 'profile', leaderboard: 'profile', gate: 'career', promo: 'career', champion: 'career', training: 'career', skill: 'profile', skills: 'profile', me: 'profile', drillrank: 'drills', friends: 'arcade', friend: 'arcade', h2h: 'arcade', fmatch: 'arcade', fsession: 'arcade', tourney: 'arcade', tnew: 'arcade', dev: 'profile', devgame: 'profile', devdrills: 'profile', devedit: 'profile', devkeys: 'profile', content: 'drills', cimport: 'drills', cview: 'drills', cplay: 'drills', cedit: 'drills', sim: 'sim', drillnew: 'drills', drilledit: 'drills', drillfix: 'drills', home: 'home', career: 'career', drills: 'drills', analyze: 'analyze', arcade: 'arcade', tablegames: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
 
 function setChrome(playing, navName) {
   document.body.classList.toggle('playing', playing);
@@ -150,7 +151,7 @@ function renderRoute() {
   } else if (name === 'drillfix') {
     const fixId = args[0];
     const fixDrill = fixId ? getDrillById(fixId) : null;
-    if (!drillEditorAllowed() || !fixDrill || !canFixDrill(fixDrill)) {
+    if (!drillEditorAllowed() || !fixDrill || fixDrill.custom || fixDrill.contentUid) {
       if (drillEditorAllowed() && fixId) toast('That drill cannot be edited here');
       v.innerHTML = renderDrillsPage(state, drillFilter);
     } else {
@@ -205,16 +206,22 @@ function renderRoute() {
       } else v.innerHTML = C.editListHTML(it.uid);
     }
   } else if (name === 'devedit') {
-    const opts = DU.devEditOptions(args[0], args[1], devEnv);
-    if (!opts || opts.error) {
-      toast(opts?.error || (D.isUnlocked() ? 'That stage cannot be edited' : 'DEV MODE is locked'));
-      v.innerHTML = D.isUnlocked() ? DU.renderDevGame(args[0]) : DU.renderDev(state);
+    if (!D.isUnlocked()) {
+      toast('DEV MODE is locked');
+      v.innerHTML = DU.renderDev(state);
     } else {
-      screen = createDrillBuilder(ctx, { content: opts });
+      screen = createDrillFix(ctx, { kind: 'stage', gameId: args[0], stageId: args[1] });
       screen.render();
-      playing = true;
+      if (!v.querySelector('[data-drill-fix]') && !document.querySelector('[data-drill-fix]')) {
+        toast('That stage cannot be edited');
+        screen.destroy?.();
+        screen = null;
+        v.innerHTML = DU.renderDevGame(args[0]);
+        playing = false;
+      } else playing = true;
     }
-  } else if (name === 'gate') v.innerHTML = PU.renderGatePage(state, args[0]);
+  } else if (name === 'devdrills') v.innerHTML = DU.renderDevDrills();
+  else if (name === 'gate') v.innerHTML = PU.renderGatePage(state, args[0]);
   else if (name === 'promo') v.innerHTML = PU.renderPromoPage(state);
   else if (name === 'skill') v.innerHTML = PU.renderSkillPage(state, args[0]);
   else if (name === 'skills') v.innerHTML = PU.renderSkillsPage(state);
@@ -260,10 +267,25 @@ function renderRoute() {
   if (!playing) window.scrollTo(0, 0);
   else window.scrollTo(0, 0);
   if (!playing) cloud.showPendingOffer(); // v13: a waiting "cloud save found" offer never interrupts a game
+  paintCopy();
 }
 
+function paintCopy() {
+  const view = document.getElementById('view');
+  if (view) applyCopy(view);
+  const nav = document.querySelector('nav');
+  if (nav) applyCopy(nav);
+  const header = document.querySelector('header');
+  if (header) applyCopy(header);
+  let bar = document.getElementById('copyEditBar');
+  const html = copyBarHTML();
+  if (html) {
+    if (!bar) { bar = document.createElement('div'); bar.id = 'copyEditBar'; document.body.appendChild(bar); }
+    bar.innerHTML = html;
+  } else if (bar) bar.remove();
+}
 function rerender() {
-  if (screen) screen.render();
+  if (screen) { screen.render(); paintCopy(); }
   else renderRoute();
 }
 
@@ -529,7 +551,12 @@ function handleAction(action, el, e) {
   }
 }
 
+document.addEventListener('pointerdown', (e) => { if (state) onCopyPointerDown(e); }, true);
+document.addEventListener('pointermove', (e) => onCopyPointerMove(e), true);
+document.addEventListener('pointerup', () => onCopyPointerUp(), true);
+document.addEventListener('pointercancel', () => onCopyPointerUp(), true);
 document.addEventListener('click', (e) => {
+  if (consumeCopyClick(e)) return;
   if (!state) return; // still booting (vault reconcile)
   const el = e.target.closest('[data-action]');
   if (el && !el.disabled) {

@@ -15,7 +15,7 @@ import { speedLabel, formatSpeed, lagEndpoint, CALIBRATION_SPEEDS, personalFacto
 import { speedExplainHTML, speedDiagramSVG } from '../games/speedDiagram.js';
 import { openSheet, closeSheet, toast, stars } from './sheet.js';
 import { getDrillById } from '../drills.js';
-import { canFixDrill, drillEditorAllowed } from '../drills/ownerEdits.js';
+import { drillEditorAllowed } from '../drills/ownerEdits.js';
 import { RANK_NAMES } from '../storage.js';
 import { getResultAdapter } from '../analyze.js';
 import { awardHTML } from './progression.js';
@@ -98,9 +98,10 @@ export function createPlayScreen(ctx, key) {
     if (ev.mode === 'train' || ev.mode === 'sniper') status += `<span class="mult" data-mult="${ev.multiplier}">×${ev.multiplier}</span>`;
     if (ev.mode === 'ladder') status += `<span class="mult">RUNG ${Math.min(ev.rung + 1, ev.rungs.length)}</span>`;
     status += `<span class="score" data-score="${ev.score}">${ev.score}</span>`;
-    const edit = !C && session.gameId === 'drills' && stage && drillEditorAllowed() && canFixDrill(stage)
-      ? `<button type="button" class="phEdit" data-owner-edit="1" data-action="go" data-href="#drillfix/${esc(stage.id)}">EDIT</button>`
+    const editHref = !C && stage && drillEditorAllowed()
+      ? (session.gameId === 'drills' && !stage.custom && !stage.contentUid ? `#drillfix/${esc(stage.id)}` : (!session.bossId && !session.endless && session.gameId && session.gameId !== 'drills' ? `#devedit/${esc(session.gameId)}/${esc(stage.id)}` : ''))
       : '';
+    const edit = editHref ? `<button type="button" class="phEdit" data-owner-edit="1" data-action="go" data-href="${editHref}">EDIT</button>` : '';
     return `<div class="playHead"><button type="button" class="phBack" data-action="play-exit" aria-label="Exit">‹</button><div class="phTitle"><small>${esc(title)}</small><b>${esc(sub)}</b></div><div class="phStatus">${edit}${status}</div></div>`;
   }
 

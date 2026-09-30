@@ -16,6 +16,7 @@ import { GATES } from '../progression/config.js';
 import { loadOverrides, saveOverrides, parseOverrideId, stageOverrideId, isEditableSpec } from './overrides.js';
 import { FORMAT, SCHEMA_VERSION, validatePooliq } from '../content/schema.js';
 import { docFromChallenge } from '../content/convert.js';
+import { currentUser } from '../cloud/client.js';
 
 export const DEV_KEY = 'poolIQDevV1';
 export const MIN_PASSCODE = 4;
@@ -78,7 +79,15 @@ export async function unlock(code, now = Date.now()) {
   return { ok: true };
 }
 export function lock() { session.unlocked = false; session.last = 0; }
+/** Signed-in owner stays in Dev Mode without the device passcode. Any other account does not. */
+export function isOwnerEmail(email) {
+  return String(email || '').trim().toLowerCase() === 'andrewaphay@gmail.com';
+}
+export function ownerAccountSignedIn() {
+  return isOwnerEmail(currentUser()?.email);
+}
 export function isUnlocked(now = Date.now()) {
+  if (ownerAccountSignedIn()) return true;
   if (!session.unlocked) return false;
   const min = loadDev().autoLockMin || 0;
   if (min > 0 && now - session.last > min * 60000) { lock(); return false; }

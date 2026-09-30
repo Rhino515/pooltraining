@@ -105,6 +105,7 @@ export function createCloud(env) {
       timer = null;
     }
     setTimeout(() => refresh(), 0);
+    if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') setTimeout(() => env.renderRoute(), 40);
   }
 
   // ---------------------------------------------------------------- after sign-in: profile, cloud save offer, stats

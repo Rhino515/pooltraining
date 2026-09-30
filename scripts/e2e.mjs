@@ -1741,11 +1741,12 @@ await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile
   await shotV('v11-15-dev-mode');
   // override a built-in stage with the builder, then reset
   await go('#devedit/landing/lz-1');
-  check(await exists('[data-builder="override"]'), 'dev: built-in stage opens in the drill builder (override mode)');
-  await tap('.dbBar [data-action="db-save"]');
+  check(await exists('[data-drill-fix]'), 'dev: built-in stage opens in the owner editor');
+  await tap('[data-action="df-save"]');
   await sleep(300);
   const ov = await P(() => JSON.parse(localStorage.getItem('poolIQDevOverridesV1') || '{}'));
   check(!!ov.items?.['stage:landing:lz-1'], 'dev: override saved in its own key');
+  await go('#devgame/landing');
   check(await exists('[data-dev-stage="lz-1"][data-overridden="1"]'), 'dev: stage marked OVERRIDDEN');
   const exported = await P(async () => (await import('./js/dev/dev.js')).exportOverridesPack());
   check(exported.count === 1 && exported.doc.contentType === 'pack', 'dev: overrides export as a .pooliq pack');
@@ -2174,7 +2175,7 @@ const swOk = await page.evaluate(async () => {
 });
 check(swOk, 'service worker registered and active');
 const cacheName = await page.evaluate(async () => (await caches.keys()).join(','));
-check(/pool-iq-v14-7/.test(cacheName) && !/pool-iq-v10|pool-iq-v11|pool-iq-v12|pool-iq-v13|pool-iq-v14-5b|pool-iq-v14-5c/.test(cacheName), `cache bumped to pool-iq-v14-7 (${cacheName})`);
+check(/pool-iq-v14-8/.test(cacheName) && !/pool-iq-v10|pool-iq-v11|pool-iq-v12|pool-iq-v13|pool-iq-v14-5b|pool-iq-v14-5c/.test(cacheName), `cache bumped to pool-iq-v14-8 (${cacheName})`);
 check(await page.evaluate(async () => !!(await caches.match('./js/vendor/supabase.js'))), 'v13: the supabase-js file is precached for offline use');
 await page.setOfflineMode(true);
 await page.goto(BASE + 'index.html#arcade', { waitUntil: 'domcontentloaded' });

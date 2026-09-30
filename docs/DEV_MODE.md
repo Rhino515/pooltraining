@@ -16,7 +16,7 @@ DEV MODE is a hidden set of tools for building and testing content on your own d
 
 | Tool | What it does |
 |---|---|
-| **Built-in content overrides** (`#devgame/<game>`) | Opens any single-shot Table Games stage in the drill builder. Saving stores an **override layer** in `poolIQDevOverridesV1`; the built-in source files are never edited. Overridden stages show a DEV badge. **RESET TO ORIGINAL** removes one override. Calibration, ladder and train stages can't be edited. |
+| **Built-in content overrides** (`#devgame/<game>`, `#devdrills`) | Opens any built-in drill or Table Games stage in the phone editor. Title, description, and the table (when it has balls) save as a local override. Shipped files are not edited. **RESET TO ORIGINAL** removes one override. |
 | **Export overrides** | Downloads every override as one `.pooliq` pack (stage ids `ov--<game>--<stage>`). Importing that pack in DEV MODE applies the overrides again. |
 | **My Content without restrictions** | While unlocked, pack stages are all playable (no unlock order) and installed content can be edited. |
 | **Mark content official / eligible** | Sets `metadata.official`, `careerEligible` and `rankXpEligible` on installed content. The content is still validated. |
@@ -43,6 +43,10 @@ DEV MODE is a hidden set of tools for building and testing content on your own d
 
 While DEV MODE is **unlocked**, opening a shipped PKF drill shows **EDIT**. That editor is not on drill cards, and it is not rendered at all while DEV MODE is locked — a signed-in friend does not see it.
 
-There is no separate owner account in the app. The gate is the same DEV MODE unlock (`isUnlocked()`): passcode accepted for this session, and auto-lock has not expired.
+The gate is DEV MODE (`isUnlocked()`). The device passcode still unlocks this phone. The signed-in owner account stays unlocked without typing that passcode. Any other signed-in account stays locked.
 
 Corrections are stored on the phone in `poolIQDrillEditsV1` (mirrored and backed up with the other data keys). The built-in file is not changed. The same drill id uses the correction the next time it loads, even after DEV MODE locks again. **RESET** removes that one correction. **EXPORT THIS** downloads the drill as a `.pooliq` file. **EXPORT ALL** downloads every correction as one JSON file whose `drills` array holds full `.pooliq` documents. Nothing is uploaded.
+
+## On-screen words (v14-8)
+
+While DEV MODE is unlocked, **Hold words to rename** lets you change page titles, nav labels, buttons and other visible copy. The new words are stored in `poolIQDevCopyV1` on this phone. A different signed-in account still sees the original words. Nothing is uploaded.

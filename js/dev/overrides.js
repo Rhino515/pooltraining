@@ -44,6 +44,44 @@ export function removeOverride(id) {
   return true;
 }
 
+/**
+ * Text / layout patch for a built-in stage that is not a single shot (train, pattern, calibration…).
+ * Does not replace the stage's own steps. Stored on the same override record as a full doc.
+ */
+export function setStagePatch(id, patch, now = Date.now()) {
+  if (!parseOverrideId(id)) return { error: 'Unknown content id' };
+  if (!patch || typeof patch !== 'object') return { error: 'Nothing to save' };
+  const o = loadOverrides();
+  const prev = o.items[id] || {};
+  o.items[id] = { id, patch, updatedAt: now, createdAt: prev.createdAt || now };
+  saveOverrides(o);
+  return { ok: true, rec: o.items[id] };
+}
+export function applyStagePatch(ch, rec) {
+  const p = rec?.patch;
+  if (!p) return ch;
+  const next = { ...ch, devOverride: true };
+  if (typeof p.title === 'string' && p.title.trim()) next.name = p.title.trim().slice(0, 80);
+  if (typeof p.instructions === 'string') next.instructions = p.instructions.slice(0, 1500);
+  if (typeof p.goal === 'string') next.goal = p.goal.slice(0, 240);
+  if (typeof p.category === 'string' && p.category.trim()) next.category = p.category.trim().slice(0, 40);
+  if (p.cue && ch.cueBallPosition && Number.isFinite(p.cue.x) && Number.isFinite(p.cue.y)) next.cueBallPosition = { x: p.cue.x, y: p.cue.y };
+  if (Array.isArray(p.balls) && Array.isArray(ch.ballPositions)) {
+    next.ballPositions = ch.ballPositions.map((b) => {
+      const m = p.balls.find((x) => x && x.n === b.n);
+      return m && Number.isFinite(m.x) && Number.isFinite(m.y) ? { ...b, x: m.x, y: m.y } : b;
+    });
+  }
+  if (Array.isArray(p.blockers) && Array.isArray(ch.blockers)) {
+    next.blockers = ch.blockers.map((b) => {
+      const m = p.blockers.find((x) => x && x.n === b.n);
+      return m && Number.isFinite(m.x) && Number.isFinite(m.y) ? { ...b, x: m.x, y: m.y } : b;
+    });
+  }
+  if (Array.isArray(p.zones)) next.targetZones = p.zones;
+  return next;
+}
+
 /** Only single-shot built-in stages can be edited with the drill builder */
 export function isEditableSpec(spec, kind) {
   const k = spec?.kind || kind;
@@ -63,7 +101,7 @@ export function applyOverride(ch, rec) {
     id: ch.id,
     game: ch.game,
     level: ch.level,
-    category: ch.category,
+    category: oc.category || ch.category,
     difficulty: ch.difficulty,
     skillEffects: ch.skillEffects,
     xp: ch.xp,

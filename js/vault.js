@@ -25,7 +25,8 @@ export const KEYS = {
   profile: 'poolIQProfileV1', // v11 local player profile: name, photo, stable id (profile.js)
   dev: 'poolIQDevV1', // v11 DEV MODE passcode hash (salted SHA-256) + settings (dev/dev.js)
   devOverrides: 'poolIQDevOverridesV1', // v11 DEV MODE local content override layer (dev/overrides.js)
-  drillEdits: 'poolIQDrillEditsV1' // v14-7 owner drill corrections (drills/ownerEdits.js)
+  drillEdits: 'poolIQDrillEditsV1', // v14-7 owner drill corrections (drills/ownerEdits.js)
+  devCopy: 'poolIQDevCopyV1' // v14-8 on-screen word renames (dev/copy.js)
 };
 export const DATA_KEYS = Object.values(KEYS);
 export const META_KEY = 'poolIQMetaV1'; // seq/savedAt, lastBackupAt, nudge + install dismissals, persist result
@@ -315,7 +316,8 @@ const VALIDATE = {
   [KEYS.profile]: (v) => isObj(v) && typeof v.id === 'string',
   [KEYS.dev]: isObj,
   [KEYS.devOverrides]: (v) => isObj(v) && isObj(v.items),
-  [KEYS.drillEdits]: (v) => isObj(v) && isObj(v.items)
+  [KEYS.drillEdits]: (v) => isObj(v) && isObj(v.items),
+  [KEYS.devCopy]: (v) => isObj(v) && isObj(v.items)
 };
 
 /**
