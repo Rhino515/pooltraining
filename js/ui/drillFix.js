@@ -6,6 +6,7 @@
  * The table is rotated with an SVG transform (not CSS) so the finger position maps on every phone.
  * Exit returns here.
  * Saves are local overrides. Shipped files do not change.
+ * IMPORT DRILL previews a .pooliq (or one-drill JSON) on the table. Nothing is stored until SAVE.
  */
 import { renderStageTable } from '../games/stageTable.js';
 import { techniqueName } from '../games/text.js';
@@ -19,7 +20,7 @@ import { openSheet, closeSheet, toast } from './sheet.js';
 import { shareOrDownload } from './share.js';
 import {
   drillEditorAllowed, canFixDrill, editingDoc, setDrillEdit, removeDrillEdit,
-  getDrillEdit, exportAllEdits, shippedDoc, drillLink
+  getDrillEdit, exportAllEdits, shippedDoc, drillLink, drillFromImport
 } from '../drills/ownerEdits.js';
 import { getDrillById } from '../drills.js';
 import { getGame, stageSpecs, getStage, clearStageCache } from '../games/registry.js';
@@ -114,6 +115,7 @@ export function createDrillFix(ctx, idOrSpec) {
   const ui = { tool: 'move', sel: { kind: 'cue' }, msg: '', full: false };
   let drag = null;
   let ac = null;
+  let alive = true;
 
   function shot() { return doc.shot; }
   function obEntry() {
@@ -420,7 +422,7 @@ export function createDrillFix(ctx, idOrSpec) {
       ${shot().targetZones.length > 1 ? `<div class="pockets">${shot().targetZones.map((zz, n) => zz?.rings ? `<button type="button" class="${n === i ? 'on' : ''}" data-action="df-zone-pick" data-i="${n}">Target ${n + 1}</button>` : '').join('')}</div>` : ''}
       <p class="muted small">Drag the center to move the target. EXPAND and DECREASE change its size. No numbers on the rings. Size is saved with this ${isDrill ? 'drill' : 'stage'}.</p>`;
   }
-  const loadedDesc = String(doc.description || '');
+  let loadedDesc = String(doc.description || '');
   function backHref() { return isDrill ? `#play/drills/${esc(id)}` : `#devgame/${esc(gameId)}`; }
   function overriddenNow() {
     if (isDrill) return !!getDrillEdit(id);
@@ -589,12 +591,15 @@ export function createDrillFix(ctx, idOrSpec) {
         <button type="button" class="bigBtn" data-action="df-save">SAVE ON THIS PHONE</button>
         <button type="button" class="bigBtn alt" data-action="df-reset">RESET</button>
         <button type="button" class="bigBtn alt" data-action="df-export">EXPORT THIS</button>
+        ${isDrill ? `<button type="button" class="bigBtn alt" data-action="df-import">IMPORT DRILL</button>
+        <input id="fixImport" type="file" accept=".pooliq,.json,application/json,text/json" hidden>` : ''}
         <button type="button" class="bigBtn alt" data-action="df-export-all">EXPORT ALL</button>
       </div>
     </div>`;
     paintHandles();
     bindTable();
     bindFields();
+    bindImport();
   }
 
   function paintBulls(svg) {
@@ -783,6 +788,41 @@ export function createDrillFix(ctx, idOrSpec) {
     t.addEventListener('pointerup', end, opt);
     t.addEventListener('pointercancel', () => { drag = null; render(); }, opt);
   }
+  function showMsg(msg) {
+    ui.msg = msg;
+    const el = ctx.root.querySelector('#fixMsg');
+    if (!el) { render(); return; }
+    el.innerHTML = esc(msg).replace(/\n/g, '<br>');
+    el.classList.toggle('show', !!msg);
+  }
+  function bindImport() {
+    const input = ctx.root.querySelector('#fixImport');
+    if (!input) return;
+    input.addEventListener('change', () => {
+      const file = input.files && input.files[0];
+      input.value = '';
+      if (!file || !alive) return;
+      const reader = new FileReader();
+      reader.onload = () => { if (alive) applyImported(String(reader.result || '')); };
+      reader.onerror = () => { if (alive) showMsg('That file is not a drill this app understands.'); };
+      reader.readAsText(file);
+    });
+  }
+  function applyImported(text) {
+    if (!alive || !isDrill || !drillEditorAllowed()) return;
+    const out = drillFromImport(text, id);
+    if (!out.doc) {
+      showMsg(out.error || 'That file is not a drill this app understands.');
+      return;
+    }
+    doc = out.doc;
+    loadedDesc = String(doc.description || '');
+    ui.sel = { kind: 'cue' };
+    ui.tool = 'move';
+    ui.full = false;
+    ui.msg = 'Showing the imported drill. Nothing is saved until you tap SAVE ON THIS PHONE.';
+    render();
+  }
   function bindFields() {
     const title = ctx.root.querySelector('#fixTitle');
     const desc = ctx.root.querySelector('#fixDesc');
@@ -952,9 +992,14 @@ export function createDrillFix(ctx, idOrSpec) {
     if (action === 'df-reset') { resetAsk(); return true; }
     if (action === 'df-reset-do') { resetDo(); return true; }
     if (action === 'df-export') { exportOne(); return true; }
+    if (action === 'df-import') {
+      if (!isDrill) return true;
+      ctx.root.querySelector('#fixImport')?.click();
+      return true;
+    }
     if (action === 'df-export-all') { exportAll(); return true; }
     return false;
   }
 
-  return { render, onAction, destroy() { ac?.abort(); ac = null; drag = null; document.body.classList.remove('fix-full'); } };
+  return { render, onAction, destroy() { alive = false; ac?.abort(); ac = null; drag = null; document.body.classList.remove('fix-full'); } };
 }

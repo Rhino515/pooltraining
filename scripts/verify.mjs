@@ -797,7 +797,7 @@ let state = storage.defaultState();
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
   const missing = walk(path.join(root, 'js')).filter((f) => f.endsWith('.js')).map((f) => './' + path.relative(root, f)).filter((f) => !sw.includes(`'${f}'`));
-  assert(/'pool-iq-v14-24'/.test(sw), 'service worker cache is pool-iq-v14-24');
+  assert(/'pool-iq-v14-25'/.test(sw), 'service worker cache is pool-iq-v14-24');
   assertAll('service worker precaches every JS module (incl. simulator + Create Drill)', missing.map((m) => `missing ${m}`));
   const wordN = { one: 1, two: 2, three: 3, four: 4 };
   const probs = [];
@@ -2037,7 +2037,7 @@ let state = storage.defaultState();
   const dash = src('js/dashboard.js');
   const friends = src('js/ui/friends.js');
   const vendor = src('js/vendor/supabase.js');
-  assert(/'pool-iq-v14-24'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw) && !/'pool-iq-v14-5c'/.test(sw), 'v14: service worker cache is pool-iq-v14-24');
+  assert(/'pool-iq-v14-25'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw) && !/'pool-iq-v14-5c'/.test(sw), 'v14: service worker cache is pool-iq-v14-24');
   assert(sw.includes(`'./js/vendor/supabase.js'`) && sw.includes(`'./js/cloud/controller.js'`) && sw.includes(`'./js/ui/account.js'`), 'v13: sw precaches the bundled supabase-js and the cloud modules');
   assert(/supabase-js\/2\.117\.2/.test(vendor) && /createClient/.test(vendor) && !/cdn\.jsdelivr|unpkg\.com|esm\.sh/.test(idx + sw), 'v13: official supabase-js v2 UMD build is bundled locally (no CDN)');
   assert(/nqfwlpfyccbqetcyjijf/.test(cfg) && /sb_publishable_/.test(cfg) && !/sb_secret_|service_role|sbp_[0-9a-f]{10}/.test(cfg + sql + docs), 'v13: config carries the project ref + publishable key only (no secrets anywhere)');
@@ -2159,6 +2159,67 @@ let state = storage.defaultState();
   }
   const miss = RS.generateShot({ type: 'kick4', pocket: 'TL', seed: 1, table: TC.spec(8), tries: 0 });
   assert(miss.ok === true || (miss.ok === false && !miss.balls), 'v14: a failed random search does not return a layout');
+}
+
+
+// ---------------------------------------------------------------- v14-25: import a fixed drill as a preview (not saved until SAVE)
+{
+  const fs = await import('fs');
+  const OE = await import(js('drills/ownerEdits.js'));
+  const SCH = await import(js('content/schema.js'));
+  const DEV = await import(js('dev/dev.js'));
+  if (!DEV.isUnlocked()) await DEV.unlock('cue-9ball');
+  assert(DEV.isUnlocked(), 'v14-25: dev mode is unlocked for the import check');
+  const fixSrc = fs.readFileSync(path.join(root, 'js/ui/drillFix.js'), 'utf8');
+  const barAt = fixSrc.indexOf('class="fixBar"');
+  const bar = fixSrc.slice(barAt, barAt + 900);
+  assert(bar.includes('data-action="df-save"') && bar.includes('SAVE ON THIS PHONE') && bar.includes('data-action="df-export"') && bar.includes('EXPORT THIS') && bar.includes('data-action="df-import"') && bar.includes('IMPORT DRILL'), 'v14-25: IMPORT DRILL sits with SAVE ON THIS PHONE and EXPORT THIS');
+  const applyBody = fixSrc.slice(fixSrc.indexOf('function applyImported'), fixSrc.indexOf('function bindFields'));
+  assert(applyBody.includes('drillFromImport(text, id)') && !applyBody.includes('setDrillEdit') && !applyBody.includes('saveDrillEdits') && !applyBody.includes('localStorage'), 'v14-25: import previews through drillFromImport and does not write the edit store');
+  const id = 'pkf-draw-1d';
+  const otherId = 'pkf-draw-2d';
+  store.delete(OE.DRILL_EDITS_KEY);
+  const shipped = OE.editingDoc(id);
+  const other = OE.editingDoc(otherId);
+  assert(shipped && shipped.shot?.cueBallPosition && other && other.id === otherId, 'v14-25: sample drills load');
+  const fixed = JSON.parse(JSON.stringify(shipped));
+  fixed.title = 'Imported preview';
+  fixed.description = 'ChatGPT moved the balls.';
+  fixed.shot.cueBallPosition = { x: 18, y: 40 };
+  fixed.shot.ballPositions = [{ n: 1, x: 78, y: 12 }];
+  fixed.shot.targetPocket = 'BR';
+  fixed.shot.acceptPockets = ['BR'];
+  fixed.shot.targetZones = [{ x: 30, y: 36, rings: [{ r: 2.5, stars: 3 }, { r: 4, stars: 2 }, { r: 6, stars: 1 }] }];
+  fixed.attribution = { ...(fixed.attribution || {}), sourceURL: 'https://example.com/pool-fix' };
+  const file = SCH.serialize(fixed);
+  const before = store.get(OE.DRILL_EDITS_KEY);
+  const parsed = OE.drillFromImport(file, id);
+  assert(parsed.doc && !parsed.error && parsed.doc.title === 'Imported preview' && parsed.doc.shot.cueBallPosition.x === 18 && parsed.doc.shot.ballPositions[0].x === 78 && parsed.doc.shot.targetPocket === 'BR' && parsed.doc.shot.targetZones[0].x === 30 && parsed.doc.attribution.sourceURL === 'https://example.com/pool-fix' && parsed.doc.id === id, 'v14-25: a .pooliq export parses onto this drill (balls, pocket, bullseye, title, link)');
+  assert(store.get(OE.DRILL_EDITS_KEY) === before && OE.editingDoc(id).title === shipped.title && OE.editingDoc(id).shot.cueBallPosition.x === shipped.shot.cueBallPosition.x, 'v14-25: parsing an import does not store it; leaving the editor would reload the saved drill');
+  const asJson = OE.drillFromImport(JSON.parse(file), id);
+  assert(asJson.doc && asJson.doc.title === 'Imported preview' && asJson.doc.id === id, 'v14-25: the same drill as a JSON object is accepted');
+  const oneWrap = OE.drillFromImport(JSON.stringify({ drills: [other] }), id);
+  assert(oneWrap.doc && oneWrap.doc.id === id && oneWrap.doc.title === other.title && oneWrap.doc.shot.cueBallPosition.x === other.shot.cueBallPosition.x, 'v14-25: a drills array with exactly one drill is applied to the open drill');
+  const many = OE.drillFromImport(JSON.stringify({ format: 'pooliq-drill-edits', drills: [other, fixed] }), id);
+  assert(many.doc && many.doc.id === id && many.doc.title === 'Imported preview', 'v14-25: a drills array uses the drill whose id matches the one open');
+  const none = OE.drillFromImport(JSON.stringify({ drills: [other, JSON.parse(JSON.stringify(other))] }), id);
+  assert(!none.doc && none.error === 'That file has more than one drill, and none is this drill.', 'v14-25: several drills and no id match is refused');
+  const bad = OE.drillFromImport('not json', id);
+  const pack = OE.drillFromImport(JSON.stringify({ format: 'pooliq', contentType: 'pack', drills: [] }), id);
+  const empty = OE.drillFromImport('{"drills":[]}', id);
+  assert(bad.error === 'That file is not a drill this app understands.' && pack.error === 'That file is not a drill this app understands.' && empty.error === 'That file is not a drill this app understands.' && !bad.doc && !pack.doc && !empty.doc, 'v14-25: a file that is not a drill is a short error and no document');
+  assert(store.get(OE.DRILL_EDITS_KEY) === before && OE.getDrillEdit(id) == null, 'v14-25: a bad import does not wipe the saved drill');
+  const kept = OE.setDrillEdit(id, shipped, 1700000000000);
+  assert(kept.ok, 'v14-25: a previously saved drill is still there');
+  const savedRaw = store.get(OE.DRILL_EDITS_KEY);
+  const preview = OE.drillFromImport(file, id);
+  assert(preview.doc.title === 'Imported preview' && store.get(OE.DRILL_EDITS_KEY) === savedRaw && OE.editingDoc(id).title === shipped.title, 'v14-25: import preview does not replace the saved override');
+  const wrote = OE.setDrillEdit(id, preview.doc, 1700000000001);
+  assert(wrote.ok && OE.editingDoc(id).title === 'Imported preview' && OE.editingDoc(id).shot.cueBallPosition.x === 18, 'v14-25: SAVE stores the imported drill the same way as any other edit');
+  OE.removeDrillEdit(id);
+  assert(OE.editingDoc(id).title === shipped.title, 'v14-25: reset removes the override and the shipped drill returns');
+  DEV.lock();
+  assert(OE.setDrillEdit(id, preview.doc).error === 'DEV MODE is locked' && OE.getDrillEdit(id) == null, 'v14-25: a locked phone cannot save an import');
 }
 
 console.log('\n--- Summary ---');

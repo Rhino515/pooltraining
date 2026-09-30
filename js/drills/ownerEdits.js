@@ -13,7 +13,7 @@
 import { dataWritten } from '../storage.js';
 import { isUnlocked } from '../dev/dev.js';
 import { PKF_DOCS } from '../content/pkfLibrary.js';
-import { validatePooliq, serialize } from '../content/schema.js';
+import { validatePooliq, serialize, MAX_FILE_BYTES } from '../content/schema.js';
 import { challengeFromPkfDoc } from '../content/pkfBuiltins.js';
 
 export const DRILL_EDITS_KEY = 'poolIQDrillEditsV1';
@@ -90,6 +90,53 @@ export function editingDoc(id) {
   if (edit?.doc) return JSON.parse(JSON.stringify(edit.doc));
   const shipped = shippedDoc(id);
   return shipped ? JSON.parse(JSON.stringify(shipped)) : null;
+}
+
+
+const NOT_A_DRILL = 'That file is not a drill this app understands.';
+
+/**
+ * Read a file back onto the drill that is open. Does not write storage.
+ * Accepts the .pooliq document EXPORT THIS writes, the same object as JSON,
+ * or a wrapper whose `drills` array has exactly one drill — or several, if
+ * one of them has this drill's id. Anything else is an error and no document.
+ * The returned doc keeps currentId so Save still stores this drill.
+ */
+export function drillFromImport(input, currentId) {
+  let raw = input;
+  if (typeof input === 'string') {
+    const t = input.replace(/^\uFEFF/, '').trim();
+    if (!t || t.length > MAX_FILE_BYTES) return { error: NOT_A_DRILL };
+    try { raw = JSON.parse(t); } catch { return { error: NOT_A_DRILL }; }
+  }
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { error: NOT_A_DRILL };
+
+  let candidate = null;
+  if (Array.isArray(raw.drills)) {
+    const list = raw.drills.filter((d) => d && typeof d === 'object' && !Array.isArray(d));
+    if (list.length === 1) candidate = list[0];
+    else if (list.length > 1) {
+      const id = String(currentId || '');
+      const hits = list.filter((d) => d.id === id);
+      if (hits.length !== 1) return { error: 'That file has more than one drill, and none is this drill.' };
+      candidate = hits[0];
+    } else return { error: NOT_A_DRILL };
+  } else candidate = raw;
+
+  if (candidate.contentType && candidate.contentType !== 'drill') return { error: NOT_A_DRILL };
+  let v;
+  try { v = validatePooliq(JSON.stringify(candidate)); } catch { return { error: NOT_A_DRILL }; }
+  if (!v.ok || !v.doc || v.doc.contentType !== 'drill') return { error: NOT_A_DRILL };
+  let doc = v.doc;
+  const id = String(currentId || '');
+  if (id && doc.id !== id) {
+    const swapped = JSON.parse(JSON.stringify(doc));
+    swapped.id = id;
+    try { v = validatePooliq(JSON.stringify(swapped)); } catch { return { error: NOT_A_DRILL }; }
+    if (!v.ok || !v.doc || v.doc.contentType !== 'drill' || v.doc.id !== id) return { error: NOT_A_DRILL };
+    doc = v.doc;
+  }
+  return { doc: JSON.parse(JSON.stringify(doc)) };
 }
 
 export function setDrillEdit(id, doc, now = Date.now()) {
