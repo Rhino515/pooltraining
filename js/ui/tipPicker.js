@@ -56,18 +56,20 @@ function cutLine(cut) {
   return CUT_AMOUNT[cut.frac] || String(cut.frac);
 }
 /**
- * Ghost is the object ball's shadow, on the opposite side of the cut, level with the cue ball.
- * The player stands at the head spot looking toward the end rail, so screen-left is his left.
- * A cut that sends the object ball to his right draws the ghost on the left of the cue ball.
- * Offset 0 = full hit; one radius = a 1/2-ball cut. Tip does not move it.
+ * Ghost is a faded shadow of the object ball, on the contact side, level with the cue ball.
+ * For the default 1-ball cut the shadow sits on the right. Tip does not move it.
+ * Offset 0 = full hit; one radius = a 1/2-ball cut.
  */
 function ghostBehind(opt) {
   const cut = opt.cut;
   if (!cut || cut.fullness == null || Number.isNaN(Number(cut.fullness))) return '';
   const sin = Math.max(0, Math.min(1, 1 - Number(cut.fullness)));
-  const sign = cut.side === 'left' ? -1 : cut.side === 'right' ? 1 : 0;
+  const sign = cut.side === 'left' ? 1 : cut.side === 'right' ? -1 : 0;
   const dx = sign * sin * 2 * BALL_R;
-  return `<g class="tp-ghost" data-cut-ghost pointer-events="none" transform="translate(${dx.toFixed(2)} 0)"><circle cx="${C}" cy="${C}" r="${BALL_R}" fill="#eaf8ff" fill-opacity="0.34" stroke="#cff9ff" stroke-width="1.6" stroke-dasharray="4 2.6"/></g>`;
+  const col = /^#[0-9a-fA-F]{6}$/.test(cut.color || '') ? cut.color : '#f5d76e';
+  const n = Number.isInteger(cut.n) && cut.n >= 1 && cut.n <= 15 ? String(cut.n) : '';
+  const num = n ? `<text x="${C}" y="${C + 7}" text-anchor="middle" font-size="20" font-weight="800" fill="#1a1408" fill-opacity="0.55" font-family="system-ui,sans-serif">${n}</text>` : '';
+  return `<g class="tp-ghost" data-cut-ghost pointer-events="none" transform="translate(${dx.toFixed(2)} 0)"><circle cx="${C}" cy="${C}" r="${BALL_R}" fill="${col}" fill-opacity="0.5" stroke="${col}" stroke-opacity="0.85" stroke-width="1.2"/>${num}</g>`;
 }
 function ballSVG(opt) {
   const lim = (opt.limit ?? MISCUE_LIMIT_TIPS) * TIP_UNIT;
