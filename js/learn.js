@@ -223,7 +223,7 @@ const HOW = {
 };
 
 const ICO_CUE = `<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="15" cy="30" r="8" fill="none" stroke="#fff" stroke-width="2"/><circle cx="12.4" cy="27.2" r="1.5" fill="#fff"/><path d="M22 24.5 42 8" stroke="#e7c27a" stroke-width="3.2" stroke-linecap="round"/><path d="M20 27.2 25.2 22.6" stroke="#e8eef6" stroke-width="3" stroke-linecap="round"/></svg>`;
-const ICO_BOTH = `<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 13.5h14.5a2 2 0 0 1 2 2V34a2.2 2.2 0 0 0-2-1.2H8V13.5Zm22.5 0H45v19.3h-12.5a2.2 2.2 0 0 0-2 1.2V15.5a2 2 0 0 1 2-2Z" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="34" cy="30" r="5.2" fill="none" stroke="#f6c453" stroke-width="1.7"/><circle cx="39.5" cy="22" r="3.4" fill="none" stroke="#4cc9ff" stroke-width="1.6"/></svg>`;
+const ICO_BOTH = `<svg viewBox="0 0 48 48" aria-hidden="true"><g fill="none" stroke="#fff" stroke-width="1.8"><circle cx="24" cy="12.2" r="3.7"/><circle cx="17.4" cy="23.2" r="3.7"/><circle cx="30.6" cy="23.2" r="3.7"/><circle cx="10.8" cy="34.2" r="3.7"/><circle cx="24" cy="34.2" r="3.7"/><circle cx="37.2" cy="34.2" r="3.7"/></g></svg>`;
 
 function card(href, tone, ico, title, text, photo) {
   return `<button type="button" class="learnCard ${tone}" data-action="go" data-href="${href}">
@@ -231,7 +231,7 @@ function card(href, tone, ico, title, text, photo) {
     <span class="lcShade"></span>
     <span class="lcIn">
       <span class="lcMain"><span class="lcIco">${ico}</span><b>${esc(title)}</b><small>${esc(text)}</small></span>
-      <span class="lcChev" aria-hidden="true">›</span>
+      <span class="lcChev" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 5.2 16.2 12 9 18.8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
     </span>
   </button>`;
 }
