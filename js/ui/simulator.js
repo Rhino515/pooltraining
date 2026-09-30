@@ -375,7 +375,7 @@ export function createSimScreen(ctx, args = []) {
     const title = g ? `Target Game · Round ${g.index + 1}/${g.rounds.length}` : 'Shot Simulator';
     const sub = g ? `<span id="simTimer" class="simTimer">${timerText()}</span> · ${g.rounds.reduce((a, r) => a + (r.stars || 0), 0)}★ so far` : 'Physics simulation — an approximation';
     return `<div class="playHead simHead"><button type="button" class="phBack" data-action="sim-exit" aria-label="Exit">${st.full ? 'EXIT' : '‹'}</button><div class="phTitle"><b>${esc(title)}</b><small>${sub}</small></div>
-      <div class="simHeadBtns">${g ? '' : `<button type="button" class="hBtn" data-action="sim-undo" ${past.length ? '' : 'disabled'} aria-label="Undo">↶</button><button type="button" class="hBtn" data-action="sim-redo" ${future.length ? '' : 'disabled'} aria-label="Redo">↷</button>`}<button type="button" class="hBtn act" data-action="sim-actions" aria-label="Actions">${g ? 'Quit' : 'Actions'}</button></div></div>`;
+      <div class="simHeadBtns">${g ? '' : `<button type="button" class="hBtn act" data-action="sim-analyze">Analyze</button><button type="button" class="hBtn" data-action="sim-undo" ${past.length ? '' : 'disabled'} aria-label="Undo">↶</button><button type="button" class="hBtn" data-action="sim-redo" ${future.length ? '' : 'disabled'} aria-label="Redo">↷</button>`}<button type="button" class="hBtn act" data-action="sim-actions" aria-label="Actions">${g ? 'Quit' : 'Actions'}</button></div></div>`;
   }
   function tableSizeHTML() {
     if (st.full) return '';
@@ -1524,6 +1524,9 @@ export function createSimScreen(ctx, args = []) {
         return true;
       case 'sim-redo':
         if (future.length) { past.push(clone(snap())); restore(future.pop()); lastPushKind = null; refresh(); }
+        return true;
+      case 'sim-analyze':
+        ctx.go('#analyze');
         return true;
       case 'sim-actions':
         if (st.game) { confirmSheet('Quit the Target Game?', 'This game will not be scored.', 'sim-game-quit', '', 'QUIT GAME'); return true; }

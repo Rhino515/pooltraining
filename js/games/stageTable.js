@@ -190,12 +190,14 @@ export function renderStageTable(ch, opt = {}) {
     const cb = step ? step.cueFrom : ch.cueBallPosition;
     balls.push({ id: 'cue', x: cb.x, y: cb.y });
   }
+  if (!step) (ch.extraCueBalls || []).forEach((c, i) => balls.push({ id: 'cue', x: c.x, y: c.y, extra: i }));
   const pocketed = new Set(step ? ch.steps.slice(0, o.step).map((s) => s.ball) : []);
   for (const b of ch.ballPositions || []) if (!pocketed.has(b.n)) balls.push({ id: b.n, x: b.x, y: b.y });
   for (const b of ch.blockers || []) balls.push({ id: b.n, x: b.x, y: b.y, blocker: true });
   const spec = {
     balls,
     targetPocket: o.hidePocket ? null : (step ? step.pocket : ch.targetPocket) || undefined,
+    targetPockets: o.hidePocket ? [] : (step?.pocket ? [step.pocket] : (ch.acceptPockets?.length ? ch.acceptPockets.slice() : (ch.targetPocket ? [ch.targetPocket] : []))),
     showGhostBall: false,
     headString: true,
     extraUnder: under,

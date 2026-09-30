@@ -1,6 +1,6 @@
 /**
  * Phone editor for one shipped PKF drill (#drillfix/<id>) or one built-in stage (#devedit/<game>/<stage>).
- * Mounted only while drillEditorAllowed() is true. Drag balls on the table (¼-diamond nudge is the backup).
+ * Mounted only while drillEditorAllowed() is true. Balls drag freely. Nudge is still ¼ diamond.
  * Bullseye matches the photo (green, red, dark center). Drag the center to move it, or EXPAND / DECREASE its rings.
  * FULL TABLE fills the phone so the same drag, nudge, size, and save work standing at the table.
  * The table is rotated with an SVG transform (not CSS) so the finger position maps on every phone.
@@ -133,13 +133,15 @@ export function createDrillFix(ctx, idOrSpec) {
     const s = shot();
     const out = [];
     if (except?.kind !== 'cue' && s.cueBallPosition) out.push(s.cueBallPosition);
+    (s.extraCueBalls || []).forEach((b, i) => { if (!(except?.kind === 'extraCue' && except.i === i)) out.push(b); });
     for (const b of s.ballPositions || []) if (!(except?.kind === 'ball' && except.n === b.n)) out.push(b);
     for (const b of s.blockers || []) if (!(except?.kind === 'blocker' && except.n === b.n)) out.push(b);
     return out;
   }
   function placeBall(target, q) {
     const from = { x: target.x, y: target.y };
-    let next = snapPoint(q);
+    const R = 1.125;
+    let next = { x: Math.max(R, Math.min(100 - R, q.x)), y: Math.max(R, Math.min(50 - R, q.y)) };
     next = freeSpot(otherBalls(ui.sel), next);
     next = { x: f2(next.x), y: f2(next.y) };
     followStart(ui.sel, from, next);
@@ -170,6 +172,7 @@ export function createDrillFix(ctx, idOrSpec) {
     const s = shot();
     if (!sel) return null;
     if (sel.kind === 'cue') return s.cueBallPosition;
+    if (sel.kind === 'extraCue') return s.extraCueBalls?.[sel.i] || null;
     if (sel.kind === 'ball') return (s.ballPositions || []).find((b) => b.n === sel.n) || null;
     if (sel.kind === 'blocker') return (s.blockers || []).find((b) => b.n === sel.n) || null;
     if (sel.kind === 'cuePath') return s.cueBallPath?.[sel.i] || null;
@@ -204,19 +207,89 @@ export function createDrillFix(ctx, idOrSpec) {
     if (!t) return;
     const q = { x: t.x + dxd * DIAMOND_UNITS, y: t.y + dyd * DIAMOND_UNITS };
     if (ui.sel.kind === 'zone') placeZone(shot().targetZones[ui.sel.i], q);
-    else if (ui.sel.kind === 'cue' || ui.sel.kind === 'ball' || ui.sel.kind === 'blocker') placeBall(t, q);
+    else if (ui.sel.kind === 'cue' || ui.sel.kind === 'extraCue' || ui.sel.kind === 'ball' || ui.sel.kind === 'blocker') placeBall(t, q);
     else setPathPoint(ui.sel.kind, ui.sel.i, q);
     ui.msg = '';
     render();
   }
+  function markedPockets() {
+    const s = shot();
+    const acc = Array.isArray(s.acceptPockets) ? s.acceptPockets.filter(Boolean) : [];
+    if (s.targetPocket && !acc.includes(s.targetPocket)) acc.unshift(s.targetPocket);
+    return acc;
+  }
   function setPocket(key) {
     const s = shot();
-    const prev = s.targetPocket;
-    s.targetPocket = key;
-    if (Array.isArray(s.acceptPockets)) {
-      const acc = s.acceptPockets.filter((k) => k && k !== prev);
-      if (!acc.includes(key)) acc.unshift(key);
-      s.acceptPockets = acc;
+    let acc = markedPockets();
+    if (acc.includes(key)) {
+      if (acc.length <= 1) { ui.msg = 'Keep at least one pocket.'; render(); return; }
+      acc = acc.filter((k) => k !== key);
+    } else acc.push(key);
+    s.acceptPockets = acc;
+    s.targetPocket = acc[0];
+    ui.msg = '';
+    render();
+  }
+  function addCueBall() {
+    const s = shot();
+    if (!s.cueBallPosition) return;
+    const list = s.extraCueBalls || (s.extraCueBalls = []);
+    if (list.length >= 8) { ui.msg = 'Eight added cue balls is the limit.'; render(); return; }
+    const spot = freeSpot(otherBalls(null), { x: s.cueBallPosition.x + 6, y: s.cueBallPosition.y });
+    list.push({ x: f2(spot.x), y: f2(spot.y) });
+    ui.sel = { kind: 'extraCue', i: list.length - 1 };
+    ui.tool = 'move';
+    ui.msg = '';
+    render();
+  }
+  function addObjectBall() {
+    const s = shot();
+    const used = new Set([...(s.ballPositions || []).map((b) => b.n), ...(s.blockers || []).map((b) => b.n)]);
+    let n = 1;
+    while (used.has(n) && n <= 15) n += 1;
+    if (n > 15) { ui.msg = 'All 15 object balls are already on the table.'; render(); return; }
+    const spot = freeSpot(otherBalls(null), { x: 62, y: 25 });
+    s.ballPositions = [...(s.ballPositions || []), { n, x: f2(spot.x), y: f2(spot.y) }];
+    if (s.targetBall == null) s.targetBall = n;
+    ui.sel = { kind: 'ball', n };
+    ui.tool = 'move';
+    ui.msg = '';
+    render();
+  }
+  function removeBall() {
+    const s = shot();
+    const sel = ui.sel;
+    if (sel?.kind === 'extraCue' && s.extraCueBalls?.[sel.i]) {
+      s.extraCueBalls.splice(sel.i, 1);
+      if (!s.extraCueBalls.length) delete s.extraCueBalls;
+      ui.sel = { kind: 'cue' };
+    } else if (sel?.kind === 'ball') {
+      s.ballPositions = (s.ballPositions || []).filter((b) => b.n !== sel.n);
+      if (s.targetBall === sel.n) s.targetBall = s.ballPositions?.[0]?.n ?? null;
+      s.objectBallPaths = (s.objectBallPaths || []).filter((p) => p.n !== sel.n);
+      ui.sel = s.ballPositions?.[0] ? { kind: 'ball', n: s.ballPositions[0].n } : { kind: 'cue' };
+    } else {
+      ui.msg = 'Select an added cue ball or an object ball to remove it. The main cue ball stays.';
+      render();
+      return;
+    }
+    ui.msg = '';
+    render();
+  }
+  function removeLine() {
+    const s = shot();
+    const ob = ui.tool === 'ob' || ui.sel?.kind === 'obPath';
+    if (ob) {
+      const op = obEntry();
+      if (!op) { ui.msg = 'No object line to remove.'; render(); return; }
+      s.objectBallPaths = (s.objectBallPaths || []).filter((p) => p !== op);
+      if (!s.objectBallPaths.length) delete s.objectBallPaths;
+      ui.sel = { kind: 'ball', n: s.targetBall ?? s.ballPositions?.[0]?.n };
+    } else {
+      if (!(s.cueBallPath || []).length) { ui.msg = 'No cue line to remove.'; render(); return; }
+      delete s.cueBallPath;
+      delete s.contactIndex;
+      ui.sel = { kind: 'cue' };
     }
     ui.msg = '';
     render();
@@ -246,7 +319,7 @@ export function createDrillFix(ctx, idOrSpec) {
     if (kind === 'obPath' && !obEntry()) {
       const ball = (s.ballPositions || []).find((b) => b.n === s.targetBall) || s.ballPositions?.[0];
       if (!ball) { ui.msg = 'Add an object ball before a path.'; render(); return; }
-      s.objectBallPaths = [{ n: ball.n, points: [{ x: ball.x, y: ball.y }, { x: ball.x, y: ball.y }] }];
+      s.objectBallPaths = [{ n: ball.n, points: [{ x: ball.x, y: ball.y }, clampPath({ x: ball.x + 8, y: ball.y })] }];
       ui.sel = { kind: 'obPath', i: 1 };
       ui.tool = 'ob';
       render();
@@ -255,7 +328,7 @@ export function createDrillFix(ctx, idOrSpec) {
     if (kind === 'cuePath' && !(s.cueBallPath || []).length) {
       const c = s.cueBallPosition;
       if (!c) return;
-      s.cueBallPath = [{ x: c.x, y: c.y }, { x: c.x, y: c.y }];
+      s.cueBallPath = [{ x: c.x, y: c.y }, clampPath({ x: c.x + 8, y: c.y })];
       s.contactIndex = 1;
       ui.sel = { kind: 'cuePath', i: 1 };
       ui.tool = 'cue';
@@ -282,7 +355,7 @@ export function createDrillFix(ctx, idOrSpec) {
 
   function preview() {
     const s = shot();
-    const fallback = { id: doc.id || id, name: doc.title, cueBallPosition: s.cueBallPosition, ballPositions: s.ballPositions || [], cueBallPath: s.cueBallPath || [], objectBallPaths: s.objectBallPaths || [], targetPocket: s.targetPocket, blockers: s.blockers || [], targetZones: s.targetZones || [] };
+    const fallback = { id: doc.id || id, name: doc.title, cueBallPosition: s.cueBallPosition, extraCueBalls: s.extraCueBalls || [], ballPositions: s.ballPositions || [], cueBallPath: s.cueBallPath || [], objectBallPaths: s.objectBallPaths || [], targetPocket: s.targetPocket, acceptPockets: markedPockets(), blockers: s.blockers || [], targetZones: s.targetZones || [] };
     if (doc.patchOnly) return fallback;
     try {
       const ch = challengeFromPkfDoc(doc);
@@ -295,6 +368,7 @@ export function createDrillFix(ctx, idOrSpec) {
     const sel = ui.sel;
     if (!sel) return 'Nothing selected';
     if (sel.kind === 'cue') return 'Cue ball';
+    if (sel.kind === 'extraCue') return `Added cue ball ${sel.i + 1}`;
     if (sel.kind === 'ball') return `${sel.n}-ball`;
     if (sel.kind === 'blocker') return `Blocker ${sel.n}`;
     if (sel.kind === 'cuePath') return `Cue path point ${sel.i + 1}`;
@@ -352,22 +426,6 @@ export function createDrillFix(ctx, idOrSpec) {
     if (isDrill) return !!getDrillEdit(id);
     const ov = getOverride(stageOverrideId(gameId, spec.stageId));
     return !!(ov?.doc || ov?.patch);
-  }
-
-  function diamondFields() {
-    const t = targetOf(ui.sel);
-    if (!t) return '<p class="muted">Select a ball or a path point.</p>';
-    const d = diamondsOf(t);
-    const path = ui.sel.kind === 'cuePath' || ui.sel.kind === 'obPath';
-    return `<div class="fixDiamonds">
-      <label class="fixFld">From head rail
-        <input id="fixDx" inputmode="decimal" type="number" step="0.25" value="${d.dx}" data-axis="dx"/>
-      </label>
-      <label class="fixFld">Down from top
-        <input id="fixDy" inputmode="decimal" type="number" step="0.25" value="${d.dy}" data-axis="dy"/>
-      </label>
-    </div>
-    <p class="muted small">${path ? 'Path points may sit just past a cushion (into a pocket).' : 'Balls snap to the ¼-diamond grid and stay on the cloth.'}</p>`;
   }
 
   function pathList(kind) {
@@ -460,7 +518,16 @@ export function createDrillFix(ctx, idOrSpec) {
             <button type="button" data-action="df-nudge" data-dx="0" data-dy="0.25">▼ BOTTOM</button>
           </div>
           ${sizeButtons()}
-          <p class="muted small">Drag a ball or the bullseye. Nudge moves ¼ diamond. SAVE keeps it on this phone.</p>
+          <div class="fixAdd">
+            <button type="button" data-action="df-add-cue">ADD CUE BALL</button>
+            <button type="button" data-action="df-add-ob">ADD OBJECT BALL</button>
+            <button type="button" data-action="df-add" data-kind="cuePath">ADD CUE LINE</button>
+            <button type="button" data-action="df-add" data-kind="obPath">ADD OBJECT LINE</button>
+            <button type="button" data-action="df-remove-line">REMOVE LINE</button>
+            <button type="button" data-action="df-remove-ball">REMOVE BALL</button>
+          </div>
+          <div class="pockets">${PKEYS.map((k) => `<button type="button" class="${markedPockets().includes(k) ? 'on' : ''}" data-action="df-pocket" data-p="${k}">${PSHORT[k]}</button>`).join('')}</div>
+          <p class="muted small">Drag a ball freely, or the bullseye. Nudge moves ¼ diamond. SAVE keeps it on this phone.</p>
         </div>
       </div>
     </div>`;
@@ -489,9 +556,17 @@ export function createDrillFix(ctx, idOrSpec) {
           <button type="button" data-action="df-nudge" data-dx="0" data-dy="-0.25">▲ TOP</button>
           <button type="button" data-action="df-nudge" data-dx="0" data-dy="0.25">▼ BOTTOM</button>
         </div>
-        ${diamondFields()}
-        ${s.cueBallPosition ? `<div class="eyebrow">TARGET POCKET</div>
-        <div class="pockets">${PKEYS.map((k) => `<button type="button" class="${s.targetPocket === k ? 'on' : ''}" data-action="df-pocket" data-p="${k}">${PSHORT[k]}</button>`).join('')}</div>` : '<p class="muted small">No balls to drag on this one. Title and description still save on this phone.</p>'}
+        <div class="fixAdd">
+          <button type="button" data-action="df-add-cue">ADD CUE BALL</button>
+          <button type="button" data-action="df-add-ob">ADD OBJECT BALL</button>
+          <button type="button" data-action="df-add" data-kind="cuePath">ADD CUE LINE</button>
+          <button type="button" data-action="df-add" data-kind="obPath">ADD OBJECT LINE</button>
+          <button type="button" data-action="df-remove-line">REMOVE LINE</button>
+          <button type="button" data-action="df-remove-ball">REMOVE BALL</button>
+        </div>
+        ${s.cueBallPosition ? `<div class="eyebrow">POCKETS</div>
+        <div class="pockets">${PKEYS.map((k) => `<button type="button" class="${markedPockets().includes(k) ? 'on' : ''}" data-action="df-pocket" data-p="${k}">${PSHORT[k]}</button>`).join('')}</div>
+        <p class="muted small">Tap a pocket to add or remove it. Every marked pocket shows on the diagram and in play.</p>` : '<p class="muted small">No balls to drag on this one. Title and description still save on this phone.</p>'}
         ${zonePanel()}
         <label class="fixFld">Title<input id="fixTitle" maxlength="80" value="${esc(doc.title || '')}"/></label>
         <label class="fixFld">Description<textarea id="fixDesc" maxlength="2000" rows="3">${esc(doc.description || '')}</textarea></label>
@@ -598,6 +673,10 @@ export function createDrillFix(ctx, idOrSpec) {
       const d = Math.hypot(cue.x - p.x, cue.y - p.y);
       if (d < bd) { bd = d; best = { kind: 'cue' }; }
     }
+    (shot().extraCueBalls || []).forEach((b, i) => {
+      const d = Math.hypot(b.x - p.x, b.y - p.y);
+      if (d < bd) { bd = d; best = { kind: 'extraCue', i }; }
+    });
     for (const b of shot().ballPositions || []) {
       const d = Math.hypot(b.x - p.x, b.y - p.y);
       if (d < bd) { bd = d; best = { kind: 'ball', n: b.n }; }
@@ -652,12 +731,15 @@ export function createDrillFix(ctx, idOrSpec) {
       e.preventDefault();
       const p = toTable(e);
       let q = { x: p.x + drag.ox, y: p.y + drag.oy };
-      if (drag.sel.kind === 'cue' || drag.sel.kind === 'ball' || drag.sel.kind === 'blocker' || drag.sel.kind === 'zone') q = snapPoint(q);
-      else q = clampPath(q);
+      if (drag.sel.kind === 'zone') q = snapPoint(q);
+      else if (drag.sel.kind === 'cuePath' || drag.sel.kind === 'obPath') q = clampPath(q);
       drag.to = q;
       const svg = t.querySelector('svg');
       if (drag.sel.kind === 'cue') {
-        const g = svg.querySelector('g.ball[data-n="cue"]');
+        const g = [...svg.querySelectorAll('g.ball[data-n="cue"]')].find((n) => !n.hasAttribute('data-extra'));
+        if (g) g.setAttribute('transform', `translate(${f2(q.x - drag.from.x)} ${f2(q.y - drag.from.y)})`);
+      } else if (drag.sel.kind === 'extraCue') {
+        const g = svg.querySelector(`g.ball[data-extra="${drag.sel.i}"]`);
         if (g) g.setAttribute('transform', `translate(${f2(q.x - drag.from.x)} ${f2(q.y - drag.from.y)})`);
       } else if (drag.sel.kind === 'ball' || drag.sel.kind === 'blocker') {
         const g = svg.querySelector(`g.ball[data-n="${drag.sel.n}"]`);
@@ -691,7 +773,7 @@ export function createDrillFix(ctx, idOrSpec) {
       ui.sel = d.sel;
       if (d.moved && d.to && d.item) {
         if (d.sel.kind === 'zone') placeZone(shot().targetZones[d.sel.i], d.to);
-        else if (d.sel.kind === 'cue' || d.sel.kind === 'ball' || d.sel.kind === 'blocker') placeBall(d.item, d.to);
+        else if (d.sel.kind === 'cue' || d.sel.kind === 'extraCue' || d.sel.kind === 'ball' || d.sel.kind === 'blocker') placeBall(d.item, d.to);
         else setPathPoint(d.sel.kind, d.sel.i, d.to);
       }
       render();
@@ -706,21 +788,6 @@ export function createDrillFix(ctx, idOrSpec) {
     title?.addEventListener('input', () => { doc.title = title.value.slice(0, 80); });
     desc?.addEventListener('input', () => { doc.description = desc.value.slice(0, 2000); });
     cat?.addEventListener('input', () => { doc.category = cat.value.slice(0, 40); });
-    const readDiamonds = () => {
-      const dx = Number(ctx.root.querySelector('#fixDx')?.value);
-      const dy = Number(ctx.root.querySelector('#fixDy')?.value);
-      if (!Number.isFinite(dx) || !Number.isFinite(dy)) return;
-      const t = targetOf(ui.sel);
-      if (!t) return;
-      const q = { x: dx * DIAMOND_UNITS, y: dy * DIAMOND_UNITS };
-      if (ui.sel.kind === 'zone') placeZone(shot().targetZones[ui.sel.i], q);
-      else if (ui.sel.kind === 'cue' || ui.sel.kind === 'ball' || ui.sel.kind === 'blocker') placeBall(t, q);
-      else setPathPoint(ui.sel.kind, ui.sel.i, q);
-      ui.msg = '';
-      render();
-    };
-    ctx.root.querySelector('#fixDx')?.addEventListener('change', readDiamonds);
-    ctx.root.querySelector('#fixDy')?.addEventListener('change', readDiamonds);
   }
 
   function readText() {
@@ -842,6 +909,10 @@ export function createDrillFix(ctx, idOrSpec) {
     if (action === 'df-tech') { shot().technique = el.dataset.t; ui.msg = ''; render(); return true; }
     if (action === 'df-tip') { setTip(el.dataset.k, Number(el.dataset.d)); return true; }
     if (action === 'df-pt') { ui.sel = { kind: el.dataset.kind, i: Number(el.dataset.i) }; ui.tool = el.dataset.kind === 'cuePath' ? 'cue' : 'ob'; render(); return true; }
+    if (action === 'df-add-cue') { addCueBall(); return true; }
+    if (action === 'df-add-ob') { addObjectBall(); return true; }
+    if (action === 'df-remove-ball') { removeBall(); return true; }
+    if (action === 'df-remove-line') { removeLine(); return true; }
     if (action === 'df-add') { addPoint(el.dataset.kind); return true; }
     if (action === 'df-delpt') {
       const kind = el.dataset.kind;

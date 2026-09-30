@@ -35,6 +35,7 @@ export function builderFromShot(shot, item = {}, doc = null) {
     skill: item.skill || doc?.skill || Object.keys(item.skillEffects || {})[0] || b.skill,
     difficulty: item.difficulty || doc?.difficulty || 2,
     cue: { ...s.cueBallPosition },
+    extraCueBalls: (s.extraCueBalls || []).map((p) => ({ x: p.x, y: p.y })),
     balls: (s.ballPositions || []).map((o) => ({ ...o })),
     blockers: (s.blockers || []).map((o) => ({ ...o })),
     targetBall: s.targetBall ?? null,
@@ -151,6 +152,7 @@ export function shotFromBuilder(b, simRoute = null) {
   const s = {};
   if (b.kind) s.kind = b.kind;
   s.cueBallPosition = { x: r2(b.cue.x), y: r2(b.cue.y) };
+  if (b.extraCueBalls?.length) s.extraCueBalls = b.extraCueBalls.map((p) => ({ x: r2(p.x), y: r2(p.y) }));
   if (b.balls.length) s.ballPositions = b.balls.map((o) => ({ n: o.n, x: r2(o.x), y: r2(o.y) }));
   if (b.blockers.length) s.blockers = b.blockers.map((o) => ({ n: o.n, x: r2(o.x), y: r2(o.y) }));
   if (b.balls.some((o) => o.n === b.targetBall)) s.targetBall = b.targetBall;

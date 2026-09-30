@@ -445,9 +445,11 @@ export function renderTableDiagram(spec = {}, options = {}) {
     svg += `<circle class="diamond-sight" cx="${dx}" cy="${dy}" r="0.2" fill="#ffffff"/>`;
   }
 
-  // Pockets
+  // Pockets — every marked pocket, not only the first
+  const marked = new Set(Array.isArray(spec.targetPockets) ? spec.targetPockets : []);
+  if (pocket?.label) marked.add(pocket.label);
   for (const [key, p] of Object.entries(POCKETS)) {
-    const isTarget = pocket && pocket.label === key;
+    const isTarget = marked.has(key);
     const r = p.r;
     svg += `<circle class="pocket-rim" cx="${p.x}" cy="${p.y}" r="${r + 0.45}" fill="#140a05" stroke="#2c1a0e" stroke-width="0.2"/>`;
     svg += `<circle class="pocket" data-pocket="${key}" cx="${p.x}" cy="${p.y}" r="${r}" fill="url(#pocketGrad${u}) #000" stroke="${isTarget ? '#55e5ff' : '#050505'}" stroke-width="${isTarget ? 0.55 : 0.25}"/>`;
@@ -526,7 +528,7 @@ export function renderTableDiagram(spec = {}, options = {}) {
     if (b.blocker) {
       svg += `<circle class="blocker-ring" cx="${x}" cy="${y}" r="${ballR + 0.75}" fill="#ff4d6d22" stroke="#ff5d73" stroke-width="0.3" stroke-dasharray="0.7 0.45"/>`;
     }
-    svg += `<g class="ball ${isCue ? 'cue-ball' : 'obj-ball'}${b.blocker ? ' blocker' : ''}" data-n="${isCue ? 'cue' : num}">`;
+    svg += `<g class="ball ${isCue ? 'cue-ball' : 'obj-ball'}${b.blocker ? ' blocker' : ''}" data-n="${isCue ? 'cue' : num}"${b.extra != null ? ` data-extra="${b.extra}"` : ''}>`;
     svg += `<circle class="ball-hit" cx="${x}" cy="${y}" r="${HIT_R}" fill="#000" fill-opacity="0" pointer-events="all"/>`;
     svg += `<g filter="url(#ballShadow)">`;
     const striped = !isCue && (b.stripe != null ? !!b.stripe : num >= 9);

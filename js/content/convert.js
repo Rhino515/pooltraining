@@ -106,6 +106,7 @@ export function shotToChallenge(shot, meta = {}) {
     blockers: (s.blockers || []).map((b) => ({ n: b.n, x: b.x, y: b.y })),
     ballPositions: (s.ballPositions || []).map((b) => ({ n: b.n, x: b.x, y: b.y })),
     cueBallPosition: pt(s.cueBallPosition),
+    extraCueBalls: (s.extraCueBalls || []).map(pt).filter(Boolean),
     targetBall: tb,
     targetPocket: s.targetPocket || null,
     acceptPockets: s.acceptPockets ? s.acceptPockets.slice() : s.targetPocket ? [s.targetPocket] : [],
@@ -140,6 +141,7 @@ export function shotFromChallenge(ch) {
   const s = {};
   if (SHOT_KINDS.includes(ch.kind)) s.kind = ch.kind;
   s.cueBallPosition = pt(ch.cueBallPosition);
+  if (ch.extraCueBalls?.length) s.extraCueBalls = ch.extraCueBalls.map(pt).filter(Boolean);
   if (ch.ballPositions?.length) s.ballPositions = ch.ballPositions.map((b) => ({ n: b.n, x: b.x, y: b.y }));
   if (ch.blockers?.length) s.blockers = ch.blockers.map((b) => ({ n: b.n, x: b.x, y: b.y }));
   if (has(ch.targetBall) && (ch.ballPositions || []).some((b) => b.n === ch.targetBall)) s.targetBall = ch.targetBall;

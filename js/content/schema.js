@@ -245,6 +245,7 @@ export const SHOT_FIELDS = {
   targetBall: ballNum,
   targetPocket: T.oneOf(POCKET_IDS),
   acceptPockets: T.arr(T.oneOf(POCKET_IDS), 6, 1),
+  extraCueBalls: T.arr(tablePoint, 8),
   targetZones: T.arr(zone, 8),
   cueBallPath: T.arr(pathPoint, 200, 2),
   contactIndex: T.int(1, 199),
@@ -394,11 +395,11 @@ function checkScoring(sr, shotObj, p, c) {
 /** Layout sanity: exactly one cue ball, numbers 1–15 unique, on the cloth, no overlapping balls, paths/zones/markers sensible */
 export function checkShot(s, p, c) {
   if (!s || !s.cueBallPosition) return;
-  const all = [{ id: 'cue', ...s.cueBallPosition }, ...(s.ballPositions || []).map((b) => ({ id: b.n, ...b })), ...(s.blockers || []).map((b) => ({ id: b.n, ...b, blocker: true }))];
-  const nums = all.filter((b) => b.id !== 'cue').map((b) => b.id);
+  const all = [{ id: 'cue', ...s.cueBallPosition }, ...(s.extraCueBalls || []).map((b, i) => ({ id: 'x' + i, ...b, extra: true })), ...(s.ballPositions || []).map((b) => ({ id: b.n, ...b })), ...(s.blockers || []).map((b) => ({ id: b.n, ...b, blocker: true }))];
+  const nums = all.filter((b) => b.id !== 'cue' && !b.extra).map((b) => b.id);
   const dup = nums.find((n, i) => nums.indexOf(n) !== i);
   if (dup !== undefined) c.err(p, `ball ${dup} is used twice — every ball number (1–15) can appear only once`);
-  const name = (b) => (b.id === 'cue' ? 'the cue ball' : `${b.blocker ? 'blocker ' : ''}ball ${b.id}`);
+  const name = (b) => (b.extra ? 'an added cue ball' : b.id === 'cue' ? 'the cue ball' : `${b.blocker ? 'blocker ' : ''}ball ${b.id}`);
   const tol = 0.01;
   for (const b of all) {
     if (b.x < BALL_R - tol || b.x > 100 - BALL_R + tol || b.y < BALL_R - tol || b.y > 50 - BALL_R + tol) c.err(p, `${name(b)} at (${b.x}, ${b.y}) overlaps the cushion — a ball centre must be ${BALL_R} or more from every rail (x ${BALL_R}–${100 - BALL_R}, y ${BALL_R}–${50 - BALL_R})`);

@@ -1445,6 +1445,8 @@ body.sim-full .simTable .table-diagram{width:100%;max-height:100dvh}
 .fix-handle{fill:#041018;stroke:#4cc9ff;stroke-width:.5}
 .fix-handle.on{fill:#4cc9ff}
 .fixTools,.pockets,.fixPair{display:grid;gap:8px;margin:8px 0}
+.fixAdd{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.fixAdd button{min-height:48px;border-radius:12px;border:1px solid #25476a;background:#0b1522;color:#dcecff;font-weight:800;font-size:12px;padding:8px;letter-spacing:.2px}
 .fixTools{grid-template-columns:1fr 1fr 1fr}
 .pockets{grid-template-columns:1fr 1fr 1fr}
 .fixPair{grid-template-columns:1fr 1fr}
