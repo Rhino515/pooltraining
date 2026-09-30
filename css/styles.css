@@ -1477,10 +1477,14 @@ body.sim-full .simTable .table-diagram{width:100%;max-height:100dvh}
 body.fix-full header,body.fix-full nav{display:none !important}
 body.fix-full #app{height:100dvh;padding:0}
 .fixStage{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;background:#040a12;padding:calc(8px + env(safe-area-inset-top)) 8px calc(8px + env(safe-area-inset-bottom));gap:8px}
-.fixFullTop{display:flex;align-items:center;min-height:48px}
+.fixFullTop{display:flex;align-items:center;gap:8px;min-height:48px}
+.fixFullTop .fullExit{position:static;min-width:72px}
+.fixFullTop .fixSel{flex:1;margin:0;text-align:center;font-size:14px}
+.fixSave{min-height:48px;min-width:72px;padding:0 12px;border-radius:14px;border:1px solid #1f5f99;background:#102033;color:var(--cyan);font-weight:900;letter-spacing:.4px}
 .fixFit{position:relative;flex:1 1 auto;min-height:0}
 .fixStage .fixTable{position:absolute;inset:0;border:0;background:transparent;overflow:visible;border-radius:0}
-.fixFullBot .fixPair{margin:0}
+.fixFullBot .nudge{margin:0}
+.fixFullBot .fixPair{margin:8px 0 0}
 .fixFullBot .muted{margin:6px 2px 0;text-align:center}
 
 /* v14-10: make/miss tally and word ranks (no circle attempt marks) */

@@ -1,4 +1,4 @@
-const CACHE = 'pool-iq-v14-10';
+const CACHE = 'pool-iq-v14-11';
 const ASSETS = [
   './',
   './index.html',

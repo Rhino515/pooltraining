@@ -2,7 +2,9 @@
  * Phone editor for one shipped PKF drill (#drillfix/<id>) or one built-in stage (#devedit/<game>/<stage>).
  * Mounted only while drillEditorAllowed() is true. Drag balls on the table (¼-diamond nudge is the backup).
  * Bullseye matches the photo (green, red, dark center). Drag the center to move it, or EXPAND / DECREASE its rings.
- * FULL TABLE fills the phone so the same drag works standing at the table. Exit returns here.
+ * FULL TABLE fills the phone so the same drag, nudge, size, and save work standing at the table.
+ * The table is rotated with an SVG transform (not CSS) so the finger position maps on every phone.
+ * Exit returns here.
  * Saves are local overrides. Shipped files do not change.
  */
 import { renderStageTable } from '../games/stageTable.js';
@@ -389,27 +391,50 @@ export function createDrillFix(ctx, idOrSpec) {
       </div>`;
   }
 
+  function spinFullSvg(svg) {
+    if (svg.dataset.spun) return;
+    const NS = 'http://www.w3.org/2000/svg';
+    const spin = document.createElementNS(NS, 'g');
+    spin.id = 'fixSpin';
+    while (svg.firstChild) spin.appendChild(svg.firstChild);
+    svg.appendChild(spin);
+    const vb = svg.viewBox.baseVal;
+    const x = vb.x, y = vb.y, w = vb.width, h = vb.height;
+    const cx = x + w / 2, cy = y + h / 2;
+    // Same direction as the old CSS rotate(90deg): the head of the table swings to the right.
+    spin.setAttribute('transform', `rotate(90 ${f2(cx)} ${f2(cy)})`);
+    const corners = [[x, y], [x + w, y], [x + w, y + h], [x, y + h]].map(([px, py]) => {
+      const dx = px - cx, dy = py - cy;
+      return [cx + dy, cy - dx];
+    });
+    const xs = corners.map((c) => c[0]);
+    const ys = corners.map((c) => c[1]);
+    const minX = Math.min(...xs);
+    const minY = Math.min(...ys);
+    svg.setAttribute('viewBox', `${f2(minX)} ${f2(minY)} ${f2(Math.max(...xs) - minX)} ${f2(Math.max(...ys) - minY)}`);
+    svg.dataset.spun = '1';
+  }
   function fitFullTable() {
     if (!ui.full) return;
     const slot = ctx.root.querySelector('.fixFit');
     const svg = slot?.querySelector('svg');
     if (!svg) return;
-    const vb = svg.viewBox && svg.viewBox.baseVal;
-    const aspect = vb && vb.height ? vb.width / vb.height : 2;
+    spinFullSvg(svg);
+    const vb = svg.viewBox.baseVal;
+    const aspect = vb.height ? vb.width / vb.height : 0.5;
     const r = slot.getBoundingClientRect();
     const sw = Math.max(0, r.width - 4);
     const sh = Math.max(0, r.height - 4);
     if (sw < 20 || sh < 20) return;
-    const cssW = Math.min(sh, sw * aspect);
+    const cssW = Math.min(sw, sh * aspect);
     const cssH = cssW / aspect;
     svg.style.position = 'absolute';
-    svg.style.left = '50%';
-    svg.style.top = '50%';
+    svg.style.transform = 'none';
     svg.style.width = `${cssW}px`;
     svg.style.height = `${cssH}px`;
+    svg.style.left = `${(r.width - cssW) / 2}px`;
+    svg.style.top = `${(r.height - cssH) / 2}px`;
     svg.style.maxHeight = 'none';
-    svg.style.transformOrigin = 'center center';
-    svg.style.transform = 'translate(-50%, -50%) rotate(90deg)';
   }
   function render() {
     if (!drillEditorAllowed()) { document.body.classList.remove('fix-full'); ctx.root.innerHTML = ''; return; }
@@ -421,11 +446,21 @@ export function createDrillFix(ctx, idOrSpec) {
     if (ui.full) {
       ctx.root.innerHTML = `<div class="playScreen drillFix is-full" data-drill-fix="${esc(id)}" data-fix-full="1" data-overridden="${overridden ? 1 : 0}">
       <div class="fixStage">
-        <div class="fixFullTop"><button type="button" class="fullExit" data-action="df-full">EXIT</button></div>
+        <div class="fixFullTop">
+          <button type="button" class="fullExit" data-action="df-full">EXIT</button>
+          <span class="fixSel">${esc(selLabel())}</span>
+          <button type="button" class="fixSave" data-action="df-save">SAVE</button>
+        </div>
         <div class="fixFit"><div id="fixTable" class="fixTable">${table}</div></div>
         <div class="fixFullBot">
+          <div class="nudge">
+            <button type="button" data-action="df-nudge" data-dx="-0.25" data-dy="0">◀ HEAD</button>
+            <button type="button" data-action="df-nudge" data-dx="0.25" data-dy="0">FOOT ▶</button>
+            <button type="button" data-action="df-nudge" data-dx="0" data-dy="-0.25">▲ TOP</button>
+            <button type="button" data-action="df-nudge" data-dx="0" data-dy="0.25">▼ BOTTOM</button>
+          </div>
           ${sizeButtons()}
-          <p class="muted small">Drag the bullseye or a ball. Dropping sets where it sits.</p>
+          <p class="muted small">Drag a ball or the bullseye. Nudge moves ¼ diamond. SAVE keeps it on this phone.</p>
         </div>
       </div>
     </div>`;
@@ -535,10 +570,13 @@ export function createDrillFix(ctx, idOrSpec) {
 
   function toTable(e) {
     const svg = ctx.root.querySelector('#fixTable svg');
+    const space = svg.querySelector('#fixSpin') || svg;
     const pt = svg.createSVGPoint();
     pt.x = e.clientX;
     pt.y = e.clientY;
-    const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+    const ctm = space.getScreenCTM();
+    if (!ctm) return { x: 0, y: 0 };
+    const p = pt.matrixTransform(ctm.inverse());
     return { x: p.x, y: p.y };
   }
   function hit(p) {
