@@ -1565,7 +1565,7 @@ body.fix-full #app{height:100dvh;padding:0}
   .tmRow{grid-template-columns:64px 1fr 64px}
 }
 
-/* v14-32 learn photo cards — player bridging, rack of balls */
+/* v14-33 learn photo cards — crops from the mockup: bridge on green, rack with the 8 */
 .learnCards{display:flex;flex-direction:column;gap:14px;margin-top:16px}
 .learnCard{position:relative;display:block;width:100%;min-height:156px;padding:0;border-radius:18px;overflow:hidden;text-align:left;color:#fff;cursor:pointer;background:#071018;border:1.5px solid #e2b45a;box-shadow:0 12px 28px #0008}
 .learnCard.blue{border-color:#2f8fe8}
