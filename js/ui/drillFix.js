@@ -1,7 +1,8 @@
 /**
  * Phone editor for one shipped PKF drill (#drillfix/<id>) or one built-in stage (#devedit/<game>/<stage>).
  * Mounted only while drillEditorAllowed() is true. Drag balls on the table (¼-diamond nudge is the backup).
- * Bullseyes are color-coded; the selected one can be expanded or decreased. Title and description are plain fields.
+ * Bullseyes are color-coded; drag the center disc to move one, or EXPAND / DECREASE its rings.
+ * FULL TABLE fills the phone so the same drag works standing at the table. Exit returns here.
  * Saves are local overrides. Shipped files do not change.
  */
 import { renderStageTable } from '../games/stageTable.js';
@@ -108,7 +109,7 @@ export function createDrillFix(ctx, idOrSpec) {
       destroy() {}
     };
   }
-  const ui = { tool: 'move', sel: { kind: 'cue' }, msg: '' };
+  const ui = { tool: 'move', sel: { kind: 'cue' }, msg: '', full: false };
   let drag = null;
   let ac = null;
 
@@ -299,6 +300,38 @@ export function createDrillFix(ctx, idOrSpec) {
     if (sel.kind === 'zone') return `Bullseye ${sel.i + 1}`;
     return '';
   }
+  const GRAB = 5.6; // table units — a disc you can grab, not the thin ring stroke
+  function zoneCenter(z) {
+    if (!z?.rings?.length) return null;
+    if (z.type === 'band') {
+      const x = Number(z.center);
+      return Number.isFinite(x) ? { x, y: 25, band: true } : null;
+    }
+    if (!Number.isFinite(z.x) || !Number.isFinite(z.y)) return null;
+    return { x: z.x, y: z.y, band: false };
+  }
+  function zoneHit(p, grabOnly) {
+    let best = null;
+    let bd = Infinity;
+    (shot().targetZones || []).forEach((z, i) => {
+      const c = zoneCenter(z);
+      if (!c) return;
+      const outer = Math.max(...z.rings.map((r) => Number(r.r) || 0));
+      const d = c.band ? Math.abs(c.x - p.x) : Math.hypot(c.x - p.x, c.y - p.y);
+      const limit = grabOnly ? GRAB : Math.max(outer + 1.2, GRAB);
+      const yOk = !c.band || (p.y >= -2 && p.y <= 52);
+      if (yOk && d <= limit && d < bd) { bd = d; best = { kind: 'zone', i }; }
+    });
+    return best;
+  }
+  function sizeButtons() {
+    const zones = (shot().targetZones || []).filter((z) => z?.rings?.length);
+    if (!zones.length) return '';
+    return `<div class="fixPair" data-zone-size="1">
+        <button type="button" data-action="df-zone-size" data-d="1">EXPAND</button>
+        <button type="button" data-action="df-zone-size" data-d="-1">DECREASE</button>
+      </div>`;
+  }
   function zonePanel() {
     const zones = (shot().targetZones || []).filter((z) => z?.rings?.length);
     if (!zones.length) return '<div class="eyebrow">BULLSEYE</div><p class="muted small">No bullseye on this one.</p>';
@@ -307,12 +340,9 @@ export function createDrillFix(ctx, idOrSpec) {
     const outer = Math.max(...z.rings.map((r) => r.r));
     return `<div class="eyebrow">BULLSEYE</div>
       <p class="fixSel" data-bullseye-size="${outer}">${esc(zones.length > 1 ? `Target ${i + 1} of ${shot().targetZones.length}` : 'Target')} · outer ring ${outer}</p>
-      <div class="fixPair" data-zone-size="1">
-        <button type="button" data-action="df-zone-size" data-d="1">EXPAND</button>
-        <button type="button" data-action="df-zone-size" data-d="-1">DECREASE</button>
-      </div>
+      ${sizeButtons()}
       ${shot().targetZones.length > 1 ? `<div class="pockets">${shot().targetZones.map((zz, n) => zz?.rings ? `<button type="button" class="${n === i ? 'on' : ''}" data-action="df-zone-pick" data-i="${n}">Target ${n + 1}</button>` : '').join('')}</div>` : ''}
-      <p class="muted small">Rings are color coded (red 3★, gold 2★, green 1★). Size is saved with this ${isDrill ? 'drill' : 'stage'}.</p>`;
+      <p class="muted small">Drag the center disc to move the target. Rings stay color coded (red 3★, gold 2★, green 1★). Size is saved with this ${isDrill ? 'drill' : 'stage'}.</p>`;
   }
   const loadedDesc = String(doc.description || '');
   function backHref() { return isDrill ? `#play/drills/${esc(id)}` : `#devgame/${esc(gameId)}`; }
@@ -359,19 +389,59 @@ export function createDrillFix(ctx, idOrSpec) {
       </div>`;
   }
 
+  function fitFullTable() {
+    if (!ui.full) return;
+    const slot = ctx.root.querySelector('.fixFit');
+    const svg = slot?.querySelector('svg');
+    if (!svg) return;
+    const vb = svg.viewBox && svg.viewBox.baseVal;
+    const aspect = vb && vb.height ? vb.width / vb.height : 2;
+    const r = slot.getBoundingClientRect();
+    const sw = Math.max(0, r.width - 4);
+    const sh = Math.max(0, r.height - 4);
+    if (sw < 20 || sh < 20) return;
+    const cssW = Math.min(sh, sw * aspect);
+    const cssH = cssW / aspect;
+    svg.style.position = 'absolute';
+    svg.style.left = '50%';
+    svg.style.top = '50%';
+    svg.style.width = `${cssW}px`;
+    svg.style.height = `${cssH}px`;
+    svg.style.maxHeight = 'none';
+    svg.style.transformOrigin = 'center center';
+    svg.style.transform = 'translate(-50%, -50%) rotate(90deg)';
+  }
   function render() {
-    if (!drillEditorAllowed()) { ctx.root.innerHTML = ''; return; }
+    if (!drillEditorAllowed()) { document.body.classList.remove('fix-full'); ctx.root.innerHTML = ''; return; }
+    document.body.classList.toggle('fix-full', !!ui.full);
     const overridden = overriddenNow();
     const s = shot();
     const cc = s.cueContact || { vTips: 0, hTips: 0 };
     const table = renderStageTable(preview(), { showCuePath: true, showAim: true, showObPath: true, showZones: true, className: 'table-diagram stage-table' });
+    if (ui.full) {
+      ctx.root.innerHTML = `<div class="playScreen drillFix is-full" data-drill-fix="${esc(id)}" data-fix-full="1" data-overridden="${overridden ? 1 : 0}">
+      <div class="fixStage">
+        <div class="fixFullTop"><button type="button" class="fullExit" data-action="df-full">EXIT</button></div>
+        <div class="fixFit"><div id="fixTable" class="fixTable">${table}</div></div>
+        <div class="fixFullBot">
+          ${sizeButtons()}
+          <p class="muted small">Drag the bullseye or a ball. Dropping sets where it sits.</p>
+        </div>
+      </div>
+    </div>`;
+      paintHandles();
+      bindTable();
+      fitFullTable();
+      requestAnimationFrame(() => { if (ui.full) fitFullTable(); });
+      return;
+    }
     ctx.root.innerHTML = `<div class="playScreen drillFix" data-drill-fix="${esc(id)}" data-overridden="${overridden ? 1 : 0}">
       <div class="playHead">
         <button type="button" class="phBack" data-action="go" data-href="${backHref()}" aria-label="Back">‹</button>
         <div class="phTitle"><small>OWNER EDIT${overridden ? ' · SAVED ON THIS PHONE' : ''}</small><b>${esc(doc.title || 'Drill')}</b></div>
       </div>
       <div class="fixScroll">
-        ${s.cueBallPosition || (s.targetZones || []).length ? `<div id="fixTable" class="fixTable">${table}</div>` : ''}
+        ${s.cueBallPosition || (s.targetZones || []).length ? `<div class="fixTableWrap"><button type="button" class="fixExpand" data-action="df-full">FULL TABLE</button><div id="fixTable" class="fixTable">${table}</div></div>` : ''}
         <div class="fixTools" role="group" aria-label="What to drag">
           <button type="button" class="${ui.tool === 'move' ? 'on' : ''}" data-action="df-tool" data-tool="move">BALLS</button>
           <button type="button" class="${ui.tool === 'cue' ? 'on' : ''}" data-action="df-tool" data-tool="cue">CUE PATH</button>
@@ -415,10 +485,42 @@ export function createDrillFix(ctx, idOrSpec) {
     bindFields();
   }
 
+  function paintBulls(svg) {
+    svg.querySelectorAll('.fix-bulls').forEach((n) => n.remove());
+    const NS = 'http://www.w3.org/2000/svg';
+    const g = document.createElementNS(NS, 'g');
+    g.setAttribute('class', 'fix-bulls');
+    (shot().targetZones || []).forEach((z, i) => {
+      const c = zoneCenter(z);
+      if (!c) return;
+      const on = ui.sel?.kind === 'zone' && ui.sel.i === i;
+      const wrap = document.createElementNS(NS, 'g');
+      wrap.setAttribute('class', 'fix-bull' + (on ? ' on' : ''));
+      wrap.dataset.i = String(i);
+      const disc = document.createElementNS(NS, 'circle');
+      disc.setAttribute('class', 'fix-bull-grab');
+      disc.setAttribute('cx', String(c.x));
+      disc.setAttribute('cy', String(c.y));
+      disc.setAttribute('r', '4.2');
+      disc.setAttribute('fill', 'rgba(255,59,84,0.38)');
+      disc.setAttribute('stroke', on ? '#ffffff' : '#ff3b54');
+      disc.setAttribute('stroke-width', on ? '0.75' : '0.55');
+      const dot = document.createElementNS(NS, 'circle');
+      dot.setAttribute('cx', String(c.x));
+      dot.setAttribute('cy', String(c.y));
+      dot.setAttribute('r', '1.35');
+      dot.setAttribute('fill', '#ff3b54');
+      wrap.appendChild(disc);
+      wrap.appendChild(dot);
+      g.appendChild(wrap);
+    });
+    svg.appendChild(g);
+  }
   function paintHandles() {
     const svg = ctx.root.querySelector('#fixTable svg');
     if (!svg) return;
     svg.querySelectorAll('.fix-handle').forEach((n) => n.remove());
+    paintBulls(svg);
     const kind = ui.tool === 'cue' ? 'cuePath' : ui.tool === 'ob' ? 'obPath' : null;
     if (!kind) return;
     const pts = pointsFor(kind) || [];
@@ -472,20 +574,20 @@ export function createDrillFix(ctx, idOrSpec) {
       const d = Math.hypot(b.x - p.x, b.y - p.y);
       if (d < bd) { bd = d; best = { kind: 'blocker', n: b.n }; }
     }
+    const grabbed = zoneHit(p, true);
+    if (grabbed && !best) return grabbed;
+    if (grabbed && best) {
+      const c = zoneCenter(shot().targetZones[grabbed.i]);
+      const zd = c.band ? Math.abs(c.x - p.x) : Math.hypot(c.x - p.x, c.y - p.y);
+      let item = null;
+      if (best.kind === 'cue') item = cue;
+      else if (best.kind === 'ball') item = (shot().ballPositions || []).find((b) => b.n === best.n);
+      else if (best.kind === 'blocker') item = (shot().blockers || []).find((b) => b.n === best.n);
+      const bdNow = item ? Math.hypot(item.x - p.x, item.y - p.y) : Infinity;
+      return zd <= bdNow ? grabbed : best;
+    }
     if (best) return best;
-    let zbest = null;
-    let zd = Infinity;
-    (shot().targetZones || []).forEach((z, i) => {
-      if (!z?.rings?.length) return;
-      const outer = Math.max(...z.rings.map((r) => r.r));
-      if (z.type === 'band') {
-        if (Math.abs((z.center ?? 0) - p.x) <= outer && p.y >= -2 && p.y <= 52 && outer < zd) { zd = outer; zbest = { kind: 'zone', i }; }
-      } else if (Number.isFinite(z.x)) {
-        const d = Math.hypot(z.x - p.x, z.y - p.y);
-        if (d <= outer + 1.2 && d < zd) { zd = d; zbest = { kind: 'zone', i }; }
-      }
-    });
-    return zbest;
+    return zoneHit(p, false);
   }
   function pocketAt(p) {
     for (const [k, pk] of Object.entries(POCKETS)) if (Math.hypot(pk.x - p.x, pk.y - p.y) < pk.r + 2) return k;
@@ -529,9 +631,17 @@ export function createDrillFix(ctx, idOrSpec) {
         const g = svg.querySelector(`g.ball[data-n="${drag.sel.n}"]`);
         if (g) g.setAttribute('transform', `translate(${f2(q.x - drag.from.x)} ${f2(q.y - drag.from.y)})`);
       } else if (drag.sel.kind === 'zone') {
+        const band = shot().targetZones[drag.sel.i]?.type === 'band';
+        if (band) q = { x: snapPoint({ x: q.x, y: drag.from.y }).x, y: drag.from.y };
+        drag.to = q;
+        const dx = f2(q.x - drag.from.x);
+        const dy = band ? 0 : f2(q.y - (drag.from.y ?? 0));
         const g = svg.querySelector(`g.zone[data-zone-i="${drag.sel.i}"]`);
-        const from = drag.item?.type === 'band' ? drag.item.center : drag.from.x;
-        if (g && drag.from) g.setAttribute('transform', `translate(${f2(q.x - drag.from.x)} ${f2(q.y - (drag.from.y ?? 0))})`);
+        if (g && drag.from) g.setAttribute('transform', `translate(${dx} ${dy})`);
+        const hnd = svg.querySelector(`.fix-bull[data-i="${drag.sel.i}"]`);
+        if (hnd && drag.from) hnd.setAttribute('transform', `translate(${dx} ${dy})`);
+        const lab = svg.querySelector('text.zone-label');
+        if (lab && drag.from && !band) lab.setAttribute('transform', `translate(${dx} ${dy})`);
       } else {
         const c = [...svg.querySelectorAll('.fix-handle')].find((n) => Number(n.dataset.i) === drag.sel.i);
         if (c) { c.setAttribute('cx', String(q.x)); c.setAttribute('cy', String(q.y)); }
@@ -543,6 +653,7 @@ export function createDrillFix(ctx, idOrSpec) {
       if (!d) return;
       if (d.empty) {
         if (d.pocket) setPocket(d.pocket);
+        else if (!ui.full && ui.tool === 'move') { ui.full = true; ui.msg = ''; render(); }
         return;
       }
       ui.sel = d.sel;
@@ -668,6 +779,13 @@ export function createDrillFix(ctx, idOrSpec) {
 
   function onAction(action, el) {
     if (!drillEditorAllowed()) return false;
+    if (action === 'df-full') {
+      ui.full = !ui.full;
+      if (ui.full) ui.tool = 'move';
+      ui.msg = '';
+      render();
+      return true;
+    }
     if (action === 'df-tool') {
       ui.tool = el.dataset.tool;
       if (ui.tool === 'move' && ui.sel && (ui.sel.kind === 'cuePath' || ui.sel.kind === 'obPath')) ui.sel = { kind: 'cue' };
@@ -715,5 +833,5 @@ export function createDrillFix(ctx, idOrSpec) {
     return false;
   }
 
-  return { render, onAction, destroy() { ac?.abort(); ac = null; drag = null; } };
+  return { render, onAction, destroy() { ac?.abort(); ac = null; drag = null; document.body.classList.remove('fix-full'); } };
 }

@@ -796,7 +796,7 @@ let state = storage.defaultState();
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
   const missing = walk(path.join(root, 'js')).filter((f) => f.endsWith('.js')).map((f) => './' + path.relative(root, f)).filter((f) => !sw.includes(`'${f}'`));
-  assert(/'pool-iq-v14-8'/.test(sw), 'service worker cache is pool-iq-v14-8');
+  assert(/'pool-iq-v14-9'/.test(sw), 'service worker cache is pool-iq-v14-9');
   assertAll('service worker precaches every JS module (incl. simulator + Create Drill)', missing.map((m) => `missing ${m}`));
   const wordN = { one: 1, two: 2, three: 3, four: 4 };
   const probs = [];
@@ -1989,8 +1989,8 @@ let state = storage.defaultState();
   // theme + header / nav
   assert(/POOL <b>IQ<\/b>/.test(idx) && !/1Q/.test(idx), 'v12 header keeps the POOL IQ wordmark (never "1Q")');
   const navBtns = (idx.match(/<nav>[\s\S]*<\/nav>/) || [''])[0].match(/<button[\s\S]*?<\/button>/g) || [];
-  assert(navBtns.length === 7 && navBtns.every((b) => /<svg class="navIco"/.test(b) && /<span>[^<]+<\/span>/.test(b)), 'v12 nav: 7 tabs, each with an SVG icon + its label (routes / data-page ids unchanged)');
-  assert(['home', 'career', 'drills', 'analyze', 'sim', 'arcade', 'profile'].every((p) => idx.includes(`data-page="${p}"`)) && idx.includes('id="settingsBtn"') && idx.includes('aria-label="Settings"'), 'v12 nav + settings button keep their ids, pages and labels');
+  assert(navBtns.length === 8 && navBtns.every((b) => /<svg class="navIco"/.test(b) && /<span>[^<]+<\/span>/.test(b)), 'v12 nav: 8 tabs, each with an SVG icon + its label (Learn added; earlier routes unchanged)');
+  assert(['home', 'career', 'drills', 'learn', 'analyze', 'sim', 'arcade', 'profile'].every((p) => idx.includes(`data-page="${p}"`)) && idx.includes('id="settingsBtn"') && idx.includes('aria-label="Settings"'), 'v12 nav + settings button keep their ids, pages and labels');
   assert(/--gold:#f6c453/.test(css) && /--bg:#040a12/.test(css) && /--cloth:#066b83/.test(css) && /--wood:#57301a/.test(css), 'v12 palette variables: navy background, gold, teal cloth, wood');
   // table look: wood rails, teal cloth, white diamond sights, unique gradient ids
   const svgA = table.renderTableDiagram({ balls: [{ id: 'cue', x: 20, y: 25 }, { id: 1, x: 60, y: 20 }], targetPocket: 'TR' });
@@ -2038,7 +2038,7 @@ let state = storage.defaultState();
   const dash = src('js/dashboard.js');
   const friends = src('js/ui/friends.js');
   const vendor = src('js/vendor/supabase.js');
-  assert(/'pool-iq-v14-8'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw) && !/'pool-iq-v14-5c'/.test(sw), 'v14: service worker cache is pool-iq-v14-8');
+  assert(/'pool-iq-v14-9'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw) && !/'pool-iq-v14-5c'/.test(sw), 'v14: service worker cache is pool-iq-v14-9');
   assert(sw.includes(`'./js/vendor/supabase.js'`) && sw.includes(`'./js/cloud/controller.js'`) && sw.includes(`'./js/ui/account.js'`), 'v13: sw precaches the bundled supabase-js and the cloud modules');
   assert(/supabase-js\/2\.117\.2/.test(vendor) && /createClient/.test(vendor) && !/cdn\.jsdelivr|unpkg\.com|esm\.sh/.test(idx + sw), 'v13: official supabase-js v2 UMD build is bundled locally (no CDN)');
   assert(/nqfwlpfyccbqetcyjijf/.test(cfg) && /sb_publishable_/.test(cfg) && !/sb_secret_|service_role|sbp_[0-9a-f]{10}/.test(cfg + sql + docs), 'v13: config carries the project ref + publishable key only (no secrets anywhere)');

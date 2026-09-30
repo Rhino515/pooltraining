@@ -1,5 +1,5 @@
 /**
- * Pages: Home, Career, Table Games hub (route #arcade, alias #tablegames), Game lobby, Boss intro, Profile, Drills (empty-state aware), Settings.
+ * Pages: Home, Career, Table Games hub (route #arcade, alias #tablegames), Game lobby, Boss intro, Profile, Drills (empty-state aware), Learn, Settings.
  */
 import { nextRankInfo, RANK_NAMES, RANK_REQUIREMENTS, requirementChecklist, nextUp, isBossUnlocked } from './career.js';
 import { skillBarsHTML, weakestSkills, recommendations } from './skills.js';
@@ -35,6 +35,10 @@ function homeExtrasHTML(x = {}) {
   if (x.nudge) out += `<div class="card nudgeCard backupNudge" data-nudge="backup"><span class="nudgeIcon">⛨</span><span class="nudgeText"><b>Back up your progress</b><small>Last backup: ${esc(x.nudge.lastText)}. One tap saves a file you can restore on any phone.</small></span><button type="button" class="miniAct nudgeGo" data-action="backup-now">BACK UP</button><button type="button" class="nudgeX" data-action="nudge-dismiss" aria-label="Dismiss backup reminder">×</button></div>`;
   if (x.install) out += `<div class="card nudgeCard installNudge" data-nudge="install"><span class="nudgeIcon">⤓</span><span class="nudgeText"><b>Install Pool IQ</b><small>${x.install === 'ios' ? 'Share → Add to Home Screen: full-screen, offline, safer storage.' : 'Full-screen, works offline, safer storage.'}</small></span><button type="button" class="miniAct nudgeGo" data-action="install-app">INSTALL</button><button type="button" class="nudgeX" data-action="install-dismiss" aria-label="Dismiss install tip">×</button></div>`;
   return out;
+}
+
+export function renderLearn() {
+  return `<div class="title learnPage" data-page-learn><h1>Learn</h1><p class="muted">Lessons will show here.</p></div>`;
 }
 
 export function renderHome(state, extras = {}) {
