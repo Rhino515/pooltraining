@@ -77,7 +77,7 @@ function game(id) { return GAMES.find((g) => g[0] === id); }
 function gameName(id) { return game(id)?.[1] || 'That game'; }
 
 const MISSING = {
-  'wpa:heyball': 'The WPA Rules of Play say the Rules of Heyball are under review and Chapter 9 will be published later. This file does not contain the how-to. It points readers to the WPA rules page.',
+  'wpa:heyball': 'Dr. Dave’s glossary calls Heyball the Chinese version of 8-ball, played on a table with snooker-style pockets. The WPA Rules of Play say the Rules of Heyball are under review and Chapter 9 will be published later. This file does not contain the how-to. It points readers to the WPA rules page.',
   'wpa:pyramid': 'The WPA Rules of Play say the Rules of Pyramid are under review and Chapter 10 will be published later. This file does not contain the how-to. It points readers to the WPA rules page.',
   'wpa:artistic': 'The WPA Rules of Play say the Rules of Artistic Pool are under review and Chapter 11 will be published later. This file does not contain the how-to. It points readers to the WPA rules page.',
   'wpa:iepf': 'The WPA book says a version of 8-ball called International Rules was developed by the International Eightball Pool Federation. This file does not contain those rules. It points readers to the WPA rules page.'
@@ -85,6 +85,11 @@ const MISSING = {
 
 const HOW = {
   'wpa:eight': [
+    'Dr. Dave’s summary of the official WPA rules, used first. Pocket one group, solids 1 through 7 or stripes 9 through 15, then the 8. The rack needs the 8 in the center, one bottom corner a solid, the other a stripe. The rest should be mixed, but that mix is not a requirement. The front ball sits on the foot spot.',
+    'Break from behind the head string. Pocket an object ball and you keep shooting, unless you scratch. A scratch on the break: the opponent places the cue ball in the kitchen, and the cue ball must cross the head string before it hits an object ball. The current WPA book (effective 2025-09-15) also lets that opponent play the table as it lies. That choice is in the book, not in Dr. Dave’s short summary.',
+    'The 8 on the break is not a win. The breaker, or the opponent if the breaker scratched, may re-rack and break again or spot the 8. Dr. Dave notes that some leagues and coin-operated tables instead call the 8 on the break a win if you do not scratch, and a loss if you do.',
+    'The table stays open after the break even if balls were made. A group is yours only when you legally pocket a called ball of that group with no scratch or foul. While the table is open, any ball except the 8 may be hit first. Example he gives: hit a solid first to pocket a called stripe.',
+    'Call the ball and the pocket unless the shot is totally obvious. You do not have to call rails or caroms. A legal shot hits your ball first, then either pockets a ball or drives a ball to a cushion. A scratch or foul is ball in hand anywhere, except the break. You win by pocketing the 8 after your group, with no scratch or foul. You lose if you foul while pocketing the 8, jump the 8 off the table, pocket the 8 early, or pocket the 8 in the wrong pocket. His note: some leagues also lose if you scratch on a missed attempt at the 8.',
     'Played with fifteen numbered object balls and the cue ball. Your group is the 1–7 or the 9–15. Clear that group, then pocket the 8 to win the rack. Shots are called.',
     'The table stays open after the break. Groups are set when a player legally pockets a called ball after the break. While the table is open, the cue ball may hit any object ball except the 8.',
     'Pocketing the 8 on the break is not a win and not a loss. On a legal break the breaker may spot the 8 and continue, or re-break. If the breaker also fouled, the opponent may spot the 8 and take ball in hand behind the head string, or re-break.',
@@ -92,6 +97,8 @@ const HOW = {
     'After a standard foul, ball in hand is anywhere on the table. Pocketing the 8 before your group is cleared loses the rack, except on the break. Pocketing the 8 on a foul loses the rack.'
   ],
   'wpa:nine': [
+    'Dr. Dave’s summary, used first. Nine balls, 1 through 9, in a diamond. The 1 is in front, the 9 is in the center, and the front ball is on the foot spot. Hit the lowest numbered ball first. Pocketing the 9 wins, even on the break, if that lowest ball was hit first. Slop counts. Nothing has to be called.',
+    'Scratch on the break is ball in hand for the opponent. On the first shot after the break, the player at the table may push out: the cue ball may be hit anywhere, with or without hitting a ball or a rail. The opponent then chooses who shoots. The 9 is spotted if it is jumped off the table, or pocketed on a scratch or foul. Three fouls in a row loses the game. His note: some events spot the 9 if it drops on the break instead of calling it a win, and some require the 9 to be called.',
     'Played with balls 1 through 9 and the cue ball, in ascending order. Legally pocketing the 9 wins the rack.',
     'The rack is a diamond. The 1 is at the apex toward the head of the table. The 9 is in the middle, on the foot spot.',
     'The cue ball starts above the head string. If the break pockets nothing, at least four object balls must be driven to a rail or it is a foul. If nothing is pocketed and three balls do not cross the head string, the book calls it an illegal break and points to Regulation 16. This page does not restate that regulation.',
@@ -99,6 +106,7 @@ const HOW = {
     'The cue ball must hit the lowest numbered ball first. A standard foul is ball in hand anywhere. Three fouls in one rack loses the rack. The 9 is spotted if it is pocketed on a foul or a push out, or driven off the table. No other object ball is spotted.'
   ],
   'wpa:ten': [
+    'Dr. Dave’s glossary, used first: 10-ball uses balls 1 through 10, racked in a triangle with the 10 in the center. The lowest ball must be hit first, every shot must be called, and pocketing the 10 wins. The WPA book, below, is more specific. It says the 10 wins only on a called shot when it is the last object ball.',
     'A call-shot game with balls 1 through 10, played in ascending order. The rack is won by legally pocketing the 10 on a called shot when it is the only object ball left.',
     'The rack is a triangle. The 1 is at the apex on the foot spot. The 10 is in the middle. The other balls have no set pattern.',
     'The cue ball starts above the head string. If the break pockets nothing, at least four object balls must be driven to a rail or it is a foul. After a legal break the shooter may push out, the same way as in 9-ball. There is no safety call in 10-ball.',
@@ -106,11 +114,13 @@ const HOW = {
     'The 10 is spotted if it leaves the table or is pocketed on anything other than the winning shot. Other object balls are not spotted. A standard foul is ball in hand anywhere. Three fouls in one rack loses the rack.'
   ],
   'wpa:straight': [
+    'Dr. Dave’s glossary: 14.1 continuous is the same as straight pool. The scoring and fouls below are from the WPA book.',
     'Also called straight pool. Fifteen numbered balls and the cue ball. Each ball pocketed on a legal called shot counts one point. The first player to the required score wins the match.',
     'It is continuous. After fourteen balls are pocketed they are re-racked and the shooter continues. On a re-rack the apex ball is left out if only fourteen balls are racked.',
     'The opening break starts with the cue ball above the head string. If no called ball is pocketed, the cue ball and two object balls must each be driven to a rail, or it is a breaking foul. That foul subtracts two points. The incoming player may accept the table or require another opening break.'
   ],
   'wpa:blackball': [
+    'Dr. Dave’s glossary: Blackball is the British pub game, with yellow and red sets and a black ball. The WPA chapter, below, is the international book version and also allows numbered solids and stripes.',
     'Played with fifteen colored object balls: two groups of seven, plus the black ball (or a black 8). Pocket your group and legally pocket the black ball. Shots are not called.',
     'The cue ball starts in baulk, the area inside the baulk line, one fifth of the table from the head cushion. Pocket at least one ball, or drive at least two object balls across the center string, or the break is a foul. If the black ball is pocketed on the break, the balls are re-racked and the same player breaks again.',
     'The table stays open until a player pockets balls from only one group on a legal shot that is not the break and not a free shot. That group becomes theirs.',
@@ -124,12 +134,14 @@ const HOW = {
     'A standard foul costs one point. A scratch leaves the cue ball in hand above the head string. Three fouls in a row loses the rack.'
   ],
   'wpa:bank': [
+    'Dr. Dave’s glossary: bank pool scores a point only when a ball is pocketed off a bank. The WPA book, below, says the game is to 5 or to 8 and that the called ball, the called pocket, and every cushion must be called.',
     'Played with nine object balls (short rack, first to five) or fifteen (full rack, first to eight), plus the cue ball. Points come from called bank shots. A match is to a given number of racks.',
     'Call the object ball, the cushions in order, and the pocket. The cue ball must hit the called ball before any other ball or any rail. The called ball must not hit another object ball or the cue ball again, and it must not hit a rail that was not called. Incidental contact on the two rail sections next to the pocket does not count.',
     'The cue ball starts above the head string. If the break pockets nothing, at least four object balls must reach a rail or the break is illegal. The opponent may take the table or make the breaker break again. A ball pocketed on a legal break continues the turn.',
     'Only a valid bank scores. Any extra ball pocketed on that shot does not count and is spotted. A standard foul costs one point. A scratch leaves the cue ball in hand above the head string. Three fouls in a row loses the rack.'
   ],
   'apa:eight': [
+    'Dr. Dave’s league-difference list, used first. He says APA 8-ball is not the same as the WPA rules. Slop counts, so ordinary shots are not called. If you legally pocket only solids, or only stripes, on the break, you must take what you make. The break must hit the head ball or a second-row ball, and a soft break is not allowed. The 8 on the break wins unless you also scratch, which loses. A scratch while shooting the 8 loses even if the 8 misses. Mark the pocket for the 8. Pattern racking is not illegal. Jump cues are not allowed except in Masters. An object ball jumped off the table is not a foul and is spotted. Only cue-ball fouls are enforced. An illegal break, including a total miss, means the breaker breaks again, unless there was a scratch, in which case the opponent breaks.',
     'Played with a cue ball and fifteen object balls. Pocket the solids (1–7) or the stripes (9–15), then legally pocket the 8. In league play the 8 pocket is marked. In Masters it may be called instead.',
     'If the breaker pockets balls from only one category on the break, that category is theirs. The table stays open only if both solids and stripes were made, or nothing was made.',
     'The 8 on the break wins the game, unless the breaker fouls the cue ball (for example a scratch), in which case they lose.',
@@ -144,6 +156,7 @@ const HOW = {
     '10-ball is not in this booklet.'
   ],
   'bca:eight': [
+    'Dr. Dave’s league page, used first. He says the official rules are the WPA world-standardized rules, which the BCA recognizes and publishes. Separate from that, CSI, BCAPL, and USAPL differ. A scratch on the break is ball in hand anywhere. If an impeding ball moves during a jump or a massé, it is a foul. Only cue-ball fouls are enforced, except that case. If someone shoots the wrong group and nobody calls it, and it is noticed later, the game is replayed with the same breaker, unless the game already ended. The CSI how-to below is from the CSI book, which is what players usually mean by BCA rules.',
     'Call-shot 8-ball, played by two players or two teams. Your group is solids 1–7 or stripes 9–15. Pocket your group, then legally pocket the 8.',
     'The table is open after the break even if balls were made. Groups are set by the first ball legally pocketed on a shot after the break, not on a safety.',
     'The 8 on the break is not a win or a loss. Without a foul, the breaker may spot the 8 and continue, or re-rack and break again. With a foul, the opponent may spot the 8 and take ball in hand anywhere, or re-rack and break.',
@@ -179,10 +192,17 @@ const HOW = {
     'A scored ball is pocketed as a bank, only the called number of cushions count, it is not the result of a kiss or carom, and the cue ball does not hit it more than once. An extra ball pocketed on the same shot does not count.'
   ],
   'bar:eight': [
-    'Pool IQ Bar Rules is this app’s casual 8-ball preset. It is not an official rulebook, and it is not WPA, APA, BCA, or CSI.',
-    'The group made on the break sets solids or stripes.',
-    'After a foul or a scratch, the incoming player shoots from behind the head string, and the ball must pass it.',
-    'Anything else people call bar rules is not confirmed here. Dr. Dave’s notes, saved with the rules research, say bar rules vary by room and are not one official set.'
+    'Common American bar 8-ball. Not a WPA, APA, BCA, or CSI book. Dr. Dave Alciatore, on billiards.colostate.edu, says there is no official bar rule set. It changes by bar and by who you are playing. The usual set below is his summary. Variations are from his June 2025 article and from Cornerman, the sheet his bar-rules page links.',
+    'Dr. Dave, usual set. If you pocket one or more balls on the break, the group with the most balls down is yours. That is take what you make. If the two groups are equal, the table stays open.',
+    'Dr. Dave, usual set. Pocketing the 8 on the break wins, unless you also scratch or jump the cue ball off the table, which loses.',
+    'Dr. Dave, usual set. Call every detail on every shot: combinations, kisses, caroms, rail-first hits, kicks, and banks. His June 2025 article limits that call to shots that are not straight in. If you do not call the details, you lose the turn and the cue ball stays where it is. When you are on the 8, the same call applies. Hitting an opponent ball first while shooting the 8 is only loss of turn. A scratch, or the cue ball off the table, loses the game whether or not the 8 goes in.',
+    'Dr. Dave, usual set. A scratch, or the cue ball jumped off the table, gives the opponent ball in hand in the kitchen, behind the head string. The cue ball must be shot out of the kitchen before it touches a ball or a cushion. His June 2025 article says this includes the break. If the only object ball is in the kitchen, you have to kick at it. He also shows a massé that leaves the kitchen before it hits a cushion and comes back. A direct shot at a ball that is still inside the head string is not the shot he describes. A variation he lists: some bars count in the kitchen as the front of the cue ball behind the string, and then the whole cue ball must pass the string before contact.',
+    'Cornerman, the sheet Dr. Dave links, is more specific about that kitchen ball. The cue ball is placed with its front edge behind the head string and not touching it. The first object ball has to be fully across the line: its trailing edge in front of the head string and not touching it. If your ball is on the line or inside the kitchen, you may still play it only by sending the cue ball fully past the head string first (trailing edge past the line) and then back, for example a kick or a massé.',
+    'Dr. Dave, usual set. If you do not hit one of your balls first, you lose the turn and the opponent shoots the cue ball from where it lies. No ball in hand. Other official-rule fouls are not called. He names failing to drive a ball to a cushion, a double hit, a push, a scoop, and an intentional miscue. A variation in the June 2025 article: some bars do call a double hit, a push, and a scoop, and those are loss of turn.',
+    'Dr. Dave, usual set. The 8 cannot be used in a combination or a kiss. A variation he lists: some bars do allow the 8 in a combination or a kiss, and some bars do not allow an opponent ball in a combination or a kiss.',
+    'Dr. Dave, usual set. A safety is dirty pool unless it is an honest try to pocket a ball, or to break something out when you have no shot. A variation he lists: in some bars a safety is allowed.',
+    'Rack, from Dr. Dave’s June 2025 article, which he lists as a variation, not the usual set. In some bars the outside balls alternate solid and stripe. That can put one group on all three corners, which he says is a big advantage. Cornerman, linked from the bar-rules page, names the unwritten bar habit as solid, stripe, solid, stripe, solid down the rack, which puts a solid on every corner, both bottom corners included. Cornerman says that rack is not illegal and he discourages it, about a 3 to 2 edge for solids on the break. His own written rack is different: the 8 in the center, the front ball on the foot spot, the rest random, and no required group in the corners.',
+    'Other variations Dr. Dave lists in that article, not his usual set. Some bars leave the table open after the break no matter what was pocketed. Some bars allow no jump and no massé, because a bad one can tear the cloth. Some bars spot balls that were pocketed when you scratch, except on a coin-operated bar box, where they stay down. He says to ask before you play, because the room can change the rule.'
   ],
   'upusa:eight': [
     'Team 8-ball on a six-pocket table: one cue ball, seven solids, seven stripes, and the 8. Jump shots are not allowed.',
@@ -233,7 +253,7 @@ function combined() {
     ['#learn/rules/wpa', 'WPA', 'World Pool-Billiards Association rules of play. Every game in that book.'],
     ['#learn/rules/apa', 'APA', 'APA game rules booklet, league years 2026/27–2028/29.'],
     ['#learn/rules/bca', 'BCA', 'What “BCA rules” points at today. Two different things.'],
-    ['#learn/rules/bar', 'Bar', 'Pool IQ’s bar preset. Not an official rulebook.'],
+    ['#learn/rules/bar', 'Bar', 'Common American bar 8-ball. Not a WPA, APA, or BCA book.'],
     ['#learn/rules/upusa', 'Ultimate Pool USA', 'League manual v5.0. 8-ball and 10-ball team play.']
   ];
   return `<div class="title learnPage" data-page-learn><div>${back('#learn', 'Learn')}</div>
@@ -252,7 +272,24 @@ function sourceFor(body) {
   if (body === 'apa') return src(APA_SRC, APA_URL);
   if (body === 'bca') return src(CSI_SRC, CSI_URL) + src('BCA Rules and Specifications page. It does not host a separate rulebook.', BCA_URL);
   if (body === 'upusa') return src(UPL_SRC, UPL_URL);
-  return `<p class="learnSrc"><b>Source:</b> Pool IQ bar preset. Not an official book. Dr. Dave on why bar rules vary: <a href="https://drdavepoolinfo.com/normal-video/nv-l-46/" target="_blank" rel="noopener noreferrer">https://drdavepoolinfo.com/normal-video/nv-l-46/</a></p>`;
+  return src('Dr. Dave Alciatore, 8-Ball Bar Rules. billiards.colostate.edu. No official bar rule set.', 'https://billiards.colostate.edu/faq/rules/bar-rules/')
+    + src('Dr. Dave Alciatore, Bar Rules and Dirty Pool, Billiards Digest, June 2025. On billiards.colostate.edu.', 'https://billiards.colostate.edu/bd_articles/2025/june25.pdf')
+    + src('Freddie Agnir, Cornerman Billiards Bar Rules 8-Ball, 6 Nov 2019. The variations sheet linked from Dr. Dave’s bar-rules page.', 'https://drdavepoolinfo.com/resource_files/Cornerman_Bar_Rules.pdf');
+}
+
+
+function daveSrc(body, gameId) {
+  const out = [];
+  if (body === 'wpa' && (gameId === 'eight' || gameId === 'nine')) {
+    out.push(src('Dr. Dave Alciatore, 8-ball and 9-ball rules summary, based on the WPA rules. billiards.colostate.edu. Used first where it covers the point.', 'https://billiards.colostate.edu/resource_files/rules_summary.pdf'));
+  }
+  if (body === 'wpa' && (gameId === 'ten' || gameId === 'straight' || gameId === 'bank' || gameId === 'blackball' || gameId === 'heyball')) {
+    out.push(src('Dr. Dave Alciatore, terminology glossary. billiards.colostate.edu. A short definition. The rest is from the WPA book, or is missing from that book.', 'https://billiards.colostate.edu/glossary/'));
+  }
+  if ((body === 'apa' || body === 'bca') && gameId === 'eight') {
+    out.push(src('Dr. Dave Alciatore, Pool League Rule Differences. billiards.colostate.edu. He treats the WPA rules as the official rules, published by the BCA, and lists APA and CSI differences from those rules.', 'https://billiards.colostate.edu/faq/rules/league-rule-differences/'));
+  }
+  return out.join('');
 }
 
 function howPage(body, gameId, href, label) {
@@ -262,7 +299,7 @@ function howPage(body, gameId, href, label) {
   const key = `${body}:${gameId}`;
   const lines = HOW[key];
   const missing = MISSING[key];
-  let html = sourceFor(body);
+  let html = daveSrc(body, gameId) + sourceFor(body);
   if (body === 'bca') html += `<p>${esc(BCA_NOTE)}</p>`;
   if (missing) {
     html += `<p>${esc(missing)}</p><p class="learnSrc"><a href="${esc(WPA_RULES_PAGE)}" target="_blank" rel="noopener noreferrer">${esc(WPA_RULES_PAGE)}</a></p>`;
@@ -308,8 +345,8 @@ function bodyPage(body) {
   }
   if (body === 'bar') {
     return page('Bar', `${sourceFor('bar')}
-      <p>This preset is only written for 8-ball. It does not add 9-ball, 10-ball, or any other game.</p>
-      ${list([['#learn/rules/bar/eight', '8-Ball', 'The two bar-preset rules. Not an official book.']])}`, '#learn/play', 'How to Play & Rules');
+      <p>Common American bar rules for 8-ball only. Not WPA, APA, BCA, or CSI. These pages do not describe bar rules for 9-ball, 10-ball, or any other game, so those are not listed.</p>
+      ${bullets(HOW['bar:eight'])}`, '#learn/play', 'How to Play & Rules');
   }
   if (body === 'upusa') {
     const rows = BODY_GAMES.upusa.map((id) => [`#learn/rules/upusa/${id}`, gameName(id), game(id)[2]]);
