@@ -1506,3 +1506,19 @@ body.fix-full #app{height:100dvh;padding:0}
 .ballPocket{margin:8px 0 18px}
 .ballPocket h2{margin:0 0 8px}
 .bpLevel{margin:14px 0 8px;font-size:13px;letter-spacing:.8px}
+.bpRank{padding:16px}
+.bpRankHead{display:flex;gap:12px;align-items:center}
+.bpRankNum{font-size:34px;font-weight:900;letter-spacing:.4px;margin:2px 0 6px}
+.bpRank p{margin:4px 0}
+.bpBadge{width:54px;flex:none}
+.bpBadge .bpCue{width:54px;height:100px;display:block}
+.bpBadgeRow{display:flex;gap:8px;margin-top:10px}
+.bpMini{width:28px;opacity:.38}
+.bpMini .bpCue{width:28px;height:52px;display:block}
+.bpMini.on,.bpMini.earned{opacity:1}
+.bpMini.on{outline:1px solid var(--gold,#f6c453);border-radius:8px}
+.bpLevels{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.bpReq{margin:6px 0 0;font-size:13px}
+.bpReq.met{color:var(--green)}
+.bpCopy{white-space:pre-wrap;color:var(--muted);font-size:13px;line-height:1.45;margin:0 0 8px}
+.instr p{white-space:pre-wrap}

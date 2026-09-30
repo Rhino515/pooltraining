@@ -73,6 +73,9 @@ export function createPlayScreen(ctx, key) {
     session = next;
     if (C) return;
     state = ctx.getState();
+    const settled = E.awardBallPocketWindow(state, session);
+    session = settled.session;
+    state = settled.state;
     ctx.commit({ ...state, activeSession: session }, { silent: true });
   }
 

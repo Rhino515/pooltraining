@@ -19,14 +19,15 @@ export function itemForSession(session, stage) {
 }
 
 export function awardSession(state, session, stage, ev, now = Date.now()) {
-  const item = itemForSession(session, stage);
+  let item = itemForSession(session, stage);
   if (!item) return { state, award: null };
+  if (stage?.category === 'Ball Pocketing') item = { ...item, rankXpEligible: false };
   let ratio;
   let passed = !!ev.passed;
   if (session.endless) { ratio = Math.min(1, (ev.made || 0) / 10); passed = false; }
   else ratio = performanceOf(ev, session.attempts, stage);
   const started = Date.parse(session.startedAt || '') || now;
-  return applyAward(state, { item, ratio, passed, score: ev.score, at: now, durationMs: now - started });
+  return applyAward(state, { item, ratio, passed, score: ev.score, at: now, durationMs: now - started, medal: ev?.ballPocketMedal });
 }
 
 export function shotRatio(s) {

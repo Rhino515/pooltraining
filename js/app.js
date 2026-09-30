@@ -12,6 +12,7 @@ import { initInstall, installMode, promptInstall, installSheetHTML, isIOS, isAnd
 import { syncRank } from './career.js';
 import { withSkills } from './skills.js';
 import { drills, getDrillById, allDrills } from './drills.js';
+import { ballPocketStatus } from './content/ballPocket.js';
 import { renderHome, renderCareerPage, renderDrillsPage, renderArcade, renderGameLobby, renderBossPage, renderProfile, renderSettings, renderLearn } from './dashboard.js';
 import { renderAnalyzePage, bindAnalyzeHandlers } from './analyze.js';
 import { renderGhostLobby, renderGhostMatch, newGhostSession, newEightSession, applyRack, applyUndo, applyBreak, setBreakMade, useBallInHand, rulesSheetHTML, maxUnlockedBalls, matchOver } from './ghost.js';
@@ -80,6 +81,7 @@ let ghostPreset = { balls: 3, race: 5, mode: 'rotation', level: 'beginner', grou
 function loadGhostPreset() { try { ghostPreset = { ...ghostPreset, ...JSON.parse(localStorage.getItem(GHOST_PRESET_KEY) || '{}') }; } catch { /* ignore */ } }
 function saveGhostPreset() { lsSet(GHOST_PRESET_KEY, JSON.stringify(ghostPreset)); }
 let drillFilter = 'All';
+let bpViewLevel = null;
 const view = () => document.getElementById('view');
 
 function commit(next, { silent = false } = {}) {
@@ -128,10 +130,12 @@ function renderRoute() {
   let playing = false;
   if (name === 'play' && args[0]) {
     const [gameId, stageId] = args;
-    const ok = gameId === 'drills' ? !!getDrillById(stageId) : stageId === 'endless' ? isEndlessUnlocked(state, gameId) : !!getStage(gameId, stageId) && isStageUnlocked(state, gameId, stageId);
+    const drill = gameId === 'drills' ? getDrillById(stageId) : null;
+    const pocketLocked = !!(drill && drill.category === 'Ball Pocketing' && drill.level > ballPocketStatus(state).current);
+    const ok = gameId === 'drills' ? !!drill && !pocketLocked : stageId === 'endless' ? isEndlessUnlocked(state, gameId) : !!getStage(gameId, stageId) && isStageUnlocked(state, gameId, stageId);
     if (!ok) {
       toast(gameId !== 'drills' && getGame(gameId) && !isGameUnlocked(state, gameId) ? 'That game is still locked' : 'That stage is locked — pass the previous stage first');
-      v.innerHTML = gameId === 'drills' ? renderDrillsPage(state, drillFilter) : renderGameLobby(state, gameId);
+      v.innerHTML = gameId === 'drills' ? renderDrillsPage(state, drillFilter, bpViewLevel) : renderGameLobby(state, gameId);
     } else {
       screen = createPlayScreen(ctx, { gameId, stageId });
       screen.render();
@@ -153,7 +157,7 @@ function renderRoute() {
     const fixDrill = fixId ? getDrillById(fixId) : null;
     if (!drillEditorAllowed() || !fixDrill || fixDrill.custom || fixDrill.contentUid) {
       if (drillEditorAllowed() && fixId) toast('That drill cannot be edited here');
-      v.innerHTML = renderDrillsPage(state, drillFilter);
+      v.innerHTML = renderDrillsPage(state, drillFilter, bpViewLevel);
     } else {
       screen = createDrillFix(ctx, fixId);
       screen.render();
@@ -163,7 +167,7 @@ function renderRoute() {
     const existing = name === 'drilledit' ? customDrills().find((d) => d.id === args[0]) : null;
     if (name === 'drilledit' && !existing) {
       toast('That custom drill no longer exists');
-      v.innerHTML = renderDrillsPage(state, drillFilter);
+      v.innerHTML = renderDrillsPage(state, drillFilter, bpViewLevel);
     } else {
       const raw = existing ? CD.loadCustomDrills().find((d) => d.id === existing.id) || existing : null;
       screen = createDrillBuilder(ctx, { editId: existing ? existing.id : null, fromSim: args[0] === 'fromsim', existing: raw });
@@ -245,7 +249,14 @@ function renderRoute() {
   else if (name === 'boss') v.innerHTML = renderBossPage(state, args[0]);
   else if (name === 'game') v.innerHTML = args[0] === 'ghost' ? renderGhostLobby(state, ghostPreset) : renderGameLobby(state, args[0]);
   else if (name === 'career') v.innerHTML = renderCareerPage(state);
-  else if (name === 'drills') v.innerHTML = renderDrillsPage(state, drillFilter);
+  else if (name === 'drills') {
+    if (args[0] === 'pocket') {
+      drillFilter = 'Ball Pocketing';
+      const lv = Number(args[1]);
+      if (lv) bpViewLevel = lv;
+    }
+    v.innerHTML = renderDrillsPage(state, drillFilter, bpViewLevel);
+  }
   else if (name === 'learn') v.innerHTML = renderLearn();
   else if (name === 'analyze') {
     v.innerHTML = renderAnalyzePage();
@@ -396,6 +407,11 @@ function handleAction(action, el, e) {
       break;
     case 'drill-filter':
       drillFilter = el.dataset.v;
+      renderRoute();
+      break;
+    case 'bp-level':
+      bpViewLevel = Number(el.dataset.v);
+      drillFilter = 'Ball Pocketing';
       renderRoute();
       break;
     case 'ghost-balls':

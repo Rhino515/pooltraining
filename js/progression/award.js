@@ -154,7 +154,9 @@ export function applyAward(state, act, opts = {}) {
   if (champion) flags.push('MAX RANK');
   // Drill XP (separate Drill Rank)
   let drill = 0;
-  if (item.drillRank && DRILL_RANK.sources.includes(item.source) && raw > 0) {
+  // Ball Pocketing pays Drill XP only at bronze or better. Below bronze pays none.
+  const ballPocketXp = item.category !== 'Ball Pocketing' || ['Bronze', 'Silver', 'Gold'].includes(act.medal);
+  if (item.drillRank && DRILL_RANK.sources.includes(item.source) && raw > 0 && ballPocketXp) {
     drill = Math.round(raw * rankF * DRILL_RANK.xpScale);
     prog.drillXp += drill;
   }

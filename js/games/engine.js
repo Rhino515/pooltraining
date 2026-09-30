@@ -129,7 +129,10 @@ export function recordAttempt(session, outcome, extra = {}) {
 }
 
 export function undoAttempt(session) {
-  return { ...session, attempts: session.attempts.slice(0, -1) };
+  const attempts = session.attempts.slice(0, -1);
+  const next = { ...session, attempts };
+  if (session.bpSettled && !session.bpMedal && session.bpWindow && attempts.length < session.bpWindow) next.bpSettled = false;
+  return next;
 }
 
 export function stageFor(session) {
@@ -651,6 +654,46 @@ export function medalName(makes, attempts) {
   if (m >= t.silver) return 'Silver';
   if (m >= t.bronze) return 'Bronze';
   return '';
+}
+
+/**
+ * Ball Pocketing: when the ranked window (the drill's attempt count) is full,
+ * bronze or better pays Drill XP and marks the drill passed. Below bronze pays none.
+ * The session stays open so the tally window is unchanged.
+ */
+export function awardBallPocketWindow(state, session) {
+  const stage = stageFor(session);
+  if (!stage || stage.category !== 'Ball Pocketing' || session.bpSettled) return { state, session };
+  const n = Number(stage.attemptCount || stage.scoringRules?.attempts);
+  if (!(n > 0) || (session.attempts || []).length < n) return { state, session };
+  const windowed = session.attempts.slice(0, n);
+  const makes = windowed.filter(attemptIsMake).length;
+  const medal = medalName(makes, n);
+  const passed = medal === 'Bronze' || medal === 'Silver' || medal === 'Gold';
+  const gid = session.gameId;
+  const gs = gameState(state, gid);
+  const now = new Date().toISOString();
+  const games = { ...(state.games || {}) };
+  const g = { stages: { ...(gs.stages || {}) }, pb: { ...(gs.pb || {}) }, sessions: [...(gs.sessions || [])] };
+  const old = g.stages[session.stageId] || { tries: 0, passed: false, bestScore: 0, bestStars: 0, history: [] };
+  const ev = evaluateSession({ ...session, attempts: windowed }, stage);
+  g.stages[session.stageId] = {
+    ...old,
+    tries: (old.tries || 0) + 1,
+    passed: old.passed || passed,
+    bestScore: Math.max(old.bestScore || 0, ev.score || 0),
+    lastScore: ev.score || 0,
+    lastPassed: passed,
+    lastDate: now,
+    history: [...(old.history || []), { date: now, score: ev.score || 0, passed, stars: 0, medal, attempts: windowed.map((a) => ({ ...a })) }].slice(-20)
+  };
+  g.sessions = [...g.sessions, { stageId: session.stageId, date: now, score: ev.score || 0, passed, stars: 0, attempts: n }].slice(-100);
+  games[gid] = g;
+  const sess = { ...session, bpSettled: true, bpMedal: medal, bpWindow: n };
+  if (!passed) return { state: { ...state, games }, session: sess };
+  const ev2 = { ...ev, over: true, passed: true, made: makes, attemptsTotal: n, ballPocketMedal: medal };
+  const aw = awardSession({ ...state, games }, { ...sess, attempts: windowed }, stage, ev2);
+  return { state: aw.state, session: sess };
 }
 /** A recorded attempt is a make or a miss. Stars stay on the attempt; they are not a third tally. */
 export function attemptIsMake(a) {

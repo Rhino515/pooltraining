@@ -1,6 +1,6 @@
 /**
  * Career ranks — concrete achievements read from saved results only.
- * Requirement types: gameLevel {game, level}, ghost {balls, race}, stars {total}, pb {game, key, value}, boss {rank}.
+ * Requirement types: gameLevel {game, level}, ghost {balls, race}, stars {total}, pb {game, key, value}, boss {rank}, ballPocket {level}.
  * When every non-boss requirement for the next rank is met, that rank's Boss Battle unlocks.
  * Beating the boss promotes. XP never promotes. rankFloor preserves ranks earned before V4.
  */
@@ -8,22 +8,24 @@ import { RANK_NAMES } from './storage.js';
 import { gameLevel, ghostBeaten, totalStars, gameState, nextOpenStage, isGameUnlocked, unlockLabel } from './games/engine.js';
 import { getGame, bossForRank, stageSpecs } from './games/registry.js';
 import { promotionReady, promotionStatus } from './progression/rank.js';
+import { ballPocketDrills } from './content/ballPocket.js';
 
 export { RANK_NAMES };
 
 const L = (game, level) => ({ type: 'gameLevel', game, level });
 const GH = (balls, race) => ({ type: 'ghost', balls, race });
 const BOSS = (rank) => ({ type: 'boss', rank });
+const BP = (level) => ({ type: 'ballPocket', level });
 
 export const RANK_REQUIREMENTS = [
   { rank: 0, name: 'Rookie', requirements: [] },
   { rank: 1, name: 'Club Player', requirements: [L('landing', 2), L('sniper', 2), L('speed', 2), GH(3, 3), BOSS(1)] },
   { rank: 2, name: 'Shooter', requirements: [L('landing', 3), L('stun', 2), L('draw', 2), L('follow', 2), L('sniper', 3), L('bank', 1), GH(3, 5), BOSS(2)] },
-  { rank: 3, name: 'Competitor', requirements: [L('landing', 4), L('draw', 3), L('follow', 3), L('stun', 3), L('speed', 4), L('bank', 3), L('kick', 2), GH(4, 3), BOSS(3)] },
-  { rank: 4, name: 'Advanced', requirements: [L('landing', 5), L('draw', 4), L('follow', 4), L('stun', 4), L('bank', 4), L('kick', 3), L('train', 3), L('safety', 2), L('sniper', 5), GH(4, 5), BOSS(4)] },
-  { rank: 5, name: 'Expert', requirements: [GH(5, 5), L('bank', 6), L('kick', 5), L('landing', 7), L('draw', 6), L('follow', 6), L('stun', 6), L('train', 7), L('safety', 5), BOSS(5)] },
-  { rank: 6, name: 'Master', requirements: [GH(6, 5), L('landing', 8), L('draw', 7), L('follow', 7), L('stun', 7), L('speed', 7), L('bank', 7), L('kick', 6), L('train', 7), L('carom', 4), L('pattern', 3), L('rail', 3), BOSS(6)] },
-  { rank: 7, name: 'Elite', requirements: [GH(7, 7), L('landing', 9), L('draw', 8), L('follow', 8), L('stun', 8), L('speed', 8), L('bank', 8), L('kick', 7), L('train', 8), L('safety', 6), L('carom', 5), L('pattern', 4), L('rail', 4), L('sniper', 7), BOSS(7)] },
+  { rank: 3, name: 'Competitor', requirements: [L('landing', 4), L('draw', 3), L('follow', 3), L('stun', 3), L('speed', 4), L('bank', 3), L('kick', 2), GH(4, 3), BP(1), BOSS(3)] },
+  { rank: 4, name: 'Advanced', requirements: [L('landing', 5), L('draw', 4), L('follow', 4), L('stun', 4), L('bank', 4), L('kick', 3), L('train', 3), L('safety', 2), L('sniper', 5), GH(4, 5), BP(2), BOSS(4)] },
+  { rank: 5, name: 'Expert', requirements: [GH(5, 5), L('bank', 6), L('kick', 5), L('landing', 7), L('draw', 6), L('follow', 6), L('stun', 6), L('train', 7), L('safety', 5), BP(3), BOSS(5)] },
+  { rank: 6, name: 'Master', requirements: [GH(6, 5), L('landing', 8), L('draw', 7), L('follow', 7), L('stun', 7), L('speed', 7), L('bank', 7), L('kick', 6), L('train', 7), L('carom', 4), L('pattern', 3), L('rail', 3), BP(4), BOSS(6)] },
+  { rank: 7, name: 'Elite', requirements: [GH(7, 7), L('landing', 9), L('draw', 8), L('follow', 8), L('stun', 8), L('speed', 8), L('bank', 8), L('kick', 7), L('train', 8), L('safety', 6), L('carom', 5), L('pattern', 4), L('rail', 4), L('sniper', 7), BP(5), BOSS(7)] },
   { rank: 8, name: 'Pro', requirements: [GH(8, 7), L('landing', 10), L('draw', 9), L('stun', 9), L('speed', 9), L('kick', 8), L('carom', 6), L('pattern', 5), L('rail', 5), L('sniper', 8), { type: 'pb', game: 'bank', key: 'endlessBest', value: 1000, label: 'Bank Vault Endless: 1,000 points' }, BOSS(8)] },
   { rank: 9, name: 'Champion', requirements: [GH(9, 9), L('kick', 9), L('carom', 7), L('rail', 6), { type: 'pb', game: 'train', key: 'perfectRuns', value: 3, label: 'Position Train: 3 perfect runs' }, { type: 'stars', total: 240, label: 'Earn 240 Table Games stars' }, BOSS(9)] }
 ];
@@ -38,6 +40,7 @@ export function requirementLabel(req) {
   if (req.type === 'ghost') return `Defeat the ${req.balls}-Ball Ghost (race to ${req.race})`;
   if (req.type === 'boss') return `Boss Battle: beat ${bossForRank(req.rank)?.name || 'the boss'}`;
   if (req.type === 'stars') return `Earn ${req.total} Table Games stars`;
+  if (req.type === 'ballPocket') return `Ball Pocketing Level ${req.level}: bronze or better on every one`;
   return 'Requirement';
 }
 
@@ -47,6 +50,11 @@ export function requirementProgress(req, state) {
   if (req.type === 'boss') return { have: state.bosses?.[bossForRank(req.rank)?.id]?.passed ? 1 : 0, need: 1 };
   if (req.type === 'stars') return { have: totalStars(state), need: req.total };
   if (req.type === 'pb') return { have: gameState(state, req.game).pb?.[req.key] || 0, need: req.value };
+  if (req.type === 'ballPocket') {
+    const rows = ballPocketDrills().filter((d) => d.level === req.level);
+    const have = rows.filter((d) => state.games?.drills?.stages?.[d.id]?.passed).length;
+    return { have, need: rows.length || 1 };
+  }
   return { have: 0, need: 1 };
 }
 
@@ -75,6 +83,7 @@ export function requirementLink(req, state) {
     return { href: `#boss/${b.id}`, text: b.name };
   }
   if (req.type === 'pb') return { href: req.game === 'bank' ? '#play/bank/endless' : `#game/${req.game}`, text: getGame(req.game)?.name };
+  if (req.type === 'ballPocket') return { href: `#drills/pocket/${req.level}`, text: `Ball Pocketing Level ${req.level}` };
   return { href: '#arcade', text: 'Table Games' };
 }
 
@@ -149,6 +158,6 @@ export function nextUp(state) {
     detail = st ? `Next stage: ${st.name} (level ${p.have + 1} of ${stageSpecs(item.game).length}).` : '';
     if (!isGameUnlocked(state, item.game)) detail = `${getGame(item.game).name} is locked — ${unlockLabel(item.game)} opens it.`;
   } else if (item.type === 'ghost') detail = 'Start the match from the Ghost screen; the race length must be at least this long.';
-  else if (item.type === 'stars' || item.type === 'pb') detail = `${p.have} / ${p.need}`;
+  else if (item.type === 'stars' || item.type === 'pb' || item.type === 'ballPocket') detail = `${p.have} / ${p.need}`;
   return { title: item.label, text: detail, href: item.link.href, linkText: item.link.text, req: item, rank: info.next, remaining: open.length };
 }

@@ -4,7 +4,7 @@
 import { nextRankInfo, RANK_NAMES, RANK_REQUIREMENTS, requirementChecklist, nextUp, isBossUnlocked } from './career.js';
 import { skillBarsHTML, weakestSkills, recommendations } from './skills.js';
 import { allDrills, drillsByCategory, isDrillUnlocked, CATEGORIES, getDrillById } from './drills.js';
-import { ballPocketDrills } from './content/ballPocket.js';
+import { ballPocketDrills, ballPocketStatus, BALL_POCKET_TEXT, BALL_POCKET_LEVELS } from './content/ballPocket.js';
 import { maxUnlockedBalls, ghostStats } from './ghost.js';
 import { GAMES, getGame, stageSpecs, getStages, getBosses, getBoss } from './games/registry.js';
 import * as E from './games/engine.js';
@@ -90,14 +90,14 @@ export function renderCareerPage(state) {
     return `<div class="rank card ${status === 'locked' ? 'locked' : ''} ${status === 'current' ? 'current' : ''}" data-rank="${i}">
       <div class="num">${i + 1}</div>
       <div><h3>${esc(def.name)} <small class="muted rkBalls">${RANK_BALLS_TEXT(i)}</small></h3><p>${status === 'earned' ? 'Earned ✓' : `${met}/${list.length} requirements`}</p>
-      ${status === 'current' ? `<ul class="reqList">${list.map((c) => `<li class="${c.met ? 'met' : 'open'}" data-req="${esc(c.type)}:${esc(c.game || c.balls || c.rank || '')}" data-met="${c.met ? 1 : 0}">${c.met ? '✓' : '○'} ${esc(c.label)}${c.type === 'gameLevel' || c.type === 'stars' || c.type === 'pb' ? ` <small>(${c.progress.have}/${c.progress.need})</small>` : ''}${!c.met && c.type !== 'boss' ? ` <button type="button" class="miniBtn" data-action="go" data-href="${esc(c.link.href)}">Go</button>` : ''}${c.type === 'boss' && !c.met ? (bossUnlocked ? ` <button type="button" class="miniBtn" data-action="go" data-href="#boss/${boss.id}">Fight</button>` : ' <small>(unlocks when the rest are met)</small>') : ''}</li>`).join('')}</ul>` : ''}
+      ${(() => { const bp = list.find((c) => c.type === 'ballPocket'); return bp && status !== 'current' ? `<p class="bpReq ${bp.met ? 'met' : 'open'}" data-req="ballPocket:${bp.level}" data-met="${bp.met ? 1 : 0}">${bp.met ? '✓' : '○'} ${esc(bp.label)} <small>(${bp.progress.have}/${bp.progress.need})</small></p>` : ''; })()}
+      ${status === 'current' ? `<ul class="reqList">${list.map((c) => `<li class="${c.met ? 'met' : 'open'}" data-req="${esc(c.type)}:${esc(c.game || c.balls || c.rank || c.level || '')}" data-met="${c.met ? 1 : 0}">${c.met ? '✓' : '○'} ${esc(c.label)}${c.type === 'gameLevel' || c.type === 'stars' || c.type === 'pb' || c.type === 'ballPocket' ? ` <small>(${c.progress.have}/${c.progress.need})</small>` : ''}${!c.met && c.type !== 'boss' ? ` <button type="button" class="miniBtn" data-action="go" data-href="${esc(c.link.href)}">Go</button>` : ''}${c.type === 'boss' && !c.met ? (bossUnlocked ? ` <button type="button" class="miniBtn" data-action="go" data-href="#boss/${boss.id}">Fight</button>` : ' <small>(unlocks when the rest are met)</small>') : ''}</li>`).join('')}</ul>` : ''}
       </div>
       <div class="status">${status === 'earned' ? 'EARNED' : status === 'current' ? 'IN PROGRESS' : 'LOCKED'}</div>
     </div>`;
   });
   const cs = careerStatus(state);
   return `${devSeedBannerHTML(state)}<div class="title"><span class="eyebrow">CAREER MODE</span><h1>${esc(RANK_NAMES[cur])}</h1><p>Rank XP fills the ball levels inside each rank (the ball is your level). Skill Gates hold the ball until foundations are passed. Beat the rank's Promotion Test (Boss Battle) to promote — XP never promotes by itself.</p></div>
-    ${ballPocketSection(state)}
     ${careerHeaderHTML(state, { link: false })}
     ${gateCardHTML(state)}
     ${promotionCardHTML(state)}
@@ -107,16 +107,6 @@ export function renderCareerPage(state) {
     <h2>Ranks</h2><div class="ranklist">${rows.join('')}</div>`;
 }
 
-function ballPocketSection(state) {
-  const list = ballPocketDrills();
-  const blocks = [1, 2, 3, 4, 5].map((lv) => {
-    const rows = list.filter((d) => d.level === lv);
-    if (!rows.length) return '';
-    const label = rows[0].levelLabel || `LEVEL ${lv}`;
-    return `<h3 class="bpLevel">${esc(label)}</h3><div class="grid">${rows.map((d) => drillCard(state, d)).join('')}</div>`;
-  }).join('');
-  return `<section class="ballPocket" id="ball-pocketing" data-section="Ball Pocketing"><h2>Ball Pocketing</h2>${blocks}</section>`;
-}
 
 const RANK_BALLS_TEXT = (i) => { const b = RANK_LADDER.balls[i]; return b ? `· ${b} balls` : '· MAX RANK'; };
 
@@ -250,7 +240,7 @@ export function renderProfile(state) {
 }
 
 // ------------------------------------------------------------------------------ drills
-export function renderDrillsPage(state, filter = 'All') {
+export function renderDrillsPage(state, filter = 'All', bpViewLevel = null) {
   const list0 = allDrills();
   const head = `<div class="title drillsTitle"><span class="eyebrow">DRILL LIBRARY</span><h1>Drills</h1></div>
     ${drillRankCardHTML(state)}
@@ -263,14 +253,71 @@ export function renderDrillsPage(state, filter = 'All') {
   const by = drillsByCategory();
   const extraCats = Object.keys(by).filter((c) => c && !CATEGORIES.includes(c)).sort();
   const cats = ['All', ...CATEGORIES.filter((c) => by[c]), ...extraCats];
-  const list = filter === 'All' ? list0 : by[filter] || [];
+  const pocket = filter === 'Ball Pocketing';
+  const list = pocket ? [] : (filter === 'All' ? list0.filter((d) => d.category !== 'Ball Pocketing') : by[filter] || []);
   return `${head}
     <div class="catFilter">${cats.map((c) => `<button type="button" class="chip${c === filter ? ' active' : ''}" data-action="drill-filter" data-v="${esc(c)}">${esc(c)}</button>`).join('')}</div>
-    <div class="grid">${list.map((d) => drillCard(state, d)).join('')}</div>`;
+    ${pocket ? ballPocketCategory(state, bpViewLevel) : ''}
+    ${list.length ? `<div class="grid">${list.map((d) => drillCard(state, d)).join('')}</div>` : ''}
+    `;
 }
-function drillCard(state, d) {
+
+/** Straight-shooting cue badges, worst to best. Drawn marks only. */
+function ballPocketBadgeSVG(level) {
+  const cues = {
+    1: { shaft: '#8d5a32', butt: '#5c3a22', wrap: '#3a2718', ferrule: '#cbb892', tip: '#9a8b72', joint: '#6a4a30', wear: true },
+    2: { shaft: '#c4844a', butt: '#8a4e28', wrap: '#e6d2a8', ferrule: '#f4f1ea', tip: '#2f6fbe', joint: '#a56b3c', wear: false },
+    3: { shaft: '#3a4048', butt: '#1c2128', wrap: '#111418', ferrule: '#f7f7f5', tip: '#3d7fd4', joint: '#8b939c', carbon: true },
+    4: { shaft: '#2a3038', butt: '#12161c', wrap: '#0c0e12', ferrule: '#ffffff', tip: '#4aa3ff', joint: '#d5dbe3', carbon: true, clean: true },
+    5: { shaft: '#f0c84a', butt: '#b8860b', wrap: '#8a6a12', ferrule: '#fff8e8', tip: '#f2e2a0', joint: '#ffe9a0', gold: true }
+  };
+  const c = cues[level] || cues[1];
+  const weave = c.carbon ? `<path d="M30 28 l6 8 M36 28 l6 8 M42 28 l6 8 M30 40 l6 8 M36 40 l6 8 M42 40 l6 8" stroke="${c.clean ? '#5c6770' : '#6a737c'}" stroke-width="0.7" fill="none" opacity="0.55"/>` : '';
+  const wear = c.wear ? `<path d="M33 46 l8 3 M32 70 l10 -2 M34 96 l7 2" stroke="#3a2414" stroke-width="0.6" fill="none" opacity="0.7"/>` : '';
+  const shine = c.gold ? `<path d="M34 24 v88" stroke="#fff4c4" stroke-width="1.2" opacity="0.55"/>` : (c.clean ? `<path d="M34 22 v90" stroke="#ffffff" stroke-width="0.8" opacity="0.35"/>` : '');
+  return `<svg class="bpCue" viewBox="0 0 72 132" role="img">
+    <rect x="30" y="18" width="12" height="96" rx="2" fill="${c.shaft}"/>
+    ${weave}${wear}${shine}
+    <rect x="26" y="78" width="20" height="22" rx="2" fill="${c.butt}"/>
+    <rect x="27" y="82" width="18" height="3" fill="${c.wrap}"/><rect x="27" y="88" width="18" height="3" fill="${c.wrap}"/><rect x="27" y="94" width="18" height="3" fill="${c.wrap}"/>
+    <rect x="29" y="70" width="14" height="8" fill="${c.joint}"/>
+    <rect x="31" y="10" width="10" height="8" fill="${c.ferrule}"/>
+    <rect x="32" y="6" width="8" height="5" rx="1" fill="${c.tip}"/>
+  </svg>`;
+}
+
+function ballPocketCategory(state, bpViewLevel) {
+  const status = ballPocketStatus(state);
+  const viewing = BALL_POCKET_LEVELS.includes(Number(bpViewLevel)) ? Number(bpViewLevel) : status.current;
+  const list = ballPocketDrills().filter((d) => d.level === viewing);
+  const done = list.filter((d) => state.games?.drills?.stages?.[d.id]?.passed).length;
+  const locked = viewing > status.current;
+  const text = BALL_POCKET_TEXT[viewing] || '';
+  const next = status.complete ? 'Every level is at bronze or better.' : (status.done >= status.total ? '' : `Bronze or better on every Level ${status.current} drill opens Level ${Math.min(5, status.current + 1)}.`);
+  const chips = BALL_POCKET_LEVELS.map((lv) => `<button type="button" class="chip${lv === viewing ? ' active' : ''}" data-action="bp-level" data-v="${lv}">${lv === status.current ? 'Level ' : ''}${lv}${lv === status.current ? ' · now' : ''}</button>`).join('');
+  return `<section class="ballPocket" id="ball-pocketing" data-section="Ball Pocketing" data-bp-level="${status.current}" data-bp-view="${viewing}">
+    <div class="bpRank card">
+      <div class="bpRankHead">
+        <div class="bpBadge" data-bp-badge="${status.current}" aria-hidden="true">${ballPocketBadgeSVG(status.current)}</div>
+        <div>
+          <div class="eyebrow">BALL POCKETING · CURRENT LEVEL</div>
+          <div class="bpRankNum">LEVEL ${status.current}</div>
+          <p>${status.complete ? 'All five levels are finished.' : `${status.done} of ${status.total} drills at bronze or better.`}</p>
+          <p class="muted small">${esc(next)}</p>
+        </div>
+      </div>
+      <div class="bpBadgeRow">${BALL_POCKET_LEVELS.map((lv) => `<span class="bpMini${lv === status.current ? ' on' : ''}${lv < status.current || status.complete ? ' earned' : ''}" data-bp-badge="${lv}">${ballPocketBadgeSVG(lv)}</span>`).join('')}</div>
+      <div class="bpLevels">${chips}</div>
+    </div>
+    <h3 class="bpLevel">${esc(list[0]?.levelLabel || `LEVEL ${viewing}`)}${locked ? ' · locked' : ''}</h3>
+    <p class="bpCopy">${esc(text)}</p>
+    <p class="muted small">${done} of ${list.length} on this level at bronze or better.${locked ? ' Finish the current level to train these.' : ''}</p>
+    <div class="grid">${list.map((d) => drillCard(state, d, { locked })).join('')}</div>
+  </section>`;
+}
+function drillCard(state, d, opts = {}) {
   const rec = state.games?.drills?.stages?.[d.id];
-  const open = isDrillUnlocked(d, state);
+  const open = isDrillUnlocked(d, state) && !opts.locked;
   const meta = `${d.custom ? '<span class="tag mine">MY DRILL</span> ' : ''}${d.contentUid ? `<span class="tag imp" data-badge="${d.imported ? 'imported' : 'custom'}">${d.imported ? 'IMPORTED' : 'MY CONTENT'}</span> ` : ''}<span class="tag">${esc(d.category)}</span>${d.difficulty ? ` <span class="tag">Level ${d.difficulty}</span>` : ''}`;
   const ms = rec ? masteryOf(state, drillItem(d).key) : 0;
   const pb = rec ? `<small class="pbLine">${starsHTML(ms)} Best ${rec.bestScore || 0} pts${rec.bestStars ? ` · ${'★'.repeat(rec.bestStars)}` : ''} · ${rec.tries || 0} session${rec.tries === 1 ? '' : 's'}${rec.passed ? ' · passed ✓' : ''}</small>` : '';
