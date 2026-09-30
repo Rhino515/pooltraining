@@ -14,7 +14,8 @@ import { tipLabel, tipClockLabel, esc } from '../games/recipe.js';
 
 export const MISCUE_LIMIT_TIPS = 1.5;
 const C = 50; // svg centre
-const BALL_R = 44;
+const BALL_R = 44; // cue-ball radius in this popup. The ghost uses this exact value.
+const BALL_STROKE = 1.2; // same stroke on the cue ball and the ghost, so the outer edges match
 let current = null;
 
 const fmt = (v) => String(Number(Math.abs(v).toFixed(2)));
@@ -56,28 +57,29 @@ function cutLine(cut) {
   return CUT_AMOUNT[cut.frac] || String(cut.frac);
 }
 /**
- * Faded shadow of the object ball, same height and bottom as the cue ball.
- * A cut to the right sits on the right, a cut to the left on the left.
- * How far it sticks out left or right is the cut. It does not shift up or down,
- * and it has no ball number. Tip does not move it.
+ * Faded shadow of the object ball. Same centre line, same radius and same
+ * top and bottom as the cue ball in this popup. A cut only slides it left or right
+ * (right cut to the right, left cut to the left). No ball number. Tip does not move it.
  */
 function ghostBehind(opt) {
   const cut = opt.cut;
   if (!cut || !Number.isFinite(cut.lateral)) return '';
-  const scale = BALL_R / (Number(cut.ballR) > 0 ? Number(cut.ballR) : 1.125);
-  const peek = Math.abs(cut.lateral) * scale;
-  // lateral < 0 is a cut to his right (screen right). Do not flip.
+  // Table units → this popup's user units, for the sideways shift only.
+  // A bigger cut moves the ghost further left or right. It never changes the radius.
+  const tableR = Number(cut.ballR) > 0 ? Number(cut.ballR) : 1.125;
+  const units = BALL_R / tableR;
   const sign = cut.lateral < -1e-6 ? 1 : cut.lateral > 1e-6 ? -1 : 0;
-  const dx = sign * peek;
+  const dx = sign * Math.abs(cut.lateral) * units;
   const col = /^#[0-9a-fA-F]{6}$/.test(cut.color || '') ? cut.color : '#f5d76e';
-  return `<g class="tp-ghost" data-cut-ghost pointer-events="none" transform="translate(${dx.toFixed(2)} 0)"><circle cx="${C}" cy="${C}" r="${BALL_R}" fill="${col}" fill-opacity="0.5" stroke="${col}" stroke-opacity="0.85" stroke-width="1.2"/></g>`;
+  // Same centre and the same radius as the cue ball, in this same viewBox. No scale().
+  return `<g class="tp-ghost" data-cut-ghost pointer-events="none" transform="translate(${dx.toFixed(2)} 0)"><circle class="tp-ghostBall" data-r="${BALL_R}" cx="${C}" cy="${C}" r="${BALL_R}" fill="${col}" fill-opacity="0.5" stroke="${col}" stroke-opacity="0.5" stroke-width="${BALL_STROKE}"/></g>`;
 }
 function ballSVG(opt) {
   const lim = (opt.limit ?? MISCUE_LIMIT_TIPS) * TIP_UNIT;
   let s = `<svg class="tipPopBall" viewBox="-6 -6 112 112" role="slider" tabindex="0" aria-label="Drag the contact point on the cue ball" data-tip-pad>`;
   s += ghostBehind(opt);
   s += `<defs><radialGradient id="tpShade" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#ffffff"/><stop offset=".7" stop-color="#e9f1f5"/><stop offset="1" stop-color="#b9c8d1"/></radialGradient></defs>`;
-  s += `<circle cx="${C}" cy="${C}" r="${BALL_R}" fill="url(#tpShade)" stroke="#9fb4c1" stroke-width="1.2"/>`;
+  s += `<circle class="tp-cueBall" data-r="${BALL_R}" cx="${C}" cy="${C}" r="${BALL_R}" fill="url(#tpShade)" stroke="#9fb4c1" stroke-width="${BALL_STROKE}"/>`;
   for (const t of [0.5, 1]) s += `<circle cx="${C}" cy="${C}" r="${t * TIP_UNIT}" fill="none" stroke="#7d93a3" stroke-width="${t === 1 ? 0.9 : 0.6}" stroke-dasharray="${t === 1 ? '0' : '2 2'}"/>`;
   s += `<circle class="tp-limit" cx="${C}" cy="${C}" r="${lim}" fill="none" stroke="#ff5f7e" stroke-width="1" stroke-dasharray="3 2.2" opacity="0.85"/>`;
   if (opt.maxH < (opt.limit ?? MISCUE_LIMIT_TIPS)) {
