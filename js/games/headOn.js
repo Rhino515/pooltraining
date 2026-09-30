@@ -1,14 +1,15 @@
 /**
  * Impossible head-on lines: the cue path is drawn through the object-ball center,
  * but the object ball is drawn leaving at an angle. A center-ball hit cannot do that.
- * The ghost ball sits on the line from the pocket (or the drawn target) through the
- * object-ball center, one ball diameter back, and the cue path ends on that ghost.
+ * The ghost center sits on the line from the pocket (or target) through the object-ball
+ * center, one ball radius back, on the side the cue ball must hit. The cue path ends
+ * on that ghost. It is not drawn on through the object-ball center.
  */
 import { BALL_RADIUS } from '../tableDiagram.js';
 
 const DEAD = 0.55;
 const MIN_ANGLE = 12;
-const r2 = (v) => Math.round(v * 100) / 100;
+const r2 = (v) => Math.round(v * 1000) / 1000;
 
 function ang(ax, ay, bx, by) {
   const d = Math.hypot(ax, ay) * Math.hypot(bx, by) || 1;
@@ -63,14 +64,15 @@ export function correctHeadOn(ch) {
     const iy = cp[vi].y - prev.y;
     if (ang(ix, iy, lx, ly) < MIN_ANGLE) continue;
     const llen = Math.hypot(lx, ly) || 1;
-    const gx = r2(ob.x - (lx / llen) * 2 * BALL_RADIUS);
-    const gy = r2(ob.y - (ly / llen) * 2 * BALL_RADIUS);
+    const gx = r2(ob.x - (lx / llen) * BALL_RADIUS);
+    const gy = r2(ob.y - (ly / llen) * BALL_RADIUS);
     const blocked = balls.some((b) => b !== ob && Math.hypot(b.x - gx, b.y - gy) < 2 * BALL_RADIUS - 0.05);
     if (blocked) continue;
-    cp[vi] = { x: gx, y: gy };
-    ch.cueBallPath = cp;
+    const next = cp.slice(0, vi);
+    next.push({ x: gx, y: gy });
+    ch.cueBallPath = next;
     ch.ghost = { x: gx, y: gy };
-    ch.contactIndex = vi;
+    ch.contactIndex = next.length - 1;
     ch.headOnFixed = true;
     return true;
   }

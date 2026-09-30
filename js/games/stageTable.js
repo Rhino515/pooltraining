@@ -138,8 +138,13 @@ export function renderStageTable(ch, opt = {}) {
     }
   }
   const ghostPt = src.ghost || ch.ghost;
-  if ((o.showAim || src.headOnFixed || ch.headOnFixed) && ghostPt && ch.kind !== 'lag') {
-    under += `<circle class="ghost-spot" cx="${f(ghostPt.x)}" cy="${f(ghostPt.y)}" r="${BR}" fill="#ffffff1c" stroke="#cff9ff" stroke-width="0.2" stroke-dasharray="0.45 0.3"/>`;
+  const headOn = !!(src.headOnFixed || ch.headOnFixed);
+  if ((o.showAim || headOn) && ghostPt && ch.kind !== 'lag') {
+    const ghostSVG = headOn
+      ? `<circle class="ghost-spot" cx="${f(ghostPt.x)}" cy="${f(ghostPt.y)}" r="${BR}" fill="none" stroke="#f2fdff" stroke-width="0.28"/>`
+      : `<circle class="ghost-spot" cx="${f(ghostPt.x)}" cy="${f(ghostPt.y)}" r="${BR}" fill="#ffffff1c" stroke="#cff9ff" stroke-width="0.2" stroke-dasharray="0.45 0.3"/>`;
+    if (headOn) over += ghostSVG;
+    else under += ghostSVG;
   }
   for (const ln of ch.guideLines || []) {
     if (!ln.points || ln.points.length < 2) continue;
