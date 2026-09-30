@@ -11,7 +11,7 @@ import * as V from './vault.js';
 import { initInstall, installMode, promptInstall, installSheetHTML, isIOS, isAndroid } from './install.js';
 import { syncRank } from './career.js';
 import { withSkills } from './skills.js';
-import { drills, getDrillById, allDrills } from './drills.js';
+import { drills, getDrillById, allDrills, knownDrillIds } from './drills.js';
 import { ballPocketStatus } from './content/ballPocket.js';
 import { renderHome, renderCareerPage, renderDrillsPage, renderArcade, renderGameLobby, renderBossPage, renderProfile, renderSettings, renderLearn } from './dashboard.js';
 import { renderAnalyzePage, bindAnalyzeHandlers } from './analyze.js';
@@ -22,7 +22,7 @@ import { createDrillBuilder } from './ui/drillBuilder.js';
 import { createDrillFix } from './ui/drillFix.js';
 import { drillEditorAllowed } from './drills/ownerEdits.js';
 import { loadPublishedDrills, publishedSignature } from './drills/published.js';
-import { loadHiddenDrills, hiddenSignature } from './drills/hidden.js';
+import { loadHiddenDrills, hiddenSignature, isDrillHidden } from './drills/hidden.js';
 import { createTableMatch } from './ui/tableMatch.js';
 import { timerAction, mountTimers } from './ui/shotTimer.js';
 import { ownerAccountSignedIn } from './dev/dev.js';
@@ -139,7 +139,8 @@ function renderRoute() {
     const pocketLocked = !!(drill && drill.category === 'Ball Pocketing' && drill.level > ballPocketStatus(state).current);
     const ok = gameId === 'drills' ? !!drill && !pocketLocked : stageId === 'endless' ? isEndlessUnlocked(state, gameId) : !!getStage(gameId, stageId) && isStageUnlocked(state, gameId, stageId);
     if (!ok) {
-      toast(gameId !== 'drills' && getGame(gameId) && !isGameUnlocked(state, gameId) ? 'That game is still locked' : 'That stage is locked — pass the previous stage first');
+      const gone = gameId === 'drills' && isDrillHidden(stageId);
+      toast(gone ? 'That drill is no longer in the app' : gameId !== 'drills' && getGame(gameId) && !isGameUnlocked(state, gameId) ? 'That game is still locked' : 'That stage is locked — pass the previous stage first');
       v.innerHTML = gameId === 'drills' ? renderDrillsPage(state, drillFilter, bpViewLevel) : renderGameLobby(state, gameId);
     } else {
       screen = createPlayScreen(ctx, { gameId, stageId });
@@ -856,8 +857,8 @@ async function boot() {
   onDataWrite((key) => { vault.touch(); cloud.noteDataChange(key); });
   refreshCustomDrills();
   try { await loadPublishedDrills(); } catch { /* shipped drills stay if Supabase is unreachable */ }
-  try { await loadHiddenDrills(); } catch { /* shipped drills stay visible if the list cannot be read */ }
-  let st0 = archiveUnknownDrills(loadState(), allDrills().map((d) => d.id));
+  try { await loadHiddenDrills(); } catch { /* a failed read keeps drills already known to be deleted */ }
+  let st0 = archiveUnknownDrills(loadState(), knownDrillIds());
   // v11 progression migration: snapshot first, replay saved history, never demote the Career rank
   if (needsMigration(st0)) {
     try { await vault.snapshot('Before v11 progression update'); } catch { /* ignore */ }

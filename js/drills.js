@@ -147,12 +147,19 @@ export function contentDrillChallenge(it) {
 export function refreshCustomDrills() {
   customCache = null;
 }
-/** Built-in + custom drills (custom ids never clash: they start with "cd-") */
-export function allDrills() {
+function collectDrills() {
   const base = drills.map((d) => applyDrillEdit(d));
   const pocket = ballPocketDrills().filter((c) => !base.some((d) => d.id === c.id));
   const custom = customDrills().filter((c) => !base.some((d) => d.id === c.id) && !pocket.some((d) => d.id === c.id));
   return [...base, ...pocket, ...custom];
+}
+/** Ids that exist in the library, including ones deleted for everyone. History keeps these. */
+export function knownDrillIds() {
+  return collectDrills().map((d) => d.id);
+}
+/** Built-in + custom drills, minus drills deleted for everyone. Custom ids start with "cd-". */
+export function allDrills() {
+  return collectDrills().filter((d) => d.custom || !isDrillHidden(d.id));
 }
 
 export function getDrillById(id) {

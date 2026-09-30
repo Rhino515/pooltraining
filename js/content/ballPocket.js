@@ -4,6 +4,8 @@
  * Layouts are the balls and lines on that blue table. No added targets.
  * Separate from the PKF handbook drills and from the earlier diagram import.
  */
+import { isDrillHidden } from '../drills/hidden.js';
+
 export const BALL_POCKET_LEVELS = [1, 2, 3, 4, 5];
 
 export const BALL_POCKET_TEXT = {
@@ -18,15 +20,19 @@ export const BALL_POCKET_TEXT = {
 export function ballPocketStatus(state) {
   const list = ballPocketDrills();
   const passed = (id) => !!state?.games?.drills?.stages?.[id]?.passed;
+  const visible = (lv) => list.filter((d) => d.level === lv && !isDrillHidden(d.id));
   let current = 1;
+  let complete = true;
   for (const lv of BALL_POCKET_LEVELS) {
-    const rows = list.filter((d) => d.level === lv);
-    if (rows.length && rows.every((d) => passed(d.id))) current = Math.min(BALL_POCKET_LEVELS.length, lv + 1);
-    else { current = lv; break; }
+    const rows = visible(lv);
+    if (!rows.length || rows.every((d) => passed(d.id))) continue;
+    current = lv;
+    complete = false;
+    break;
   }
-  const rows = list.filter((d) => d.level === current);
+  if (complete) current = BALL_POCKET_LEVELS[BALL_POCKET_LEVELS.length - 1];
+  const rows = visible(current);
   const done = rows.filter((d) => passed(d.id)).length;
-  const complete = current === BALL_POCKET_LEVELS.length && rows.length > 0 && done === rows.length;
   return { current, done, total: rows.length, complete };
 }
 

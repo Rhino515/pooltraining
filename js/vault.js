@@ -27,7 +27,8 @@ export const KEYS = {
   devOverrides: 'poolIQDevOverridesV1', // v11 DEV MODE local content override layer (dev/overrides.js)
   drillEdits: 'poolIQDrillEditsV1', // v14-7 owner drill corrections (drills/ownerEdits.js)
   devCopy: 'poolIQDevCopyV1', // v14-8 on-screen word renames (dev/copy.js)
-  tallyColumns: 'poolIQTallyColumnsV1' // v14-13 extra drill tally columns, this phone only (drills/tallyColumns.js)
+  tallyColumns: 'poolIQTallyColumnsV1', // v14-13 extra drill tally columns, this phone only (drills/tallyColumns.js)
+  drillHidden: 'poolIQDrillHiddenV1' // v14-34 ids deleted for everyone; kept when the list cannot be read (drills/hidden.js)
 };
 export const DATA_KEYS = Object.values(KEYS);
 export const META_KEY = 'poolIQMetaV1'; // seq/savedAt, lastBackupAt, nudge + install dismissals, persist result
@@ -319,7 +320,8 @@ const VALIDATE = {
   [KEYS.devOverrides]: (v) => isObj(v) && isObj(v.items),
   [KEYS.drillEdits]: (v) => isObj(v) && isObj(v.items),
   [KEYS.devCopy]: (v) => isObj(v) && isObj(v.items),
-  [KEYS.tallyColumns]: (v) => isObj(v) && isObj(v.drills)
+  [KEYS.tallyColumns]: (v) => isObj(v) && isObj(v.drills),
+  [KEYS.drillHidden]: (v) => isObj(v) && Array.isArray(v.ids)
 };
 
 /**

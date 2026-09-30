@@ -9,6 +9,7 @@ import { gameLevel, ghostBeaten, totalStars, gameState, nextOpenStage, isGameUnl
 import { getGame, bossForRank, stageSpecs } from './games/registry.js';
 import { promotionReady, promotionStatus } from './progression/rank.js';
 import { ballPocketDrills } from './content/ballPocket.js';
+import { isDrillHidden } from './drills/hidden.js';
 
 export { RANK_NAMES };
 
@@ -51,9 +52,11 @@ export function requirementProgress(req, state) {
   if (req.type === 'stars') return { have: totalStars(state), need: req.total };
   if (req.type === 'pb') return { have: gameState(state, req.game).pb?.[req.key] || 0, need: req.value };
   if (req.type === 'ballPocket') {
-    const rows = ballPocketDrills().filter((d) => d.level === req.level);
+    const raw = ballPocketDrills().filter((d) => d.level === req.level);
+    const rows = raw.filter((d) => !isDrillHidden(d.id));
+    if (!rows.length) return { have: raw.length ? 1 : 0, need: 1 };
     const have = rows.filter((d) => state.games?.drills?.stages?.[d.id]?.passed).length;
-    return { have, need: rows.length || 1 };
+    return { have, need: rows.length };
   }
   return { have: 0, need: 1 };
 }

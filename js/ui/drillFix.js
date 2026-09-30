@@ -964,7 +964,7 @@ export function createDrillFix(ctx, idOrSpec) {
     if (!alive) return;
     if (out.error) { toast(out.error); return; }
     closeSheet();
-    toast('Hidden for everyone. The file is still in the app.');
+    toast('Drill deleted.');
     ctx.go('#drills');
   }
 
@@ -1033,7 +1033,7 @@ export function createDrillFix(ctx, idOrSpec) {
     if (action === 'df-export-all') { exportAll(); return true; }
     if (action === 'df-delete') {
       if (!isDrill) return true;
-      openSheet(`<h2 class="sheetTitle">Delete this drill?</h2><p class="muted">This does not remove the file from the app. After you confirm, the drill is hidden for every account. Tap DELETE DRILL to confirm, or CANCEL to keep it.</p><button type="button" class="bigBtn danger" data-action="df-delete-do">DELETE DRILL</button><button type="button" class="bigBtn alt" data-action="sheet-close">CANCEL</button>`, { id: 'confirm' });
+      openSheet(`<h2 class="sheetTitle">Delete this drill?</h2><p class="muted">This removes it for every account. It will not be in any list, category, or search, and it cannot be played. Tap DELETE DRILL to confirm, or CANCEL to keep it.</p><button type="button" class="bigBtn danger" data-action="df-delete-do">DELETE DRILL</button><button type="button" class="bigBtn alt" data-action="sheet-close">CANCEL</button>`, { id: 'confirm' });
       return true;
     }
     if (action === 'df-delete-do') { confirmDelete(); return true; }
