@@ -2,9 +2,8 @@
  * DEV MODE (Settings → DEV MODE). A CONVENIENCE LOCK ON THIS DEVICE — NOT SERVER SECURITY: anyone with the phone
  * and browser dev tools can read or change local data. It only keeps test tools out of everyday use.
  *
- *   • passcode: set on first use; only a salted SHA-256 hash (SubtleCrypto) is stored, in poolIQDevV1
- *     (included in IndexedDB mirror, snapshots and backups). Unlock state is memory-only (reload = locked),
- *     with an optional auto-lock after N minutes idle and a LOCK button.
+ *   • no passcode. The signed-in owner account (andrewaphay@gmail.com) is already the dev.
+ *     Any other account, and signed-out use, stays locked. There is no unlock step.
  *   • content overrides (js/dev/overrides.js), exported/re-imported as a .pooliq pack (stage ids ov--<game>--<stage>)
  *   • seeded test progression (flagged state.devSeed, excluded from public stats) and "restore my real progress"
  * Every dev action takes a vault snapshot first (done by app.js / ui/dev.js).
@@ -56,42 +55,23 @@ const same = (a, b) => typeof a === 'string' && typeof b === 'string' && a.lengt
 
 // ------------------------------------------------------------------ session (memory only)
 const session = { unlocked: false, last: 0 };
-export async function setPasscode(code, now = Date.now()) {
-  const c = String(code ?? '');
-  if (c.length < MIN_PASSCODE) return { error: `Use at least ${MIN_PASSCODE} characters` };
-  if (c.length > 64) return { error: 'That passcode is too long' };
-  if (hasPasscode() && !isUnlocked(now)) return { error: 'Unlock DEV MODE first to change the passcode' };
-  const salt = newSalt();
-  const hash = await hashPasscode(c, salt);
-  const d = loadDev();
-  saveDev({ ...d, salt, hash, createdAt: d.createdAt || now, changedAt: now });
-  session.unlocked = true;
-  session.last = now;
-  return { ok: true };
+export async function setPasscode() {
+  return { error: 'Dev Mode does not use a passcode. Sign in as the owner account.' };
 }
-export async function unlock(code, now = Date.now()) {
-  const d = loadDev();
-  if (!d.hash || !d.salt) return { error: 'Set a passcode first' };
-  const h = await hashPasscode(String(code ?? ''), d.salt);
-  if (!same(h, d.hash)) { session.unlocked = false; return { error: 'Wrong passcode' }; }
-  session.unlocked = true;
-  session.last = now;
-  return { ok: true };
+export async function unlock() {
+  return { error: 'Dev Mode does not use a passcode. Sign in as the owner account.' };
 }
 export function lock() { session.unlocked = false; session.last = 0; }
-/** Signed-in owner stays in Dev Mode without the device passcode. Any other account does not. */
+/** The owner account is the dev. Any other address is not. */
 export function isOwnerEmail(email) {
   return String(email || '').trim().toLowerCase() === 'andrewaphay@gmail.com';
 }
 export function ownerAccountSignedIn() {
   return isOwnerEmail(currentUser()?.email);
 }
-export function isUnlocked(now = Date.now()) {
-  if (ownerAccountSignedIn()) return true;
-  if (!session.unlocked) return false;
-  const min = loadDev().autoLockMin || 0;
-  if (min > 0 && now - session.last > min * 60000) { lock(); return false; }
-  return true;
+/** True only while the owner account is signed in. A passcode cannot unlock this. */
+export function isUnlocked() {
+  return ownerAccountSignedIn();
 }
 /** Activity keeps the auto-lock timer fresh */
 export function touch(now = Date.now()) { if (isUnlocked(now)) session.last = now; }

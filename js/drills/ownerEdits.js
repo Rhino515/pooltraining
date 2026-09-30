@@ -6,8 +6,8 @@
  * exists, otherwise the shipped file. poolIQDrillEditsV1 is only a phone copy
  * (export / older tests). It does not replace the live drill.
  *
- * Who can open the editor: DEV MODE unlocked (js/dev/dev.js isUnlocked).
- * Who can publish: the owner account only, enforced again by row-level security.
+ * Who can open the editor: the signed-in owner account (js/dev/dev.js isUnlocked).
+ * There is no passcode. Who can publish: that same account, enforced again by row-level security.
  */
 import { dataWritten } from '../storage.js';
 import { isUnlocked } from '../dev/dev.js';
@@ -20,8 +20,8 @@ export const DRILL_EDITS_KEY = 'poolIQDrillEditsV1';
 
 /**
  * Exact owner gate for the drill editor UI and for writing or exporting overrides.
- * True only while DEV MODE is unlocked this session (passcode accepted, auto-lock not expired).
- * A signed-in friend, or anyone with DEV MODE locked, is false. The Edit control is not rendered then.
+ * True only while the owner account is signed in. A passcode does not open it.
+ * A signed-in friend, or anyone signed out, is false. The Edit control is not rendered then.
  */
 export function drillEditorAllowed(now = Date.now()) {
   return isUnlocked(now);

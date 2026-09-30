@@ -1482,6 +1482,8 @@ body.playing #app:has(.drillFix){padding-bottom:0;min-height:0}
 
 .copyBar{position:fixed;left:10px;right:10px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:45;background:#12324a;color:#fff;border:1px solid #4cc9ff;border-radius:16px;padding:10px 12px;display:flex;gap:8px;align-items:center;justify-content:space-between;font-weight:800;box-shadow:0 8px 24px #0008}
 .copyBar button{min-height:48px;margin:0}
+.copyPen{display:inline-flex;margin-left:8px;min-height:36px;padding:2px 10px;border-radius:8px;border:1px solid #4cc9ff;background:#12324a;color:#fff;font:800 12px/1 Poppins,sans-serif;vertical-align:middle}
+.copyOwner [data-copy-key]{text-decoration:underline dotted rgba(76,201,255,.55);text-underline-offset:3px}
 .fixPair button{min-height:52px;border-radius:12px;border:1px solid #25476a;background:#0b1522;color:#dcecff;font-weight:800;font-size:16px}
 .fixTableWrap{position:relative}
 .fixExpand{position:absolute;z-index:4;top:8px;right:8px;min-height:44px;padding:0 12px;border-radius:12px;border:1px solid #f6c453;background:#050b14ee;color:#f6c453;font-weight:900;font-size:13px;letter-spacing:.4px}

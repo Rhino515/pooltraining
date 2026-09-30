@@ -1,16 +1,13 @@
 # DEV MODE (v11)
 
-DEV MODE is a hidden set of tools for building and testing content on your own device. Open it from **Settings → DEV MODE**.
+DEV MODE is on when **andrewaphay@gmail.com** is signed in. Open it from **Settings → DEV MODE**. There is no passcode and no unlock step.
 
-> **Honesty notice (also shown in the app):** the passcode is a convenience lock on this device only. It is not server security and it does not protect data from anyone who can open the browser's developer tools. Pool IQ has no server, and nothing in DEV MODE is sent anywhere.
+Other accounts and signed-out use stay locked. They do not see the Settings entry or editor controls.
 
-## Passcode
+## No passcode
 
-- On first use you choose a passcode of at least 4 characters. Only a **salted SHA-256 hash** is stored (`poolIQDevV1 = {salt, hash, autoLockMin, seeded}`), never the passcode itself. The key is backed up like your other data.
-- Unlocking lasts for this app session only (it is kept in memory), so a reload locks again.
-- **Auto-lock** after 5, 15 or 60 idle minutes (default 15), or only when the app is closed. **LOCK** locks immediately.
-- The passcode can be changed only while unlocked. To lose DEV MODE entirely, Reset or restore a backup without the key.
-- Users without DEV MODE never see the tools. The routes redirect to the passcode screen while locked.
+- Signing in as the owner account is the only way in.
+- A passcode cannot unlock the tools. There is no passcode screen.
 
 ## Tools
 
@@ -43,10 +40,10 @@ DEV MODE is a hidden set of tools for building and testing content on your own d
 
 While DEV MODE is **unlocked**, opening a shipped PKF drill shows **EDIT**. That editor is not on drill cards, and it is not rendered at all while DEV MODE is locked — a signed-in friend does not see it.
 
-The gate is DEV MODE (`isUnlocked()`). The device passcode still unlocks this phone. The signed-in owner account stays unlocked without typing that passcode. Any other signed-in account stays locked.
+The gate is the owner account (`isUnlocked()`). It is true only while andrewaphay@gmail.com is signed in. There is no passcode. Any other account stays locked.
 
 **SAVE** (under the table, and again in the bottom row) publishes that drill to Supabase `drill_overrides`. Every visitor reads those rows on load. If a row exists, it replaces the shipped drill for everyone. Only the owner account can write; another account, or Dev Mode unlocked with the passcode alone, cannot publish. The built-in file is not changed. **RESET** drops unsaved edits and does not delete the published row. **EXPORT THIS** downloads the drill as a `.pooliq` file. **IMPORT DRILL** (next to Export) reads that same `.pooliq` file, a JSON object in that shape, or a JSON wrapper with a `drills` array when the array has exactly one drill or one drill whose id is the drill open now. The table updates immediately (balls, lines, pockets, title, description, link, bullseye). Nothing is published until **SAVE**. Leaving the editor or going back without SAVE does not publish and does not wipe the live drill. A file that is not a drill this app understands shows a short error and does not change the table. **REMOVE OBJECT LINE** deletes the object-ball path only. **REMOVE CUE LINE** is the control that deletes the cue path. **EXPORT ALL** downloads phone copies as one JSON file. A new cache (`skipWaiting` + `clients.claim`) reloads an already-open Home Screen app once. It does not reload in a loop.
 
-## On-screen words (v14-8)
+## On-screen words (v14-35)
 
-While DEV MODE is unlocked, **Hold words to rename** lets you change page titles, nav labels, buttons and other visible copy. The new words are stored in `poolIQDevCopyV1` on this phone. A different signed-in account still sees the original words. Nothing is uploaded.
+While the owner account is signed in, hold any visible words, or tap **Edit** on a paragraph, heading, or list item (a rules paragraph included). **SAVE** writes `public.text_overrides`. Every visitor reads that row. The shipped file stays in git. **USE ORIGINAL** deletes the row. Another account cannot write. There is no passcode. `poolIQDevCopyV1` is only the last good read, so a failed load keeps words already published.

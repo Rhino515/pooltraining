@@ -361,7 +361,7 @@ export function renderSettings(state, info = {}) {
     </div>
     <div class="card settingsCard" data-card="profile"><div class="eyebrow">PLAYER PROFILE</div><p class="muted small">Your name and photo (shown on Profile and in friend matches). ${info.signedIn ? 'Saved on this device, in your backups, and synced to your online account (friends see them on the leaderboard).' : 'Stored only on this device and in your backups — until you sign in to an online account.'}</p><button type="button" class="bigBtn alt" data-action="go" data-href="#me">EDIT PROFILE</button></div>
     ${installCardHTML(info)}
-    <div class="card settingsCard devCard" data-card="dev"><div class="eyebrow">DEV MODE</div><p class="muted small">Passcode-locked test tools for the owner of this phone. A convenience lock on this device — not server security.</p><button type="button" class="bigBtn alt" data-action="go" data-href="#dev">DEV MODE</button></div>
+    ${ownerAccountSignedIn() ? '<div class="card settingsCard devCard" data-card="dev"><div class="eyebrow">DEV MODE</div><p class="muted small">You are signed in as the owner, so these tools are already on. There is no passcode.</p><button type="button" class="bigBtn alt" data-action="go" data-href="#dev">DEV MODE</button></div>' : ''}
     <div class="card settingsCard dangerCard"><div class="eyebrow">DANGER ZONE</div><p class="muted small">Clears stages, Ghost matches, bosses, calibration and rank. A snapshot is taken first, so it can be undone from “Restore previous snapshot”.</p><button type="button" class="bigBtn danger" data-action="reset-all">RESET ALL PROGRESS</button></div>`;
 }
 

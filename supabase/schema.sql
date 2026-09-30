@@ -6,6 +6,7 @@
 --   profiles      one row per user: display name + avatar URL          read: signed-in users · write: owner only
 --   saves         one JSON backup per user (pool-iq-backup format)     read + write: owner only (private)
 --   public_stats  leaderboard numbers from the public stats export     read: signed-in users · write: owner only
+--   text_overrides  published on-screen words (v14-35)                   read: everyone · write: owner email only
 -- Storage:
 --   avatars       public bucket, <user id>/avatar (≤ 200 KB, JPEG/PNG/WebP)   write: owner's own folder only
 
@@ -224,5 +225,57 @@ create policy "drill_hidden: owner insert" on public.drill_hidden
 
 drop policy if exists "drill_hidden: owner delete" on public.drill_hidden;
 create policy "drill_hidden: owner delete" on public.drill_hidden
+  for delete to authenticated
+  using (lower(coalesce((select auth.jwt() ->> 'email'), '')) = 'andrewaphay@gmail.com');
+
+-- ---------------------------------------------------------------- text_overrides (v14-35 published on-screen words)
+-- Everyone, including signed-out visitors, can read.
+-- Only the owner account can insert, update, or delete.
+-- A row replaces that text block for every visitor. Shipped files stay in git.
+create table if not exists public.text_overrides (
+  copy_key text primary key check (char_length(copy_key) between 1 and 280),
+  body text not null check (
+    char_length(body) between 1 and 2000
+    and char_length(btrim(body)) >= 1
+    and body !~ '[<>]'
+  ),
+  updated_by uuid default auth.uid() references auth.users (id),
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists text_overrides_touch on public.text_overrides;
+create trigger text_overrides_touch before insert or update on public.text_overrides
+  for each row execute function public.pooliq_touch_updated_at();
+
+alter table public.text_overrides enable row level security;
+
+revoke all on public.text_overrides from anon, authenticated;
+grant select on public.text_overrides to anon, authenticated;
+grant insert, update, delete on public.text_overrides to authenticated;
+
+drop policy if exists "text_overrides: public read" on public.text_overrides;
+create policy "text_overrides: public read" on public.text_overrides
+  for select to anon, authenticated
+  using (true);
+
+drop policy if exists "text_overrides: owner insert" on public.text_overrides;
+create policy "text_overrides: owner insert" on public.text_overrides
+  for insert to authenticated
+  with check (
+    lower(coalesce((select auth.jwt() ->> 'email'), '')) = 'andrewaphay@gmail.com'
+    and (select auth.uid()) = updated_by
+  );
+
+drop policy if exists "text_overrides: owner update" on public.text_overrides;
+create policy "text_overrides: owner update" on public.text_overrides
+  for update to authenticated
+  using (lower(coalesce((select auth.jwt() ->> 'email'), '')) = 'andrewaphay@gmail.com')
+  with check (
+    lower(coalesce((select auth.jwt() ->> 'email'), '')) = 'andrewaphay@gmail.com'
+    and (select auth.uid()) = updated_by
+  );
+
+drop policy if exists "text_overrides: owner delete" on public.text_overrides;
+create policy "text_overrides: owner delete" on public.text_overrides
   for delete to authenticated
   using (lower(coalesce((select auth.jwt() ->> 'email'), '')) = 'andrewaphay@gmail.com');

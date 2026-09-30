@@ -26,7 +26,7 @@ export const KEYS = {
   dev: 'poolIQDevV1', // v11 DEV MODE passcode hash (salted SHA-256) + settings (dev/dev.js)
   devOverrides: 'poolIQDevOverridesV1', // v11 DEV MODE local content override layer (dev/overrides.js)
   drillEdits: 'poolIQDrillEditsV1', // v14-7 owner drill corrections (drills/ownerEdits.js)
-  devCopy: 'poolIQDevCopyV1', // v14-8 on-screen word renames (dev/copy.js)
+  devCopy: 'poolIQDevCopyV1', // v14-35 last good read of published on-screen words (dev/copy.js)
   tallyColumns: 'poolIQTallyColumnsV1', // v14-13 extra drill tally columns, this phone only (drills/tallyColumns.js)
   drillHidden: 'poolIQDrillHiddenV1' // v14-34 ids deleted for everyone; kept when the list cannot be read (drills/hidden.js)
 };

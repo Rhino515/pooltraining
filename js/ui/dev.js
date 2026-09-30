@@ -27,28 +27,15 @@ function head(sub) {
   return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="${sub ? '#dev' : '#settings'}">‹ ${sub ? 'DEV MODE' : 'Settings'}</button><span class="eyebrow devEyebrow">DEV MODE${sub ? ` · ${esc(sub)}` : ''}</span><h1>${sub ? esc(sub) : 'Dev Mode'}</h1></div>`;
 }
 function gate() {
-  if (!D.hasPasscode()) {
-    return `${head()}<div class="card devCard devGate" data-dev-state="setup"><div class="eyebrow">SET A PASSCODE</div><p class="muted small">${HONEST}</p><p class="muted small">Only a salted SHA-256 hash of the passcode is stored (never the passcode). If you forget it, restore a backup made before it was set or clear the site's data.</p>
-      <label class="fld"><span>New passcode (4+ characters)</span><input id="devPass1" type="password" autocomplete="new-password" maxlength="64"/></label>
-      <label class="fld"><span>Repeat passcode</span><input id="devPass2" type="password" autocomplete="new-password" maxlength="64"/></label>
-      <button type="button" class="bigBtn" data-action="dev-set">SET PASSCODE & UNLOCK</button></div>`;
-  }
-  return `${head()}<div class="card devCard devGate" data-dev-state="locked"><div class="eyebrow">🔒 LOCKED</div><p class="muted small">${HONEST}</p>
-    <label class="fld"><span>Passcode</span><input id="devPass" type="password" autocomplete="current-password" maxlength="64"/></label>
-    <button type="button" class="bigBtn" data-action="dev-unlock">UNLOCK</button></div>`;
+  return `${head()}<div class="card devCard devGate" data-dev-state="locked"><div class="eyebrow">LOCKED</div><p class="muted small">Dev tools are only on the owner account. There is no passcode and no unlock step.</p></div>`;
 }
 
 export function renderDev(state) {
   if (!D.isUnlocked()) return gate();
-  const dev = D.loadDev();
   const ov = Object.values(O.loadOverrides().items);
   const items = S.loadContent();
   return `${head()}
-    <div class="card devCard" data-dev-state="unlocked"><div class="eyebrow">🔓 UNLOCKED</div><p class="muted small">${HONEST}</p>
-      ${D.ownerAccountSignedIn() ? '<p class="muted small" data-owner-account>This signed-in account stays unlocked.</p>' : ''}
-      <div class="eyebrow">AUTO-LOCK AFTER</div><div class="chips">${D.AUTO_LOCK_OPTIONS.map((m) => `<button type="button" class="chip${dev.autoLockMin === m ? ' active' : ''}" data-action="dev-autolock" data-v="${m}">${m ? `${m} min idle` : 'Only when closed'}</button>`).join('')}</div>
-      <button type="button" class="bigBtn danger" data-action="dev-lock">🔒 LOCK</button>
-      <button type="button" class="linkish" data-action="dev-change">Change passcode</button></div>
+    <div class="card devCard" data-dev-state="unlocked"><div class="eyebrow">OWNER</div><p class="muted small" data-owner-account>This account is the dev. There is no passcode.</p></div>
     ${state.devSeed ? `<div class="card devBanner" data-dev-seed>TEST STATE ACTIVE · ${esc(state.devSeed.label)}<button type="button" class="bigBtn" data-action="dev-restore-real">RESTORE MY REAL PROGRESS</button><small class="muted">Anything played while the test state is active is discarded when you restore.</small></div>` : ''}
     <h2>Edit built-in content</h2>
     <div class="card devCard"><p class="muted small">Edits stay on this phone. Shipped files do not change. RESET brings the original back. Open any built-in drill or stage: rename the title and description, and drag balls when the table has them.</p>
@@ -62,11 +49,10 @@ export function renderDev(state) {
       ${items.length ? items.map((it) => { const d = it.doc; return `<div class="devItem" data-dev-item="${esc(it.uid)}"><div><b>${esc(it.title)}</b><small class="muted">${esc(typeLabel(d.contentType))}${d.metadata?.official ? ' · OFFICIAL' : ''}</small></div><div class="chips"><button type="button" class="chip${d.careerEligible ? ' active' : ''}" data-action="dev-mark" data-uid="${esc(it.uid)}" data-k="careerEligible">Career-eligible</button><button type="button" class="chip${d.rankXpEligible ? ' active' : ''}" data-action="dev-mark" data-uid="${esc(it.uid)}" data-k="rankXpEligible">Rank XP</button><button type="button" class="chip${d.metadata?.official ? ' active' : ''}" data-action="dev-mark" data-uid="${esc(it.uid)}" data-k="official">Official</button><button type="button" class="chip" data-action="go" data-href="#cedit/${esc(it.uid)}">Edit</button><button type="button" class="chip danger" data-action="dev-del-content" data-uid="${esc(it.uid)}">Delete</button></div></div>`; }).join('') : '<p class="muted">No installed content.</p>'}
       <button type="button" class="bigBtn alt" data-action="go" data-href="#content">OPEN MY CONTENT</button></div>
     <h2>On-screen words</h2>
-    <div class="card devCard" data-copy-panel>${CP.otherAccountSignedIn() ? '<p class="muted small">Another account is signed in. Word renames stay hidden.</p>' : `<p class="muted small">Hold a page title, nav label, button or other words to rename them. Saved on this phone. A different signed-in account does not see the new words.</p>
-      <button type="button" class="bigBtn" data-action="dev-copy-on">HOLD WORDS TO RENAME</button>
-      <div class="kv"><span>Renamed</span><b>${CP.copyCount()}</b></div>
+    <div class="card devCard" data-copy-panel><p class="muted small">Hold any words, or tap Edit on a paragraph, heading, or list. Save publishes for everyone. The shipped file stays. Another account cannot edit.</p>
+      <div class="kv"><span>Published</span><b>${CP.copyCount()}</b></div>
       ${Object.entries(CP.loadCopy().items).slice(0, 12).map(([k, v]) => `<div class="devItem"><div><b>${esc(v.text)}</b></div><button type="button" class="miniAct danger" data-action="dev-copy-clear" data-key="${esc(k)}">USE ORIGINAL</button></div>`).join('')}
-      <button type="button" class="bigBtn alt" data-action="dev-copy-reset" ${CP.copyCount() ? '' : 'disabled'}>RESET ALL WORDS</button>`}</div>
+      <button type="button" class="bigBtn alt" data-action="dev-copy-reset" ${CP.copyCount() ? '' : 'disabled'}>RESET ALL WORDS</button></div>
     <h2>Test progression</h2>
     <div class="card devCard"><p class="muted small">Jump to a test state. It is flagged DEV (banner shown, excluded from public stats). Your real data is stashed first — RESTORE MY REAL PROGRESS brings it back.</p>
       <div class="eyebrow">CAREER RANK</div><div class="chips">${RANK_LADDER.names.map((n, i) => `<button type="button" class="chip${seedSel.rank === i ? ' active' : ''}" data-action="dev-seed-rank" data-v="${i}">${esc(n)}</button>`).join('')}</div>
@@ -147,27 +133,9 @@ export function renderDevDrills() {
 
 export function devAction(a, el, env) {
   if (!a.startsWith('dev-')) return false;
-  if (a !== 'dev-set' && a !== 'dev-unlock' && !D.isUnlocked()) { toast('DEV MODE is locked'); env.rerender(); return true; }
+  if (!D.isUnlocked()) { toast('DEV MODE is locked'); env.rerender(); return true; }
   D.touch();
   switch (a) {
-    case 'dev-set': {
-      const p1 = document.getElementById('devPass1')?.value || '';
-      const p2 = document.getElementById('devPass2')?.value || '';
-      if (p1 !== p2) { toast('The passcodes do not match'); return true; }
-      env.snapshot('Before DEV passcode');
-      D.setPasscode(p1).then((r) => { toast(r.error || 'Passcode set — DEV MODE unlocked'); closeSheet(); env.rerender(); });
-      return true;
-    }
-    case 'dev-unlock': {
-      const p = document.getElementById('devPass')?.value || '';
-      D.unlock(p).then((r) => { toast(r.error || 'DEV MODE unlocked'); if (!r.error) env.rerender(); else { const i = document.getElementById('devPass'); if (i) { i.value = ''; i.classList.add('bad'); } } });
-      return true;
-    }
-    case 'dev-lock': D.lock(); toast('DEV MODE locked'); env.rerender(); return true;
-    case 'dev-change':
-      openSheet(`<div class="eyebrow">CHANGE PASSCODE</div><label class="fld"><span>New passcode</span><input id="devPass1" type="password" autocomplete="new-password" maxlength="64"/></label><label class="fld"><span>Repeat</span><input id="devPass2" type="password" autocomplete="new-password" maxlength="64"/></label><button type="button" class="bigBtn" data-action="dev-set">SAVE PASSCODE</button><button type="button" class="bigBtn alt" data-action="sheet-close">CANCEL</button>`, { id: 'devpass' });
-      return true;
-    case 'dev-autolock': D.setAutoLock(Number(el.dataset.v)); env.rerender(); return true;
     case 'dev-reset': {
       env.snapshot('Before DEV reset override');
       O.removeOverride(el.dataset.id);
@@ -213,28 +181,33 @@ export function devAction(a, el, env) {
     }
     case 'dev-restore-real': env.restoreReal(); return true;
     case 'dev-clear-caches': env.clearCaches(); return true;
-    case 'dev-copy-on': CP.setCopyEditing(true); toast('Hold any words to rename them'); env.rerender(); return true;
     case 'dev-copy-off': CP.setCopyEditing(false); env.rerender(); return true;
+    case 'dev-copy-open':
+      CP.openCopyEditor(el.dataset.key, el.dataset.shipped || '', el.dataset.shown || '');
+      return true;
     case 'dev-copy-save': {
-      const r = CP.saveCopyText(el.dataset.key, document.getElementById('copyText')?.value || '');
-      if (r.error) { toast(r.error); return true; }
-      CP.finishRename(true);
-      env.rerender();
+      CP.saveCopyText(el.dataset.key, document.getElementById('copyText')?.value || '').then((r) => {
+        if (r.error) { toast(r.error); return; }
+        CP.finishRename(true);
+        env.rerender();
+      });
       return true;
     }
     case 'dev-copy-clear': {
-      const r = CP.clearCopyKey(el.dataset.key);
-      if (r.error) { toast(r.error); return true; }
-      CP.finishRename(false);
-      toast('Original words restored');
-      env.rerender();
+      CP.clearCopyKey(el.dataset.key).then((r) => {
+        if (r.error) { toast(r.error); return; }
+        CP.finishRename(false);
+        toast('Original words restored');
+        env.rerender();
+      });
       return true;
     }
     case 'dev-copy-reset': {
-      const r = CP.resetAllCopy();
-      if (r.error) { toast(r.error); return true; }
-      toast('All renamed words restored');
-      env.rerender();
+      CP.resetAllCopy().then((r) => {
+        if (r.error) { toast(r.error); return; }
+        toast('All published words restored');
+        env.rerender();
+      });
       return true;
     }
     default: return false;

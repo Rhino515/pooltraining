@@ -53,6 +53,10 @@ export const onAuth = (fn) => { listeners.add(fn); return () => listeners.delete
 export const currentSession = () => session;
 export const currentUser = () => session?.user || null;
 export const isReady = () => !!client;
+/** Verification only. Production sign-in goes through the Supabase client. */
+export function setCurrentUserForTests(user) {
+  session = user ? { user } : null;
+}
 
 const need = (r) => { if (r.error) throw r.error; return r.data; };
 

@@ -28,6 +28,7 @@ Shot Simulator simplification. Playing-surface sizes (ball stays 2.25 in): 7 ft 
 - Cache `pool-iq-v14-2`, app version 14.
 - v14-1: 8-ball runout plays the group (not the 1-ball), shows a breakout for a tied-up ball, 3D is a low view from behind the cue ball, and full screen is the table plus EXIT.
 - v14-2: 3D view is a shaded table from behind the cue ball (wood rails, lit cloth, round balls, cue).
+- v14-35: Signed in as andrewaphay@gmail.com, Dev Mode is already on. There is no passcode and no unlock step. Other accounts and signed-out use stay locked and do not see editor controls. Hold any words, or tap Edit on a paragraph, heading, or list. Save publishes that text for everyone (public read, owner email write). The shipped file stays in git. Cache `pool-iq-v14-35`.
 - v14-34: Deleting a drill removes it from every list, category, search, and play entry for every account. There is no “hidden for everyone” row. The shipped file stays in git. If the deleted-id list fails to load, ids already known stay gone. Cache `pool-iq-v14-34`.
 - v14-33: Learn card photos are crops of the mockup. Fundamentals is the bridge over the cue ball on green cloth. How to Play & Rules is the rack with the 8 on blue cloth. Two cards, captions unchanged. Cache `pool-iq-v14-33`.
 - v14-32: Learn landing matches the mockup. Gold LEARN title, two photo cards only: a player bridging on Fundamentals, a rack of balls on How to Play & Rules. Captions unchanged. Cache `pool-iq-v14-32`.

@@ -46,7 +46,7 @@ import * as FU from './ui/friends.js';
 import * as MU from './ui/me.js';
 import * as DU from './ui/dev.js';
 import * as D from './dev/dev.js';
-import { applyCopy, copyBarHTML, onCopyPointerDown, onCopyPointerMove, onCopyPointerUp, consumeCopyClick } from './dev/copy.js';
+import { applyCopy, copyBarHTML, copyWritable, loadPublishedText, textSignature, onCopyPointerDown, onCopyPointerMove, onCopyPointerUp, consumeCopyClick } from './dev/copy.js';
 import * as FM from './friends/model.js';
 import * as FT from './friends/tournament.js';
 import * as PR from './profile.js';
@@ -294,6 +294,7 @@ function renderRoute() {
 }
 
 function paintCopy() {
+  document.body?.classList?.toggle('copyOwner', copyWritable());
   const view = document.getElementById('view');
   if (view) applyCopy(view);
   const nav = document.querySelector('nav');
@@ -858,6 +859,7 @@ async function boot() {
   refreshCustomDrills();
   try { await loadPublishedDrills(); } catch { /* shipped drills stay if Supabase is unreachable */ }
   try { await loadHiddenDrills(); } catch { /* a failed read keeps drills already known to be deleted */ }
+  try { await loadPublishedText(); } catch { /* a failed read keeps words already published */ }
   let st0 = archiveUnknownDrills(loadState(), knownDrillIds());
   // v11 progression migration: snapshot first, replay saved history, never demote the Career rank
   if (needsMigration(st0)) {
@@ -889,12 +891,12 @@ async function boot() {
   checkPersist(true).then((st) => {
     if (st === 'off') window.addEventListener('pointerdown', () => checkPersist(true), { once: true, passive: true });
   });
-  let pubSig = publishedSignature() + '\n' + hiddenSignature();
+  let pubSig = publishedSignature() + '\n' + hiddenSignature() + '\n' + textSignature();
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') vault.flush().catch(() => {});
     if (document.visibilityState !== 'visible') return;
-    Promise.all([loadPublishedDrills(), loadHiddenDrills()]).then(() => {
-      const next = publishedSignature() + '\n' + hiddenSignature();
+    Promise.all([loadPublishedDrills(), loadHiddenDrills(), loadPublishedText()]).then(() => {
+      const next = publishedSignature() + '\n' + hiddenSignature() + '\n' + textSignature();
       if (next === pubSig) return;
       pubSig = next;
       if (route.name === 'drillfix' || route.name === 'devedit') return;
