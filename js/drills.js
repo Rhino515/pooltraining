@@ -37,6 +37,7 @@ import { loadContent } from './content/store.js';
 import { shotToChallenge } from './content/convert.js';
 import { threeLaneSpeedDrill } from './games/data/threeLaneSpeed.js';
 import { pkfDrillChallenges } from './content/pkfBuiltins.js';
+import { applyDrillEdit } from './drills/ownerEdits.js';
 
 export const CATEGORIES = [
   'Shot Making',
@@ -145,8 +146,9 @@ export function refreshCustomDrills() {
 }
 /** Built-in + custom drills (custom ids never clash: they start with "cd-") */
 export function allDrills() {
-  const custom = customDrills().filter((c) => !drills.some((d) => d.id === c.id));
-  return [...drills, ...custom];
+  const base = drills.map((d) => applyDrillEdit(d));
+  const custom = customDrills().filter((c) => !base.some((d) => d.id === c.id));
+  return [...base, ...custom];
 }
 
 export function getDrillById(id) {

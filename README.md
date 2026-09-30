@@ -28,6 +28,7 @@ Shot Simulator simplification. Playing-surface sizes (ball stays 2.25 in): 7 ft 
 - Cache `pool-iq-v14-2`, app version 14.
 - v14-1: 8-ball runout plays the group (not the 1-ball), shows a breakout for a tied-up ball, 3D is a low view from behind the cue ball, and full screen is the table plus EXIT.
 - v14-2: 3D view is a shaded table from behind the cue ball (wood rails, lit cloth, round balls, cue).
+- v14-7: while DEV MODE is unlocked, a shipped PKF drill can be corrected on the phone (balls, paths, pocket, tip, speed, technique, title, description, category). The correction overrides that drill id locally. Cache `pool-iq-v14-7`.
 
 ## What's new in v13 (changelog)
 

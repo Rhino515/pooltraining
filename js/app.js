@@ -3,6 +3,7 @@
  * Routes: #home #career #drills #analyze #arcade (shown as "Table Games"; #tablegames alias) #profile (#stats alias) #settings
  *         #ghost[/balls/race] #ghostmatch #game/<id> #play/<game>/<stage> #boss/<id> #bossplay/<id>
  *         #sim[/s=<code>|/target] (Shot Simulator) #drillnew[/fromsim] #drilledit/<id> (Create Drill)
+ *         #drillfix/<id> (owner drill editor — only while DEV MODE is unlocked)
  *         #content (My Content) #cimport (import error) #cview/<ref> #cplay/<ref>[/<stage>] #cedit/<uid>[/<loc>]  (.pooliq content, ui/content.js)
  */
 import { loadState, saveState, resetState, archiveUnknownDrills, onDataWrite, lsSet, idbAdapter } from './storage.js';
@@ -17,6 +18,8 @@ import { renderGhostLobby, renderGhostMatch, newGhostSession, newEightSession, a
 import { createPlayScreen } from './ui/play.js';
 import { createSimScreen } from './ui/simulator.js';
 import { createDrillBuilder } from './ui/drillBuilder.js';
+import { createDrillFix } from './ui/drillFix.js';
+import { canFixDrill, drillEditorAllowed } from './drills/ownerEdits.js';
 import { customDrills, refreshCustomDrills } from './drills.js';
 import * as CD from './customDrills.js';
 import { openSheet, closeSheet, toast, clearToast } from './ui/sheet.js';
@@ -107,7 +110,7 @@ function parseHash() {
   return { name: name || 'home', args };
 }
 
-const NAV_FOR = { account: 'profile', leaderboard: 'profile', gate: 'career', promo: 'career', champion: 'career', training: 'career', skill: 'profile', skills: 'profile', me: 'profile', drillrank: 'drills', friends: 'arcade', friend: 'arcade', h2h: 'arcade', fmatch: 'arcade', fsession: 'arcade', tourney: 'arcade', tnew: 'arcade', dev: 'profile', devgame: 'profile', devedit: 'profile', devkeys: 'profile', content: 'drills', cimport: 'drills', cview: 'drills', cplay: 'drills', cedit: 'drills', sim: 'sim', drillnew: 'drills', drilledit: 'drills', home: 'home', career: 'career', drills: 'drills', analyze: 'analyze', arcade: 'arcade', tablegames: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
+const NAV_FOR = { account: 'profile', leaderboard: 'profile', gate: 'career', promo: 'career', champion: 'career', training: 'career', skill: 'profile', skills: 'profile', me: 'profile', drillrank: 'drills', friends: 'arcade', friend: 'arcade', h2h: 'arcade', fmatch: 'arcade', fsession: 'arcade', tourney: 'arcade', tnew: 'arcade', dev: 'profile', devgame: 'profile', devedit: 'profile', devkeys: 'profile', content: 'drills', cimport: 'drills', cview: 'drills', cplay: 'drills', cedit: 'drills', sim: 'sim', drillnew: 'drills', drilledit: 'drills', drillfix: 'drills', home: 'home', career: 'career', drills: 'drills', analyze: 'analyze', arcade: 'arcade', tablegames: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
 
 function setChrome(playing, navName) {
   document.body.classList.toggle('playing', playing);
@@ -144,6 +147,17 @@ function renderRoute() {
     screen = createSimScreen(ctx, args);
     screen.render();
     playing = true;
+  } else if (name === 'drillfix') {
+    const fixId = args[0];
+    const fixDrill = fixId ? getDrillById(fixId) : null;
+    if (!drillEditorAllowed() || !fixDrill || !canFixDrill(fixDrill)) {
+      if (drillEditorAllowed() && fixId) toast('That drill cannot be edited here');
+      v.innerHTML = renderDrillsPage(state, drillFilter);
+    } else {
+      screen = createDrillFix(ctx, fixId);
+      screen.render();
+      playing = true;
+    }
   } else if (name === 'drillnew' || name === 'drilledit') {
     const existing = name === 'drilledit' ? customDrills().find((d) => d.id === args[0]) : null;
     if (name === 'drilledit' && !existing) {

@@ -38,3 +38,11 @@ DEV MODE is a hidden set of tools for building and testing content on your own d
 - `js/dev/overrides.js`: the override layer (`stage:<game>:<stage>` → `.pooliq` doc).
 - `js/ui/dev.js`: screens.
 - `js/games/registry.js`: applies overrides when stages are built (`clearStageCache()`).
+
+## Built-in drill corrections (v14-7)
+
+While DEV MODE is **unlocked**, opening a shipped PKF drill shows **EDIT**. That editor is not on drill cards, and it is not rendered at all while DEV MODE is locked — a signed-in friend does not see it.
+
+There is no separate owner account in the app. The gate is the same DEV MODE unlock (`isUnlocked()`): passcode accepted for this session, and auto-lock has not expired.
+
+Corrections are stored on the phone in `poolIQDrillEditsV1` (mirrored and backed up with the other data keys). The built-in file is not changed. The same drill id uses the correction the next time it loads, even after DEV MODE locks again. **RESET** removes that one correction. **EXPORT THIS** downloads the drill as a `.pooliq` file. **EXPORT ALL** downloads every correction as one JSON file whose `drills` array holds full `.pooliq` documents. Nothing is uploaded.

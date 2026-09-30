@@ -1428,3 +1428,35 @@ body.sim-full .simTable .table-diagram{width:100%;max-height:100dvh}
 }
 .simScreen.is-3d .simTable{min-height:56vh}
 .sim3d{background:#07080c;border-radius:0}
+
+/* v14-7 owner drill editor — large controls, 390px phone */
+.phEdit{min-height:44px;padding:0 12px;border-radius:12px;border:1px solid #25476a;background:#102033;color:var(--cyan);font-weight:800;font-size:13px;letter-spacing:.4px}
+.drillFix{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;min-height:0}
+.fixScroll{flex:1;overflow:auto;padding:8px 12px 16px;-webkit-overflow-scrolling:touch}
+.fixTable{touch-action:none;background:#061018;border-radius:16px;border:1px solid #1c2a3b;overflow:hidden}
+.fixTable svg{width:100%;height:auto;display:block}
+.fix-handle{fill:#041018;stroke:#4cc9ff;stroke-width:.5}
+.fix-handle.on{fill:#4cc9ff}
+.fixTools,.pockets,.fixPair{display:grid;gap:8px;margin:8px 0}
+.fixTools{grid-template-columns:1fr 1fr 1fr}
+.pockets{grid-template-columns:1fr 1fr 1fr}
+.fixPair{grid-template-columns:1fr 1fr}
+.fixTools button,.pockets button,.techs button,.fixPt{min-height:48px;border-radius:12px;border:1px solid #25476a;background:#0b1522;color:#dcecff;font-weight:800;font-size:13px;padding:8px}
+.fixTools button.on,.pockets button.on,.techs button.on,.fixPt.on{background:#12324a;color:#fff;border-color:#4cc9ff}
+.fixSel{margin:8px 0 4px;font-weight:800}
+.nudge{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.nudge button{min-height:52px;border-radius:14px;border:1px solid #25476a;background:#101c2b;color:#fff;font-weight:800;font-size:16px}
+.fixFld{display:flex;flex-direction:column;gap:6px;margin:10px 0;font-size:13px;font-weight:700;color:#a9bdd6}
+.fixFld input,.fixFld textarea{font-size:16px;min-height:48px;padding:10px 12px;border-radius:12px;border:1px solid #25476a;background:#0b1522;color:#fff;width:100%}
+.fixDiamonds{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stepper{display:grid;grid-template-columns:56px 1fr 56px;gap:8px;align-items:center;margin:8px 0}
+.stepper button{min-height:52px;border-radius:14px;border:1px solid #25476a;background:#101c2b;color:#fff;font-size:26px;font-weight:700}
+.stepper b,.stepper span{text-align:center;font-size:16px;font-weight:800}
+.techs,.fixPts{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.fixPt{display:flex;flex-direction:column;align-items:flex-start;min-width:72px}
+.fixPt span{font-weight:600;font-size:12px;color:#a9bdd6}
+.fixMsg{display:none;margin:8px 0;color:#ffb4b4;font-size:14px}
+.fixMsg.show{display:block}
+.fixBar{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:#050b14f2;border-top:1px solid #16222f}
+.fixBar .bigBtn{margin:0;min-height:52px;font-size:13px}
+.drillFix .eyebrow{margin-top:12px}

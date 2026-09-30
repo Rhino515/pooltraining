@@ -244,7 +244,8 @@ export function renderDrillsPage(state, filter = 'All') {
       <div class="card empty drillsEmpty" data-empty="1"><div class="emptyIcon">◎</div><h3>No drills yet.</h3><p class="muted">Build your own: place the balls on the true-scale table, choose the pocket and cue-ball zone, and Pool IQ works out the route, recipe and Why This Shot? — then it plays like every other drill, with scoring and history.</p><button type="button" class="bigBtn" data-action="drill-create">CREATE YOUR FIRST DRILL</button><button type="button" class="bigBtn alt" data-action="go" data-href="#content">IMPORT .POOLIQ CONTENT</button><button type="button" class="bigBtn alt" data-action="go" data-href="#sim">OPEN THE SHOT SIMULATOR</button></div>`;
   }
   const by = drillsByCategory();
-  const cats = ['All', ...CATEGORIES.filter((c) => by[c])];
+  const extraCats = Object.keys(by).filter((c) => c && !CATEGORIES.includes(c)).sort();
+  const cats = ['All', ...CATEGORIES.filter((c) => by[c]), ...extraCats];
   const list = filter === 'All' ? list0 : by[filter] || [];
   return `${head}
     <div class="catFilter">${cats.map((c) => `<button type="button" class="chip${c === filter ? ' active' : ''}" data-action="drill-filter" data-v="${esc(c)}">${esc(c)}</button>`).join('')}</div>
