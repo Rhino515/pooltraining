@@ -1,0 +1,117 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF · Cue Ball Control",
+  "difficulty": 3,
+  "skill": "Cue-Ball Control",
+  "attribution": {
+    "sourceName": "pool diagrams",
+    "author": "Marios Komninakis",
+    "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+  },
+  "metadata": {
+    "tags": [
+      "diagrams"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "diagram-import"
+  },
+  "careerEligible": true,
+  "id": "pdf-p24",
+  "title": "The goal is to make the balls without the cueball ever touching the rail or",
+  "description": "The goal is to make the balls without the cueball ever touching the rail or other ball ofcourse. You don’t need to make the balls in order. You need to keep the angles short on each ball so the cueball don’t travel much. As you improve you can put the balls closer to the rails for extra difficulty.",
+  "xp": 70,
+  "skillEffects": {
+    "Cue-Ball Control": 0.7,
+    "Pattern Play": 0.3
+  },
+  "shot": {
+    "kind": "pot",
+    "cueBallPosition": {
+      "x": 48.48,
+      "y": 24.85
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "x": 66.06,
+        "y": 11.66
+      },
+      {
+        "n": 2,
+        "x": 66.06,
+        "y": 24.85
+      },
+      {
+        "n": 3,
+        "x": 31.52,
+        "y": 25.15
+      },
+      {
+        "n": 4,
+        "x": 65.76,
+        "y": 37.73
+      },
+      {
+        "n": 5,
+        "x": 31.82,
+        "y": 12.58
+      },
+      {
+        "n": 6,
+        "x": 50,
+        "y": 11.66
+      },
+      {
+        "n": 7,
+        "x": 49.7,
+        "y": 37.12
+      },
+      {
+        "n": 8,
+        "x": 31.21,
+        "y": 37.12
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TM",
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "technique": "stun",
+    "speed": 1.5,
+    "cueBallPath": [
+      {
+        "x": 48.48,
+        "y": 24.85
+      },
+      {
+        "x": 67.88,
+        "y": 12.98
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "x": 66.06,
+        "y": 11.66
+      },
+      {
+        "x": 50,
+        "y": 0
+      }
+    ]
+  },
+  "scoringRules": {
+    "mode": "success",
+    "attempts": 5,
+    "pass": {
+      "made": 3
+    }
+  }
+}

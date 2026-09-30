@@ -1,0 +1,139 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF · Cue Ball Control",
+  "difficulty": 1,
+  "skill": "Cue-Ball Control",
+  "attribution": {
+    "sourceName": "pool diagrams",
+    "author": "Marios Komninakis",
+    "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+  },
+  "metadata": {
+    "tags": [
+      "diagrams"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "diagram-import"
+  },
+  "careerEligible": true,
+  "id": "pdf-p02",
+  "title": "Place the cueball in a straight line from the object ball and try to make the",
+  "description": "Place the cueball in a straight line from the object ball and try to make the ball with stop, a little follow through so it moves one diamond forward , then two diamonds forward and then the same with draw shot.. Keep score of 10 attempts for each variation.",
+  "xp": 40,
+  "skillEffects": {
+    "Cue-Ball Control": 0.7,
+    "Speed Control": 0.3
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "x": 26.06,
+      "y": 36.2
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "x": 49.39,
+        "y": 24.85
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TR",
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "technique": "stop",
+    "speed": 1.5,
+    "targetZones": [
+      {
+        "x": 74.85,
+        "y": 15.34,
+        "rings": [
+          {
+            "r": 3.2,
+            "stars": 3
+          },
+          {
+            "r": 5.2,
+            "stars": 2
+          },
+          {
+            "r": 7.2,
+            "stars": 1
+          }
+        ]
+      },
+      {
+        "x": 62.12,
+        "y": 20.25,
+        "rings": [
+          {
+            "r": 3.2,
+            "stars": 3
+          },
+          {
+            "r": 5.2,
+            "stars": 2
+          },
+          {
+            "r": 7.2,
+            "stars": 1
+          }
+        ]
+      },
+      {
+        "x": 37.88,
+        "y": 30.98,
+        "rings": [
+          {
+            "r": 3.2,
+            "stars": 3
+          },
+          {
+            "r": 5.2,
+            "stars": 2
+          },
+          {
+            "r": 7.2,
+            "stars": 1
+          }
+        ]
+      }
+    ],
+    "cueBallPath": [
+      {
+        "x": 26.06,
+        "y": 36.2
+      },
+      {
+        "x": 47.37,
+        "y": 25.84
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "x": 49.39,
+        "y": 24.85
+      },
+      {
+        "x": 100,
+        "y": 0
+      }
+    ]
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 10,
+    "pass": {
+      "stars": 15,
+      "pockets": 7
+    }
+  }
+}

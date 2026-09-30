@@ -1,0 +1,122 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF · Half Table Patterns",
+  "difficulty": 3,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "pool diagrams",
+    "author": "Marios Komninakis",
+    "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+  },
+  "metadata": {
+    "tags": [
+      "diagrams"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "diagram-import"
+  },
+  "careerEligible": true,
+  "id": "pdf-p14",
+  "title": "When you are trying this drill for the first time and especially if you are not",
+  "description": "When you are trying this drill for the first time and especially if you are not that advanced yet, you can make the balls without following any order. As you improve follow the order and later on experiment by changing the order. All ball must be pocketed in the corner pockets.",
+  "xp": 70,
+  "skillEffects": {
+    "Pattern Play": 0.8,
+    "Shot Making": 0.2
+  },
+  "shot": {
+    "kind": "pot",
+    "cueBallPosition": {
+      "x": 40,
+      "y": 11.66
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "x": 26.06,
+        "y": 1.23
+      },
+      {
+        "n": 2,
+        "x": 26.67,
+        "y": 47.55
+      },
+      {
+        "n": 3,
+        "x": 26.06,
+        "y": 6.75
+      },
+      {
+        "n": 4,
+        "x": 26.67,
+        "y": 42.02
+      },
+      {
+        "n": 5,
+        "x": 26.67,
+        "y": 12.58
+      },
+      {
+        "n": 6,
+        "x": 26.36,
+        "y": 36.81
+      },
+      {
+        "n": 7,
+        "x": 26.36,
+        "y": 18.71
+      },
+      {
+        "n": 8,
+        "x": 26.67,
+        "y": 30.67
+      },
+      {
+        "n": 9,
+        "x": 26.06,
+        "y": 25
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TL",
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "technique": "stun",
+    "speed": 1.5,
+    "cueBallPath": [
+      {
+        "x": 40,
+        "y": 11.66
+      },
+      {
+        "x": 28.31,
+        "y": 1.34
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "x": 26.06,
+        "y": 1.23
+      },
+      {
+        "x": 0,
+        "y": 0
+      }
+    ]
+  },
+  "scoringRules": {
+    "mode": "success",
+    "attempts": 5,
+    "pass": {
+      "made": 3
+    }
+  }
+}

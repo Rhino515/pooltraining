@@ -14549,5 +14549,2726 @@ export const PKF_DOCS = [
         "pockets": 3
       }
     }
+  },
+  {
+    "format": "pooliq",
+    "schemaVersion": "1.0",
+    "contentType": "drill",
+    "contentVersion": "1.0",
+    "category": "PKF · Cue Ball Control",
+    "difficulty": 1,
+    "skill": "Cue-Ball Control",
+    "attribution": {
+      "sourceName": "pool diagrams",
+      "author": "Marios Komninakis",
+      "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+    },
+    "metadata": {
+      "tags": [
+        "diagrams"
+      ],
+      "created": "2026-09-29",
+      "language": "en",
+      "demo": false,
+      "generator": "diagram-import"
+    },
+    "careerEligible": true,
+    "id": "pdf-p02",
+    "title": "Place the cueball in a straight line from the object ball and try to make the",
+    "description": "Place the cueball in a straight line from the object ball and try to make the ball with stop, a little follow through so it moves one diamond forward , then two diamonds forward and then the same with draw shot.. Keep score of 10 attempts for each variation.",
+    "xp": 40,
+    "skillEffects": {
+      "Cue-Ball Control": 0.7,
+      "Speed Control": 0.3
+    },
+    "shot": {
+      "kind": "position",
+      "cueBallPosition": {
+        "x": 26.06,
+        "y": 36.2
+      },
+      "ballPositions": [
+        {
+          "n": 1,
+          "x": 49.39,
+          "y": 24.85
+        }
+      ],
+      "targetBall": 1,
+      "targetPocket": "TR",
+      "cueContact": {
+        "vTips": 0,
+        "hTips": 0
+      },
+      "technique": "stop",
+      "speed": 1.5,
+      "targetZones": [
+        {
+          "x": 74.85,
+          "y": 15.34,
+          "rings": [
+            {
+              "r": 3.2,
+              "stars": 3
+            },
+            {
+              "r": 5.2,
+              "stars": 2
+            },
+            {
+              "r": 7.2,
+              "stars": 1
+            }
+          ]
+        },
+        {
+          "x": 62.12,
+          "y": 20.25,
+          "rings": [
+            {
+              "r": 3.2,
+              "stars": 3
+            },
+            {
+              "r": 5.2,
+              "stars": 2
+            },
+            {
+              "r": 7.2,
+              "stars": 1
+            }
+          ]
+        },
+        {
+          "x": 37.88,
+          "y": 30.98,
+          "rings": [
+            {
+              "r": 3.2,
+              "stars": 3
+            },
+            {
+              "r": 5.2,
+              "stars": 2
+            },
+            {
+              "r": 7.2,
+              "stars": 1
+            }
+          ]
+        }
+      ],
+      "cueBallPath": [
+        {
+          "x": 26.06,
+          "y": 36.2
+        },
+        {
+          "x": 47.37,
+          "y": 25.84
+        }
+      ],
+      "contactIndex": 1,
+      "objectBallPath": [
+        {
+          "x": 49.39,
+          "y": 24.85
+        },
+        {
+          "x": 100,
+          "y": 0
+        }
+      ]
+    },
+    "scoringRules": {
+      "mode": "zone",
+      "attempts": 10,
+      "pass": {
+        "stars": 15,
+        "pockets": 7
+      }
+    }
+  },
+  {
+    "format": "pooliq",
+    "schemaVersion": "1.0",
+    "contentType": "drill",
+    "contentVersion": "1.0",
+    "category": "PKF · Cue Ball Control",
+    "difficulty": 1,
+    "skill": "Cue-Ball Control",
+    "attribution": {
+      "sourceName": "pool diagrams",
+      "author": "Marios Komninakis",
+      "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+    },
+    "metadata": {
+      "tags": [
+        "diagrams"
+      ],
+      "created": "2026-09-29",
+      "language": "en",
+      "demo": false,
+      "generator": "diagram-import"
+    },
+    "careerEligible": true,
+    "id": "pdf-p03",
+    "title": "English for both pockets. Keep score of 10 attempts for each variation.",
+    "description": "Shoot the ball to both sides. Start with no English and then change to upper, draw, left and right English for both pockets. Keep score of 10 attempts for each variation.",
+    "xp": 40,
+    "skillEffects": {
+      "Cue-Ball Control": 0.8,
+      "Shot Making": 0.2
+    },
+    "shot": {
+      "kind": "pot",
+      "cueBallPosition": {
+        "x": 19.7,
+        "y": 25.46
+      },
+      "ballPositions": [
+        {
+          "n": 1,
+          "x": 34.85,
+          "y": 24.85
+        }
+      ],
+      "targetBall": 1,
+      "targetPocket": "TR",
+      "cueContact": {
+        "vTips": 0,
+        "hTips": 0
+      },
+      "technique": "stun",
+      "speed": 1.5,
+      "acceptPockets": [
+        "TR",
+        "BR"
+      ],
+      "cueBallPath": [
+        {
+          "x": 19.7,
+          "y": 25.46
+        },
+        {
+          "x": 32.75,
+          "y": 25.65
+        }
+      ],
+      "contactIndex": 1,
+      "objectBallPath": [
+        {
+          "x": 34.85,
+          "y": 24.85
+        },
+        {
+          "x": 100,
+          "y": 0
+        }
+      ]
+    },
+    "scoringRules": {
+      "mode": "success",
+      "attempts": 10,
+      "pass": {
+        "made": 7
+      }
+    }
+  },
+  {
+    "format": "pooliq",
+    "schemaVersion": "1.0",
+    "contentType": "drill",
+    "contentVersion": "1.0",
+    "category": "PKF · Cue Ball Control",
+    "difficulty": 2,
+    "skill": "Cue-Ball Control",
+    "attribution": {
+      "sourceName": "pool diagrams",
+      "author": "Marios Komninakis",
+      "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+    },
+    "metadata": {
+      "tags": [
+        "diagrams"
+      ],
+      "created": "2026-09-29",
+      "language": "en",
+      "demo": false,
+      "generator": "diagram-import"
+    },
+    "careerEligible": true,
+    "id": "pdf-p04",
+    "title": "Shoot the ball to both sides. Start with no English and then change to upper,",
+    "description": "Shoot the ball to both sides. Start with no English and then change to upper, draw, left and right English. Keep score of 10 attempts for each variation.",
+    "xp": 40,
+    "skillEffects": {
+      "Cue-Ball Control": 0.8,
+      "Shot Making": 0.2
+    },
+    "shot": {
+      "kind": "pot",
+      "cueBallPosition": {
+        "x": 10.91,
+        "y": 12.58
+      },
+      "ballPositions": [
+        {
+          "n": 1,
+          "x": 26.97,
+          "y": 1.84
+        }
+      ],
+      "targetBall": 1,
+      "targetPocket": "TM",
+      "cueContact": {
+        "vTips": 0,
+        "hTips": 0
+      },
+      "technique": "stun",
+      "speed": 1.5,
+      "cueBallPath": [
+        {
+          "x": 10.91,
+          "y": 12.58
+        },
+        {
+          "x": 24.73,
+          "y": 2.02
+        }
+      ],
+      "contactIndex": 1,
+      "objectBallPath": [
+        {
+          "x": 26.97,
+          "y": 1.84
+        },
+        {
+          "x": 50,
+          "y": 0
+        }
+      ]
+    },
+    "scoringRules": {
+      "mode": "success",
+      "attempts": 10,
+      "pass": {
+        "made": 7
+      }
+    }
+  },
+  {
+    "format": "pooliq",
+    "schemaVersion": "1.0",
+    "contentType": "drill",
+    "contentVersion": "1.0",
+    "category": "PKF · Cue Ball Control",
+    "difficulty": 2,
+    "skill": "Cue-Ball Control",
+    "attribution": {
+      "sourceName": "pool diagrams",
+      "author": "Marios Komninakis",
+      "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+    },
+    "metadata": {
+      "tags": [
+        "diagrams"
+      ],
+      "created": "2026-09-29",
+      "language": "en",
+      "demo": false,
+      "generator": "diagram-import"
+    },
+    "careerEligible": true,
+    "id": "pdf-p05",
+    "title": "Start with no English and then change to upper, draw, left and right English.",
+    "description": "Start with no English and then change to upper, draw, left and right English. Shoot the ball to both sides. Keep score of 10 attempts for each variation.",
+    "xp": 40,
+    "skillEffects": {
+      "Cue-Ball Control": 0.8,
+      "Shot Making": 0.2
+    },
+    "shot": {
+      "kind": "pot",
+      "cueBallPosition": {
+        "x": 27.58,
+        "y": 5.21
+      },
+      "ballPositions": [
+        {
+          "n": 1,
+          "x": 71.21,
+          "y": 10.43
+        }
+      ],
+      "targetBall": 1,
+      "targetPocket": "TR",
+      "cueContact": {
+        "vTips": 0,
+        "hTips": 0
+      },
+      "technique": "stun",
+      "speed": 1.5,
+      "cueBallPath": [
+        {
+          "x": 27.58,
+          "y": 5.21
+        },
+        {
+          "x": 69.09,
+          "y": 11.2
+        }
+      ],
+      "contactIndex": 1,
+      "objectBallPath": [
+        {
+          "x": 71.21,
+          "y": 10.43
+        },
+        {
+          "x": 100,
+          "y": 0
+        }
+      ]
+    },
+    "scoringRules": {
+      "mode": "success",
+      "attempts": 10,
+      "pass": {
+        "made": 7
+      }
+    }
+  },
+  {
+    "format": "pooliq",
+    "schemaVersion": "1.0",
+    "contentType": "drill",
+    "contentVersion": "1.0",
+    "category": "Speed Control",
+    "difficulty": 2,
+    "skill": "Speed Control",
+    "attribution": {
+      "sourceName": "pool diagrams",
+      "author": "Marios Komninakis",
+      "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+    },
+    "metadata": {
+      "tags": [
+        "diagrams"
+      ],
+      "created": "2026-09-29",
+      "language": "en",
+      "demo": false,
+      "generator": "diagram-import"
+    },
+    "careerEligible": true,
+    "id": "pdf-p06",
+    "title": "Try playing pocket speed, and medium speed. As you improve on just making the",
+    "description": "Try playing pocket speed, and medium speed. As you improve on just making the ball try to leave the cueball at one of the green zone each time. Shoot the ball from both sides. Keep score of 10 attempts for each variation.",
+    "xp": 50,
+    "skillEffects": {
+      "Speed Control": 0.6,
+      "Position Play": 0.4
+    },
+    "shot": {
+      "kind": "position",
+      "cueBallPosition": {
+        "x": 76.06,
+        "y": 2.45
+      },
+      "ballPositions": [
+        {
+          "n": 1,
+          "x": 75.45,
+          "y": 24.23
+        }
+      ],
+      "targetBall": 1,
+      "targetPocket": "BR",
+      "cueContact": {
+        "vTips": 0,
+        "hTips": 0
+      },
+      "technique": "stun",
+      "speed": 1.5,
+      "targetZones": [
+        {
+          "x": 31.3,
+          "y": 5.5,
+          "rings": [
+            {
+              "r": 5,
+              "stars": 3
+            },
+            {
+              "r": 7.25,
+              "stars": 2
+            },
+            {
+              "r": 9.5,
+              "stars": 1
+            }
+          ],
+          "label": "green zone"
+        },
+        {
+          "x": 31.3,
+          "y": 24.9,
+          "rings": [
+            {
+              "r": 5.5,
+              "stars": 3
+            },
+            {
+              "r": 7.97,
+              "stars": 2
+            },
+            {
+              "r": 10.45,
+              "stars": 1
+            }
+          ],
+          "label": "green zone"
+        },
+        {
+          "x": 7,
+          "y": 5.5,
+          "rings": [
+            {
+              "r": 5,
+              "stars": 3
+            },
+            {
+              "r": 7.25,
+              "stars": 2
+            },
+            {
+              "r": 9.5,
+              "stars": 1
+            }
+          ],
+          "label": "green zone"
+        },
+        {
+          "x": 7,
+          "y": 24.9,
+          "rings": [
+            {
+              "r": 5.5,
+              "stars": 3
+            },
+            {
+              "r": 7.97,
+              "stars": 2
+            },
+            {
+              "r": 10.45,
+              "stars": 1
+            }
+          ],
+          "label": "green zone"
+        }
+      ],
+      "cueBallPath": [
+        {
+          "x": 76.06,
+          "y": 2.45
+        },
+        {
+          "x": 73.9,
+          "y": 22.6
+        }
+      ],
+      "contactIndex": 1,
+      "objectBallPath": [
+        {
+          "x": 75.45,
+          "y": 24.23
+        },
+        {
+          "x": 100,
+          "y": 50
+        }
+      ]
+    },
+    "scoringRules": {
+      "mode": "zone",
+      "attempts": 10,
+      "pass": {
+        "stars": 15,
+        "pockets": 7
+      }
+    }
+  },
+  {
+    "format": "pooliq",
+    "schemaVersion": "1.0",
+    "contentType": "drill",
+    "contentVersion": "1.0",
+    "category": "PKF · Full Table with Sidespin",
+    "difficulty": 3,
+    "skill": "Cue-Ball Control",
+    "attribution": {
+      "sourceName": "pool diagrams",
+      "author": "Marios Komninakis",
+      "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+    },
+    "metadata": {
+      "tags": [
+        "diagrams"
+      ],
+      "created": "2026-09-29",
+      "language": "en",
+      "demo": false,
+      "generator": "diagram-import"
+    },
+    "careerEligible": true,
+    "id": "pdf-p07",
+    "title": "Shoot the 1 ball at the left corner pocket and try to position the cue ball in",
+    "description": "Shoot the 1 ball at the left corner pocket and try to position the cue ball in the green area. Start with one rail and left English and then with two and three rails and right English. Do the same from the opposite angle. Write down 10 attempts from each side. As you progress leave more distance betweeen the balls to make it harder.",
+    "xp": 60,
+    "skillEffects": {
+      "Cue-Ball Control": 0.5,
+      "Position Play": 0.5
+    },
+    "shot": {
+      "kind": "position",
+      "cueBallPosition": {
+        "x": 48.18,
+        "y": 11.96
+      },
+      "ballPositions": [
+        {
+          "n": 1,
+          "x": 86.67,
+          "y": 11.66
+        }
+      ],
+      "targetBall": 1,
+      "targetPocket": "TR",
+      "cueContact": {
+        "vTips": 0,
+        "hTips": 0
+      },
+      "technique": "stun",
+      "speed": 1.5,
+      "targetZones": [
+        {
+          "x": 76,
+          "y": 25.5,
+          "rings": [
+            {
+              "r": 6,
+              "stars": 3
+            },
+            {
+              "r": 8.7,
+              "stars": 2
+            },
+            {
+              "r": 11.4,
+              "stars": 1
+            }
+          ],
+          "label": "green area"
+        },
+        {
+          "x": 50.3,
+          "y": 25.5,
+          "rings": [
+            {
+              "r": 6,
+              "stars": 3
+            },
+            {
+              "r": 8.7,
+              "stars": 2
+            },
+            {
+              "r": 11.4,
+              "stars": 1
+            }
+          ],
+          "label": "green area"
+        },
+        {
+          "x": 24.2,
+          "y": 6.1,
+          "rings": [
+            {
+              "r": 6,
+              "stars": 3
+            },
+            {
+              "r": 8.7,
+              "stars": 2
+            },
+            {
+              "r": 11.4,
+              "stars": 1
+            }
+          ],
+          "label": "green area"
+        },
+        {
+          "x": 7,
+          "y": 25.5,
+          "rings": [
+            {
+              "r": 6,
+              "stars": 3
+            },
+            {
+              "r": 8.7,
+              "stars": 2
+            },
+            {
+              "r": 11.4,
+              "stars": 1
+            }
+          ],
+          "label": "green area"
+        }
+      ],
+      "cueBallPath": [
+        {
+          "x": 48.18,
+          "y": 11.96
+        },
+        {
+          "x": 84.98,
+          "y": 13.14
+        }
+      ],
+      "contactIndex": 1,
+      "objectBallPath": [
+        {
+          "x": 86.67,
+          "y": 11.66
+        },
+        {
+          "x": 100,
+          "y": 0
+        }
+      ]
+    },
+    "scoringRules": {
+      "mode": "zone",
+      "attempts": 10,
+      "pass": {
+        "stars": 15,
+        "pockets": 7
+      }
+    }
+  },
+  {
+    "format": "pooliq",
+    "schemaVersion": "1.0",
+    "contentType": "drill",
+    "contentVersion": "1.0",
+    "category": "Banks",
+    "difficulty": 2,
+    "skill": "Banks",
+    "attribution": {
+      "sourceName": "pool diagrams",
+      "author": "Marios Komninakis",
+      "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+    },
+    "metadata": {
+      "tags": [
+        "diagrams"
+      ],
+      "created": "2026-09-29",
+      "language": "en",
+      "demo": false,
+      "generator": "diagram-import"
+    },
+    "careerEligible": true,
+    "id": "pdf-p08",
+    "title": "Banks: This is a practice for bank shots. The goal is to get familiar on",
+    "description": "Banks: This is a practice for bank shots. The goal is to get familiar on playing banks and understand the different effects the ball gets with different spin. Try to make the 1st ball in the corner pocket and all the others to the side pocket. Use no spin at all at first then stop shot and experiment with left and right depending on the angle. * Use follow through and a rolling hit and also low spin and fast stroke. 10 attempts for each shot. Try the shots from both of the sides of the table.",
+    "xp": 50,
+    "skillEffects": {
+      "Banks": 0.8,
+      "Shot Making": 0.2
+    },
+    "shot": {
+      "kind": "bank",
+      "cueBallPosition": {
+        "x": 87.31,
+        "y": 28.83
+      },
+      "ballPositions": [
+        {
+          "n": 1,
+          "x": 87.61,
+          "y": 4.91
+        }
+      ],
+      "targetBall": 1,
+      "targetPocket": "TR",
+      "cueContact": {
+        "vTips": 0,
+        "hTips": 0
+      },
+      "technique": "bank",
+      "speed": 1.5
+    },
+    "scoringRules": {
+      "mode": "success",
+      "attempts": 10,
+      "pass": {
+        "made": 7
+      }
+    }
+  },
+  {
+    "format": "pooliq",
+    "schemaVersion": "1.0",
+    "contentType": "drill",
+    "contentVersion": "1.0",
+    "category": "PKF · Full Table Patterns",
+    "difficulty": 2,
+    "skill": "Pattern Play",
+    "attribution": {
+      "sourceName": "pool diagrams",
+      "author": "Marios Komninakis",
+      "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+    },
+    "metadata": {
+      "tags": [
+        "diagrams"
+      ],
+      "created": "2026-09-29",
+      "language": "en",
+      "demo": false,
+      "generator": "diagram-import"
+    },
+    "careerEligible": true,
+    "id": "pdf-p09",
+    "title": "Cue ball must stay in between the blue area. No banks allowed. You can make the",
+    "description": "Cue ball must stay in between the blue area. No banks allowed. You can make the drill easier by putting the balls one diamond closer to the pocket or harder by bringing the on the 3rd diamond of the side rail.",
+    "xp": 60,
+    "skillEffects": {
+      "Pattern Play": 0.6,
+      "Cue-Ball Control": 0.4
+    },
+    "shot": {
+      "kind": "position",
+      "cueBallPosition": {
+        "x": 48.74,
+        "y": 25.15
+      },
+      "ballPositions": [
+        {
+          "n": 1,
+          "x": 75.16,
+          "y": 47.27
+        },
+        {
+          "n": 2,
+          "x": 22.96,
+          "y": 2.42
+        },
+        {
+          "n": 3,
+          "x": 75.16,
+          "y": 2.73
+        },
+        {
+          "n": 4,
+          "x": 23.27,
+          "y": 46.36
+        }
+      ],
+      "targetBall": 1,
+      "targetPocket": "BR",
+      "cueContact": {
+        "vTips": 0,
+        "hTips": 0
+      },
+      "technique": "stun",
+      "speed": 1.5,
+      "targetZones": [
+        {
+          "type": "band",
+          "center": 49,
+          "rings": [
+            {
+              "r": 6.65,
+              "stars": 3
+            },
+            {
+              "r": 12.35,
+              "stars": 2
+            },
+            {
+              "r": 19,
+              "stars": 1
+            }
+          ],
+          "label": "blue area"
+        }
+      ],
+      "cueBallPath": [
+        {
+          "x": 48.74,
+          "y": 25.15
+        },
+        {
+          "x": 72.92,
+          "y": 47.02
+        }
+      ],
+      "contactIndex": 1,
+      "objectBallPath": [
+        {
+          "x": 75.16,
+          "y": 47.27
+        },
+        {
+          "x": 100,
+          "y": 50
+        }
+      ]
+    },
+    "scoringRules": {
+      "mode": "zone",
+      "attempts": 5,
+      "pass": {
+        "stars": 7,
+        "pockets": 3
+      }
+    }
+  },
+  {
+    "format": "pooliq",
+    "schemaVersion": "1.0",
+    "contentType": "drill",
+    "contentVersion": "1.0",
+    "category": "PKF · Full Table Patterns",
+    "difficulty": 2,
+    "skill": "Pattern Play",
+    "attribution": {
+      "sourceName": "pool diagrams",
+      "author": "Marios Komninakis",
+      "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+    },
+    "metadata": {
+      "tags": [
+        "diagrams"
+      ],
+      "created": "2026-09-29",
+      "language": "en",
+      "demo": false,
+      "generator": "diagram-import"
+    },
+    "careerEligible": true,
+    "id": "pdf-p10",
+    "title": "Cue ball must stay in between the blue area. No banks allowed.",
+    "description": "Cue ball must stay in between the blue area. No banks allowed.",
+    "xp": 60,
+    "skillEffects": {
+      "Pattern Play": 0.6,
+      "Cue-Ball Control": 0.4
+    },
+    "shot": {
+      "kind": "position",
+      "cueBallPosition": {
+        "x": 81.16,
+        "y": 33.44
+      },
+      "ballPositions": [
+        {
+          "n": 1,
+          "x": 97.1,
+          "y": 11.66
+        },
+        {
+          "n": 2,
+          "x": 2.6,
+          "y": 46.7
+        },
+        {
+          "n": 3,
+          "x": 95.65,
+          "y": 38.96
+        },
+        {
+          "n": 4,
+          "x": 2.95,
+          "y": 2.99
+        }
+      ],
+      "targetBall": 1,
+      "targetPocket": "TR",
+      "cueContact": {
+        "vTips": 0,
+        "hTips": 0
+      },
+      "technique": "stun",
+      "speed": 1.5,
+      "targetZones": [
+        {
+          "type": "band",
+          "center": 68.5,
+          "rings": [
+            {
+              "r": 10.5,
+              "stars": 3
+            },
+            {
+              "r": 19.5,
+              "stars": 2
+            },
+            {
+              "r": 30,
+              "stars": 1
+            }
+          ],
+          "label": "blue area"
+        }
+      ],
+      "cueBallPath": [
+        {
+          "x": 81.16,
+          "y": 33.44
+        },
+        {
+          "x": 96.56,
+          "y": 13.84
+        }
+      ],
+      "contactIndex": 1,
+      "objectBallPath": [
+        {
+          "x": 97.1,
+          "y": 11.66
+        },
+        {
+          "x": 100,
+          "y": 0
+        }
+      ]
+    },
+    "scoringRules": {
+      "mode": "zone",
+      "attempts": 5,
+      "pass": {
+        "stars": 7,
+        "pockets": 3
+      }
+    }
+  },
+  {
+    "format": "pooliq",
+    "schemaVersion": "1.0",
+    "contentType": "drill",
+    "contentVersion": "1.0",
+    "category": "PKF · Full Table Patterns",
+    "difficulty": 3,
+    "skill": "Pattern Play",
+    "attribution": {
+      "sourceName": "pool diagrams",
+      "author": "Marios Komninakis",
+      "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+    },
+    "metadata": {
+      "tags": [
+        "diagrams"
+      ],
+      "created": "2026-09-29",
+      "language": "en",
+      "demo": false,
+      "generator": "diagram-import"
+    },
+    "careerEligible": true,
+    "id": "pdf-p11",
+    "title": "Cue ball must stay in between the blue area. No banks allowed. When you feel",
+    "description": "Cue ball must stay in between the blue area. No banks allowed. When you feel comfortable completing this drill you can experiment with positioning with two rails where you are allowed to pass through the green zone.",
+    "xp": 70,
+    "skillEffects": {
+      "Pattern Play": 0.6,
+      "Cue-Ball Control": 0.4
+    },
+    "shot": {
+      "kind": "position",
+      "cueBallPosition": {
+        "x": 62.92,
+        "y": 24.85
+      },
+      "ballPositions": [
+        {
+          "n": 1,
+          "x": 89.67,
+          "y": 3.07
+        },
+        {
+          "n": 2,
+          "x": 75.99,
+          "y": 2.15
+        },
+        {
+          "n": 3,
+          "x": 62.31,
+          "y": 2.45
+        },
+        {
+          "n": 4,
+          "x": 11.85,
+          "y": 47.24
+        },
+        {
+          "n": 5,
+          "x": 25.53,
+          "y": 46.93
+        },
+        {
+          "n": 6,
+          "x": 37.69,
+          "y": 47.85
+        }
+      ],
+      "targetBall": 1,
+      "targetPocket": "TR",
+      "cueContact": {
+        "vTips": 0,
+        "hTips": 0
+      },
+      "technique": "stun",
+      "speed": 1.5,
+      "targetZones": [
+        {
+          "type": "band",
+          "center": 51,
+          "rings": [
+            {
+              "r": 10.5,
+              "stars": 3
+            },
+            {
+              "r": 19.5,
+              "stars": 2
+            },
+            {
+              "r": 30,
+              "stars": 1
+            }
+          ],
+          "label": "blue area"
+        }
+      ],
+      "cueBallPath": [
+        {
+          "x": 62.92,
+          "y": 24.85
+        },
+        {
+          "x": 87.51,
+          "y": 3.71
+        }
+      ],
+      "contactIndex": 1,
+      "objectBallPath": [
+        {
+          "x": 89.67,
+          "y": 3.07
+        },
+        {
+          "x": 100,
+          "y": 0
+        }
+      ]
+    },
+    "scoringRules": {
+      "mode": "zone",
+      "attempts": 5,
+      "pass": {
+        "stars": 7,
+        "pockets": 3
+      }
+    }
+  },
+  {
+    "format": "pooliq",
+    "schemaVersion": "1.0",
+    "contentType": "drill",
+    "contentVersion": "1.0",
+    "category": "PKF · Full Table Patterns",
+    "difficulty": 2,
+    "skill": "Pattern Play",
+    "attribution": {
+      "sourceName": "pool diagrams",
+      "author": "Marios Komninakis",
+      "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+    },
+    "metadata": {
+      "tags": [
+        "diagrams"
+      ],
+      "created": "2026-09-29",
+      "language": "en",
+      "demo": false,
+      "generator": "diagram-import"
+    },
+    "careerEligible": true,
+    "id": "pdf-p12",
+    "title": "Balls must be pocketed on the corner pocket that are closer to. No banks",
+    "description": "Balls must be pocketed on the corner pocket that are closer to. No banks allowed.",
+    "xp": 60,
+    "skillEffects": {
+      "Pattern Play": 0.7,
+      "Shot Making": 0.3
+    },
+    "shot": {
+      "kind": "pot",
+      "cueBallPosition": {
+        "x": 51.82,
+        "y": 25.15
+      },
+      "ballPositions": [
+        {
+          "n": 1,
+          "x": 75.76,
+          "y": 40.18
+        },
+        {
+          "n": 2,
+          "x": 62.12,
+          "y": 10.12
+        },
+        {
+          "n": 3,
+          "x": 24.85,
+          "y": 11.04
+        },
+        {
+          "n": 4,
+          "x": 36.67,
+          "y": 39.57
+        }
+      ],
+      "targetBall": 1,
+      "targetPocket": "BR",
+      "cueContact": {
+        "vTips": 0,
+        "hTips": 0
+      },
+      "technique": "stun",
+      "speed": 1.5,
+      "cueBallPath": [
+        {
+          "x": 51.82,
+          "y": 25.15
+        },
+        {
+          "x": 73.67,
+          "y": 39.34
+        }
+      ],
+      "contactIndex": 1,
+      "objectBallPath": [
+        {
+          "x": 75.76,
+          "y": 40.18
+        },
+        {
+          "x": 100,
+          "y": 50
+        }
+      ]
+    },
+    "scoringRules": {
+      "mode": "success",
+      "attempts": 5,
+      "pass": {
+        "made": 3
+      }
+    }
+  },
+  {
+    "format": "pooliq",
+    "schemaVersion": "1.0",
+    "contentType": "drill",
+    "contentVersion": "1.0",
+    "category": "PKF · Full Table Patterns",
+    "difficulty": 3,
+    "skill": "Pattern Play",
+    "attribution": {
+      "sourceName": "pool diagrams",
+      "author": "Marios Komninakis",
+      "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+    },
+    "metadata": {
+      "tags": [
+        "diagrams"
+      ],
+      "created": "2026-09-29",
+      "language": "en",
+      "demo": false,
+      "generator": "diagram-import"
+    },
+    "careerEligible": true,
+    "id": "pdf-p13-two-rails",
+    "title": "1.) Cue ball is allowed to touch two rails after each shot. No banks allowed.",
+    "description": "1.) Cue ball is allowed to touch two rails after each shot. No banks allowed.",
+    "xp": 70,
+    "skillEffects": {
+      "Pattern Play": 0.6,
+      "Position Play": 0.4
+    },
+    "shot": {
+      "kind": "pot",
+      "cueBallPosition": {
+        "x": 65.15,
+        "y": 38.96
+      },
+      "ballPositions": [
+        {
+          "n": 1,
+          "x": 88.48,
+          "y": 24.23
+        },
+        {
+          "n": 2,
+          "x": 9.7,
+          "y": 24.85
+        },
+        {
+          "n": 3,
+          "x": 75.15,
+          "y": 25.77
+        },
+        {
+          "n": 4,
+          "x": 25.15,
+          "y": 24.85
+        },
+        {
+          "n": 5,
+          "x": 62.73,
+          "y": 25.15
+        },
+        {
+          "n": 6,
+          "x": 37.88,
+          "y": 24.85
+        }
+      ],
+      "targetBall": 1,
+      "targetPocket": "TR",
+      "cueContact": {
+        "vTips": 0,
+        "hTips": 0
+      },
+      "technique": "stun",
+      "speed": 1.5,
+      "cueBallPath": [
+        {
+          "x": 65.15,
+          "y": 38.96
+        },
+        {
+          "x": 87.51,
+          "y": 26.26
+        }
+      ],
+      "contactIndex": 1,
+      "objectBallPath": [
+        {
+          "x": 88.48,
+          "y": 24.23
+        },
+        {
+          "x": 100,
+          "y": 0
+        }
+      ]
+    },
+    "scoringRules": {
+      "mode": "success",
+      "attempts": 5,
+      "pass": {
+        "made": 3
+      }
+    }
+  },
+  {
+    "format": "pooliq",
+    "schemaVersion": "1.0",
+    "contentType": "drill",
+    "contentVersion": "1.0",
+    "category": "PKF · Full Table Patterns",
+    "difficulty": 3,
+    "skill": "Pattern Play",
+    "attribution": {
+      "sourceName": "pool diagrams",
+      "author": "Marios Komninakis",
+      "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+    },
+    "metadata": {
+      "tags": [
+        "diagrams"
+      ],
+      "created": "2026-09-29",
+      "language": "en",
+      "demo": false,
+      "generator": "diagram-import"
+    },
+    "careerEligible": true,
+    "id": "pdf-p13-one-rail",
+    "title": "2.) Cue ball is allowed to touch one rails after each shot. No banks allowed.",
+    "description": "2.) Cue ball is allowed to touch one rails after each shot. No banks allowed.",
+    "xp": 70,
+    "skillEffects": {
+      "Pattern Play": 0.6,
+      "Position Play": 0.4
+    },
+    "shot": {
+      "kind": "pot",
+      "cueBallPosition": {
+        "x": 65.15,
+        "y": 38.96
+      },
+      "ballPositions": [
+        {
+          "n": 1,
+          "x": 88.48,
+          "y": 24.23
+        },
+        {
+          "n": 2,
+          "x": 9.7,
+          "y": 24.85
+        },
+        {
+          "n": 3,
+          "x": 75.15,
+          "y": 25.77
+        },
+        {
+          "n": 4,
+          "x": 25.15,
+          "y": 24.85
+        },
+        {
+          "n": 5,
+          "x": 62.73,
+          "y": 25.15
+        },
+        {
+          "n": 6,
+          "x": 37.88,
+          "y": 24.85
+        }
+      ],
+      "targetBall": 1,
+      "targetPocket": "TR",
+      "cueContact": {
+        "vTips": 0,
+        "hTips": 0
+      },
+      "technique": "stun",
+      "speed": 1.5,
+      "cueBallPath": [
+        {
+          "x": 65.15,
+          "y": 38.96
+        },
+        {
+          "x": 87.51,
+          "y": 26.26
+        }
+      ],
+      "contactIndex": 1,
+      "objectBallPath": [
+        {
+          "x": 88.48,
+          "y": 24.23
+        },
+        {
+          "x": 100,
+          "y": 0
+        }
+      ]
+    },
+    "scoringRules": {
+      "mode": "success",
+      "attempts": 5,
+      "pass": {
+        "made": 3
+      }
+    }
+  },
+  {
+    "format": "pooliq",
+    "schemaVersion": "1.0",
+    "contentType": "drill",
+    "contentVersion": "1.0",
+    "category": "PKF · Half Table Patterns",
+    "difficulty": 3,
+    "skill": "Pattern Play",
+    "attribution": {
+      "sourceName": "pool diagrams",
+      "author": "Marios Komninakis",
+      "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+    },
+    "metadata": {
+      "tags": [
+        "diagrams"
+      ],
+      "created": "2026-09-29",
+      "language": "en",
+      "demo": false,
+      "generator": "diagram-import"
+    },
+    "careerEligible": true,
+    "id": "pdf-p14",
+    "title": "When you are trying this drill for the first time and especially if you are not",
+    "description": "When you are trying this drill for the first time and especially if you are not that advanced yet, you can make the balls without following any order. As you improve follow the order and later on experiment by changing the order. All ball must be pocketed in the corner pockets.",
+    "xp": 70,
+    "skillEffects": {
+      "Pattern Play": 0.8,
+      "Shot Making": 0.2
+    },
+    "shot": {
+      "kind": "pot",
+      "cueBallPosition": {
+        "x": 40,
+        "y": 11.66
+      },
+      "ballPositions": [
+        {
+          "n": 1,
+          "x": 26.06,
+          "y": 1.23
+        },
+        {
+          "n": 2,
+          "x": 26.67,
+          "y": 47.55
+        },
+        {
+          "n": 3,
+          "x": 26.06,
+          "y": 6.75
+        },
+        {
+          "n": 4,
+          "x": 26.67,
+          "y": 42.02
+        },
+        {
+          "n": 5,
+          "x": 26.67,
+          "y": 12.58
+        },
+        {
+          "n": 6,
+          "x": 26.36,
+          "y": 36.81
+        },
+        {
+          "n": 7,
+          "x": 26.36,
+          "y": 18.71
+        },
+        {
+          "n": 8,
+          "x": 26.67,
+          "y": 30.67
+        },
+        {
+          "n": 9,
+          "x": 26.06,
+          "y": 25
+        }
+      ],
+      "targetBall": 1,
+      "targetPocket": "TL",
+      "cueContact": {
+        "vTips": 0,
+        "hTips": 0
+      },
+      "technique": "stun",
+      "speed": 1.5,
+      "cueBallPath": [
+        {
+          "x": 40,
+          "y": 11.66
+        },
+        {
+          "x": 28.31,
+          "y": 1.34
+        }
+      ],
+      "contactIndex": 1,
+      "objectBallPath": [
+        {
+          "x": 26.06,
+          "y": 1.23
+        },
+        {
+          "x": 0,
+          "y": 0
+        }
+      ]
+    },
+    "scoringRules": {
+      "mode": "success",
+      "attempts": 5,
+      "pass": {
+        "made": 3
+      }
+    }
+  },
+  {
+    "format": "pooliq",
+    "schemaVersion": "1.0",
+    "contentType": "drill",
+    "contentVersion": "1.0",
+    "category": "PKF · Half Table Patterns",
+    "difficulty": 3,
+    "skill": "Pattern Play",
+    "attribution": {
+      "sourceName": "pool diagrams",
+      "author": "Marios Komninakis",
+      "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+    },
+    "metadata": {
+      "tags": [
+        "diagrams"
+      ],
+      "created": "2026-09-29",
+      "language": "en",
+      "demo": false,
+      "generator": "diagram-import"
+    },
+    "careerEligible": true,
+    "id": "pdf-p15",
+    "title": "When you are trying this drill for the first time and especially if you are not",
+    "description": "When you are trying this drill for the first time and especially if you are not that advanced yet, you can make the balls without following any order. As you improve follow the order and later on experiment by changing the order. All ball must be pocketed in the corner pocket.",
+    "xp": 70,
+    "skillEffects": {
+      "Pattern Play": 0.8,
+      "Shot Making": 0.2
+    },
+    "shot": {
+      "kind": "pot",
+      "cueBallPosition": {
+        "x": 62,
+        "y": 25
+      },
+      "ballPositions": [
+        {
+          "n": 1,
+          "x": 74.85,
+          "y": 1.84
+        },
+        {
+          "n": 2,
+          "x": 74.55,
+          "y": 7.67
+        },
+        {
+          "n": 3,
+          "x": 74.85,
+          "y": 13.19
+        },
+        {
+          "n": 4,
+          "x": 75.15,
+          "y": 19.02
+        },
+        {
+          "n": 5,
+          "x": 74.55,
+          "y": 24.23
+        },
+        {
+          "n": 6,
+          "x": 80.61,
+          "y": 25.15
+        },
+        {
+          "n": 7,
+          "x": 86.06,
+          "y": 24.85
+        },
+        {
+          "n": 8,
+          "x": 91.55,
+          "y": 25
+        },
+        {
+          "n": 9,
+          "x": 97.22,
+          "y": 25.09
+        }
+      ],
+      "targetBall": 1,
+      "targetPocket": "TR",
+      "cueContact": {
+        "vTips": 0,
+        "hTips": 0
+      },
+      "technique": "stun",
+      "speed": 1.5,
+      "cueBallPath": [
+        {
+          "x": 62,
+          "y": 25
+        },
+        {
+          "x": 72.61,
+          "y": 2
+        }
+      ],
+      "contactIndex": 1,
+      "objectBallPath": [
+        {
+          "x": 74.85,
+          "y": 1.84
+        },
+        {
+          "x": 100,
+          "y": 0
+        }
+      ]
+    },
+    "scoringRules": {
+      "mode": "success",
+      "attempts": 5,
+      "pass": {
+        "made": 3
+      }
+    }
+  },
+  {
+    "format": "pooliq",
+    "schemaVersion": "1.0",
+    "contentType": "drill",
+    "contentVersion": "1.0",
+    "category": "PKF · Full Table Patterns",
+    "difficulty": 2,
+    "skill": "Pattern Play",
+    "attribution": {
+      "sourceName": "pool diagrams",
+      "author": "Marios Komninakis",
+      "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+    },
+    "metadata": {
+      "tags": [
+        "diagrams"
+      ],
+      "created": "2026-09-29",
+      "language": "en",
+      "demo": false,
+      "generator": "diagram-import"
+    },
+    "careerEligible": true,
+    "id": "pdf-p16",
+    "title": "Balls 1,3,5 must be pocketed in the left side pocket and 2,4,6 on the right",
+    "description": "Balls 1,3,5 must be pocketed in the left side pocket and 2,4,6 on the right side pocket. You are not allowed to touch any ball other than the one shooting.",
+    "xp": 60,
+    "skillEffects": {
+      "Pattern Play": 0.7,
+      "Shot Making": 0.3
+    },
+    "shot": {
+      "kind": "pot",
+      "cueBallPosition": {
+        "x": 45.76,
+        "y": 24.85
+      },
+      "ballPositions": [
+        {
+          "n": 1,
+          "x": 50,
+          "y": 11.66
+        },
+        {
+          "n": 2,
+          "x": 60.91,
+          "y": 34.97
+        },
+        {
+          "n": 3,
+          "x": 39.09,
+          "y": 13.19
+        },
+        {
+          "n": 4,
+          "x": 39.09,
+          "y": 35.58
+        },
+        {
+          "n": 5,
+          "x": 61.21,
+          "y": 13.8
+        },
+        {
+          "n": 6,
+          "x": 50,
+          "y": 37.42
+        }
+      ],
+      "targetBall": 1,
+      "targetPocket": "TM",
+      "cueContact": {
+        "vTips": 0,
+        "hTips": 0
+      },
+      "technique": "stun",
+      "speed": 1.5,
+      "cueBallPath": [
+        {
+          "x": 45.76,
+          "y": 24.85
+        },
+        {
+          "x": 50,
+          "y": 13.91
+        }
+      ],
+      "contactIndex": 1,
+      "objectBallPath": [
+        {
+          "x": 50,
+          "y": 11.66
+        },
+        {
+          "x": 50,
+          "y": 0
+        }
+      ]
+    },
+    "scoringRules": {
+      "mode": "success",
+      "attempts": 5,
+      "pass": {
+        "made": 3
+      }
+    }
+  },
+  {
+    "format": "pooliq",
+    "schemaVersion": "1.0",
+    "contentType": "drill",
+    "contentVersion": "1.0",
+    "category": "PKF · Full Table Patterns",
+    "difficulty": 3,
+    "skill": "Pattern Play",
+    "attribution": {
+      "sourceName": "pool diagrams",
+      "author": "Marios Komninakis",
+      "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+    },
+    "metadata": {
+      "tags": [
+        "diagrams"
+      ],
+      "created": "2026-09-29",
+      "language": "en",
+      "demo": false,
+      "generator": "diagram-import"
+    },
+    "careerEligible": true,
+    "id": "pdf-p17",
+    "title": "You are not allowed to touch any other ball except the one shooting. When you",
+    "description": "You are not allowed to touch any other ball except the one shooting. When you feel confortable making this drill, place the 9 in the middle of tha table and avoid touching it. No banks allowed ofcourse. (the balls should not be touching when you rack them)",
+    "xp": 70,
+    "skillEffects": {
+      "Pattern Play": 0.7,
+      "Shot Making": 0.3
+    },
+    "shot": {
+      "kind": "pot",
+      "cueBallPosition": {
+        "x": 61.82,
+        "y": 12.88
+      },
+      "ballPositions": [
+        {
+          "n": 1,
+          "x": 75.76,
+          "y": 1.84
+        },
+        {
+          "n": 2,
+          "x": 24.24,
+          "y": 47.24
+        },
+        {
+          "n": 3,
+          "x": 76.06,
+          "y": 7.36
+        },
+        {
+          "n": 4,
+          "x": 23.94,
+          "y": 41.72
+        },
+        {
+          "n": 5,
+          "x": 75.45,
+          "y": 12.88
+        },
+        {
+          "n": 6,
+          "x": 23.94,
+          "y": 36.2
+        },
+        {
+          "n": 7,
+          "x": 76.06,
+          "y": 18.4
+        },
+        {
+          "n": 8,
+          "x": 24.24,
+          "y": 30.06
+        }
+      ],
+      "targetBall": 1,
+      "targetPocket": "TR",
+      "cueContact": {
+        "vTips": 0,
+        "hTips": 0
+      },
+      "technique": "stun",
+      "speed": 1.5,
+      "cueBallPath": [
+        {
+          "x": 61.82,
+          "y": 12.88
+        },
+        {
+          "x": 73.52,
+          "y": 2.01
+        }
+      ],
+      "contactIndex": 1,
+      "objectBallPath": [
+        {
+          "x": 75.76,
+          "y": 1.84
+        },
+        {
+          "x": 100,
+          "y": 0
+        }
+      ]
+    },
+    "scoringRules": {
+      "mode": "success",
+      "attempts": 5,
+      "pass": {
+        "made": 3
+      }
+    }
+  },
+  {
+    "format": "pooliq",
+    "schemaVersion": "1.0",
+    "contentType": "drill",
+    "contentVersion": "1.0",
+    "category": "PKF · Full Table Patterns",
+    "difficulty": 3,
+    "skill": "Pattern Play",
+    "attribution": {
+      "sourceName": "pool diagrams",
+      "author": "Marios Komninakis",
+      "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+    },
+    "metadata": {
+      "tags": [
+        "diagrams"
+      ],
+      "created": "2026-09-29",
+      "language": "en",
+      "demo": false,
+      "generator": "diagram-import"
+    },
+    "careerEligible": true,
+    "id": "pdf-p18",
+    "title": "Shoot the balls in the order and be careful of the angles.",
+    "description": "Shoot the balls in the order and be careful of the angles.",
+    "xp": 70,
+    "skillEffects": {
+      "Pattern Play": 0.8,
+      "Shot Making": 0.2
+    },
+    "shot": {
+      "kind": "pot",
+      "cueBallPosition": {
+        "x": 33.64,
+        "y": 19.02
+      },
+      "ballPositions": [
+        {
+          "n": 1,
+          "x": 11.21,
+          "y": 1.84
+        },
+        {
+          "n": 2,
+          "x": 88.18,
+          "y": 47.55
+        },
+        {
+          "n": 3,
+          "x": 11.21,
+          "y": 47.85
+        },
+        {
+          "n": 4,
+          "x": 88.18,
+          "y": 1.84
+        },
+        {
+          "n": 5,
+          "x": 24.55,
+          "y": 47.55
+        },
+        {
+          "n": 6,
+          "x": 76.06,
+          "y": 2.15
+        },
+        {
+          "n": 7,
+          "x": 24.55,
+          "y": 1.84
+        },
+        {
+          "n": 8,
+          "x": 75.76,
+          "y": 47.85
+        }
+      ],
+      "targetBall": 1,
+      "targetPocket": "TL",
+      "cueContact": {
+        "vTips": 0,
+        "hTips": 0
+      },
+      "technique": "stun",
+      "speed": 1.5,
+      "cueBallPath": [
+        {
+          "x": 33.64,
+          "y": 19.02
+        },
+        {
+          "x": 13.43,
+          "y": 2.2
+        }
+      ],
+      "contactIndex": 1,
+      "objectBallPath": [
+        {
+          "x": 11.21,
+          "y": 1.84
+        },
+        {
+          "x": 0,
+          "y": 0
+        }
+      ]
+    },
+    "scoringRules": {
+      "mode": "success",
+      "attempts": 5,
+      "pass": {
+        "made": 3
+      }
+    }
+  },
+  {
+    "format": "pooliq",
+    "schemaVersion": "1.0",
+    "contentType": "drill",
+    "contentVersion": "1.0",
+    "category": "PKF · Full Table Patterns",
+    "difficulty": 3,
+    "skill": "Pattern Play",
+    "attribution": {
+      "sourceName": "pool diagrams",
+      "author": "Marios Komninakis",
+      "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+    },
+    "metadata": {
+      "tags": [
+        "diagrams"
+      ],
+      "created": "2026-09-29",
+      "language": "en",
+      "demo": false,
+      "generator": "diagram-import"
+    },
+    "careerEligible": true,
+    "id": "pdf-p19",
+    "title": "Shoot the balls in the order and be careful of the angles.",
+    "description": "Shoot the balls in the order and be careful of the angles.",
+    "xp": 70,
+    "skillEffects": {
+      "Pattern Play": 0.8,
+      "Shot Making": 0.2
+    },
+    "shot": {
+      "kind": "pot",
+      "cueBallPosition": {
+        "x": 13.94,
+        "y": 23.01
+      },
+      "ballPositions": [
+        {
+          "n": 1,
+          "x": 1.82,
+          "y": 8.28
+        },
+        {
+          "n": 2,
+          "x": 98.18,
+          "y": 41.41
+        },
+        {
+          "n": 3,
+          "x": 1.82,
+          "y": 17.79
+        },
+        {
+          "n": 4,
+          "x": 98.18,
+          "y": 31.9
+        },
+        {
+          "n": 5,
+          "x": 1.82,
+          "y": 41.41
+        },
+        {
+          "n": 6,
+          "x": 97.88,
+          "y": 8.28
+        },
+        {
+          "n": 7,
+          "x": 1.82,
+          "y": 31.6
+        },
+        {
+          "n": 8,
+          "x": 98,
+          "y": 19.8
+        }
+      ],
+      "targetBall": 1,
+      "targetPocket": "TL",
+      "cueContact": {
+        "vTips": 0,
+        "hTips": 0
+      },
+      "technique": "stun",
+      "speed": 1.5,
+      "cueBallPath": [
+        {
+          "x": 13.94,
+          "y": 23.01
+        },
+        {
+          "x": 2.3,
+          "y": 10.48
+        }
+      ],
+      "contactIndex": 1,
+      "objectBallPath": [
+        {
+          "x": 1.82,
+          "y": 8.28
+        },
+        {
+          "x": 0,
+          "y": 0
+        }
+      ]
+    },
+    "scoringRules": {
+      "mode": "success",
+      "attempts": 5,
+      "pass": {
+        "made": 3
+      }
+    }
+  },
+  {
+    "format": "pooliq",
+    "schemaVersion": "1.0",
+    "contentType": "drill",
+    "contentVersion": "1.0",
+    "category": "PKF · Full Table Patterns",
+    "difficulty": 3,
+    "skill": "Pattern Play",
+    "attribution": {
+      "sourceName": "pool diagrams",
+      "author": "Marios Komninakis",
+      "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+    },
+    "metadata": {
+      "tags": [
+        "diagrams"
+      ],
+      "created": "2026-09-29",
+      "language": "en",
+      "demo": false,
+      "generator": "diagram-import"
+    },
+    "careerEligible": true,
+    "id": "pdf-p20",
+    "title": "Shoot the balls in the order and be careful of the angles.",
+    "description": "Shoot the balls in the order and be careful of the angles.",
+    "xp": 70,
+    "skillEffects": {
+      "Pattern Play": 0.8,
+      "Shot Making": 0.2
+    },
+    "shot": {
+      "kind": "pot",
+      "cueBallPosition": {
+        "x": 33.64,
+        "y": 19.02
+      },
+      "ballPositions": [
+        {
+          "n": 1,
+          "x": 98.18,
+          "y": 7.67
+        },
+        {
+          "n": 2,
+          "x": 2.95,
+          "y": 2.99
+        },
+        {
+          "n": 3,
+          "x": 98.48,
+          "y": 19.63
+        },
+        {
+          "n": 4,
+          "x": 2.71,
+          "y": 46.79
+        },
+        {
+          "n": 5,
+          "x": 98.18,
+          "y": 32.21
+        },
+        {
+          "n": 6,
+          "x": 18.18,
+          "y": 2.15
+        },
+        {
+          "n": 7,
+          "x": 32.12,
+          "y": 1.84
+        },
+        {
+          "n": 8,
+          "x": 41.82,
+          "y": 1.23
+        }
+      ],
+      "targetBall": 1,
+      "targetPocket": "TR",
+      "cueContact": {
+        "vTips": 0,
+        "hTips": 0
+      },
+      "technique": "stun",
+      "speed": 1.5,
+      "cueBallPath": [
+        {
+          "x": 33.64,
+          "y": 19.02
+        },
+        {
+          "x": 97.66,
+          "y": 9.86
+        }
+      ],
+      "contactIndex": 1,
+      "objectBallPath": [
+        {
+          "x": 98.18,
+          "y": 7.67
+        },
+        {
+          "x": 100,
+          "y": 0
+        }
+      ]
+    },
+    "scoringRules": {
+      "mode": "success",
+      "attempts": 5,
+      "pass": {
+        "made": 3
+      }
+    }
+  },
+  {
+    "format": "pooliq",
+    "schemaVersion": "1.0",
+    "contentType": "drill",
+    "contentVersion": "1.0",
+    "category": "PKF · Full Table Patterns",
+    "difficulty": 3,
+    "skill": "Pattern Play",
+    "attribution": {
+      "sourceName": "pool diagrams",
+      "author": "Marios Komninakis",
+      "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+    },
+    "metadata": {
+      "tags": [
+        "diagrams"
+      ],
+      "created": "2026-09-29",
+      "language": "en",
+      "demo": false,
+      "generator": "diagram-import"
+    },
+    "careerEligible": true,
+    "id": "pdf-p21",
+    "title": "Shoot the balls in the order and be careful of the angles.",
+    "description": "Shoot the balls in the order and be careful of the angles.",
+    "xp": 70,
+    "skillEffects": {
+      "Pattern Play": 0.8,
+      "Shot Making": 0.2
+    },
+    "shot": {
+      "kind": "pot",
+      "cueBallPosition": {
+        "x": 76.06,
+        "y": 21.47
+      },
+      "ballPositions": [
+        {
+          "n": 1,
+          "x": 98.18,
+          "y": 7.67
+        },
+        {
+          "n": 2,
+          "x": 2.95,
+          "y": 2.99
+        },
+        {
+          "n": 3,
+          "x": 97.58,
+          "y": 19.33
+        },
+        {
+          "n": 4,
+          "x": 2.71,
+          "y": 46.79
+        },
+        {
+          "n": 5,
+          "x": 97.88,
+          "y": 32.52
+        },
+        {
+          "n": 6,
+          "x": 17.88,
+          "y": 48.16
+        },
+        {
+          "n": 7,
+          "x": 30.91,
+          "y": 47.55
+        },
+        {
+          "n": 8,
+          "x": 42.12,
+          "y": 48.47
+        }
+      ],
+      "targetBall": 1,
+      "targetPocket": "TR",
+      "cueContact": {
+        "vTips": 0,
+        "hTips": 0
+      },
+      "technique": "stun",
+      "speed": 1.5,
+      "cueBallPath": [
+        {
+          "x": 76.06,
+          "y": 21.47
+        },
+        {
+          "x": 97.66,
+          "y": 9.86
+        }
+      ],
+      "contactIndex": 1,
+      "objectBallPath": [
+        {
+          "x": 98.18,
+          "y": 7.67
+        },
+        {
+          "x": 100,
+          "y": 0
+        }
+      ]
+    },
+    "scoringRules": {
+      "mode": "success",
+      "attempts": 5,
+      "pass": {
+        "made": 3
+      }
+    }
+  },
+  {
+    "format": "pooliq",
+    "schemaVersion": "1.0",
+    "contentType": "drill",
+    "contentVersion": "1.0",
+    "category": "PKF · Full Table Patterns",
+    "difficulty": 3,
+    "skill": "Pattern Play",
+    "attribution": {
+      "sourceName": "pool diagrams",
+      "author": "Marios Komninakis",
+      "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+    },
+    "metadata": {
+      "tags": [
+        "diagrams"
+      ],
+      "created": "2026-09-29",
+      "language": "en",
+      "demo": false,
+      "generator": "diagram-import"
+    },
+    "careerEligible": true,
+    "id": "pdf-p22",
+    "title": "When you are trying this drill for the first time and especially if you are not",
+    "description": "When you are trying this drill for the first time and especially if you are not that advanced yet, you can make the balls without following any order. As you improve follow the order and later on experiment by changing the order. All ball must be pocketed in the corner pockets.",
+    "xp": 70,
+    "skillEffects": {
+      "Pattern Play": 0.8,
+      "Shot Making": 0.2
+    },
+    "shot": {
+      "kind": "pot",
+      "cueBallPosition": {
+        "x": 66.77,
+        "y": 25.46
+      },
+      "ballPositions": [
+        {
+          "n": 1,
+          "x": 75.53,
+          "y": 12.88
+        },
+        {
+          "n": 2,
+          "x": 74.92,
+          "y": 37.42
+        },
+        {
+          "n": 3,
+          "x": 24.47,
+          "y": 12.27
+        },
+        {
+          "n": 4,
+          "x": 24.17,
+          "y": 37.73
+        },
+        {
+          "n": 5,
+          "x": 75.53,
+          "y": 19.94
+        },
+        {
+          "n": 6,
+          "x": 24.47,
+          "y": 30.37
+        },
+        {
+          "n": 7,
+          "x": 24.17,
+          "y": 19.63
+        },
+        {
+          "n": 8,
+          "x": 75.23,
+          "y": 30.67
+        }
+      ],
+      "targetBall": 1,
+      "targetPocket": "TR",
+      "cueContact": {
+        "vTips": 0,
+        "hTips": 0
+      },
+      "technique": "stun",
+      "speed": 1.5,
+      "cueBallPath": [
+        {
+          "x": 66.77,
+          "y": 25.46
+        },
+        {
+          "x": 73.54,
+          "y": 13.93
+        }
+      ],
+      "contactIndex": 1,
+      "objectBallPath": [
+        {
+          "x": 75.53,
+          "y": 12.88
+        },
+        {
+          "x": 100,
+          "y": 0
+        }
+      ]
+    },
+    "scoringRules": {
+      "mode": "success",
+      "attempts": 5,
+      "pass": {
+        "made": 3
+      }
+    }
+  },
+  {
+    "format": "pooliq",
+    "schemaVersion": "1.0",
+    "contentType": "drill",
+    "contentVersion": "1.0",
+    "category": "PKF · Full Table Patterns",
+    "difficulty": 3,
+    "skill": "Pattern Play",
+    "attribution": {
+      "sourceName": "pool diagrams",
+      "author": "Marios Komninakis",
+      "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+    },
+    "metadata": {
+      "tags": [
+        "diagrams"
+      ],
+      "created": "2026-09-29",
+      "language": "en",
+      "demo": false,
+      "generator": "diagram-import"
+    },
+    "careerEligible": true,
+    "id": "pdf-p23",
+    "title": "When you are trying this drill for the first time and especially if you are not",
+    "description": "When you are trying this drill for the first time and especially if you are not that advanced yet, you can make the balls without following any order. As you improve follow the order and later on experiment by changing the order. All ball must be pocketed in the corner pocket.",
+    "xp": 70,
+    "skillEffects": {
+      "Pattern Play": 0.8,
+      "Shot Making": 0.2
+    },
+    "shot": {
+      "kind": "pot",
+      "cueBallPosition": {
+        "x": 66.67,
+        "y": 25.46
+      },
+      "ballPositions": [
+        {
+          "n": 1,
+          "x": 2.12,
+          "y": 37.42
+        },
+        {
+          "n": 2,
+          "x": 5.76,
+          "y": 33.44
+        },
+        {
+          "n": 3,
+          "x": 10.91,
+          "y": 29.45
+        },
+        {
+          "n": 4,
+          "x": 14.85,
+          "y": 24.85
+        },
+        {
+          "n": 5,
+          "x": 20.3,
+          "y": 19.94
+        },
+        {
+          "n": 6,
+          "x": 25.76,
+          "y": 15.64
+        },
+        {
+          "n": 7,
+          "x": 29.7,
+          "y": 10.43
+        },
+        {
+          "n": 8,
+          "x": 34.24,
+          "y": 5.83
+        },
+        {
+          "n": 9,
+          "x": 37.58,
+          "y": 1.23
+        }
+      ],
+      "targetBall": 1,
+      "targetPocket": "BL",
+      "cueContact": {
+        "vTips": 0,
+        "hTips": 0
+      },
+      "technique": "stun",
+      "speed": 1.5
+    },
+    "scoringRules": {
+      "mode": "success",
+      "attempts": 5,
+      "pass": {
+        "made": 3
+      }
+    }
+  },
+  {
+    "format": "pooliq",
+    "schemaVersion": "1.0",
+    "contentType": "drill",
+    "contentVersion": "1.0",
+    "category": "PKF · Cue Ball Control",
+    "difficulty": 3,
+    "skill": "Cue-Ball Control",
+    "attribution": {
+      "sourceName": "pool diagrams",
+      "author": "Marios Komninakis",
+      "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+    },
+    "metadata": {
+      "tags": [
+        "diagrams"
+      ],
+      "created": "2026-09-29",
+      "language": "en",
+      "demo": false,
+      "generator": "diagram-import"
+    },
+    "careerEligible": true,
+    "id": "pdf-p24",
+    "title": "The goal is to make the balls without the cueball ever touching the rail or",
+    "description": "The goal is to make the balls without the cueball ever touching the rail or other ball ofcourse. You don’t need to make the balls in order. You need to keep the angles short on each ball so the cueball don’t travel much. As you improve you can put the balls closer to the rails for extra difficulty.",
+    "xp": 70,
+    "skillEffects": {
+      "Cue-Ball Control": 0.7,
+      "Pattern Play": 0.3
+    },
+    "shot": {
+      "kind": "pot",
+      "cueBallPosition": {
+        "x": 48.48,
+        "y": 24.85
+      },
+      "ballPositions": [
+        {
+          "n": 1,
+          "x": 66.06,
+          "y": 11.66
+        },
+        {
+          "n": 2,
+          "x": 66.06,
+          "y": 24.85
+        },
+        {
+          "n": 3,
+          "x": 31.52,
+          "y": 25.15
+        },
+        {
+          "n": 4,
+          "x": 65.76,
+          "y": 37.73
+        },
+        {
+          "n": 5,
+          "x": 31.82,
+          "y": 12.58
+        },
+        {
+          "n": 6,
+          "x": 50,
+          "y": 11.66
+        },
+        {
+          "n": 7,
+          "x": 49.7,
+          "y": 37.12
+        },
+        {
+          "n": 8,
+          "x": 31.21,
+          "y": 37.12
+        }
+      ],
+      "targetBall": 1,
+      "targetPocket": "TM",
+      "cueContact": {
+        "vTips": 0,
+        "hTips": 0
+      },
+      "technique": "stun",
+      "speed": 1.5,
+      "cueBallPath": [
+        {
+          "x": 48.48,
+          "y": 24.85
+        },
+        {
+          "x": 67.88,
+          "y": 12.98
+        }
+      ],
+      "contactIndex": 1,
+      "objectBallPath": [
+        {
+          "x": 66.06,
+          "y": 11.66
+        },
+        {
+          "x": 50,
+          "y": 0
+        }
+      ]
+    },
+    "scoringRules": {
+      "mode": "success",
+      "attempts": 5,
+      "pass": {
+        "made": 3
+      }
+    }
   }
 ];

@@ -1,0 +1,117 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF · Full Table Patterns",
+  "difficulty": 3,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "pool diagrams",
+    "author": "Marios Komninakis",
+    "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+  },
+  "metadata": {
+    "tags": [
+      "diagrams"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "diagram-import"
+  },
+  "careerEligible": true,
+  "id": "pdf-p18",
+  "title": "Shoot the balls in the order and be careful of the angles.",
+  "description": "Shoot the balls in the order and be careful of the angles.",
+  "xp": 70,
+  "skillEffects": {
+    "Pattern Play": 0.8,
+    "Shot Making": 0.2
+  },
+  "shot": {
+    "kind": "pot",
+    "cueBallPosition": {
+      "x": 33.64,
+      "y": 19.02
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "x": 11.21,
+        "y": 1.84
+      },
+      {
+        "n": 2,
+        "x": 88.18,
+        "y": 47.55
+      },
+      {
+        "n": 3,
+        "x": 11.21,
+        "y": 47.85
+      },
+      {
+        "n": 4,
+        "x": 88.18,
+        "y": 1.84
+      },
+      {
+        "n": 5,
+        "x": 24.55,
+        "y": 47.55
+      },
+      {
+        "n": 6,
+        "x": 76.06,
+        "y": 2.15
+      },
+      {
+        "n": 7,
+        "x": 24.55,
+        "y": 1.84
+      },
+      {
+        "n": 8,
+        "x": 75.76,
+        "y": 47.85
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TL",
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "technique": "stun",
+    "speed": 1.5,
+    "cueBallPath": [
+      {
+        "x": 33.64,
+        "y": 19.02
+      },
+      {
+        "x": 13.43,
+        "y": 2.2
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "x": 11.21,
+        "y": 1.84
+      },
+      {
+        "x": 0,
+        "y": 0
+      }
+    ]
+  },
+  "scoringRules": {
+    "mode": "success",
+    "attempts": 5,
+    "pass": {
+      "made": 3
+    }
+  }
+}

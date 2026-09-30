@@ -1,0 +1,161 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF · Full Table with Sidespin",
+  "difficulty": 3,
+  "skill": "Cue-Ball Control",
+  "attribution": {
+    "sourceName": "pool diagrams",
+    "author": "Marios Komninakis",
+    "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+  },
+  "metadata": {
+    "tags": [
+      "diagrams"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "diagram-import"
+  },
+  "careerEligible": true,
+  "id": "pdf-p07",
+  "title": "Shoot the 1 ball at the left corner pocket and try to position the cue ball in",
+  "description": "Shoot the 1 ball at the left corner pocket and try to position the cue ball in the green area. Start with one rail and left English and then with two and three rails and right English. Do the same from the opposite angle. Write down 10 attempts from each side. As you progress leave more distance betweeen the balls to make it harder.",
+  "xp": 60,
+  "skillEffects": {
+    "Cue-Ball Control": 0.5,
+    "Position Play": 0.5
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "x": 48.18,
+      "y": 11.96
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "x": 86.67,
+        "y": 11.66
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TR",
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "technique": "stun",
+    "speed": 1.5,
+    "targetZones": [
+      {
+        "x": 76,
+        "y": 25.5,
+        "rings": [
+          {
+            "r": 6,
+            "stars": 3
+          },
+          {
+            "r": 8.7,
+            "stars": 2
+          },
+          {
+            "r": 11.4,
+            "stars": 1
+          }
+        ],
+        "label": "green area"
+      },
+      {
+        "x": 50.3,
+        "y": 25.5,
+        "rings": [
+          {
+            "r": 6,
+            "stars": 3
+          },
+          {
+            "r": 8.7,
+            "stars": 2
+          },
+          {
+            "r": 11.4,
+            "stars": 1
+          }
+        ],
+        "label": "green area"
+      },
+      {
+        "x": 24.2,
+        "y": 6.1,
+        "rings": [
+          {
+            "r": 6,
+            "stars": 3
+          },
+          {
+            "r": 8.7,
+            "stars": 2
+          },
+          {
+            "r": 11.4,
+            "stars": 1
+          }
+        ],
+        "label": "green area"
+      },
+      {
+        "x": 7,
+        "y": 25.5,
+        "rings": [
+          {
+            "r": 6,
+            "stars": 3
+          },
+          {
+            "r": 8.7,
+            "stars": 2
+          },
+          {
+            "r": 11.4,
+            "stars": 1
+          }
+        ],
+        "label": "green area"
+      }
+    ],
+    "cueBallPath": [
+      {
+        "x": 48.18,
+        "y": 11.96
+      },
+      {
+        "x": 84.98,
+        "y": 13.14
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "x": 86.67,
+        "y": 11.66
+      },
+      {
+        "x": 100,
+        "y": 0
+      }
+    ]
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 10,
+    "pass": {
+      "stars": 15,
+      "pockets": 7
+    }
+  }
+}

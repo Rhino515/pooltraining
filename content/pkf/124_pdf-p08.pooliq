@@ -1,0 +1,61 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "Banks",
+  "difficulty": 2,
+  "skill": "Banks",
+  "attribution": {
+    "sourceName": "pool diagrams",
+    "author": "Marios Komninakis",
+    "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+  },
+  "metadata": {
+    "tags": [
+      "diagrams"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "diagram-import"
+  },
+  "careerEligible": true,
+  "id": "pdf-p08",
+  "title": "Banks: This is a practice for bank shots. The goal is to get familiar on",
+  "description": "Banks: This is a practice for bank shots. The goal is to get familiar on playing banks and understand the different effects the ball gets with different spin. Try to make the 1st ball in the corner pocket and all the others to the side pocket. Use no spin at all at first then stop shot and experiment with left and right depending on the angle. * Use follow through and a rolling hit and also low spin and fast stroke. 10 attempts for each shot. Try the shots from both of the sides of the table.",
+  "xp": 50,
+  "skillEffects": {
+    "Banks": 0.8,
+    "Shot Making": 0.2
+  },
+  "shot": {
+    "kind": "bank",
+    "cueBallPosition": {
+      "x": 87.31,
+      "y": 28.83
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "x": 87.61,
+        "y": 4.91
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TR",
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "technique": "bank",
+    "speed": 1.5
+  },
+  "scoringRules": {
+    "mode": "success",
+    "attempts": 10,
+    "pass": {
+      "made": 7
+    }
+  }
+}

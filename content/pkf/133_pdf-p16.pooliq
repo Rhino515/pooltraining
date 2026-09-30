@@ -1,0 +1,107 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF · Full Table Patterns",
+  "difficulty": 2,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "pool diagrams",
+    "author": "Marios Komninakis",
+    "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+  },
+  "metadata": {
+    "tags": [
+      "diagrams"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "diagram-import"
+  },
+  "careerEligible": true,
+  "id": "pdf-p16",
+  "title": "Balls 1,3,5 must be pocketed in the left side pocket and 2,4,6 on the right",
+  "description": "Balls 1,3,5 must be pocketed in the left side pocket and 2,4,6 on the right side pocket. You are not allowed to touch any ball other than the one shooting.",
+  "xp": 60,
+  "skillEffects": {
+    "Pattern Play": 0.7,
+    "Shot Making": 0.3
+  },
+  "shot": {
+    "kind": "pot",
+    "cueBallPosition": {
+      "x": 45.76,
+      "y": 24.85
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "x": 50,
+        "y": 11.66
+      },
+      {
+        "n": 2,
+        "x": 60.91,
+        "y": 34.97
+      },
+      {
+        "n": 3,
+        "x": 39.09,
+        "y": 13.19
+      },
+      {
+        "n": 4,
+        "x": 39.09,
+        "y": 35.58
+      },
+      {
+        "n": 5,
+        "x": 61.21,
+        "y": 13.8
+      },
+      {
+        "n": 6,
+        "x": 50,
+        "y": 37.42
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TM",
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "technique": "stun",
+    "speed": 1.5,
+    "cueBallPath": [
+      {
+        "x": 45.76,
+        "y": 24.85
+      },
+      {
+        "x": 50,
+        "y": 13.91
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "x": 50,
+        "y": 11.66
+      },
+      {
+        "x": 50,
+        "y": 0
+      }
+    ]
+  },
+  "scoringRules": {
+    "mode": "success",
+    "attempts": 5,
+    "pass": {
+      "made": 3
+    }
+  }
+}

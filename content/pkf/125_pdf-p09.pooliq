@@ -1,0 +1,119 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF · Full Table Patterns",
+  "difficulty": 2,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "pool diagrams",
+    "author": "Marios Komninakis",
+    "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+  },
+  "metadata": {
+    "tags": [
+      "diagrams"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "diagram-import"
+  },
+  "careerEligible": true,
+  "id": "pdf-p09",
+  "title": "Cue ball must stay in between the blue area. No banks allowed. You can make the",
+  "description": "Cue ball must stay in between the blue area. No banks allowed. You can make the drill easier by putting the balls one diamond closer to the pocket or harder by bringing the on the 3rd diamond of the side rail.",
+  "xp": 60,
+  "skillEffects": {
+    "Pattern Play": 0.6,
+    "Cue-Ball Control": 0.4
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "x": 48.74,
+      "y": 25.15
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "x": 75.16,
+        "y": 47.27
+      },
+      {
+        "n": 2,
+        "x": 22.96,
+        "y": 2.42
+      },
+      {
+        "n": 3,
+        "x": 75.16,
+        "y": 2.73
+      },
+      {
+        "n": 4,
+        "x": 23.27,
+        "y": 46.36
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "BR",
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "technique": "stun",
+    "speed": 1.5,
+    "targetZones": [
+      {
+        "type": "band",
+        "center": 49,
+        "rings": [
+          {
+            "r": 6.65,
+            "stars": 3
+          },
+          {
+            "r": 12.35,
+            "stars": 2
+          },
+          {
+            "r": 19,
+            "stars": 1
+          }
+        ],
+        "label": "blue area"
+      }
+    ],
+    "cueBallPath": [
+      {
+        "x": 48.74,
+        "y": 25.15
+      },
+      {
+        "x": 72.92,
+        "y": 47.02
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "x": 75.16,
+        "y": 47.27
+      },
+      {
+        "x": 100,
+        "y": 50
+      }
+    ]
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 5,
+    "pass": {
+      "stars": 7,
+      "pockets": 3
+    }
+  }
+}

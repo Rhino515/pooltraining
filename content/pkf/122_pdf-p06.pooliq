@@ -1,0 +1,161 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "Speed Control",
+  "difficulty": 2,
+  "skill": "Speed Control",
+  "attribution": {
+    "sourceName": "pool diagrams",
+    "author": "Marios Komninakis",
+    "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+  },
+  "metadata": {
+    "tags": [
+      "diagrams"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "diagram-import"
+  },
+  "careerEligible": true,
+  "id": "pdf-p06",
+  "title": "Try playing pocket speed, and medium speed. As you improve on just making the",
+  "description": "Try playing pocket speed, and medium speed. As you improve on just making the ball try to leave the cueball at one of the green zone each time. Shoot the ball from both sides. Keep score of 10 attempts for each variation.",
+  "xp": 50,
+  "skillEffects": {
+    "Speed Control": 0.6,
+    "Position Play": 0.4
+  },
+  "shot": {
+    "kind": "position",
+    "cueBallPosition": {
+      "x": 76.06,
+      "y": 2.45
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "x": 75.45,
+        "y": 24.23
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "BR",
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "technique": "stun",
+    "speed": 1.5,
+    "targetZones": [
+      {
+        "x": 31.3,
+        "y": 5.5,
+        "rings": [
+          {
+            "r": 5,
+            "stars": 3
+          },
+          {
+            "r": 7.25,
+            "stars": 2
+          },
+          {
+            "r": 9.5,
+            "stars": 1
+          }
+        ],
+        "label": "green zone"
+      },
+      {
+        "x": 31.3,
+        "y": 24.9,
+        "rings": [
+          {
+            "r": 5.5,
+            "stars": 3
+          },
+          {
+            "r": 7.97,
+            "stars": 2
+          },
+          {
+            "r": 10.45,
+            "stars": 1
+          }
+        ],
+        "label": "green zone"
+      },
+      {
+        "x": 7,
+        "y": 5.5,
+        "rings": [
+          {
+            "r": 5,
+            "stars": 3
+          },
+          {
+            "r": 7.25,
+            "stars": 2
+          },
+          {
+            "r": 9.5,
+            "stars": 1
+          }
+        ],
+        "label": "green zone"
+      },
+      {
+        "x": 7,
+        "y": 24.9,
+        "rings": [
+          {
+            "r": 5.5,
+            "stars": 3
+          },
+          {
+            "r": 7.97,
+            "stars": 2
+          },
+          {
+            "r": 10.45,
+            "stars": 1
+          }
+        ],
+        "label": "green zone"
+      }
+    ],
+    "cueBallPath": [
+      {
+        "x": 76.06,
+        "y": 2.45
+      },
+      {
+        "x": 73.9,
+        "y": 22.6
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "x": 75.45,
+        "y": 24.23
+      },
+      {
+        "x": 100,
+        "y": 50
+      }
+    ]
+  },
+  "scoringRules": {
+    "mode": "zone",
+    "attempts": 10,
+    "pass": {
+      "stars": 15,
+      "pockets": 7
+    }
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF · Cue Ball Control",
+  "difficulty": 1,
+  "skill": "Cue-Ball Control",
+  "attribution": {
+    "sourceName": "pool diagrams",
+    "author": "Marios Komninakis",
+    "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+  },
+  "metadata": {
+    "tags": [
+      "diagrams"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "diagram-import"
+  },
+  "careerEligible": true,
+  "id": "pdf-p03",
+  "title": "English for both pockets. Keep score of 10 attempts for each variation.",
+  "description": "Shoot the ball to both sides. Start with no English and then change to upper, draw, left and right English for both pockets. Keep score of 10 attempts for each variation.",
+  "xp": 40,
+  "skillEffects": {
+    "Cue-Ball Control": 0.8,
+    "Shot Making": 0.2
+  },
+  "shot": {
+    "kind": "pot",
+    "cueBallPosition": {
+      "x": 19.7,
+      "y": 25.46
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "x": 34.85,
+        "y": 24.85
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TR",
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "technique": "stun",
+    "speed": 1.5,
+    "acceptPockets": [
+      "TR",
+      "BR"
+    ],
+    "cueBallPath": [
+      {
+        "x": 19.7,
+        "y": 25.46
+      },
+      {
+        "x": 32.75,
+        "y": 25.65
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "x": 34.85,
+        "y": 24.85
+      },
+      {
+        "x": 100,
+        "y": 0
+      }
+    ]
+  },
+  "scoringRules": {
+    "mode": "success",
+    "attempts": 10,
+    "pass": {
+      "made": 7
+    }
+  }
+}

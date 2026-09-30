@@ -1,0 +1,117 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF · Full Table Patterns",
+  "difficulty": 3,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "pool diagrams",
+    "author": "Marios Komninakis",
+    "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+  },
+  "metadata": {
+    "tags": [
+      "diagrams"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "diagram-import"
+  },
+  "careerEligible": true,
+  "id": "pdf-p17",
+  "title": "You are not allowed to touch any other ball except the one shooting. When you",
+  "description": "You are not allowed to touch any other ball except the one shooting. When you feel confortable making this drill, place the 9 in the middle of tha table and avoid touching it. No banks allowed ofcourse. (the balls should not be touching when you rack them)",
+  "xp": 70,
+  "skillEffects": {
+    "Pattern Play": 0.7,
+    "Shot Making": 0.3
+  },
+  "shot": {
+    "kind": "pot",
+    "cueBallPosition": {
+      "x": 61.82,
+      "y": 12.88
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "x": 75.76,
+        "y": 1.84
+      },
+      {
+        "n": 2,
+        "x": 24.24,
+        "y": 47.24
+      },
+      {
+        "n": 3,
+        "x": 76.06,
+        "y": 7.36
+      },
+      {
+        "n": 4,
+        "x": 23.94,
+        "y": 41.72
+      },
+      {
+        "n": 5,
+        "x": 75.45,
+        "y": 12.88
+      },
+      {
+        "n": 6,
+        "x": 23.94,
+        "y": 36.2
+      },
+      {
+        "n": 7,
+        "x": 76.06,
+        "y": 18.4
+      },
+      {
+        "n": 8,
+        "x": 24.24,
+        "y": 30.06
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "TR",
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "technique": "stun",
+    "speed": 1.5,
+    "cueBallPath": [
+      {
+        "x": 61.82,
+        "y": 12.88
+      },
+      {
+        "x": 73.52,
+        "y": 2.01
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "x": 75.76,
+        "y": 1.84
+      },
+      {
+        "x": 100,
+        "y": 0
+      }
+    ]
+  },
+  "scoringRules": {
+    "mode": "success",
+    "attempts": 5,
+    "pass": {
+      "made": 3
+    }
+  }
+}

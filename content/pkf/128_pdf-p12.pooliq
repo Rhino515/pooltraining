@@ -1,0 +1,97 @@
+{
+  "format": "pooliq",
+  "schemaVersion": "1.0",
+  "contentType": "drill",
+  "contentVersion": "1.0",
+  "category": "PKF · Full Table Patterns",
+  "difficulty": 2,
+  "skill": "Pattern Play",
+  "attribution": {
+    "sourceName": "pool diagrams",
+    "author": "Marios Komninakis",
+    "notes": "Positions traced from the diagram on this page. Description is the PDF text."
+  },
+  "metadata": {
+    "tags": [
+      "diagrams"
+    ],
+    "created": "2026-09-29",
+    "language": "en",
+    "demo": false,
+    "generator": "diagram-import"
+  },
+  "careerEligible": true,
+  "id": "pdf-p12",
+  "title": "Balls must be pocketed on the corner pocket that are closer to. No banks",
+  "description": "Balls must be pocketed on the corner pocket that are closer to. No banks allowed.",
+  "xp": 60,
+  "skillEffects": {
+    "Pattern Play": 0.7,
+    "Shot Making": 0.3
+  },
+  "shot": {
+    "kind": "pot",
+    "cueBallPosition": {
+      "x": 51.82,
+      "y": 25.15
+    },
+    "ballPositions": [
+      {
+        "n": 1,
+        "x": 75.76,
+        "y": 40.18
+      },
+      {
+        "n": 2,
+        "x": 62.12,
+        "y": 10.12
+      },
+      {
+        "n": 3,
+        "x": 24.85,
+        "y": 11.04
+      },
+      {
+        "n": 4,
+        "x": 36.67,
+        "y": 39.57
+      }
+    ],
+    "targetBall": 1,
+    "targetPocket": "BR",
+    "cueContact": {
+      "vTips": 0,
+      "hTips": 0
+    },
+    "technique": "stun",
+    "speed": 1.5,
+    "cueBallPath": [
+      {
+        "x": 51.82,
+        "y": 25.15
+      },
+      {
+        "x": 73.67,
+        "y": 39.34
+      }
+    ],
+    "contactIndex": 1,
+    "objectBallPath": [
+      {
+        "x": 75.76,
+        "y": 40.18
+      },
+      {
+        "x": 100,
+        "y": 50
+      }
+    ]
+  },
+  "scoringRules": {
+    "mode": "success",
+    "attempts": 5,
+    "pass": {
+      "made": 3
+    }
+  }
+}
