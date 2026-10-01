@@ -1586,3 +1586,12 @@ body.fix-full #app{height:100dvh;padding:0}
 .learnCard.blue .lcChev{border-color:#3aa0ff;color:#7ec8ff}
 .learnPage h2{margin-top:18px}
 .learnRow{padding:14px 16px}
+
+/* v14-38 home ranks + career drills */
+.homeRanks{display:flex;flex-direction:column;gap:8px;width:100%;padding:12px 14px;margin-bottom:14px;text-align:left;color:inherit;cursor:pointer}
+.hrItem{display:flex;align-items:center;gap:12px;min-height:48px}
+.hrItem b{font-size:16px;line-height:1.15;font-weight:800}
+.hrCue .bpCue{width:28px;height:72px;display:block}
+.careerDrills{margin:8px 0 16px}
+.careerDrills h2{margin:4px 0 8px}
+.emptyCat{margin:12px 4px}

@@ -3,7 +3,7 @@
  */
 import { nextRankInfo, RANK_NAMES, RANK_REQUIREMENTS, requirementChecklist, nextUp, isBossUnlocked } from './career.js';
 import { skillBarsHTML, weakestSkills, recommendations } from './skills.js';
-import { allDrills, drillsByCategory, isDrillUnlocked, CATEGORIES, getDrillById } from './drills.js';
+import { allDrills, drillsByCategory, isDrillUnlocked, CATEGORIES, getDrillById, displayDrillTitle, SHELVED_CATEGORIES } from './drills.js';
 import { ballPocketDrills, ballPocketStatus, BALL_POCKET_TEXT, BALL_POCKET_LEVELS } from './content/ballPocket.js';
 import { maxUnlockedBalls, ghostStats } from './ghost.js';
 import { GAMES, getGame, stageSpecs, getStages, getBosses, getBoss } from './games/registry.js';
@@ -12,7 +12,8 @@ import { renderStageTable } from './games/stageTable.js';
 import { esc, speedChip } from './games/recipe.js';
 import { stars } from './ui/sheet.js';
 import { careerHeaderHTML, tierCapsHTML, gateCardHTML, promotionCardHTML, drillRankCardHTML, skillBreakdownHTML, recommendedHTML, profileHeaderHTML, devSeedBannerHTML, starsHTML, masteryOf } from './ui/progression.js';
-import { careerStatus, promotionStatus } from './progression/rank.js';
+import { careerStatus, promotionStatus, drillRankStatus } from './progression/rank.js';
+import { rankBadgeSVG, drillBadgeSVG } from './progression/badge.js';
 import { stageItem, drillItem } from './progression/catalog.js';
 import { RANK_LADDER } from './progression/config.js';
 import { getProfile } from './profile.js';
@@ -45,6 +46,18 @@ export function renderLearn(args = []) {
   return learnHTML(args);
 }
 
+
+function homeRanksCard(state) {
+  const cs = careerStatus(state);
+  const dr = drillRankStatus(state);
+  const bp = ballPocketStatus(state);
+  return `<button type="button" class="card homeRanks" data-home-ranks data-action="go" data-href="#profile">
+    <span class="hrItem">${rankBadgeSVG(cs, { size: 40 })}<b>${esc(cs.title)}</b></span>
+    <span class="hrItem">${drillBadgeSVG(dr.number, { size: 40, max: dr.max })}<b>${esc(dr.name)}</b></span>
+    <span class="hrItem hrCue">${ballPocketBadgeSVG(bp.current)}<b>${bp.current}</b></span>
+  </button>`;
+}
+
 export function renderHome(state, extras = {}) {
   const info = nextRankInfo(state);
   const pct = Math.round((info.progress || 0) * 100);
@@ -52,17 +65,16 @@ export function renderHome(state, extras = {}) {
   const st = ghostStats(state);
   void info; void pct;
   return `${devSeedBannerHTML(state)}
-    ${careerHeaderHTML(state)}
+    ${homeRanksCard(state)}
     ${homeExtrasHTML(extras)}
     ${nextUpCard(state)}
     <button type="button" class="card simPromo" data-action="go" data-href="#sim"><span class="simPromoIcon">◔</span><span class="simPromoText"><span class="eyebrow">NEW</span><b>Shot Simulator</b><small>Set up any layout, shoot it and watch the physics — racks, run-outs, Find a Shot and more.</small></span><span class="simPromoGo">›</span></button>
     <div class="dashActions">
-      <button type="button" class="dashAction card" data-action="go" data-href="#arcade"><span class="icon">🎯</span><b>Table Games</b><span>${GAMES.length} skill games · ${E.totalStars(state)}★ earned</span></button>
+      <button type="button" class="dashAction card" data-action="go" data-href="#arcade"><span class="icon">🎯</span><b>Table Games</b><span>8-Ball · 9-Ball · 10-Ball</span></button>
       <button type="button" class="dashAction card" data-action="go" data-href="#ghost"><span class="icon">♚</span><b>Ghost</b><span>Up to ${maxUnlockedBalls(state)}-ball · ${st.pct}% wins</span></button>
       <button type="button" class="dashAction card" data-action="go" data-href="#training"><span class="icon">▥</span><b>Recommended</b><span>${esc(weakText(state))}</span></button>
       <button type="button" class="dashAction card friendsAction" data-action="go" data-href="#friends"><span class="icon">⚔</span><b>Play with Friends</b><span>${esc(friendsText())}</span></button>
     </div>
-    ${drillRankCardHTML(state, { compact: true })}
     <h2>Skills</h2>
     <div class="skills card" id="skills">${skillBreakdownHTML(state)}</div>`;
 }
@@ -139,11 +151,9 @@ const TABLE_MATCHES = [
 ];
 export function renderArcade(state) {
   const matches = TABLE_MATCHES.map(([id, name, sub]) => `<button type="button" class="gameCard card" data-action="go" data-href="#tgame/${id}" data-game="${esc(id)}"><span class="gcIcon">${id === 'upusa' ? '⏱' : id === 'bank' ? '▣' : id}</span><span class="gcMain"><b>${esc(name)}</b><small>${esc(sub)}</small></span></button>`).join('');
-  return `<div class="title"><span class="eyebrow">TABLE GAMES</span><h1>Skill Games</h1><p>Replay any unlocked stage for stars, streaks and personal bests. Every result feeds your skill ratings.</p></div>
+  return `<div class="title"><span class="eyebrow">TABLE GAMES</span><h1>At the table</h1><p>Rack counters for real games. Training modes are in Drills, under Career Drills.</p></div>
     <button type="button" class="card simPromo friendsPromo" data-action="go" data-href="#friends"><span class="simPromoIcon">⚔</span><span class="simPromoText"><span class="eyebrow">PvP</span><b>Play with Friends</b><small>Score real matches head-to-head, run a group night or a tournament. Separate from your training ranks.</small></span><span class="simPromoGo">›</span></button>
-    <h2>At the table</h2>
-    <div class="arcadeGrid" data-table-matches>${matches}</div>
-    <div class="arcadeGrid">${GAMES.map((g) => gameCard(state, g)).join('')}</div>`;
+    <div class="arcadeGrid" data-table-matches>${matches}</div>`;
 }
 
 export function renderGameLobby(state, gameId) {
@@ -179,7 +189,7 @@ export function renderGameLobby(state, gameId) {
   const endless = g.endless ? (E.isEndlessUnlocked(state, gameId) ? `<button type="button" class="stageRow card endless" data-action="go" data-href="#play/${gameId}/endless" data-stage="endless"><span class="srNum">∞</span><span class="srMain"><b>Endless Mode</b><small>Random bank layouts, rising difficulty, 3 lives.</small></span><span class="srSide"><small>Best ${gs.pb?.endlessBest || 0}</small></span></button>` : `<div class="stageRow card locked"><span class="srNum">∞</span><span class="srMain"><b>Endless Mode</b><small>Pass the final stage to unlock.</small></span><span class="srSide lock">🔒</span></div>`) : '';
   const hist = (gs.sessions || []).slice(-6).reverse().map((h) => `<div class="historyRow"><span>${esc(specs.find((s) => s.id === h.stageId)?.name || (h.stageId === 'endless' ? 'Endless' : h.stageId))}</span><span class="${h.passed ? 'green' : 'muted'}">${h.passed ? 'PASS' : '—'} ${h.score}</span><span class="muted">${new Date(h.date).toLocaleDateString()}</span></div>`).join('');
   const cal = gameId === 'speed' ? calibrationCard(state) + threeLaneCard(state) : '';
-  return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#arcade">‹ Table Games</button><span class="eyebrow">${g.icon} ${esc(g.name.toUpperCase())}</span><h1>${esc(g.name)}</h1><p>${esc(g.tagline)}</p></div>
+  return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#drills">‹ Drills</button><span class="eyebrow">${g.icon} ${esc(g.name.toUpperCase())}</span><h1>${esc(g.name)}</h1><p>${esc(g.tagline)}</p></div>
     ${!unlocked ? `<div class="card lockNote">🔒 Locked — reach <b>${esc(E.unlockLabel(gameId))}</b> to play.</div>` : ''}
     ${active ? `<div class="card resumeCard"><b>Session in progress</b><p class="muted">${esc(specs.find((s) => s.id === active.stageId)?.name || 'Endless')} · ${active.attempts.length} shots recorded</p><button type="button" class="bigBtn" data-action="go" data-href="#play/${gameId}/${active.stageId}">RESUME</button></div>` : ''}
     <div class="card stats"><div><b>${E.gameLevel(state, gameId)}/${specs.length}</b><span>LEVEL</span></div><div><b>${E.totalStars(state, gameId)}★</b><span>STARS</span></div><div><b data-pb>${gs.pb?.highScore || 0}</b><span>HIGH SCORE</span></div></div>
@@ -196,7 +206,7 @@ function threeLaneCard(state) {
   return `<div class="card threeLaneCard" data-three-lane>
     <div class="eyebrow">DRILL · NEXT TO THE LADDER</div>
     <div class="diagramWrap mini">${renderStageTable(d, { className: 'table-diagram mini' })}</div>
-    <h3>${esc(d.name)}</h3>
+    <h3>${esc(displayDrillTitle(d.name))}</h3>
     <p class="muted small">Three lanes from the first diamond: SPEED 1.50, 2.50 and 3.00. 5 attempts per lane, 7★ in every lane to pass. Earns XP and Drill Rank.</p>
     <small class="muted credit">${esc(d.credit)}</small>
     ${rec ? `<small class="pbLine">Best ${rec.bestScore || 0} pts · ${rec.tries || 0} session${rec.tries === 1 ? '' : 's'}${rec.passed ? ' · passed ✓' : ''}</small>` : ''}
@@ -264,38 +274,56 @@ export function renderDrillsPage(state, filter = 'All', bpViewLevel = null) {
       <div class="card empty drillsEmpty" data-empty="1"><div class="emptyIcon">◎</div><h3>No drills yet.</h3><p class="muted">Build your own: place the balls on the true-scale table, choose the pocket and cue-ball zone, and Pool IQ works out the route, recipe and Why This Shot? — then it plays like every other drill, with scoring and history.</p><button type="button" class="bigBtn" data-action="drill-create">CREATE YOUR FIRST DRILL</button><button type="button" class="bigBtn alt" data-action="go" data-href="#content">IMPORT .POOLIQ CONTENT</button><button type="button" class="bigBtn alt" data-action="go" data-href="#sim">OPEN THE SHOT SIMULATOR</button></div>`;
   }
   const by = drillsByCategory();
-  const extraCats = Object.keys(by).filter((c) => c && !CATEGORIES.includes(c)).sort();
-  const cats = ['All', ...CATEGORIES.filter((c) => by[c]), ...extraCats];
+  const extraCats = Object.keys(by).filter((c) => c && !CATEGORIES.includes(c) && c !== 'Career Drills').sort();
+  const keepEmpty = new Set([...SHELVED_CATEGORIES, 'Safeties']);
+  const cats = ['All', 'Career Drills', ...CATEGORIES.filter((c) => by[c] || keepEmpty.has(c)), ...extraCats];
+  const career = filter === 'Career Drills';
   const pocket = filter === 'Ball Pocketing';
-  const list = pocket ? [] : (filter === 'All' ? list0.filter((d) => d.category !== 'Ball Pocketing') : by[filter] || []);
+  const list = pocket || career ? [] : (filter === 'All' ? list0.filter((d) => d.category !== 'Ball Pocketing') : by[filter] || []);
+  const emptyNote = !pocket && !career && filter !== 'All' && !list.length ? '<p class="muted emptyCat">No drills in this category.</p>' : '';
   return `${head}
     <div class="catFilter">${cats.map((c) => `<button type="button" class="chip${c === filter ? ' active' : ''}" data-action="drill-filter" data-v="${esc(c)}">${esc(c)}</button>`).join('')}</div>
+    ${career ? careerDrillsHTML(state) : ''}
     ${pocket ? ballPocketCategory(state, bpViewLevel) : ''}
+    ${emptyNote}
     ${list.length ? `<div class="grid">${list.map((d) => drillCard(state, d)).join('')}</div>` : ''}
     `;
 }
 
-/** Straight-shooting cue badges, worst to best. Drawn marks only. */
+const CAREER_DRILL_GAMES = () => GAMES.filter((g) => g.special !== 'ghost');
+function careerDrillsHTML(state) {
+  return `<section class="careerDrills" data-section="Career Drills"><h2>Career Drills</h2><div class="arcadeGrid">${CAREER_DRILL_GAMES().map((g) => gameCard(state, g)).join('')}</div></section>`;
+}
+
+/** Pool-cue badges, house cue at level 1 up to a custom cue at level 5. Original art, no brand marks. */
+let bpCueUid = 0;
 function ballPocketBadgeSVG(level) {
   const cues = {
-    1: { shaft: '#8d5a32', butt: '#5c3a22', wrap: '#3a2718', ferrule: '#cbb892', tip: '#9a8b72', joint: '#6a4a30', wear: true },
-    2: { shaft: '#c4844a', butt: '#8a4e28', wrap: '#e6d2a8', ferrule: '#f4f1ea', tip: '#2f6fbe', joint: '#a56b3c', wear: false },
-    3: { shaft: '#3a4048', butt: '#1c2128', wrap: '#111418', ferrule: '#f7f7f5', tip: '#3d7fd4', joint: '#8b939c', carbon: true },
-    4: { shaft: '#2a3038', butt: '#12161c', wrap: '#0c0e12', ferrule: '#ffffff', tip: '#4aa3ff', joint: '#d5dbe3', carbon: true, clean: true },
-    5: { shaft: '#f0c84a', butt: '#b8860b', wrap: '#8a6a12', ferrule: '#fff8e8', tip: '#f2e2a0', joint: '#ffe9a0', gold: true }
+    1: { shaft: '#c9a36a', shaftHi: '#e4c48a', butt: '#6a4324', wrap: '#5c3b22', wrapInk: '#3a2616', ferrule: '#d7d0c4', tip: '#8a7760', ring: '#5a4030', bumper: '#24180f', linen: false, scuff: true },
+    2: { shaft: '#e2b56a', shaftHi: '#f0d09a', butt: '#1c1e22', wrap: '#14161a', wrapInk: '#3c4148', ferrule: '#f7f4ee', tip: '#2d74c4', ring: '#b9c0c8', bumper: '#0c0e12', linen: true },
+    3: { shaft: '#f3d7a6', shaftHi: '#fff1d4', butt: '#2a1810', wrap: '#c4a15a', wrapInk: '#7a5a28', ferrule: '#fffaf3', tip: '#3c8adf', ring: '#e4e8ee', bumper: '#140e0c', linen: true },
+    4: { shaft: '#2a3138', shaftHi: '#4a555f', butt: '#10141a', wrap: '#0c1014', wrapInk: '#5c6772', ferrule: '#ffffff', tip: '#6eb6ff', ring: '#f2f5f8', bumper: '#07090c', linen: true, carbon: true, point: '#8d5a32' },
+    5: { shaft: '#f7e6c0', shaftHi: '#fff6e4', butt: '#14100e', wrap: '#0e0c0a', wrapInk: '#d4b36a', ferrule: '#fffdf8', tip: '#f4e2a6', ring: '#e8c56e', bumper: '#070605', linen: true, point: '#f0d48a', rings: 3 }
   };
   const c = cues[level] || cues[1];
-  const weave = c.carbon ? `<path d="M30 28 l6 8 M36 28 l6 8 M42 28 l6 8 M30 40 l6 8 M36 40 l6 8 M42 40 l6 8" stroke="${c.clean ? '#5c6770' : '#6a737c'}" stroke-width="0.7" fill="none" opacity="0.55"/>` : '';
-  const wear = c.wear ? `<path d="M33 46 l8 3 M32 70 l10 -2 M34 96 l7 2" stroke="#3a2414" stroke-width="0.6" fill="none" opacity="0.7"/>` : '';
-  const shine = c.gold ? `<path d="M34 24 v88" stroke="#fff4c4" stroke-width="1.2" opacity="0.55"/>` : (c.clean ? `<path d="M34 22 v90" stroke="#ffffff" stroke-width="0.8" opacity="0.35"/>` : '');
-  return `<svg class="bpCue" viewBox="0 0 72 132" role="img">
-    <rect x="30" y="18" width="12" height="96" rx="2" fill="${c.shaft}"/>
-    ${weave}${wear}${shine}
-    <rect x="26" y="78" width="20" height="22" rx="2" fill="${c.butt}"/>
-    <rect x="27" y="82" width="18" height="3" fill="${c.wrap}"/><rect x="27" y="88" width="18" height="3" fill="${c.wrap}"/><rect x="27" y="94" width="18" height="3" fill="${c.wrap}"/>
-    <rect x="29" y="70" width="14" height="8" fill="${c.joint}"/>
-    <rect x="31" y="10" width="10" height="8" fill="${c.ferrule}"/>
-    <rect x="32" y="6" width="8" height="5" rx="1" fill="${c.tip}"/>
+  const id = `bpc${++bpCueUid}`;
+  const linen = c.linen ? `<g stroke="${c.wrapInk}" stroke-width="0.45" opacity="0.85"><path d="M30.2 90 h11.6 M30.2 93 h11.6 M30.2 96 h11.6 M30.2 99 h11.6 M30.2 102 h11.6 M30.2 105 h11.6"/></g>` : '';
+  const scuff = c.scuff ? `<path d="M35 36 l2.4 7 M33.5 52 l3.2 -2.4 M36 64 l2 5" stroke="#6d4c2c" stroke-width="0.45" fill="none" opacity="0.75"/>` : '';
+  const carbon = c.carbon ? `<path d="M35 26 l1.6 5 M37.2 38 l-1.6 5 M35 50 l1.6 5 M37 62 l-1.4 5" stroke="#8b97a3" stroke-width="0.4" fill="none" opacity="0.7"/>` : '';
+  const point = c.point ? `<path d="M36 114 l2.6 6 h-5.2 z" fill="${c.point}"/>` : '';
+  const extraRings = c.rings ? `<rect x="30.4" y="80" width="11.2" height="1.1" fill="${c.ring}"/><rect x="30.4" y="109" width="11.2" height="1.1" fill="${c.ring}"/>` : '';
+  return `<svg class="bpCue" viewBox="26 2 20 128" role="img" aria-hidden="true">
+    <defs><linearGradient id="${id}" x1="0" x2="1"><stop offset="0" stop-color="${c.shaft}"/><stop offset="0.42" stop-color="${c.shaftHi}"/><stop offset="1" stop-color="${c.shaft}"/></linearGradient></defs>
+    <path d="M33.6 16 L38.4 16 L41.2 76 L30.8 76 Z" fill="url(#${id})"/>
+    ${scuff}${carbon}
+    <path d="M30.2 76 L41.8 76 L43.4 122 L28.6 122 Z" fill="${c.butt}"/>
+    <rect x="29.4" y="88" width="13.2" height="20" fill="${c.wrap}"/>
+    ${linen}${point}${extraRings}
+    <rect x="31" y="73.2" width="10" height="1.8" fill="${c.ring}"/>
+    <rect x="31.4" y="75.4" width="9.2" height="1.2" fill="${c.ring}" opacity="0.75"/>
+    <rect x="33.2" y="9.2" width="5.6" height="7.2" fill="${c.ferrule}"/>
+    <path d="M33.5 4.8 h5 q0.8 0.5 0.8 1.6 v3.2 h-6.6 v-3.2 q0-1.1 0.8-1.6z" fill="${c.tip}"/>
+    <rect x="29.2" y="122" width="13.6" height="3.6" rx="1" fill="${c.bumper}"/>
   </svg>`;
 }
 
@@ -336,7 +364,7 @@ function drillCard(state, d, opts = {}) {
   const pb = rec ? `<small class="pbLine">${starsHTML(ms)} Best ${rec.bestScore || 0} pts${rec.bestStars ? ` · ${'★'.repeat(rec.bestStars)}` : ''} · ${rec.tries || 0} session${rec.tries === 1 ? '' : 's'}${rec.passed ? ' · passed ✓' : ''}</small>` : '';
   const del = ownerAccountSignedIn() ? `<button type="button" class="miniAct danger" data-action="drill-del" data-id="${esc(d.id)}">Delete</button>` : '';
   const tools = d.custom ? `<div class="drillBtns"><button type="button" class="miniAct" data-action="drill-edit" data-id="${esc(d.id)}">Edit</button><button type="button" class="miniAct" data-action="drill-dup" data-id="${esc(d.id)}">Duplicate</button><button type="button" class="miniAct" data-action="drill-history" data-id="${esc(d.id)}">History</button><button type="button" class="miniAct" data-action="drill-export" data-id="${esc(d.id)}">Export</button>${del}</div>` : d.contentUid ? `<div class="drillBtns"><button type="button" class="miniAct" data-action="go" data-href="#cview/${esc(d.contentUid)}">My Content</button><button type="button" class="miniAct" data-action="go" data-href="#cedit/${esc(d.contentUid)}">Edit</button><button type="button" class="miniAct" data-action="drill-history" data-id="${esc(d.id)}">History</button></div>` : '';
-  return `<div class="drill card ${open ? '' : 'locked'}" data-drill="${esc(d.id)}"><div class="diagramWrap mini">${renderStageTable(d, { className: 'table-diagram mini' })}</div>${meta}<h3>${esc(d.name)}</h3><p>${esc(d.goal || d.instructions || '')}</p>${d.lanes ? `<div class="laneChips">${d.lanes.map((l) => speedChip(l.speed)).join('')}</div>` : (typeof d.speed === 'number' ? speedChip(d.speed) : '')}${d.credit ? `<small class="muted credit">${esc(d.credit)}</small>` : ''}${pb}<button type="button" class="${rec?.passed ? 'done' : ''}" data-action="go" data-href="#play/drills/${esc(d.id)}" ${open ? '' : 'disabled'}>${rec?.passed ? 'Passed ✓ — Train again' : 'Train'}</button>${tools}</div>`;
+  return `<div class="drill card ${open ? '' : 'locked'}" data-drill="${esc(d.id)}"><div class="diagramWrap mini">${renderStageTable(d, { className: 'table-diagram mini' })}</div>${meta}<h3>${esc(displayDrillTitle(d.name))}</h3><p>${esc(d.goal || d.instructions || '')}</p>${d.lanes ? `<div class="laneChips">${d.lanes.map((l) => speedChip(l.speed)).join('')}</div>` : (typeof d.speed === 'number' ? speedChip(d.speed) : '')}${d.credit ? `<small class="muted credit">${esc(d.credit)}</small>` : ''}${pb}<button type="button" class="${rec?.passed ? 'done' : ''}" data-action="go" data-href="#play/drills/${esc(d.id)}" ${open ? '' : 'disabled'}>${rec?.passed ? 'Passed ✓ — Train again' : 'Train'}</button>${tools}</div>`;
 }
 
 // ------------------------------------------------------------------------------ settings

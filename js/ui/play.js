@@ -14,7 +14,7 @@ import { contactText, englishText, techniqueName } from '../games/text.js';
 import { speedLabel, formatSpeed, lagEndpoint, CALIBRATION_SPEEDS, personalFactor, speedMeaning, calLookup } from '../games/speed.js';
 import { speedExplainHTML, speedDiagramSVG } from '../games/speedDiagram.js';
 import { openSheet, closeSheet, toast, stars } from './sheet.js';
-import { getDrillById } from '../drills.js';
+import { getDrillById, displayDrillTitle } from '../drills.js';
 import { drillEditorAllowed, drillLink } from '../drills/ownerEdits.js';
 import { columnsFor, addTallyColumn, bumpTallyColumn, removeTallyColumn } from '../drills/tallyColumns.js';
 import { RANK_NAMES } from '../storage.js';
@@ -182,7 +182,7 @@ export function createPlayScreen(ctx, key) {
     const patternPlanning = isPattern && !session.planLocked;
     const planning = vis.planner && !session.planLocked && !isPattern;
     const title = C ? C.title : boss ? `BOSS · ${boss.name}` : `${game.name}${stage.level ? ` · Level ${stage.level}` : ''}`;
-    const sub = C ? (ev.over ? 'Done' : `Attempt ${Math.min(ev.attemptsUsed + 1, ev.attemptsTotal)} of ${ev.attemptsTotal}`) : boss ? `Shot ${ev.shotIndex + 1}/${ev.shots.length} · ${shot.shot.skill}` : session.endless ? `Endless · Bank ${ev.attemptsUsed + 1}` : stage.name;
+    const sub = C ? (ev.over ? 'Done' : `Attempt ${Math.min(ev.attemptsUsed + 1, ev.attemptsTotal)} of ${ev.attemptsTotal}`) : boss ? `Shot ${ev.shotIndex + 1}/${ev.shots.length} · ${shot.shot.skill}` : session.endless ? `Endless · Bank ${ev.attemptsUsed + 1}` : displayDrillTitle(stage.name);
     const tableOpts = patternPlanning
       ? { showCuePath: false, showAim: false, showObPath: false, showZones: false, hidePocket: true, pickedOrder: ui.patternPick }
       : isPattern
@@ -382,7 +382,7 @@ export function createPlayScreen(ctx, key) {
       const unlocked = r.unlockedNext ? `<p class="unlock" data-unlocked="1">🔓 Next stage unlocked</p>` : r.endlessUnlocked ? '<p class="unlock" data-unlocked="1">🔓 ENDLESS MODE unlocked</p>' : !r.passed && !session.endless ? '<p class="muted" data-unlocked="0">Not passed — the next stage stays locked.</p>' : '';
       const gamesU = (r.gamesUnlocked || []).map((g) => `<p class="unlock">🎮 ${esc(getGame(g).name)} unlocked</p>`).join('');
       body = `<div class="resultPanel ${r.passed || session.endless ? 'pass' : 'fail'}" data-result="${r.passed ? 'pass' : 'fail'}">
-        <div class="eyebrow">${esc(game.name)} · ${esc(session.endless ? 'Endless' : stage.name)}</div>
+        <div class="eyebrow">${esc(game.name)} · ${esc(session.endless ? 'Endless' : displayDrillTitle(stage.name))}</div>
         <h1>${session.endless ? 'GAME OVER' : r.passed ? 'STAGE PASSED' : 'NOT PASSED'}</h1>
         ${r.stageStars ? `<div class="bigStars">${stars(r.stageStars)}</div>` : ''}
         <div class="resultStats"><div><b data-final-score="${r.score}">${r.score}</b><span>SCORE</span></div>${r.mode === 'zone' && r.requirePocket ? `<div><b>${r.pockets}/${r.attemptsTotal}</b><span>POCKETED</span></div><div><b>${r.stars}★</b><span>POSITION</span></div>` : ''}${r.mode === 'train' ? `<div><b>×${r.bestMultiplier}</b><span>BEST MULT</span></div><div><b>${r.perfectRuns}</b><span>PERFECT</span></div>` : ''}${r.mode === 'ladder' ? `<div><b>${r.bestRung}/${r.rungs.length}</b><span>RUNGS</span></div>` : ''}${r.mode === 'sniper' ? `<div><b>${r.bestStreak}</b><span>BEST STREAK</span></div>` : ''}</div>
@@ -468,12 +468,12 @@ export function createPlayScreen(ctx, key) {
     if (action === 'why-open') {
       const { ch } = shotChallenge(session, stage, ev);
       const v = visibility(coach(ch), ch, session.planLocked);
-      openSheet(`<div class="eyebrow">WHY THIS SHOT?</div><h2 class="sheetTitle">${esc(ch.name || stage?.name || '')}</h2>${v.aim ? aimRowHTML(ch) : ''}${whyHTML(ch)}<h3 class="su-h">Set it up (diamonds)</h3>${setupSheetHTML(setupSource(ev, ch))}`, { id: 'why' });
+      openSheet(`<div class="eyebrow">WHY THIS SHOT?</div><h2 class="sheetTitle">${esc(displayDrillTitle(ch.name || stage?.name || ''))}</h2>${v.aim ? aimRowHTML(ch) : ''}${whyHTML(ch)}<h3 class="su-h">Set it up (diamonds)</h3>${setupSheetHTML(setupSource(ev, ch))}`, { id: 'why' });
       return true;
     }
     if (action === 'setup-open') {
       const { ch } = shotChallenge(session, stage, ev);
-      openSheet(`<div class="eyebrow">SETUP · DIAMOND POSITIONS</div><h2 class="sheetTitle">${esc(ch.name || stage?.name || '')}</h2>${setupSheetHTML(setupSource(ev, ch))}<button type="button" class="bigBtn" data-action="sheet-close">GOT IT</button>`, { id: 'setup' });
+      openSheet(`<div class="eyebrow">SETUP · DIAMOND POSITIONS</div><h2 class="sheetTitle">${esc(displayDrillTitle(ch.name || stage?.name || ''))}</h2>${setupSheetHTML(setupSource(ev, ch))}<button type="button" class="bigBtn" data-action="sheet-close">GOT IT</button>`, { id: 'setup' });
       return true;
     }
     if (action === 'coach-info') {

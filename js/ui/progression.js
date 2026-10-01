@@ -8,6 +8,7 @@ import { computeSkillLevels } from '../progression/skillLevels.js';
 import { masteryStars, MASTERY_LABEL } from '../progression/award.js';
 import { GATES, SKILLS, DRILL_RANK, RANK_LADDER, TIER_LABEL, skillById } from '../progression/config.js';
 import { rankBadgeSVG, drillBadgeSVG, ballSVG, avatarHTML } from '../progression/badge.js';
+import { displayDrillTitle } from '../drills.js';
 import { bossForRank } from '../games/registry.js';
 import { isBossUnlocked } from '../career.js';
 
@@ -105,7 +106,7 @@ export function drillRankCardHTML(state, { compact = false } = {}) {
 export function renderDrillRankPage(state) {
   const dr = drillRankStatus(state);
   const rows = DRILL_RANK.ranks.map((r, i) => `<div class="drRow${i < dr.number ? ' earned' : ''}${i === dr.index + 1 ? ' next' : ''}" data-dr-row="${i + 1}"><span class="drNum">${drillBadgeSVG(i + 1, { size: 36, max: i === DRILL_RANK.ranks.length - 1 })}</span><span class="drInfo"><b>${esc(r.name)}</b><small>${i ? `${fmt(r.xp)} XP · ${r.passed} passed · ${r.strong} strong · ${r.mastered} mastered${r.categories ? ` · ${r.categories} skill categories` : ''}` : 'Start'}</small></span><span class="drState">${i < dr.number ? '✓' : ''}</span></div>`).join('');
-  return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#drills">‹ Drills</button><span class="eyebrow">DRILL RANK</span><h1>${esc(dr.name)}</h1><p>Earned only from drill work: built-in drills, your Create Drill drills and rank-eligible installed .pooliq drills. Previews, play-tests, Table Games, Ghost and friend matches never count.</p></div>
+  return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#drills">‹ Drills</button><span class="eyebrow">DRILL RANK</span></div>
     ${drillRankCardHTML(state)}
     ${dr.reqs.length ? `<div class="card checkList"><div class="eyebrow">TO REACH ${esc(dr.next.toUpperCase())}</div>${dr.reqs.map((q) => `<div class="checkRow" data-met="${q.met ? 1 : 0}">${tick(q.met)}<div class="crMain"><b>${esc(q.label)}</b> <small>(${fmt(q.have)}/${fmt(q.need)})</small></div></div>`).join('')}</div>` : ''}
     <h2>All Drill Ranks</h2><div class="card drRanks">${rows}</div>`;
@@ -130,12 +131,12 @@ export function renderSkillPage(state, skillId) {
   return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#skills">‹ Skills</button><span class="eyebrow">SKILL · ${s.core ? 'CORE' : 'SECONDARY'}</span><h1>${esc(s.long || s.name)}</h1><p>${esc(s.desc || '')}</p></div>
     <div class="card skillHero" data-skill-page="${esc(s.id)}"><div class="shBall">${lv.champion ? rankBadgeSVG({ champion: true }, { size: 64 }) : ballSVG(lv.ball, { size: 64 })}</div><div><span class="eyebrow">LEVEL</span><h2>${esc(lv.label)}</h2><small class="muted">Rating ${lv.score}/100 · ${lv.played} item${lv.played === 1 ? '' : 's'} played · highest tier passed: ${esc(TIER_LABEL[lv.ceiling] || 'none')}</small></div></div>
     <div class="card stats"><div><b>${lv.passesAtTier.beginner}</b><span>PASSED</span></div><div><b>${lv.passesAtTier.intermediate}</b><span>INTERMEDIATE+</span></div><div><b>${lv.passesAtTier.advanced}</b><span>ADVANCED+</span></div></div>
-    <h2>Train ${esc(s.name)}</h2><div class="recList">${tr.length ? tr.map((t) => `<button type="button" class="card trainRow" data-action="go" data-href="${esc(t.href)}"><b>${esc(t.title)}</b><small>${esc(t.sub)}</small><span>›</span></button>`).join('') : '<p class="muted">Unlock more games or import drills that train this skill.</p>'}</div>`;
+    <h2>Train ${esc(s.name)}</h2><div class="recList">${tr.length ? tr.map((t) => `<button type="button" class="card trainRow" data-action="go" data-href="${esc(t.href)}"><b>${esc(displayDrillTitle(t.title))}</b><small>${esc(t.sub)}</small><span>›</span></button>`).join('') : '<p class="muted">Unlock more games or import drills that train this skill.</p>'}</div>`;
 }
 
 // ------------------------------------------------------------------ Recommended Training
 export function recommendedHTML(state, n = 3) {
-  return recommendedTraining(state, n).map((r) => `<div class="card recCard" data-skill="${esc(r.skill)}"><div class="eyebrow">${esc(r.name.toUpperCase())} — ${esc(r.level.label.toUpperCase())}</div>${r.why ? `<p class="small gold">${esc(r.why)}</p>` : ''}${r.items.length ? `${r.items.slice(0, 2).map((t, i) => `<button type="button" class="${i ? 'bigBtn alt' : 'bigBtn'}" data-action="go" data-href="${esc(t.href)}">${esc(t.title)}<small> · ${esc(t.sub)}</small></button>`).join('')}` : '<p class="muted">Unlock more games to train this skill.</p>'}</div>`).join('');
+  return recommendedTraining(state, n).map((r) => `<div class="card recCard" data-skill="${esc(r.skill)}"><div class="eyebrow">${esc(r.name.toUpperCase())} — ${esc(r.level.label.toUpperCase())}</div>${r.why ? `<p class="small gold">${esc(r.why)}</p>` : ''}${r.items.length ? `${r.items.slice(0, 2).map((t, i) => `<button type="button" class="${i ? 'bigBtn alt' : 'bigBtn'}" data-action="go" data-href="${esc(t.href)}">${esc(displayDrillTitle(t.title))}<small> · ${esc(t.sub)}</small></button>`).join('')}` : '<p class="muted">Unlock more games to train this skill.</p>'}</div>`).join('');
 }
 export function renderTrainingPage(state) {
   return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#career">‹ Career</button><span class="eyebrow">RECOMMENDED TRAINING</span><h1>What to train next</h1><p>Blocked skills first (Skill Gate foundations and Promotion floors), then your weakest skills — real stages and drills that train them, least-mastered and easiest first.</p></div>

@@ -203,10 +203,10 @@ export const DRILL_RANK = {
   xpScale: 1,
   sources: ['drill', 'custom', 'content'], // built-in drills, Create Drill drills, rank-eligible installed .pooliq content
   ranks: [
-    { name: 'Chalk Rookie', xp: 0, passed: 0, strong: 0, mastered: 0, categories: 0 },
+    { name: 'BALL BANGER', xp: 0, passed: 0, strong: 0, mastered: 0, categories: 0 },
     { name: 'Grinder', xp: 300, passed: 3, strong: 0, mastered: 0, categories: 0 },
-    { name: 'Table Regular', xp: 1000, passed: 6, strong: 2, mastered: 0, categories: 0 },
-    { name: 'Workhorse', xp: 2500, passed: 10, strong: 4, mastered: 1, categories: 2 },
+    { name: 'DRILLER', xp: 1000, passed: 6, strong: 2, mastered: 0, categories: 0 },
+    { name: 'STUDENT OF THE GAME', xp: 2500, passed: 10, strong: 4, mastered: 1, categories: 2 },
     { name: 'Precision Player', xp: 5000, passed: 15, strong: 7, mastered: 3, categories: 3 },
     { name: 'Drill Sergeant', xp: 9000, passed: 20, strong: 10, mastered: 6, categories: 4 },
     { name: 'Drill Master', xp: 15000, passed: 28, strong: 15, mastered: 10, categories: 5 },

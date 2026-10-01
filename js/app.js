@@ -11,7 +11,7 @@ import * as V from './vault.js';
 import { initInstall, installMode, promptInstall, installSheetHTML, isIOS, isAndroid } from './install.js';
 import { syncRank } from './career.js';
 import { withSkills } from './skills.js';
-import { drills, getDrillById, allDrills, knownDrillIds } from './drills.js';
+import { drills, getDrillById, allDrills, knownDrillIds, displayDrillTitle } from './drills.js';
 import { ballPocketStatus } from './content/ballPocket.js';
 import { renderHome, renderCareerPage, renderDrillsPage, renderArcade, renderGameLobby, renderBossPage, renderProfile, renderSettings, renderLearn } from './dashboard.js';
 import { renderAnalyzePage, bindAnalyzeHandlers } from './analyze.js';
@@ -415,7 +415,7 @@ function handleAction(action, el, e) {
       const d = getDrillById(el.dataset.id);
       const rec = state.games?.drills?.stages?.[el.dataset.id];
       const hist = (rec?.history || []).slice().reverse();
-      openSheet(`<div class="eyebrow">HISTORY · PERSONAL BESTS</div><h2 class="sheetTitle">${escHTML(d?.name || 'Drill')}</h2>
+      openSheet(`<div class="eyebrow">HISTORY · PERSONAL BESTS</div><h2 class="sheetTitle">${escHTML(displayDrillTitle(d?.name || 'Drill'))}</h2>
         <div class="card stats"><div><b>${rec?.bestScore || 0}</b><span>BEST SCORE</span></div><div><b>${rec?.bestStars || 0}★</b><span>BEST STARS</span></div><div><b>${rec?.tries || 0}</b><span>SESSIONS</span></div></div>
         <div class="histList">${hist.length ? hist.map((h) => `<div class="historyRow"><span>${new Date(h.date).toLocaleDateString()} ${new Date(h.date).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span><span>${h.score} pts${h.stars ? ` · ${'★'.repeat(h.stars)}` : ''}</span><b class="${h.passed ? 'green' : 'red'}">${h.passed ? 'PASSED' : 'not passed'}</b></div>`).join('') : '<p class="muted">No sessions yet — train it to start your history.</p>'}</div>
         <button type="button" class="bigBtn" data-action="go" data-href="#play/drills/${escHTML(el.dataset.id)}">TRAIN</button>`, { id: 'history' });

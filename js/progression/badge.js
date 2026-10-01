@@ -29,8 +29,32 @@ export function championSVG(opts = {}) {
 export function rankBadgeSVG(status, opts = {}) {
   return status.champion ? championSVG(opts) : ballSVG(status.ball, { title: status.title, ...opts });
 }
+/**
+ * Rank #9 drill emblem: an original cube of green billiard chalk (the familiar Master-chalk shape and color).
+ * No brand name and no logo. Same isometric badge frame as the other drill ranks.
+ */
+export function masterChalkSVG(number, opts = {}) {
+  const size = opts.size || 56;
+  const id = `mc${++uid}`;
+  const n = esc(number ?? 9);
+  return `<svg class="drillBadge chalkCube ${opts.cls || ''}" data-drillrank="9" viewBox="0 0 100 100" width="${size}" height="${size}" role="img" aria-label="${esc(opts.title || 'Drill rank 9, chalk')}">
+    <defs>
+      <linearGradient id="${id}t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3d8f62"/><stop offset="1" stop-color="#2a6b48"/></linearGradient>
+      <linearGradient id="${id}f" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1f6a45"/><stop offset="1" stop-color="#145536"/></linearGradient>
+      <linearGradient id="${id}s" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0e3d28"/><stop offset="1" stop-color="#187048"/></linearGradient>
+    </defs>
+    <path d="M50 8 L88 28 L50 48 L12 28 Z" fill="url(#${id}t)" stroke="#0c2e1e" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M12 28 L50 48 L50 90 L12 70 Z" fill="url(#${id}f)" stroke="#0c2e1e" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M50 48 L88 28 L88 70 L50 90 Z" fill="url(#${id}s)" stroke="#0c2e1e" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M22 40 L46 53 L46 78 L22 65 Z" fill="#f3ecdc" stroke="#c9b89a" stroke-width="0.8"/>
+    <path d="M24 44 H44 M24 48 H44 M24 52 H40" stroke="#d9cbb3" stroke-width="0.7"/>
+    <path d="M16 32 l4 2 M78 34 l-3 2 M20 62 l3 4" stroke="#8fd0a8" stroke-width="0.6" opacity=".45"/>
+    <text x="62" y="74" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-weight="900" font-size="22" fill="#f4efe2">${n}</text>
+  </svg>`;
+}
 /** Drill Rank badge: a chalk cube with the drill rank number (visually distinct from the Career ball) */
 export function drillBadgeSVG(number, opts = {}) {
+  if (Number(number) === 9) return masterChalkSVG(number, opts);
   const size = opts.size || 56;
   const max = opts.max;
   return `<svg class="drillBadge ${opts.cls || ''}" data-drillrank="${number}" viewBox="0 0 100 100" width="${size}" height="${size}" role="img" aria-label="${esc(opts.title || `Drill rank ${number}`)}"><path d="M50 6 L90 26 L90 74 L50 94 L10 74 L10 26 Z" fill="${max ? '#3b2f0b' : '#0b2a3d'}" stroke="${max ? '#ffc75b' : '#46e7a0'}" stroke-width="4"/><path d="M50 6 L90 26 L50 46 L10 26 Z" fill="${max ? '#6b5418' : '#12506e'}" opacity=".9"/><text x="50" y="76" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-weight="900" font-size="34" fill="${max ? '#ffc75b' : '#46e7a0'}">${esc(number)}</text></svg>`;

@@ -7,7 +7,7 @@ Every number on this page comes from `js/progression/config.js`, which is the on
 | Progression | What it measures | Earned from | Shown |
 |---|---|---|---|
 | **Career** (Rookie … Champion) | Your overall training rank | Table Games stages, built-in / Create Drill drills, rank-eligible installed `.pooliq` content, a ghost match only while that ghost task is the one he is on, Boss Battles | Home, Career, Profile header (ball badge) |
-| **Drill Rank** (Chalk Rookie … Drill Legend) | Your drill work only | Built-in drills, Create Drill drills, rank-eligible installed `.pooliq` content | Top of the Drills tab and Profile (square chalk badge, visually distinct) |
+| **Drill Rank** (BALL BANGER … Drill Legend) | Your drill work only | Built-in drills, Create Drill drills, rank-eligible installed `.pooliq` content | Top of the Drills tab and Profile (square chalk badge, visually distinct) |
 | **Skill levels** (12 skills) | How well you have shown each skill | The same sessions as Career, weighted by the skills each item trains | Career → Skill Breakdown, Home |
 
 **Friends / PvP matches never affect any of these.** The same goes for Play Test and preview of content you have not installed yet. There are tests for both.
@@ -93,10 +93,10 @@ Drill Rank is earned only from **built-in drills, Create Drill drills and rank-e
 
 | # | Drill Rank | Drill XP | Passed drills | Strong ⭐⭐ | Mastered ⭐⭐⭐ | Skill categories |
 |---|---|---|---|---|---|---|
-| 1 | Chalk Rookie | 0 | 0 | 0 | 0 | 0 |
+| 1 | BALL BANGER | 0 | 0 | 0 | 0 | 0 |
 | 2 | Grinder | 300 | 3 | 0 | 0 | 0 |
-| 3 | Table Regular | 1,000 | 6 | 2 | 0 | 0 |
-| 4 | Workhorse | 2,500 | 10 | 4 | 1 | 2 |
+| 3 | DRILLER | 1,000 | 6 | 2 | 0 | 0 |
+| 4 | STUDENT OF THE GAME | 2,500 | 10 | 4 | 1 | 2 |
 | 5 | Precision Player | 5,000 | 15 | 7 | 3 | 3 |
 | 6 | Drill Sergeant | 9,000 | 20 | 10 | 6 | 4 |
 | 7 | Drill Master | 15,000 | 28 | 15 | 10 | 5 |

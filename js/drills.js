@@ -158,8 +158,26 @@ export function knownDrillIds() {
   return collectDrills().map((d) => d.id);
 }
 /** Built-in + custom drills, minus drills deleted for everyone. Custom ids start with "cd-". */
+/** Display only. Stored titles, ids and .pooliq metadata keep the PKF prefix. */
+export function displayDrillTitle(name) {
+  return String(name ?? '').replace(/^PKF\s*·\s*/, '');
+}
+
+/**
+ * These categories stay listed, but their drills are not in the library.
+ * The drill objects and ids remain (knownDrillIds) so saved history is not archived or reset.
+ */
+export const SHELVED_CATEGORIES = new Set([
+  'PKF · Sliding Cue Ball',
+  'PKF · Half Table Patterns',
+  'PKF · Full Table Patterns',
+  'PKF · Full Table with Sidespin',
+  'PKF · Tips & Tricks · Safeties',
+  'Banks'
+]);
+
 export function allDrills() {
-  return collectDrills().filter((d) => d.custom || !isDrillHidden(d.id));
+  return collectDrills().filter((d) => (d.custom || !isDrillHidden(d.id)) && (d.custom || d.contentUid || !SHELVED_CATEGORIES.has(d.category)));
 }
 
 export function getDrillById(id) {
