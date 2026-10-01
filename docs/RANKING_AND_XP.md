@@ -6,7 +6,7 @@ Every number on this page comes from `js/progression/config.js`, which is the on
 
 | Progression | What it measures | Earned from | Shown |
 |---|---|---|---|
-| **Career** (Rookie … Champion) | Your overall training rank | Table Games stages, built-in / Create Drill drills, rank-eligible installed `.pooliq` content, Ghost matches, Boss Battles | Home, Career, Profile header (ball badge) |
+| **Career** (Rookie … Champion) | Your overall training rank | Table Games stages, built-in / Create Drill drills, rank-eligible installed `.pooliq` content, a ghost match only while that ghost task is the one he is on, Boss Battles | Home, Career, Profile header (ball badge) |
 | **Drill Rank** (Chalk Rookie … Drill Legend) | Your drill work only | Built-in drills, Create Drill drills, rank-eligible installed `.pooliq` content | Top of the Drills tab and Profile (square chalk badge, visually distinct) |
 | **Skill levels** (12 skills) | How well you have shown each skill | The same sessions as Career, weighted by the skills each item trains | Career → Skill Breakdown, Home |
 
@@ -45,7 +45,7 @@ Career keeps the existing rank names and requirements (`js/career.js`). v11 adds
 `applyAward()` in `js/progression/award.js` runs once for each finished, recorded session.
 
 1. **Performance ratio** (0–1) comes from the session: shots made / attempts, zone stars, lives left, kick contacts and so on. A passed session counts as at least 0.6 (`passFloor`). A failed session never counts above 0.69 (`failCap`).
-2. **Base XP by tier:** Beginner 40 · Intermediate 60 · Advanced 90 · Expert 130 · Pro 180. Boss Battles are ×2. Ghost matches use `clamp(race/5, 0.6, 1.8)`.
+2. **Base XP by tier:** Beginner 40 · Intermediate 60 · Advanced 90 · Expert 130 · Pro 180. Boss Battles are ×2. A ghost match uses `clamp(race/5, 0.6, 1.8)` for Career Rank XP only while that ghost task is the next open Career task (8-Ball Ghost never is). Drill Rank XP does not come from Ghost.
 3. **Performance curve** (the fraction of base XP you earn):
 
    | Ratio ≥ | 0.6 | 0.7 | 0.8 | 0.9 | 1.0 |

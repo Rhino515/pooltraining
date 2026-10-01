@@ -10,6 +10,7 @@ import { getGame, bossForRank, stageSpecs } from './games/registry.js';
 import { promotionReady, promotionStatus } from './progression/rank.js';
 import { ballPocketDrills } from './content/ballPocket.js';
 import { isDrillHidden } from './drills/hidden.js';
+import { setGhostCareerXpGate } from './progression/sessions.js';
 
 export { RANK_NAMES };
 
@@ -164,3 +165,41 @@ export function nextUp(state) {
   else if (item.type === 'stars' || item.type === 'pb' || item.type === 'ballPocket') detail = `${p.have} / ${p.need}`;
   return { title: item.label, text: detail, href: item.link.href, linkText: item.link.text, req: item, rank: info.next, remaining: open.length };
 }
+
+/**
+ * Career Rank XP for one ghost match.
+ * Bank it only when this match is the ghost task he is on: the next open non-boss
+ * requirement of the next Career rank, same ball count, race at least that long.
+ * 8-Ball Ghost (mode "eight") is never an N-ball task, so it never banks Career Rank XP.
+ * 9-ball and every other rotation ghost use the same rule.
+ * A win saved earlier still completes that task when he reaches it (ghostBeaten).
+ * It does not bank Career Rank XP before the task is current, and not after it is met.
+ * Drill Rank is a different bank and is not changed here.
+ */
+export function ghostMatchAwardsCareerXp(state, m) {
+  if (!m || m.mode === 'eight') return false;
+  const balls = Number(m.balls);
+  if (!(balls >= 3 && balls <= 9)) return false;
+  const up = nextUp(stateBeforeGhostMatch(state, m));
+  const req = up && up.req;
+  if (!req || req.type !== 'ghost') return false;
+  const race = Number(m.race);
+  const played = Number.isFinite(race) && race > 0 ? race : 5;
+  return balls === Number(req.balls) && played >= Number(req.race);
+}
+
+function stateBeforeGhostMatch(state, m) {
+  const at = Date.parse(m?.date || '') || 0;
+  const ghostMatches = (state?.ghostMatches || []).filter((x) => {
+    if (!x || x === m) return false;
+    if (m.id && x.id && x.id === m.id) return false;
+    if (!at) return true;
+    const xa = Date.parse(x.date || '') || 0;
+    if (xa > at) return false;
+    if (xa === at && m.id && x.id && String(x.id) > String(m.id)) return false;
+    return true;
+  });
+  return { ...state, ghostMatches };
+}
+
+setGhostCareerXpGate(ghostMatchAwardsCareerXp);

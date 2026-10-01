@@ -44,12 +44,20 @@ export function awardBoss(state, session, ev, now = Date.now()) {
   return applyAward(st, { item: bossItem(boss), ratio: ev.passedCount / Math.max(1, ev.shots.length), passed: ev.passed, score: ev.score, at: now, durationMs: now - started });
 }
 
-export function ghostMatchItem(m) {
+/** Career Rank XP for a ghost match. career.js registers the real rule. Until then, ghost play banks none. */
+let ghostCareerXp = () => false;
+export function setGhostCareerXpGate(fn) {
+  if (typeof fn === 'function') ghostCareerXp = fn;
+}
+
+export function ghostMatchItem(m, state = null) {
   const it = m.mode === 'eight' ? ghost8Item(m.level, m.group) : ghostItem(m.balls);
   const rf = XP.ghost.raceFactor;
   const f = Math.max(rf.min, Math.min(rf.max, (m.race || 5) / rf.per));
-  return { ...it, baseXP: Math.round(XP.base[it.tier] * f) };
+  // Drill Rank stays off (drillRank: false). Career Rank XP only when the gate says this match is the task he is on.
+  const rankXpEligible = !!(state && ghostCareerXp(state, m));
+  return { ...it, baseXP: Math.round(XP.base[it.tier] * f), rankXpEligible, drillRank: false };
 }
 export function awardGhost(state, m, now = Date.parse(m.date || '') || Date.now(), opts = {}) {
-  return applyAward(state, { item: ghostMatchItem(m), ratio: ghostPerformance(m), passed: !!m.won, score: m.you, at: now }, opts);
+  return applyAward(state, { item: ghostMatchItem(m, state), ratio: ghostPerformance(m), passed: !!m.won, score: m.you, at: now }, opts);
 }

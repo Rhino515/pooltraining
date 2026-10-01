@@ -75,7 +75,10 @@ export function computeSkillLevels(state, now = Date.now()) {
       if (!r || !r.attempts) continue;
       played++;
       num += pts * creditOf(r) * recency(r.lastAt, now);
-      if (r.passes > 0 && w >= SKILL_LEVEL.foundationWeight) {
+      // Ghost matches still train the rating above. They are not foundation passes.
+      // Foundation tasks stay the Skill Gate list. A ghost win must not clear one and move the Career ball.
+      const ghostPass = k.startsWith('ghost:') || k.startsWith('ghost8:');
+      if (r.passes > 0 && w >= SKILL_LEVEL.foundationWeight && !ghostPass) {
         passTiers[tierIndex(r.tier)]++;
         if (r.tier === 'pro' && masteryStars(r) >= 3) proMastered++;
       }
