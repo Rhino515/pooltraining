@@ -1659,3 +1659,11 @@ body.fix-full #app{height:100dvh;padding:0}
 
 .buEntry{grid-template-columns:1fr 24px}
 .buEntry .simPromoText{grid-column:auto}
+
+/* Safety Master: printed table plus the printed tip circle and speed bar */
+.smShot{display:flex;flex-direction:column;gap:8px}
+.smTipWrap{display:flex;justify-content:center;background:#d7d7d7;border-radius:14px;padding:10px 8px 8px}
+.smTip{width:min(260px,86%);height:auto;display:block}
+.smTime{margin:0;text-align:center;font-weight:600}
+.smSec{margin:18px 0 0;font-size:15px;letter-spacing:.04em}
+.smQuote{margin:2px 0 8px}

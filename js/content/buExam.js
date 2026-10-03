@@ -9,6 +9,7 @@
 import { challengeFromPkfDoc } from './pkfBuiltins.js';
 import { validatePooliq } from './schema.js';
 import { skillsBannersHTML, skillsAccomplishmentHTML, skillsExamPageHTML } from './buExam2.js';
+import { safetyAccomplishmentHTML } from './safetyMaster.js';
 
 export const BU_CREDIT = 'Billiard University / Dr. Dave — billiarduniversity.org';
 export const BU_EXAM_NAME = 'Exam I – Fundamentals';
@@ -588,7 +589,7 @@ export function accomplishmentHTML(state) {
     const max = e.completed.scores.reduce((a, s) => a + s.max, 0);
     html = `<div class="card" data-bu-exam="done"><div class="eyebrow">BILLIARD UNIVERSITY</div><h3>${BU_EXAM_NAME}</h3><p>Completed. ${total} / ${max}</p><p class="muted small buScores">${rows}</p><small class="muted credit">${BU_CREDIT}</small></div>`;
   }
-  return html + skillsAccomplishmentHTML(state);
+  return html + skillsAccomplishmentHTML(state) + safetyAccomplishmentHTML(state);
 }
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);

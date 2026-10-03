@@ -15,11 +15,13 @@ import { drills, getDrillById, allDrills, knownDrillIds, displayDrillTitle } fro
 import { ballPocketStatus } from './content/ballPocket.js';
 import { isBuId, examPageHTML } from './content/buExam.js';
 import { isSkillsId } from './content/buExam2.js';
+import { isSafetyId, safetyPageHTML } from './content/safetyMaster.js';
 import { renderHome, renderCareerPage, renderDrillsPage, renderArcade, renderGameLobby, renderBossPage, renderProfile, renderSettings, renderLearn } from './dashboard.js';
 import { renderAnalyzePage, bindAnalyzeHandlers } from './analyze.js';
 import { renderGhostLobby, renderGhostMatch, newGhostSession, newEightSession, applyRack, applyUndo, applyBreak, setBreakMade, useBallInHand, rulesSheetHTML, maxUnlockedBalls, matchOver } from './ghost.js';
 import { createPlayScreen } from './ui/play.js';
 import { createBuPlay } from './ui/buPlay.js';
+import { createSafetyPlay } from './ui/safetyPlay.js';
 import { createSimScreen } from './ui/simulator.js';
 import { createDrillBuilder } from './ui/drillBuilder.js';
 import { createDrillFix } from './ui/drillFix.js';
@@ -121,7 +123,7 @@ function parseHash() {
   return { name: name || 'home', args };
 }
 
-const NAV_FOR = { account: 'profile', leaderboard: 'profile', gate: 'career', promo: 'career', champion: 'career', training: 'career', skill: 'profile', skills: 'profile', me: 'profile', drillrank: 'drills', friends: 'arcade', friend: 'arcade', h2h: 'arcade', fmatch: 'arcade', fsession: 'arcade', tourney: 'arcade', tnew: 'arcade', dev: 'profile', devgame: 'profile', devdrills: 'profile', devedit: 'profile', devkeys: 'profile', content: 'drills', cimport: 'drills', cview: 'drills', cplay: 'drills', cedit: 'drills', sim: 'sim', drillnew: 'drills', drilledit: 'drills', drillfix: 'drills', buexam: 'drills', home: 'home', career: 'career', drills: 'drills', learn: 'learn', analyze: 'sim', arcade: 'arcade', tablegames: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', tgame: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
+const NAV_FOR = { account: 'profile', leaderboard: 'profile', gate: 'career', promo: 'career', champion: 'career', training: 'career', skill: 'profile', skills: 'profile', me: 'profile', drillrank: 'drills', friends: 'arcade', friend: 'arcade', h2h: 'arcade', fmatch: 'arcade', fsession: 'arcade', tourney: 'arcade', tnew: 'arcade', dev: 'profile', devgame: 'profile', devdrills: 'profile', devedit: 'profile', devkeys: 'profile', content: 'drills', cimport: 'drills', cview: 'drills', cplay: 'drills', cedit: 'drills', sim: 'sim', drillnew: 'drills', drilledit: 'drills', drillfix: 'drills', buexam: 'drills', safety: 'drills', home: 'home', career: 'career', drills: 'drills', learn: 'learn', analyze: 'sim', arcade: 'arcade', tablegames: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', tgame: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
 
 function setChrome(playing, navName) {
   document.body.classList.toggle('playing', playing);
@@ -146,7 +148,8 @@ function renderRoute() {
       toast(gone ? 'That drill is no longer in the app' : gameId !== 'drills' && getGame(gameId) && !isGameUnlocked(state, gameId) ? 'That game is still locked' : 'That stage is locked — pass the previous stage first');
       v.innerHTML = gameId === 'drills' ? renderDrillsPage(state, drillFilter, bpViewLevel) : renderGameLobby(state, gameId);
     } else {
-      if (gameId === 'drills' && (isBuId(stageId) || isSkillsId(stageId))) screen = createBuPlay(ctx, { id: stageId, exam: args[2] === 'exam' });
+      if (gameId === 'drills' && isSafetyId(stageId)) screen = createSafetyPlay(ctx, { id: stageId, course: args[2] === 'safety' });
+      else if (gameId === 'drills' && (isBuId(stageId) || isSkillsId(stageId))) screen = createBuPlay(ctx, { id: stageId, exam: args[2] === 'exam' });
       else screen = createPlayScreen(ctx, { gameId, stageId });
       screen.render();
       playing = true;
@@ -260,6 +263,7 @@ function renderRoute() {
   else if (name === 'game') v.innerHTML = args[0] === 'ghost' ? renderGhostLobby(state, ghostPreset) : renderGameLobby(state, args[0]);
   else if (name === 'career') v.innerHTML = renderCareerPage(state);
   else if (name === 'buexam') v.innerHTML = examPageHTML(state, args[0]);
+  else if (name === 'safety') v.innerHTML = safetyPageHTML(state);
   else if (name === 'drills') {
     if (args[0] === 'pocket') {
       drillFilter = 'Ball Pocketing';

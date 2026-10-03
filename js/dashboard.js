@@ -23,6 +23,7 @@ import { TABLE_SIZES, CLOTH_SPEEDS, CALIBRATION_SPEEDS, speedLabel, formatSpeed,
 import { learnHTML } from './learn.js';
 import { isDrillHidden } from './drills/hidden.js';
 import { examBannerHTML, accomplishmentHTML } from './content/buExam.js';
+import { safetyBannerHTML } from './content/safetyMaster.js';
 import { ownerAccountSignedIn } from './dev/dev.js';
 
 function nextUpCard(state) {
@@ -291,6 +292,7 @@ export function renderDrillsPage(state, filter = 'All', bpViewLevel = null) {
   const list0 = allDrills().filter((d) => d.custom || !isDrillHidden(d.id));
   const head = `<div class="title drillsTitle"><span class="eyebrow">DRILL LIBRARY</span><h1>Drills</h1></div>
     ${examBannerHTML()}
+    ${safetyBannerHTML()}
     ${drillRankCardHTML(state)}
     <div class="drillTools"><div class="drillBig"><button type="button" class="bigBtn createDrill" data-action="drill-create">＋ CREATE DRILL</button><button type="button" class="bigBtn myContentBtn" data-action="go" data-href="#content">▤ MY CONTENT<small>import .pooliq · packs · lessons · games</small></button></div>
     <div class="drillFileBtns"><button type="button" class="chip" data-action="drill-import">⤒ Import drills</button>${list0.some((d) => d.custom) ? '<button type="button" class="chip" data-action="drill-export">⤓ Export all</button>' : ''}</div></div>`;
