@@ -9,6 +9,7 @@
 import { challengeFromPkfDoc } from './pkfBuiltins.js';
 import { validatePooliq } from './schema.js';
 import { skillsBannersHTML, skillsAccomplishmentHTML, skillsExamPageHTML } from './buExam2.js';
+import { moreBannersHTML, moreAccomplishmentHTML, moreExamPageHTML, MORE_EXAMS } from './buMore.js';
 import { safetyAccomplishmentHTML } from './safetyMaster.js';
 
 export const BU_CREDIT = 'Billiard University / Dr. Dave — billiarduniversity.org';
@@ -563,11 +564,11 @@ export function examOf(state) {
 }
 
 /** Record one finished exam-mode drill. Does not touch other stats. Completes only when all 8 have exam scores. */
-export function withExamScore(state, id, score, max) {
+export function withExamScore(state, id, score, max, detail) {
   const e = examOf(state);
   const prev = e.scores[id];
-  e.scores[id] = { score, max, at: new Date().toISOString(), ...(prev && prev.score > score ? { best: prev.score } : {}) };
-  if (prev && prev.score > score) e.scores[id].score = prev.score;
+  const better = prev && prev.score > score;
+  e.scores[id] = { score: better ? prev.score : score, max, at: new Date().toISOString(), detail: better ? prev.detail : detail, ...(better ? { best: prev.score } : {}) };
   const done = BU_ORDER.every((k) => e.scores[k] && Number.isFinite(e.scores[k].score));
   if (done) {
     e.completed = {
@@ -589,13 +590,14 @@ export function accomplishmentHTML(state) {
     const max = e.completed.scores.reduce((a, s) => a + s.max, 0);
     html = `<div class="card" data-bu-exam="done"><div class="eyebrow">BILLIARD UNIVERSITY</div><h3>${BU_EXAM_NAME}</h3><p>Completed. ${total} / ${max}</p><p class="muted small buScores">${rows}</p><small class="muted credit">${BU_CREDIT}</small></div>`;
   }
-  return html + skillsAccomplishmentHTML(state) + safetyAccomplishmentHTML(state);
+  return html + skillsAccomplishmentHTML(state) + moreAccomplishmentHTML(state) + safetyAccomplishmentHTML(state);
 }
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 export function examPageHTML(state, which) {
-  if (which === 'bachelors' || which === 'doctorate') return skillsExamPageHTML(state, which);
+  if (which === 'bachelors' || which === 'masters' || which === 'doctorate') return skillsExamPageHTML(state, which);
+  if (MORE_EXAMS[which]) return moreExamPageHTML(state, which);
   const e = examOf(state);
   const rows = BU_ORDER.map((id, i) => {
     const d = buDrills().find((x) => x.id === id);
@@ -605,9 +607,24 @@ export function examPageHTML(state, which) {
   const done = e.completed ? `<p class="green">Completed ${BU_EXAM_NAME}. Scores stay in your profile.</p>` : '<p class="muted">Finish all eight under these exam rules to record the accomplishment. Opening a drill is not enough. This does not change Career rank or Ball Pocketing level.</p>';
   return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#drills">‹ Drills</button><span class="eyebrow">BILLIARD UNIVERSITY</span><h1>${BU_EXAM_NAME}</h1><p>Dr. Dave's first exam. Eight drills, in order. Any drill can be done from the other side of the table. ${BU_CREDIT}</p></div>
     <div class="card">${done}<button type="button" class="bigBtn" data-action="go" data-href="#play/drills/bu-f1/exam">START AT F1</button></div>
+    ${fundamentalsSheetHTML(state)}
     <div class="stageList" data-bu-list="1">${rows}</div>`;
 }
 
+function fundamentalsSheetHTML(state) {
+  const e = examOf(state);
+  const topics = ['cut', 'stop', 'follow', 'draw', 'stun', 'potting', 'wagon', 'target'];
+  const cells = BU_ORDER.map((id, i) => {
+    const sc = e.scores[id];
+    const log = sc?.detail?.log || [];
+    const positions = log.map((s) => (s.pos != null ? s.pos : s.success ? '✓' : '·')).join(' ');
+    return `<div class="buCell"><b>F${i + 1}</b><small>${topics[i]}</small><strong>${sc ? sc.score + '/' + sc.max : '—'}</strong>${positions ? `<small>${positions}</small>` : ''}</div>`;
+  }).join('');
+  const total = BU_ORDER.reduce((a, id) => a + (e.scores[id]?.score || 0), 0);
+  const max = BU_ORDER.reduce((a, id) => a + (e.scores[id]?.max || 0), 0);
+  return `<div class="card buSheetCard" data-bu-sheet="fundamentals"><div class="eyebrow">SCORE SHEET</div><h3>${BU_EXAM_NAME}</h3><p class="muted small">Filled when you score each drill. Nothing to retype.</p><div class="buSheet">${cells}</div><p class="buScoreLine">Total ${total}${max ? ' / ' + max : ''}</p></div>`;
+}
+
 export function examBannerHTML() {
-  return `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#buexam" data-bu-entry="1"><span class="simPromoText"><span class="eyebrow">BILLIARD UNIVERSITY</span><b>${BU_EXAM_NAME}</b><small>F1–F8 · Dr. Dave. Also in each drill's category. Not a Career rank.</small></span><span class="simPromoGo">›</span></button>` + skillsBannersHTML();
+  return `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#buexam" data-bu-entry="1"><span class="simPromoText"><span class="eyebrow">BILLIARD UNIVERSITY</span><b>${BU_EXAM_NAME}</b><small>F1–F8 · Dr. Dave. Also in each drill's category. Not a Career rank.</small></span><span class="simPromoGo">›</span></button>` + skillsBannersHTML() + moreBannersHTML();
 }

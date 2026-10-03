@@ -15,6 +15,7 @@ import { drills, getDrillById, allDrills, knownDrillIds, displayDrillTitle } fro
 import { ballPocketStatus } from './content/ballPocket.js';
 import { isBuId, examPageHTML } from './content/buExam.js';
 import { isSkillsId } from './content/buExam2.js';
+import { isMoreId, finishRdsRun, clearRdsSheet } from './content/buMore.js';
 import { isSafetyId, safetyPageHTML } from './content/safetyMaster.js';
 import { renderHome, renderCareerPage, renderDrillsPage, renderCoursesPage, renderArcade, renderGameLobby, renderBossPage, renderProfile, renderSettings, renderLearn } from './dashboard.js';
 import { renderAnalyzePage, bindAnalyzeHandlers } from './analyze.js';
@@ -149,7 +150,7 @@ function renderRoute() {
       v.innerHTML = gameId === 'drills' ? renderDrillsPage(state, drillFilter, bpViewLevel) : renderGameLobby(state, gameId);
     } else {
       if (gameId === 'drills' && isSafetyId(stageId)) screen = createSafetyPlay(ctx, { id: stageId, course: args[2] === 'safety' });
-      else if (gameId === 'drills' && (isBuId(stageId) || isSkillsId(stageId))) screen = createBuPlay(ctx, { id: stageId, exam: args[2] === 'exam' });
+      else if (gameId === 'drills' && (isBuId(stageId) || isSkillsId(stageId) || isMoreId(stageId))) screen = createBuPlay(ctx, { id: stageId, exam: args[2] === 'exam' });
       else screen = createPlayScreen(ctx, { gameId, stageId });
       screen.render();
       playing = true;
@@ -337,6 +338,16 @@ function handleAction(action, el, e) {
     const r = timerAction(action, el);
     if (r === 'rerender') rerender();
     if (r) return;
+  }
+  if (action === 'bu-finish' && el?.dataset?.exam === 'rds') {
+    commit(finishRdsRun(state));
+    renderRoute();
+    return;
+  }
+  if (action === 'bu-clear' && el?.dataset?.exam === 'rds') {
+    commit(clearRdsSheet(state));
+    renderRoute();
+    return;
   }
   if (screen && screen.onAction(action, el, e)) return;
   if (action.startsWith('c-') && C.contentAction(action, el, e, ctx)) return;

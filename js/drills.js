@@ -40,6 +40,7 @@ import { pkfDrillChallenges } from './content/pkfBuiltins.js';
 import { ballPocketDrills } from './content/ballPocket.js';
 import { buDrills, isBuId, examInstructions, BU_CREDIT } from './content/buExam.js';
 import { buSkillsDrills, isSkillsId, skillsText, SKILLS_CREDIT, SKILLS_BANK_IDS } from './content/buExam2.js';
+import { buMoreDrills, isMoreId } from './content/buMore.js';
 import { safetyDrills, isSafetyId, safetyText } from './content/safetyMaster.js';
 import { applyDrillEdit } from './drills/ownerEdits.js';
 import { isDrillHidden } from './drills/hidden.js';
@@ -184,9 +185,10 @@ function collectDrills() {
   const pocket = ballPocketDrills().filter((c) => !base.some((d) => d.id === c.id));
   const bu = buDrills().map((d) => sealBu(applyDrillEdit(d))).filter((c) => !base.some((d) => d.id === c.id) && !pocket.some((d) => d.id === c.id));
   const skills = buSkillsDrills().map((d) => sealBu(applyDrillEdit(d))).filter((c) => !base.some((d) => d.id === c.id) && !pocket.some((d) => d.id === c.id) && !bu.some((d) => d.id === c.id));
-  const safety = safetyDrills().map((d) => sealSafety(applyDrillEdit(d))).filter((c) => !base.some((d) => d.id === c.id) && !pocket.some((d) => d.id === c.id) && !bu.some((d) => d.id === c.id) && !skills.some((d) => d.id === c.id));
-  const custom = customDrills().filter((c) => !base.some((d) => d.id === c.id) && !pocket.some((d) => d.id === c.id) && !bu.some((d) => d.id === c.id) && !skills.some((d) => d.id === c.id) && !safety.some((d) => d.id === c.id));
-  return [...base, ...pocket, ...bu, ...skills, ...safety, ...custom];
+  const more = buMoreDrills().map((d) => applyDrillEdit(d)).filter((c) => !base.some((d) => d.id === c.id) && !pocket.some((d) => d.id === c.id) && !bu.some((d) => d.id === c.id) && !skills.some((d) => d.id === c.id));
+  const safety = safetyDrills().map((d) => sealSafety(applyDrillEdit(d))).filter((c) => !base.some((d) => d.id === c.id) && !pocket.some((d) => d.id === c.id) && !bu.some((d) => d.id === c.id) && !skills.some((d) => d.id === c.id) && !more.some((d) => d.id === c.id));
+  const custom = customDrills().filter((c) => !base.some((d) => d.id === c.id) && !pocket.some((d) => d.id === c.id) && !bu.some((d) => d.id === c.id) && !skills.some((d) => d.id === c.id) && !more.some((d) => d.id === c.id) && !safety.some((d) => d.id === c.id));
+  return [...base, ...pocket, ...bu, ...skills, ...more, ...safety, ...custom];
 }
 /** Ids that exist in the library, including ones deleted for everyone. History keeps these. */
 export function knownDrillIds() {
@@ -220,7 +222,7 @@ export const SHELVED_CATEGORIES = new Set([
 export function allDrills() {
   return collectDrills().filter((d) => {
     // Safety Master drills stay in the course only. The data remains (knownDrillIds, getDrillById).
-    if (isSafetyId(d.id)) return false;
+    if (isSafetyId(d.id) || isMoreId(d.id) || String(d.id).startsWith('bu-ms')) return false;
     if (!(d.custom || !isDrillHidden(d.id))) return false;
     if (d.custom || d.contentUid) return true;
     if (!SHELVED_CATEGORIES.has(d.category)) return true;
@@ -229,7 +231,7 @@ export function allDrills() {
 }
 
 export function getDrillById(id) {
-  const pool = isSafetyId(id) ? collectDrills() : allDrills();
+  const pool = (isSafetyId(id) || isMoreId(id) || String(id).startsWith('bu-ms')) ? collectDrills() : allDrills();
   const d = pool.find((x) => x.id === id) || null;
   if (d && !d.custom && isDrillHidden(d.id)) return null;
   return d;

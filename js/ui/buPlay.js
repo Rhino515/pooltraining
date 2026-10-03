@@ -13,10 +13,14 @@ import {
 import {
   isSkillsId, skillsMeta, newSkillsRun, skillsApply, undoSkills, skillsStatus, skillsButtons, skillsImages, withSkillsScore, skillsText, SKILLS_CREDIT, S10_CHECKS
 } from '../content/buExam2.js';
+import {
+  isMoreId, moreMeta, newMoreRun, moreApply, undoMore, moreStatus, moreText, moreImages, withMoreScore, MORE_CREDIT
+} from '../content/buMore.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 export function createBuPlay(ctx, { id, exam = false } = {}) {
+  if (isMoreId(id)) return createMorePlay(ctx, { id, exam });
   if (isSkillsId(id)) return createSkillsPlay(ctx, { id, exam });
   const base = getDrillById(id);
   if (!base?.buExam) {
@@ -61,7 +65,7 @@ export function createBuPlay(ctx, { id, exam = false } = {}) {
     const session = { gameId: 'drills', stageId: id, attempts: [], startedAt: now };
     const aw = awardSession(state, session, drill, { passed: score > 0, score, maxScore: meta.max });
     state = aw.state;
-    if (exam) state = withExamScore(state, id, score, meta.max);
+    if (exam) state = withExamScore(state, id, score, meta.max, { log: run.log, pos: run.pos, at7: run.at7, pocketed: run.pocketed });
     ctx.commit(state);
   }
 
@@ -188,7 +192,7 @@ function createSkillsPlay(ctx, { id, exam = false } = {}) {
     const session = { gameId: 'drills', stageId: id, attempts: [], startedAt: now };
     const aw = awardSession(state, session, drill, { passed: score > 0, score, maxScore: meta.max });
     state = aw.state;
-    if (exam) state = withSkillsScore(state, id, score, meta.max);
+    if (exam) state = withSkillsScore(state, id, score, meta.max, { values: run.values, checks: run.checks });
     ctx.commit(state);
   }
 
@@ -288,5 +292,147 @@ function createSkillsPlay(ctx, { id, exam = false } = {}) {
     return false;
   }
 
+  return { render, onAction, destroy() { alive = false; } };
+}
+
+function createMorePlay(ctx, { id, exam = false } = {}) {
+  const base = getDrillById(id);
+  const meta = moreMeta(id);
+  if (!base?.buExam || !meta) {
+    return { render() { ctx.root.innerHTML = ''; }, onAction() { return false; }, destroy() {} };
+  }
+  let run = newMoreRun(id);
+  let saved = false;
+  let alive = true;
+
+  function persist(force) {
+    if (!exam) return;
+    if (meta.kind === 'rack') {
+      if (!run.done || saved) return;
+      saved = true;
+      ctx.commit(withMoreScore(ctx.getState(), id, run.score, meta.max, { ran: !!run.ran }));
+      return;
+    }
+    if (meta.kind === 'matrix') {
+      ctx.commit(withMoreScore(ctx.getState(), id, run.score || 0, meta.max, { cells: run.cells }, !run.done));
+      saved = !!run.done;
+      return;
+    }
+    if (!run.done || saved) return;
+    saved = true;
+    const detail = meta.kind === 'yesno' ? { answers: run.answers } : meta.kind === 'deduct' ? { n: run.n } : { step: run.step };
+    let state = ctx.getState();
+    state = withMoreScore(state, id, run.score, meta.max, detail);
+    ctx.commit(state);
+  }
+
+  function pictures() {
+    return moreImages(id).map((src) => `<div class="diagramWrap"><img class="table-diagram drill-diagram" src="${esc(src)}" alt="${esc(base.name)}" /></div>`).join('');
+  }
+
+  function matrix() {
+    const cells = run.cells || [];
+    let html = `<div class="buMatrix" style="grid-template-columns:repeat(${meta.cols},minmax(0,1fr))">`;
+    for (let r = 0; r < meta.rows; r++) {
+      for (let c = 0; c < meta.cols; c++) {
+        const i = r * meta.cols + c;
+        const v = cells[i];
+        html += `<button type="button" class="buCell" data-action="bu-cell" data-i="${i}"><b>${r + 1} × ${c + 1}</b><strong>${v == null ? '·' : v}</strong><small>of 3</small></button>`;
+      }
+    }
+    return html + '</div>';
+  }
+
+  function render() {
+    if (!alive) return;
+    const done = run.done;
+    const next = exam && meta.next ? `#play/drills/${meta.next}/exam` : '';
+    const list = meta.exam.href;
+    let actions = '';
+    if (done && meta.kind !== 'matrix') {
+      actions = `<p class="buScoreLine">${esc(moreStatus(id, run))}</p>
+        ${exam && next ? `<button type="button" class="bigBtn" data-action="go" data-href="${next}">NEXT</button>` : ''}
+        ${exam && !next ? `<button type="button" class="bigBtn" data-action="go" data-href="${list}">EXAM SHEET</button>` : ''}
+        <button type="button" class="bigBtn alt" data-action="bu-again">SCORE ANOTHER</button>`;
+    } else if (meta.kind === 'tries3' || meta.kind === 'yesno' || meta.kind === 'rack') {
+      const labels = meta.buttons;
+      actions = `<div class="buBar">
+        <button type="button" class="bigBtn" data-action="bu-hit" data-ok="1">${esc(labels[0])}</button>
+        <button type="button" class="bigBtn alt" data-action="bu-hit" data-ok="0">${esc(labels[1])}</button>
+      </div>
+      <button type="button" class="bigBtn alt" data-action="bu-undo">UNDO</button>`;
+    } else if (meta.kind === 'deduct') {
+      actions = `<div class="buBar">
+        <button type="button" class="bigBtn alt" data-action="bu-sub">− 1 BALL</button>
+        <button type="button" class="bigBtn" data-action="bu-add">+ 1 BALL LEFT</button>
+      </div>
+      <button type="button" class="bigBtn" data-action="bu-layout">END LAYOUT</button>
+      <button type="button" class="bigBtn alt" data-action="bu-undo">UNDO</button>`;
+    } else if (meta.kind === 'matrix') {
+      actions = `${matrix()}<p class="muted small">Tap a cell to count successful shots, 0 through 3. The sheet uses these numbers.</p>
+        <button type="button" class="bigBtn alt" data-action="bu-undo">UNDO</button>
+        ${done ? `<button type="button" class="bigBtn" data-action="go" data-href="${list}">EXAM SHEET</button>` : ''}`;
+    }
+    ctx.root.innerHTML = `<div class="playScreen buPlay" data-bu="${esc(id)}" data-exam="${exam ? 1 : 0}">
+      <div class="playHead">
+        <button type="button" class="phBack" data-action="play-exit" aria-label="Exit">‹</button>
+        <div class="phTitle"><small>${esc(meta.exam.name)}</small><b>${esc(base.name)}</b></div>
+      </div>
+      ${pictures()}
+      <p class="buStatus">${esc(moreStatus(id, run))}</p>
+      ${actions}
+      <details class="card buHowCard" open>
+        <summary>Instructions</summary>
+        <pre class="buHow">${esc(moreText(id))}</pre>
+        <small class="muted credit">${esc(MORE_CREDIT)}</small>
+      </details>
+    </div>`;
+  }
+
+  function onAction(action, el) {
+    if (action === 'bu-hit') {
+      if (run.done) return true;
+      run = moreApply(id, run, { ok: el?.dataset?.ok === '1' });
+      persist();
+      render();
+      return true;
+    }
+    if (action === 'bu-add' || action === 'bu-sub') {
+      run = moreApply(id, run, { type: action === 'bu-add' ? 'add' : 'sub' });
+      render();
+      return true;
+    }
+    if (action === 'bu-layout') {
+      run = moreApply(id, run, { type: 'done' });
+      persist();
+      render();
+      return true;
+    }
+    if (action === 'bu-cell') {
+      run = moreApply(id, run, { type: 'cell', i: Number(el?.dataset?.i) });
+      persist();
+      render();
+      return true;
+    }
+    if (action === 'bu-undo') {
+      if (meta.kind === 'rack') return true;
+      saved = false;
+      run = undoMore(id, run);
+      if (meta.kind === 'matrix') persist();
+      render();
+      return true;
+    }
+    if (action === 'bu-again') {
+      run = newMoreRun(id);
+      saved = false;
+      render();
+      return true;
+    }
+    if (action === 'play-exit') {
+      ctx.go(exam ? meta.exam.href : '#courses');
+      return true;
+    }
+    return false;
+  }
   return { render, onAction, destroy() { alive = false; } };
 }

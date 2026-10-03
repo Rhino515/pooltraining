@@ -12,6 +12,7 @@ import { validatePooliq } from './schema.js';
 export const SKILLS_CREDIT = 'Billiard University / Dr. Dave — billiarduniversity.org';
 
 const B_ORDER = ['bu-bs1','bu-bs2','bu-bs3','bu-bs4','bu-bs5','bu-bs6','bu-bs7','bu-bs8','bu-bs9','bu-bs10'];
+const M_ORDER = ['bu-ms1','bu-ms2','bu-ms3','bu-ms4','bu-ms5','bu-ms6','bu-ms7','bu-ms8','bu-ms9','bu-ms10'];
 const D_ORDER = ['bu-ds1','bu-ds2','bu-ds3','bu-ds4','bu-ds5','bu-ds6','bu-ds7','bu-ds8','bu-ds9','bu-ds10'];
 
 export const SKILLS_EXAMS = {
@@ -22,6 +23,14 @@ export const SKILLS_EXAMS = {
     stateKey: 'buExamSkillsB',
     href: '#buexam/bachelors',
     start: 'bu-bs1'
+  },
+  masters: {
+    level: 'masters',
+    name: 'Exam II – Skills Masters',
+    order: M_ORDER,
+    stateKey: 'buExamSkillsM',
+    href: '#buexam/masters',
+    start: 'bu-ms1'
   },
   doctorate: {
     level: 'doctorate',
@@ -116,6 +125,46 @@ export const S10_CHECKS = [
 function scoreLine(s) { return `\n\n${s}`; }
 
 const TEXT = {
+  'bu-ms1': `Instructions:
+${bullet('Pocket the balls in rotation (i.e., in numerical order) in any pockets without scratching or contacting any of the remaining balls.')}
+${bullet('If you disturb a ball while pocketing one, the one pocketed counts, but the run ends.')}
+${bullet('Shoot the drill twice and use the higher score of the two attempts.')}${scoreLine('score = # of balls pocketed legally (without a scratch) before a miss or ball contact (7 max)')}`,
+  'bu-ms2': `Instructions:
+${bullet('Do the drill twice, shooting the balls in any order, and use the higher score of the two attempts.')}
+${bullet('You are not allowed to scratch, shoot combinations, or disturb any of the remaining balls.')}${scoreLine('score = # of balls pocketed legally (without a scratch) before a miss or ball contact (11 max)')}`,
+  'bu-ms3': `Instructions:
+${bullet('Attempt and score all three layouts. Then add the two lowest scores.')}
+${bullet('You receive 1 point for each ball pocketed legally (w/o scratching) under 9-ball “rotation” rules, always hitting the lowest-numbered ball first.')}
+${bullet('If the 9-ball is pocketed early (e.g., with a combo or carom shot), you must still pocket the remaining balls in rotation.')}${scoreLine('score = lowest score + 2nd lowest score (12 max)')}`,
+  'bu-ms4': `Instructions:
+${bullet('Attempt and score all three layouts. Then add the two lowest scores.')}
+${bullet('You receive 1 point for each ball pocketed legally (w/o scratching) before a miss.')}
+${bullet('You are allowed to contact the obstacle balls.')}${scoreLine('score = lowest score + 2nd lowest score (12 max)')}`,
+  'bu-ms5': `Instructions:
+${bullet('Take two attempts from each CB position, getting 1 point for each successful snooker, where the OB is hidden from the CB with no direct path of contact between the balls.')}
+${bullet('The 1 ball may not be pocketed.')}
+${bullet('You are allowed to contact the balls in the obstacle cluster, but all of them must remain within or overlapping the target.')}
+${bullet('The rectangular target can be printed and cut out from a template on the website. It is an 8.5”x11” sheet of paper with the center removed, leaving a 1” border.')}${scoreLine('score = # of successful attempts (10 max)')}`,
+  'bu-ms6': `Instructions:
+${bullet('Shots 1-4: Kick at each OB off the same long rail (as shown), with the CB in the same starting position for each kick, getting 1 point for each successful and legal shot (i.e., no scratch, ball to rail).')}
+${bullet('Shot 5: With CB in hand, kick off any two rails at the 1 ball.')}${scoreLine('score = # of successful kicks (5 max)')}`,
+  'bu-ms7': `Instructions:
+${bullet('Bank the OB cross side from each of the 5 CB positions.')}
+${bullet('You receive 1 point for each bank pocketed legally (w/o scratching).')}${scoreLine('score = # of successful banks (5 max)')}`,
+  'bu-ms8': `Instructions:
+${bullet('Pocket each OB from the indicated CB position without scratching.')}${scoreLine('score = # of successful shots (5 max)')}`,
+  'bu-ms9': `Instructions:
+${bullet('You get 1 point for each successful shot (ball pocketed, no obstacle-ball contact) of 5 attempts.')}
+${bullet('You are allowed to scratch.')}
+${bullet('You should try both types of shots during practice, and use your most reliable skill during the exam.')}${scoreLine('score = # of successful attempts (5 max)')}`,
+  'bu-ms10': `Instructions:
+${bullet('Break three times and score each break, awarding 1 point for each of the following:')}
+a.) no scratch.
+b.) no scratch, and the CB not driven to a cushion.
+c.) no scratch, and the center of the CB remains within the center 4-diamond target zone during the entire break.
+d.) no scratch and 1 or more balls pocketed.
+e.) no scratch and 3 or more OBs either pocketed and/or driven above the head string.
+${bullet('Throw out the best and worst scores of the three individual break scores.')}${scoreLine('score = median # of points (middle value) of the three individual rack scores (5 max)')}`,
   'bu-bs1': `${S1}${scoreLine('score = # of balls pocketed legally (without a scratch) before a miss or ball contact (4 max)')}`,
   'bu-ds1': `${S1}${scoreLine('score = # of balls pocketed legally (without a scratch) before a miss or ball contact (10 max)')}`,
   'bu-bs2': `${S2}${scoreLine('score = # of balls pocketed legally (without a scratch) before a miss or ball contact (7 max)')}`,
@@ -167,29 +216,38 @@ const NAMES = {
 };
 
 function spec(level, n) {
-  const prefix = level === 'bachelors' ? 'bu-bs' : 'bu-ds';
+  const prefix = level === 'bachelors' ? 'bu-bs' : level === 'masters' ? 'bu-ms' : 'bu-ds';
   const id = `${prefix}${n}`;
+  const tag = level === 'bachelors' ? 'Bachelors' : level === 'masters' ? 'Masters' : 'Doctorate';
   const doc = level === 'doctorate';
+  const mas = level === 'masters';
   const base = {
     id, n, level,
     category: CAT[n],
-    name: `${NAMES[n]} (${doc ? 'Doctorate' : 'Bachelors'})`,
+    name: `${NAMES[n]} (${tag})`,
     buttons: ['POCKETED', 'MISS']
   };
-  if (n === 1) return { ...base, kind: 'best2', max: doc ? 10 : 4, buttons: ['POCKETED', 'MISS OR CONTACT'] };
-  if (n === 2) return { ...base, kind: 'best2', max: doc ? 15 : 7, buttons: ['POCKETED', 'MISS OR CONTACT'] };
-  if (n === 3) return { ...base, kind: 'twoLow', max: doc ? 14 : 10, per: 9, layouts: 3 };
-  if (n === 4) return { ...base, kind: 'twoLow', max: doc ? 14 : 10, per: 9, layouts: 3 };
-  if (n === 5) return { ...base, kind: 'hits', max: doc ? 14 : 6, attempts: doc ? 14 : 6, pair: 2, positions: doc ? 7 : 3, buttons: ['SNOOKER', 'MISS'] };
-  if (n === 6) return { ...base, kind: 'hits', max: doc ? 7 : 3, attempts: doc ? 7 : 3, buttons: ['LEGAL KICK', 'MISS'] };
-  if (n === 7) return { ...base, kind: 'hits', max: doc ? 7 : 3, attempts: doc ? 7 : 3, buttons: ['BANKED', 'MISS OR SCRATCH'] };
-  if (n === 8) return { ...base, kind: 'hits', max: doc ? 7 : 3, attempts: doc ? 7 : 3, buttons: ['POCKETED', 'MISS OR SCRATCH'] };
-  if (n === 9) return { ...base, kind: 'hits', max: doc ? 7 : 3, attempts: doc ? 7 : 3, buttons: ['SUCCESS', 'MISS'] };
+  const max1 = doc ? 10 : mas ? 7 : 4;
+  const max2 = doc ? 15 : mas ? 11 : 7;
+  const max34 = doc ? 14 : mas ? 12 : 10;
+  const max5 = doc ? 14 : mas ? 10 : 6;
+  const att5 = doc ? 14 : mas ? 10 : 6;
+  const pos5 = doc ? 7 : mas ? 5 : 3;
+  const max6789 = doc ? 7 : mas ? 5 : 3;
+  if (n === 1) return { ...base, kind: 'best2', max: max1, buttons: ['POCKETED', 'MISS OR CONTACT'] };
+  if (n === 2) return { ...base, kind: 'best2', max: max2, buttons: ['POCKETED', 'MISS OR CONTACT'] };
+  if (n === 3) return { ...base, kind: 'twoLow', max: max34, per: 9, layouts: 3 };
+  if (n === 4) return { ...base, kind: 'twoLow', max: max34, per: 9, layouts: 3 };
+  if (n === 5) return { ...base, kind: 'hits', max: max5, attempts: att5, pair: 2, positions: pos5, buttons: ['SNOOKER', 'MISS'] };
+  if (n === 6) return { ...base, kind: 'hits', max: max6789, attempts: max6789, buttons: ['LEGAL KICK', 'MISS'] };
+  if (n === 7) return { ...base, kind: 'hits', max: max6789, attempts: max6789, buttons: ['BANKED', 'MISS OR SCRATCH'] };
+  if (n === 8) return { ...base, kind: 'hits', max: max6789, attempts: max6789, buttons: ['POCKETED', 'MISS OR SCRATCH'] };
+  if (n === 9) return { ...base, kind: 'hits', max: max6789, attempts: max6789, buttons: ['SUCCESS', 'MISS'] };
   return { ...base, kind: 'median3', max: 5, attempts: 3, buttons: [] };
 }
 
 const SPECS = {};
-for (const level of ['bachelors', 'doctorate']) {
+for (const level of ['bachelors', 'masters', 'doctorate']) {
   for (let n = 1; n <= 10; n++) {
     const s = spec(level, n);
     SPECS[s.id] = s;
@@ -206,7 +264,7 @@ export function skillsMeta(id) {
 }
 
 export function skillsImages(id) {
-  if (/^bu-[bd]s[34]$/.test(id)) return [1, 2, 3].map((n) => `./images/bu/${id}-${n}.png`);
+  if (/^bu-(?:bs|ds|ms)[34]$/.test(id)) return [1, 2, 3].map((n) => `./images/bu/${id}-${n}.png`);
   return [`./images/bu/${id}.png`];
 }
 
@@ -414,6 +472,11 @@ export function skillsStatus(id, run) {
     return `Shot ${run.step + 1} of 7 · ${labels[run.step] || ''} · successful ${run.tally}`;
   }
   if (m.n === 7 && m.level === 'doctorate') return `CB position ${run.step + 1} of 7 · successful ${run.tally}`;
+  if (m.n === 6 && m.level === 'masters') {
+    const labels = ['same CB, one long rail', 'same CB, one long rail', 'same CB, one long rail', 'same CB, one long rail', '1 ball, any two rails, CB in hand'];
+    return `Shot ${run.step + 1} of 5 · ${labels[run.step] || ''} · successful ${run.tally}`;
+  }
+  if (m.n === 7 && m.level === 'masters') return `CB position ${run.step + 1} of 5 · successful ${run.tally}`;
   if (m.n === 7) return `Ball ${run.step + 1} of 3 · successful ${run.tally}`;
   return `Shot ${run.step + 1} of ${m.attempts} · successful ${run.tally}`;
 }
@@ -426,14 +489,14 @@ export function skillsExamOf(state, level) {
   return { scores: { ...(e.scores || {}) }, completed: e.completed || null };
 }
 
-export function withSkillsScore(state, id, score, max) {
+export function withSkillsScore(state, id, score, max, detail) {
   const meta = skillsMeta(id);
   if (!meta) return state;
   const key = meta.exam.stateKey;
   const e = skillsExamOf(state, meta.level);
   const prev = e.scores[id];
-  e.scores[id] = { score, max, at: new Date().toISOString(), ...(prev && prev.score > score ? { best: prev.score } : {}) };
-  if (prev && prev.score > score) e.scores[id].score = prev.score;
+  const better = prev && prev.score > score;
+  e.scores[id] = { score: better ? prev.score : score, max, at: new Date().toISOString(), detail: better ? prev.detail : detail, ...(better ? { best: prev.score } : {}) };
   const done = meta.exam.order.every((k) => e.scores[k] && Number.isFinite(e.scores[k].score));
   if (done) {
     e.completed = {
@@ -447,7 +510,7 @@ export function withSkillsScore(state, id, score, max) {
 }
 
 export function skillsAccomplishmentHTML(state) {
-  return ['bachelors', 'doctorate'].map((level) => {
+  return ['bachelors', 'masters', 'doctorate'].map((level) => {
     const exam = SKILLS_EXAMS[level];
     const e = skillsExamOf(state, level);
     if (!e.completed) return '';
@@ -476,12 +539,32 @@ export function skillsExamPageHTML(state, level) {
     : '<p class="muted">Finish all ten under this exam’s rules to record the accomplishment. Opening a drill is not enough. Playing a drill from its category does not count. This does not change Career rank or Ball Pocketing level.</p>';
   return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#drills">‹ Drills</button><span class="eyebrow">BILLIARD UNIVERSITY</span><h1>${esc(exam.name)}</h1><p>Dr. Dave’s Exam II. Ten drills, S1 through S10, in order. S3 and S4 each include three layouts. ${esc(SKILLS_CREDIT)}</p></div>
     <div class="card">${done}<button type="button" class="bigBtn" data-action="go" data-href="#play/drills/${exam.start}/exam">START AT S1</button></div>
+    ${skillsSheetHTML(state, level)}
     <div class="stageList" data-bu-list="1" data-skills-exam="${level}">${rows}</div>`;
 }
 
 export function skillsBannersHTML() {
-  return ['bachelors', 'doctorate'].map((level) => {
+  return ['bachelors', 'masters', 'doctorate'].map((level) => {
     const exam = SKILLS_EXAMS[level];
-    return `<button type="button" class="card simPromo buEntry" data-action="go" data-href="${exam.href}" data-bu-entry="1" data-skills-exam="${level}"><span class="simPromoText"><span class="eyebrow">BILLIARD UNIVERSITY</span><b>${esc(exam.name)}</b><small>S1–S10 · Dr. Dave. Also in each drill’s category. Not a Career rank.</small></span><span class="simPromoGo">›</span></button>`;
+    const note = level === 'masters'
+      ? 'S1–S10 · Dr. Dave. Not on the All list. Not a Career rank.'
+      : 'S1–S10 · Dr. Dave. Also in each drill’s category. Not a Career rank.';
+    return `<button type="button" class="card simPromo buEntry" data-action="go" data-href="${exam.href}" data-bu-entry="1" data-skills-exam="${level}"><span class="simPromoText"><span class="eyebrow">BILLIARD UNIVERSITY</span><b>${esc(exam.name)}</b><small>${note}</small></span><span class="simPromoGo">›</span></button>`;
   }).join('');
+}
+
+const SHEET_HEAD = ['line', 'rail', '9-ball', '8-ball', 'safe', 'kick', 'bank', 'elevated', 'jump', 'break'];
+export function skillsSheetHTML(state, level) {
+  const exam = SKILLS_EXAMS[level];
+  if (!exam) return '';
+  const e = skillsExamOf(state, level);
+  const cells = exam.order.map((id, i) => {
+    const sc = e.scores[id];
+    const max = skillsMeta(id)?.max;
+    const shown = sc ? String(sc.score) : '—';
+    return `<div class="buCell"><b>S${i + 1}</b><small>${SHEET_HEAD[i]} · ${max} max</small><strong>${shown}</strong></div>`;
+  }).join('');
+  const total = exam.order.reduce((a, id) => a + (e.scores[id] ? e.scores[id].score : 0), 0);
+  const max = exam.order.reduce((a, id) => a + (skillsMeta(id)?.max || 0), 0);
+  return `<div class="card buSheetCard" data-bu-sheet="${level}"><div class="eyebrow">SCORE SHEET</div><h3>${esc(exam.name)}</h3><p class="muted small">Filled from the drills. Score a drill and its box updates. Nothing to retype.</p><div class="buSheet">${cells}</div><p class="buScoreLine">Total ${total} / ${max}</p></div>`;
 }
