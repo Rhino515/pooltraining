@@ -288,11 +288,21 @@ export function renderProfile(state) {
 }
 
 // ------------------------------------------------------------------------------ drills
+/** Wide photo button. Efren Reyes, 2012 World 9-Ball. Photo by Vinod Divakaran / Doha Stadium Plus Qatar, Wikimedia Commons. */
+function coursesCardHTML() {
+  return `<button type="button" class="coursesCard" data-action="go" data-href="#courses" data-courses="1"><img src="./images/courses/efren-reyes.jpg" alt="" width="1400" height="762"/><span class="coursesLabel">COURSES</span></button>`;
+}
+
+export function renderCoursesPage() {
+  return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#drills">‹ Drills</button><span class="eyebrow">DRILL LIBRARY</span><h1>Courses</h1></div>
+    ${examBannerHTML()}
+    ${safetyBannerHTML()}`;
+}
+
 export function renderDrillsPage(state, filter = 'All', bpViewLevel = null) {
   const list0 = allDrills().filter((d) => d.custom || !isDrillHidden(d.id));
   const head = `<div class="title drillsTitle"><span class="eyebrow">DRILL LIBRARY</span><h1>Drills</h1></div>
-    ${examBannerHTML()}
-    ${safetyBannerHTML()}
+    ${coursesCardHTML()}
     ${drillRankCardHTML(state)}
     <div class="drillTools"><div class="drillBig"><button type="button" class="bigBtn createDrill" data-action="drill-create">＋ CREATE DRILL</button><button type="button" class="bigBtn myContentBtn" data-action="go" data-href="#content">▤ MY CONTENT<small>import .pooliq · packs · lessons · games</small></button></div>
     <div class="drillFileBtns"><button type="button" class="chip" data-action="drill-import">⤒ Import drills</button>${list0.some((d) => d.custom) ? '<button type="button" class="chip" data-action="drill-export">⤓ Export all</button>' : ''}</div></div>`;

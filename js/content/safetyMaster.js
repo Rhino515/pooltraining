@@ -4,7 +4,7 @@
  * The printed cue-tip circle and lag-to-break bar stay with each drill.
  * No Career Rank XP. Not Ball Pocketing levels. None are locked.
  * Finishing every drill from this course records one accomplishment.
- * Playing a drill from its category does not finish the course.
+ * These drills are not listed on the Drills page. Only this course opens them.
  */
 import { challengeFromPkfDoc } from './pkfBuiltins.js';
 import { validatePooliq } from './schema.js';
@@ -836,7 +836,7 @@ export function safetyAccomplishmentHTML(state) {
 }
 
 export function safetyBannerHTML() {
-  return `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#safety" data-safety-entry="1"><span class="simPromoText"><span class="eyebrow">COURSE</span><b>${SAFETY_NAME}</b><small>${SAFETY_ORDER.length} drills in order. With the exams, not one of them. Also in each drill’s category. Not a Career rank.</small></span><span class="simPromoGo">›</span></button>`;
+  return `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#safety" data-safety-entry="1"><span class="simPromoText"><span class="eyebrow">COURSE</span><b>${SAFETY_NAME}</b><small>${SAFETY_ORDER.length} drills in order. With the exams, not one of them. Only in this course. Not a Career rank.</small></span><span class="simPromoGo">›</span></button>`;
 }
 
 export function safetyPageHTML(state) {

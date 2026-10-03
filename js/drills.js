@@ -40,7 +40,7 @@ import { pkfDrillChallenges } from './content/pkfBuiltins.js';
 import { ballPocketDrills } from './content/ballPocket.js';
 import { buDrills, isBuId, examInstructions, BU_CREDIT } from './content/buExam.js';
 import { buSkillsDrills, isSkillsId, skillsText, SKILLS_CREDIT, SKILLS_BANK_IDS } from './content/buExam2.js';
-import { safetyDrills, isSafetyId, safetyText, SAFETY_BANK_IDS } from './content/safetyMaster.js';
+import { safetyDrills, isSafetyId, safetyText } from './content/safetyMaster.js';
 import { applyDrillEdit } from './drills/ownerEdits.js';
 import { isDrillHidden } from './drills/hidden.js';
 
@@ -219,15 +219,18 @@ export const SHELVED_CATEGORIES = new Set([
 
 export function allDrills() {
   return collectDrills().filter((d) => {
+    // Safety Master drills stay in the course only. The data remains (knownDrillIds, getDrillById).
+    if (isSafetyId(d.id)) return false;
     if (!(d.custom || !isDrillHidden(d.id))) return false;
     if (d.custom || d.contentUid) return true;
     if (!SHELVED_CATEGORIES.has(d.category)) return true;
-    return SKILLS_BANK_IDS.includes(d.id) || SAFETY_BANK_IDS.includes(d.id);
+    return SKILLS_BANK_IDS.includes(d.id);
   });
 }
 
 export function getDrillById(id) {
-  const d = allDrills().find((x) => x.id === id) || null;
+  const pool = isSafetyId(id) ? collectDrills() : allDrills();
+  const d = pool.find((x) => x.id === id) || null;
   if (d && !d.custom && isDrillHidden(d.id)) return null;
   return d;
 }
