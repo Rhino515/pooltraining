@@ -171,7 +171,20 @@ function bankScreen(ctx) {
       ${head('Bank Pool', `${ui.rack === 'full' ? 'Full rack to 8' : 'Short rack to 5'} · race ${ui.race}`)}
       <div class="playBody">
         ${timerHTML('tg-bank')}
-        <p class="ruleLine"><b>WPA Bank Pool</b> (Rules of Play §13, effective 2025-09-15). Not a full referee. ${esc(ui.rack === 'full' ? 'Fifteen balls, triangle, eight points wins the rack.' : 'Nine balls, diamond, five points wins the rack.')} Lag winner chooses the first break. Later breaks alternate (general rule 1.3). A valid bank is one point. Another ball pocketed on that shot does not count. A miss ends the turn. A standard foul is minus one and the turn passes. Scratch: cue ball in hand behind the head string. Three fouls in a row loses the rack (3.13).</p>
+        <ol class="gameSteps">
+          <li>Short rack is 9 balls in a diamond, and 5 points wins the rack. Full rack is 15 balls in a triangle, and 8 points wins the rack.</li>
+          <li>The lag winner chooses who breaks. Later breaks switch. Cue ball in hand above the head string.</li>
+          <li>If the break pockets nothing, at least four object balls must reach a rail, or they can take the table or make you break again.</li>
+          <li>Call the ball, the cushions in order, and the pocket. Only that bank counts as 1 point.</li>
+          <li>You keep shooting as long as you make a legal bank.</li>
+          <li>A miss ends your turn. An extra ball on the same shot does not count. Spot it.</li>
+          <li>A foul is minus 1 and your turn ends. If you are at 0, you owe a ball. A scratch is cue ball in hand behind the head string.</li>
+          <li>Three fouls in a row and you lose the rack.</li>
+          <li>First to the rack score wins the rack. First to the race wins the match.</li>
+        </ol>
+        <details class="ruleMore"><summary>Full rules</summary>
+                <p class="ruleLine"><b>WPA Bank Pool</b> (Rules of Play §13, effective 2025-09-15). Not a full referee. ${esc(ui.rack === 'full' ? 'Fifteen balls, triangle, eight points wins the rack.' : 'Nine balls, diamond, five points wins the rack.')} Lag winner chooses the first break. Later breaks alternate (general rule 1.3). A valid bank is one point. Another ball pocketed on that shot does not count. A miss ends the turn. A standard foul is minus one and the turn passes. Scratch: cue ball in hand behind the head string. Three fouls in a row loses the rack (3.13).</p>
+        </details>
         <div class="chips">
           <button type="button" class="chip${ui.rack === 'short' ? ' active' : ''}" data-action="bk-rack" data-v="short">SHORT · 5</button>
           <button type="button" class="chip${ui.rack === 'full' ? ' active' : ''}" data-action="bk-rack" data-v="full">FULL · 8</button>
@@ -460,7 +473,22 @@ function straightScreen(ctx) {
     ctx.root.innerHTML = `<div class="playScreen tableMatch" data-table-game="straight">
       ${head('Straight Pool', `to ${ui.target}`)}
       <div class="playBody">
-        <p class="ruleLine"><b>WPA 14.1 Continuous</b> (Rules of Play §7, effective 2025-09-15). Not a full referee. Fifteen numbered balls plus the cue ball. A called ball is 1 point, and each other ball pocketed on that same legal shot is 1. First to the chosen score wins. Scores may go negative. The shooter stays until a miss, safety, or foul. Opening break: cue ball in hand above the head string. If no called ball is pocketed, the cue ball and two object balls must each reach a rail, or it is a breaking foul (−2). A breaking foul does not count toward three fouls. If both happen on one shot, it is only the breaking foul. Three standard fouls: −1 for the third, then −15 more, re-rack all 15, and that player shoots an opening break (§7.11). Left out of the buttons: calling the ball, spotting balls, a cue ball or 15th that sits in the rack (§7.8b–d), a stalemate re-lag, and unsportsmanlike conduct. Those stay with the players. Source: WPA Rules of Play, wpapool.com, file 2026.01.02.</p>
+        <ol class="gameSteps">
+          <li>Rack all 15 numbered balls. The apex goes on the foot spot.</li>
+          <li>Lag for who shoots first. The cue ball starts in hand above the head string.</li>
+          <li>On the opening break, pocket a called ball, or drive the cue ball and two object balls to a rail. If you do neither, it is minus 2. They can accept the table or make you break again.</li>
+          <li>Call the ball and the pocket. That ball is 1 point. Each extra ball on that same legal shot is also 1.</li>
+          <li>You keep shooting until you miss, play a safety, or foul.</li>
+          <li>A miss ends your turn. A safety ends your turn, and any ball that fell is spotted, not scored.</li>
+          <li>A foul or a scratch is minus 1 and your turn ends. A scratch gives them the cue ball in hand above the head string. The score can go below zero.</li>
+          <li>A bad opening break is minus 2 only. It does not count toward three fouls.</li>
+          <li>Three normal fouls in a row: minus 1, then minus 15 more. Re-rack all 15 and you break again.</li>
+          <li>After 14 balls, re-rack those 14 and leave the apex empty. You keep shooting. If the 15th fell on that same shot, re-rack all 15.</li>
+          <li>First player to the score you picked wins.</li>
+        </ol>
+        <details class="ruleMore"><summary>Full rules</summary>
+                <p class="ruleLine"><b>WPA 14.1 Continuous</b> (Rules of Play §7, effective 2025-09-15). Not a full referee. Fifteen numbered balls plus the cue ball. A called ball is 1 point, and each other ball pocketed on that same legal shot is 1. First to the chosen score wins. Scores may go negative. The shooter stays until a miss, safety, or foul. Opening break: cue ball in hand above the head string. If no called ball is pocketed, the cue ball and two object balls must each reach a rail, or it is a breaking foul (−2). A breaking foul does not count toward three fouls. If both happen on one shot, it is only the breaking foul. Three standard fouls: −1 for the third, then −15 more, re-rack all 15, and that player shoots an opening break (§7.11). Left out of the buttons: calling the ball, spotting balls, a cue ball or 15th that sits in the rack (§7.8b–d), a stalemate re-lag, and unsportsmanlike conduct. Those stay with the players. Source: WPA Rules of Play, wpapool.com, file 2026.01.02.</p>
+        </details>
         <div class="chips">${STRAIGHT_TARGETS.map((n) => `<button type="button" class="chip${n === ui.target ? ' active' : ''}" data-action="st-target" data-v="${n}" ${ui.scored ? 'disabled' : ''}>${n}</button>`).join('')}</div>
         <div class="chips">
           <button type="button" class="chip${ui.breaker === 'you' ? ' active' : ''}" data-action="st-break" data-v="you" ${ui.scored || ui.you || ui.opp || ui.needBreakChoice ? 'disabled' : ''}>YOU BREAK</button>
@@ -520,7 +548,22 @@ function onePocketScreen(ctx) {
     ctx.root.innerHTML = `<div class="playScreen tableMatch" data-table-game="onepocket">
       ${head('One Pocket', `race ${ui.race}`)}
       <div class="playBody">
-        <p class="ruleLine"><b>WPA One-Pocket</b> (Rules of Play §12, effective 2025-09-15). Not a full referee. Fifteen object balls, random triangle, apex on the foot spot. Each player has one foot pocket. First to 8 there wins the rack. Lag winner chooses who breaks the first rack. Later breaks alternate. The breaker chooses a foot pocket. Cue ball in hand above the head string. No special break requirement. The turn continues only after a ball in the shooter’s own pocket. A ball in the opponent’s pocket on a foul counts for them and is not spotted, unless the only foul is a cue-ball scratch (§12.5). Side and head pockets are spotted and score nothing. Three standard fouls in a row loses the rack (§12.9). If both would reach 8 on the same shot, the shooter wins (§12.11). Left out of the buttons: spotting balls on the table, a stalemate re-rack, forgetting to spot, and unsportsmanlike conduct. Those stay with the players. Source: WPA Rules of Play, wpapool.com, file 2026.01.02.</p>
+        <ol class="gameSteps">
+          <li>Rack all 15 balls with no pattern. The apex goes on the foot spot.</li>
+          <li>The lag winner chooses who breaks. Later breaks switch.</li>
+          <li>The breaker picks one foot pocket. The other player gets the other one. Cue ball in hand above the head string.</li>
+          <li>A ball in your foot pocket is 1 point and you shoot again.</li>
+          <li>A ball in their foot pocket is their point and your turn ends.</li>
+          <li>A miss ends your turn. Side pockets and the head pockets score nothing. Spot those balls.</li>
+          <li>A foul is minus 1 and your turn ends. If you are at 0, you owe a ball instead.</li>
+          <li>A scratch is minus 1. They get the cue ball in hand above the head string. A ball that fell in their pocket on the scratch does not count.</li>
+          <li>On any other foul, a ball that fell in their pocket does count for them.</li>
+          <li>Three fouls in a row and you lose the rack.</li>
+          <li>First to 8 wins the rack. First to the race wins the match. If both would reach 8 on your shot, you win the rack.</li>
+        </ol>
+        <details class="ruleMore"><summary>Full rules</summary>
+                <p class="ruleLine"><b>WPA One-Pocket</b> (Rules of Play §12, effective 2025-09-15). Not a full referee. Fifteen object balls, random triangle, apex on the foot spot. Each player has one foot pocket. First to 8 there wins the rack. Lag winner chooses who breaks the first rack. Later breaks alternate. The breaker chooses a foot pocket. Cue ball in hand above the head string. No special break requirement. The turn continues only after a ball in the shooter’s own pocket. A ball in the opponent’s pocket on a foul counts for them and is not spotted, unless the only foul is a cue-ball scratch (§12.5). Side and head pockets are spotted and score nothing. Three standard fouls in a row loses the rack (§12.9). If both would reach 8 on the same shot, the shooter wins (§12.11). Left out of the buttons: spotting balls on the table, a stalemate re-rack, forgetting to spot, and unsportsmanlike conduct. Those stay with the players. Source: WPA Rules of Play, wpapool.com, file 2026.01.02.</p>
+        </details>
         <div class="racePick">${RACES.map((r) => `<button type="button" class="chip${r === ui.race ? ' active' : ''}" data-action="op-race" data-v="${r}" ${done ? 'disabled' : ''}>Race ${r}</button>`).join('')}</div>
         <div class="chips">
           <button type="button" class="chip${ui.youBreak ? ' active' : ''}" data-action="op-lag" data-v="you" ${ui.racksYou + ui.racksOpp || ui.rackLive ? 'disabled' : ''}>LAG WINNER BREAKS</button>
@@ -585,7 +628,22 @@ function cribbageScreen(ctx) {
     ctx.root.innerHTML = `<div class="playScreen tableMatch" data-table-game="cribbage">
       ${head('Cribbage', 'first to 5')}
       <div class="playBody">
-        <p class="ruleLine"><b>Cribbage is not in the WPA Rules of Play</b> (file 2026.01.02). Not a full referee. This follows the BCA Official Rules and Record Book (1992, pp. 75–76), the source of the published summary on Wikipedia, Cribbage (pool). Pairs that add to 15: 1+14, 2+13, 3+12, 4+11, 5+10, 6+9, 7+8. The 15 is a cribbage by itself only after every other object ball is pocketed. First to 5 wins. A full rack has 8 cribbages. Rack: 15 in the center, apex on the foot spot, and no two of the three corner balls may add to 15. Open break: pocket a ball or drive at least four object balls to a rail. A cribbage counts only when the two partners are pocketed on successive strokes in the same inning. Fouls do not subtract points. Three successive fouls by the same player loses the game. Left out of the buttons: the open-break check, spotting on the long string, and moving a kitchen ball to the foot spot when every object ball is behind the head string. Those stay with the players.</p>
+        <ol class="gameSteps">
+          <li>Rack all 15. Put the 15-ball in the center and the apex on the foot spot. No two corner balls may add to 15.</li>
+          <li>Open break: pocket a ball, or drive at least four object balls to a rail.</li>
+          <li>The pairs are 1 and 14, 2 and 13, 3 and 12, 4 and 11, 5 and 10, 6 and 9, 7 and 8.</li>
+          <li>Pocket one ball. Your next shot has to be its partner.</li>
+          <li>Pocket the partner and that is 1 cribbage. You keep shooting.</li>
+          <li>Miss the partner and it is a foul. Spot that ball. Your turn ends. You do not lose a point.</li>
+          <li>The 15 counts only when it is the last ball. If it falls earlier, spot it and keep playing. That is not a foul.</li>
+          <li>A miss when you are not on a partner just ends your turn. It is not a foul.</li>
+          <li>A foul does not take a point. They choose to shoot the balls as they lie, or take the cue ball in hand behind the head string. A scratch is ball in hand behind the head string, not a choice.</li>
+          <li>Three fouls in a row and you lose.</li>
+          <li>First to 5 cribbages wins. If the rack runs out and nobody has 5, the rack is over.</li>
+        </ol>
+        <details class="ruleMore"><summary>Full rules</summary>
+                <p class="ruleLine"><b>Cribbage is not in the WPA Rules of Play</b> (file 2026.01.02). Not a full referee. This follows the BCA Official Rules and Record Book (1992, pp. 75–76), the source of the published summary on Wikipedia, Cribbage (pool). Pairs that add to 15: 1+14, 2+13, 3+12, 4+11, 5+10, 6+9, 7+8. The 15 is a cribbage by itself only after every other object ball is pocketed. First to 5 wins. A full rack has 8 cribbages. Rack: 15 in the center, apex on the foot spot, and no two of the three corner balls may add to 15. Open break: pocket a ball or drive at least four object balls to a rail. A cribbage counts only when the two partners are pocketed on successive strokes in the same inning. Fouls do not subtract points. Three successive fouls by the same player loses the game. Left out of the buttons: the open-break check, spotting on the long string, and moving a kitchen ball to the foot spot when every object ball is behind the head string. Those stay with the players.</p>
+        </details>
         <p class="muted small">Balls still out: ${ui.out.length}. Tap a number to pocket it. For more than one ball on the same stroke, turn on MORE ON THIS STROKE, tap each ball, then COUNT THIS STROKE.</p>
         <div class="chips cribBalls">${balls || '<span class="muted">No balls left.</span>'}</div>
         <div class="chips">

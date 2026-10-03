@@ -59,6 +59,19 @@ function howHtml() {
     <p class="loopStrike">Strike a numbered object ball directly with your cue. The object ball must carom off the white cue ball and enter your called pocket.</p>
     ${rackSvg()}
     <p class="muted small">Bottom of the diagram is you. White is the apex nearest you. The 1 is not in the rack.</p>
+    <ol class="gameSteps">
+      <li>Rack 14 numbered balls plus the white cue ball. White is the front apex, closest to you. Do not flip the rack.</li>
+      <li>The 1-ball stays in your hand. It is not in the triangle.</li>
+      <li>Break by striking the 1-ball. It hits the white and spreads the rack.</li>
+      <li>After the break, strike a numbered ball with the cue. Do not strike the white.</li>
+      <li>Call the pocket. That ball must carom off the white and go in the pocket you called.</li>
+      <li>Solo: every stroke is 1 shot. A make adds a ball. A miss does not. Fewer shots is better. Clear all 15.</li>
+      <li>Solo scratch: still only 1 shot. Place the white anywhere, then tap Cue ball placed. If the object ball also went in, it still counts.</li>
+      <li>1 vs 1 is a race to 8. A make is 1 point and you shoot again. A miss ends your turn.</li>
+      <li>1 vs 1 scratch: no point, even if the object ball went in. The other player places the white anywhere.</li>
+      <li>Solo ends at 15 balls. 1 vs 1 ends when someone reaches 8.</li>
+    </ol>
+    <details class="ruleMore"><summary>Full rules</summary>
     <h2>SETUP</h2>
     <p>Use all 15 numbered balls plus the white cue ball. Rack a normal triangle. Do not reverse the rack. The white cue ball is the front apex, closest to the breaking end and to you. The 1-ball is not the apex.</p>
     <p>The triangle is 14 numbered balls plus the white at the apex, 15 balls in the rack. The 1-ball stays in your hand for the break.</p>
@@ -78,6 +91,7 @@ function howHtml() {
     <p>If the object ball goes in and the white scratches, that is different from solo. Do not award the point. The turn ends and the opponent has ball in hand anywhere.</p>
     <h2>WINNING</h2>
     <p>Solo ends when 15 numbered balls are pocketed. The score is total shots. Personal best is the lowest finished score. 1 vs 1 ends when a player reaches 8. That player wins.</p>
+    </details>
     <h2>WHY IT TRAINS</h2>
     <ul class="loopWhy">
       <li>Carom-angle recognition</li>

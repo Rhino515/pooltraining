@@ -28,6 +28,7 @@ Shot Simulator simplification. Playing-surface sizes (ball stays 2.25 in): 7 ft 
 - Cache `pool-iq-v14-2`, app version 14.
 - v14-1: 8-ball runout plays the group (not the 1-ball), shows a breakout for a tied-up ball, 3D is a low view from behind the cue ball, and full screen is the table plus EXIT.
 - v14-2: 3D view is a shaded table from behind the cue ball (wood rails, lit cloth, round balls, cue).
+- v14-58: Table games with a long rules paragraph now lead with a short numbered how-to. The full paragraph is one tap away. Cache `pool-iq-v14-58`.
 - v14-57: Straight Pool (§7) and One Pocket (§12) scorekeepers from the WPA Rules of Play (effective 2025-09-15), plus Cribbage from the BCA Official Rules and Record Book (1992, pp. 75–76). Not full referees. Cache `pool-iq-v14-57`.
 - v14-56: Loop is a Table Games scorekeeper for pool-backwards carom training. Solo score is total shots (lower is better). 1 vs 1 is a race to 8. No Career XP. Cache `pool-iq-v14-56`.
 - v14-55: Each Billiard University exam can be restarted. That clears only that exam's sheet and scores, after a confirm. Reset this drill starts the current attempt over without the rest of the sheet. Cache `pool-iq-v14-55`.

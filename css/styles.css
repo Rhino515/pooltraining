@@ -1728,3 +1728,10 @@ body.fix-full #app{height:100dvh;padding:0}
 [data-table-game="straight"] .rb.alt,[data-table-game="onepocket"] .rb.alt,[data-table-game="cribbage"] .rb.alt{background:#15304c;border:1px solid #1f5f99;color:#dff6ff}
 [data-table-game="straight"] .rackNote,[data-table-game="onepocket"] .rackNote,[data-table-game="cribbage"] .rackNote{margin:8px 0;padding:10px 12px;border:1px solid var(--gold);border-radius:14px;background:#1a1408;font-weight:700;line-height:1.35}
 [data-table-game="cribbage"] .cribBalls .chip{min-width:44px;min-height:44px;font-weight:800}
+
+/* Numbered how-to on table-game rules. Do not restyle .steps. */
+.gameSteps{margin:10px 0 12px;padding:0 0 0 1.4em;display:flex;flex-direction:column;gap:10px;font-size:15px;line-height:1.45}
+.gameSteps li::marker{font-weight:800;color:var(--gold)}
+.ruleMore{margin:0 0 12px;border:1px solid #22364c;border-radius:12px;background:#0b1624}
+.ruleMore summary{display:flex;align-items:center;min-height:48px;padding:12px 14px;font-weight:800;cursor:pointer}
+.ruleMore .ruleLine{margin:0 10px 10px}
