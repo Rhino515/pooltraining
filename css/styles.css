@@ -1735,3 +1735,10 @@ body.fix-full #app{height:100dvh;padding:0}
 .ruleMore{margin:0 0 12px;border:1px solid #22364c;border-radius:12px;background:#0b1624}
 .ruleMore summary{display:flex;align-items:center;min-height:48px;padding:12px 14px;font-weight:800;cursor:pointer}
 .ruleMore .ruleLine{margin:0 10px 10px}
+
+/* v14-59: rules chips on 8, 9, and 10-ball only. Other table games do not use these. */
+.tableMatch .ruleMenu{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:2px 0 8px}
+.tableMatch .ruleLab{flex:none;font-size:11px;font-weight:800;letter-spacing:.8px;color:var(--muted)}
+.tableMatch .rulePick{display:flex;flex:1 1 220px;flex-wrap:wrap;gap:8px;min-width:0}
+.tableMatch .rulePick .chip{flex:1 1 64px;min-width:64px;min-height:44px;text-align:center}
+.tableMatch .playingSet{margin:0 0 8px;font-weight:800}

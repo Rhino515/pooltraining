@@ -1,6 +1,7 @@
 /**
  * Table-game scoring (v14-29).
- * 8-ball, 9-ball, 10-ball: rack counter plus the optional timer. No rules text was added.
+ * 8-ball, 9-ball, 10-ball: rack counter plus the optional timer, and a rules menu.
+ * The menu remembers WPA, BCA, APA, or bar in localStorage only. It does not score racks.
  * Bank Pool: WPA Rules of Play §13, effective 2025-09-15
  *   https://wpapool.com/wp-content/uploads/2026/01/2026.01.02-WPA-Rules.pdf
  * Ultimate Pool USA: UPL League Manual v5.0
@@ -10,6 +11,8 @@ import { timerHTML } from './shotTimer.js';
 import { createLoopMatch } from './loopGame.js';
 import { freshStraight, applyStraight, STRAIGHT_TARGETS, freshOnePocket, applyOnePocket } from './wpaScore.js';
 import { freshCribbage, applyCribbage, partnerOf } from './cribbageRules.js';
+import { lsSet } from '../storage.js';
+import { HOW } from '../learn.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const pad = (n) => String(n).padStart(2, '0');
@@ -71,9 +74,156 @@ export function createTableMatch(ctx, kind) {
   return raceScreen(ctx, id);
 }
 
+const RULE_KEY = 'poolIQRuleSet';
+const RULE_SETS = ['wpa', 'bca', 'apa', 'bar'];
+const RULE_NAME = { wpa: 'WPA', bca: 'BCA', apa: 'APA', bar: 'Bar' };
+const HOW_ID = {
+  8: { wpa: 'wpa:eight', bca: 'bca:eight', apa: 'apa:eight', bar: 'bar:eight' },
+  9: { wpa: 'wpa:nine', bca: 'bca:nine', apa: 'apa:nine' },
+  10: { wpa: 'wpa:ten', bca: 'bca:ten' }
+};
+const RULE_STEPS = {
+  8: {
+    wpa: [
+      'Rack 15 balls. The 8 goes in the center. One bottom corner is a solid, the other a stripe. The front ball sits on the foot spot.',
+      'Break from behind the head string.',
+      'Pocket a ball on the break and you keep shooting, unless you scratch.',
+      'The 8 on the break is not a win and not a loss. On a legal break you may spot the 8 and continue, or re-break.',
+      'The table stays open after the break. Your group starts when you legally pocket a called ball of that group.',
+      'While the table is open, you may hit any ball except the 8 first.',
+      'Call the ball and the pocket unless the shot is totally obvious. You do not have to call rails or caroms.',
+      'A legal shot hits your ball first, then pockets a ball or drives a ball to a cushion.',
+      'A scratch on the break: they may play the balls as they lie, or take the cue ball in the kitchen. From the kitchen it must cross the head string before it hits a ball.',
+      'Any other foul is ball in hand anywhere.',
+      'You win by pocketing the 8 after your group is clear, with no foul. You lose if you pocket the 8 early, in the wrong pocket, or on a foul, or jump the 8 off the table.'
+    ],
+    bca: [
+      'BCA recognizes the WPA rules. This list is the CSI book, which is what players usually mean by BCA.',
+      'Call the ball and the pocket. Your group is solids 1 through 7 or stripes 9 through 15. Clear the group, then the 8.',
+      'The table stays open after the break even if balls were made.',
+      'Your group is the first ball you legally pocket after the break. A safety does not pick the group.',
+      'The 8 on the break is not a win or a loss. With no foul, spot the 8 and continue, or re-rack and break again.',
+      'With a foul on that break, they may spot the 8 and take ball in hand anywhere, or re-rack and break.',
+      'A foul, including a legal-break foul, is ball in hand anywhere. Only the opening break starts from behind the head string.',
+      'If the 8 goes in on a foul, you lose. If you foul while shooting the 8 and it stays up, it is only a foul.',
+      'These notes did not find a rule for an 8 that falls on a legal shot while your group is still on the table. That case is not stated here.'
+    ],
+    apa: [
+      'Pocket solids 1 through 7 or stripes 9 through 15, then the 8. In league, mark the pocket for the 8. In Masters it may be called.',
+      'The break must hit the head ball or a second-row ball. A soft break is not allowed.',
+      'If you legally pocket only solids, or only stripes, on the break, that group is yours. If you make both or neither, the table stays open.',
+      'The 8 on the break wins, unless you also scratch, which loses.',
+      'Ordinary shots are not called. Slop counts.',
+      'A foul on a legal break is ball in hand behind the head string, and the cue ball must hit a ball outside the kitchen. If the break was also illegal, re-rack and they break.',
+      'Any other foul is ball in hand anywhere.',
+      'The 8 has to be its own shot. Pocketing it early, or with your last ball, loses. A scratch while shooting the 8 loses even if the 8 stays up.',
+      'An object ball jumped off the table is spotted, and that is not a foul. Only cue-ball fouls are called. Jump cues are not allowed except in Masters.'
+    ],
+    bar: [
+      'There is no official bar rule set. This is Dr. Dave’s usual set. Ask before you play, because the room can change it.',
+      'If you pocket balls on the break, the group with more balls down is yours. If the two groups are equal, the table stays open.',
+      'The 8 on the break wins, unless you also scratch or jump the cue ball off the table, which loses.',
+      'Call the details that are not a straight-in shot: combinations, kisses, caroms, rail-first hits, kicks, and banks. Skip the call and you lose the turn. The cue ball stays where it is.',
+      'A scratch, or the cue ball off the table, is ball in hand in the kitchen. Shoot it out of the kitchen before it touches a ball or a cushion. That includes the break.',
+      'If you do not hit your own ball first, you lose the turn. They shoot the cue ball where it lies. No ball in hand.',
+      'The 8 cannot be used in a combination or a kiss.',
+      'A safety is not allowed unless you are honestly trying to pocket a ball, or to break something out when you have no shot.',
+      'A scratch while shooting the 8 loses the game, whether or not the 8 goes in.'
+    ]
+  },
+  9: {
+    wpa: [
+      'Rack balls 1 through 9 in a diamond. The 1 is in front, on the foot spot. The 9 is in the center.',
+      'Break from above the head string. If you pocket nothing, at least four object balls must reach a rail or it is a foul.',
+      'Hit the lowest numbered ball first. Nothing has to be called. Slop counts.',
+      'Pocket any ball and you keep shooting. Pocketing the 9 wins, even on the break, if the lowest ball was hit first.',
+      'After a legal break you may push out. The cue ball may go anywhere. They then choose who shoots.',
+      'A scratch on the break is ball in hand for them. Any other standard foul is ball in hand anywhere.',
+      'Spot the 9 if it falls on a foul or a push out, or leaves the table. Other balls stay down.',
+      'Three fouls in a row loses the rack.'
+    ],
+    apa: [
+      'Balls 1 through 9. Hit the lowest number first. Pocket any ball and you keep shooting.',
+      'Legally pocketing the 9 wins. Hitting the lowest ball into the 9 also wins.',
+      'In league play, balls 1 through 8 are 1 point each and the 9 is 2 points. Masters does not use that count. There, pocketing the 9 wins the game.',
+      'The 9 on the break wins unless you scratch. Then the 9 is spotted and the turn passes.',
+      'A foul on a legal break is ball in hand anywhere. Other pocketed balls stay down.',
+      'Push-outs are not allowed in handicapped league play. Masters allows a push-out, and any ball pocketed on it is spotted.'
+    ],
+    bca: [
+      'Rack a diamond. The 1 is the apex on the foot spot. The 9 is in the middle. The rest are random.',
+      'Break from behind the head string. The cue ball must hit the 1 before any other ball or cushion.',
+      'Pocket a ball, or drive at least four object balls to a cushion, or the break is a foul.',
+      'Shoot in number order. Pocket any legal ball and you keep shooting.',
+      'Pocketing the 9 on a legal shot wins.',
+      'A jumped ball stays off the table, except the 9, which comes back.',
+      'The rest of the fouls are not on this short page.'
+    ],
+    bar: [
+      'These notes do not have a bar-rules set for this game. The bar notes are for 8-ball only.'
+    ]
+  },
+  10: {
+    wpa: [
+      'Rack balls 1 through 10 in a triangle. The 1 is the apex on the foot spot. The 10 is in the center.',
+      'Break from above the head string. If you pocket nothing, at least four object balls must reach a rail or it is a foul.',
+      'After a legal break you may push out, the same way as 9-ball. There is no safety call.',
+      'Hit the lowest ball first. On every shot except the break, call the ball and the pocket.',
+      'If a ball falls but it was not the called shot, and there is no foul, the other player chooses who shoots next.',
+      'The 10 wins only on a called shot when it is the last object ball left.',
+      'Spot the 10 if it leaves the table or falls on any shot that is not the win. Other balls stay down.',
+      'A foul is ball in hand anywhere. Three fouls in one rack loses the rack.'
+    ],
+    bca: [
+      'Rack a triangle. The 1 is the apex on the foot spot. The 10 is in the middle of the row of three. The 2 and the 3 are the two ends of the last row. The rest are random.',
+      'Call the pocket. Shoot the balls in number order.',
+      'Win by pocketing the 10 on a legal shot after the break.',
+      'Fouls, the push-out, and the full break rules are in the CSI book and are not copied here.'
+    ],
+    apa: [
+      '10-ball is not in the APA booklet these notes used. There is no APA 10-ball list to show.'
+    ],
+    bar: [
+      'These notes do not have a bar-rules set for this game. The bar notes are for 8-ball only.'
+    ]
+  }
+};
+
+function readRuleSets() {
+  const base = { 8: 'wpa', 9: 'wpa', 10: 'wpa' };
+  try {
+    const raw = JSON.parse(localStorage.getItem(RULE_KEY) || '');
+    if (!raw || typeof raw !== 'object') return base;
+    for (const id of ['8', '9', '10']) {
+      if (RULE_SETS.includes(raw[id])) base[id] = raw[id];
+    }
+  } catch { /* keep the default */ }
+  return base;
+}
+
+function writeRuleSet(id, set) {
+  const all = readRuleSets();
+  all[id] = set;
+  lsSet(RULE_KEY, JSON.stringify(all));
+}
+
+function rulesBlock(id, set) {
+  const steps = RULE_STEPS[id][set].map((line) => `<li>${esc(line)}</li>`).join('');
+  const howKey = HOW_ID[id][set];
+  const lines = howKey && HOW[howKey];
+  const more = lines
+    ? `<details class="ruleMore"><summary>Full rules</summary>${lines.map((line) => `<p class="ruleLine">${esc(line)}</p>`).join('')}</details>`
+    : '';
+  const chips = RULE_SETS.map((s) => `<button type="button" class="chip${s === set ? ' active' : ''}" data-action="tg-rule" data-v="${s}">${s === 'bar' ? 'BAR' : RULE_NAME[s]}</button>`).join('');
+  return `<div class="ruleMenu"><span class="ruleLab">RULES</span><div class="rulePick">${chips}</div></div>
+        <p class="playingSet">Playing ${RULE_NAME[set]} ${id}-ball</p>
+        <ol class="gameSteps">${steps}</ol>
+        ${more}`;
+}
+
 function raceScreen(ctx, id) {
   const name = `${id}-Ball`;
-  const ui = { you: 0, opp: 0, race: 5, log: [] };
+  const ui = { you: 0, opp: 0, race: 5, log: [], rules: readRuleSets()[id] };
   let alive = true;
   function over() { return ui.you >= ui.race || ui.opp >= ui.race; }
   function render() {
@@ -83,6 +233,7 @@ function raceScreen(ctx, id) {
     ctx.root.innerHTML = `<div class="playScreen tableMatch" data-table-game="${id}" data-timer="1">
       ${head(name, `Race to ${ui.race}`)}
       <div class="playBody">
+        ${rulesBlock(id, ui.rules)}
         <p class="muted small ruleLine">Rack counter. The timer is optional and stays off until you turn it on.</p>
         ${timerHTML(`tg-${id}`)}
         <div class="racePick">${RACES.map((r) => `<button type="button" class="chip${r === ui.race ? ' active' : ''}" data-action="tg-race" data-v="${r}" ${ui.log.length ? 'disabled' : ''}>${r}</button>`).join('')}</div>
@@ -99,6 +250,14 @@ function raceScreen(ctx, id) {
   }
   function onAction(action, el) {
     if (!action.startsWith('tg-')) return false;
+    if (action === 'tg-rule') {
+      const set = el.dataset.v;
+      if (!RULE_SETS.includes(set) || set === ui.rules) return true;
+      ui.rules = set;
+      writeRuleSet(id, set);
+      render();
+      return true;
+    }
     if (action === 'tg-race') {
       if (ui.log.length) return true;
       ui.race = Number(el.dataset.v) || 5;

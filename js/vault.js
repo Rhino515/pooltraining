@@ -28,7 +28,8 @@ export const KEYS = {
   drillEdits: 'poolIQDrillEditsV1', // v14-7 owner drill corrections (drills/ownerEdits.js)
   devCopy: 'poolIQDevCopyV1', // v14-35 last good read of published on-screen words (dev/copy.js)
   tallyColumns: 'poolIQTallyColumnsV1', // v14-13 extra drill tally columns, this phone only (drills/tallyColumns.js)
-  drillHidden: 'poolIQDrillHiddenV1' // v14-34 ids deleted for everyone; kept when the list cannot be read (drills/hidden.js)
+  drillHidden: 'poolIQDrillHiddenV1', // v14-34 ids deleted for everyone; kept when the list cannot be read (drills/hidden.js)
+  ruleSet: 'poolIQRuleSet' // v14-59 last rules pick on 8, 9, and 10-ball only (ui/tableMatch.js). Not career, XP, or games.
 };
 export const DATA_KEYS = Object.values(KEYS);
 export const META_KEY = 'poolIQMetaV1'; // seq/savedAt, lastBackupAt, nudge + install dismissals, persist result

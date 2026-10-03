@@ -83,7 +83,7 @@ const MISSING = {
   'wpa:iepf': 'The WPA book says a version of 8-ball called International Rules was developed by the International Eightball Pool Federation. This file does not contain those rules. It points readers to the WPA rules page.'
 };
 
-const HOW = {
+export const HOW = {
   'wpa:eight': [
     'Dr. Dave’s summary of the official WPA rules, used first. Pocket one group, solids 1 through 7 or stripes 9 through 15, then the 8. The rack needs the 8 in the center, one bottom corner a solid, the other a stripe. The rest should be mixed, but that mix is not a requirement. The front ball sits on the foot spot.',
     'Break from behind the head string. Pocket an object ball and you keep shooting, unless you scratch. A scratch on the break: the opponent places the cue ball in the kitchen, and the cue ball must cross the head string before it hits an object ball. The current WPA book (effective 2025-09-15) also lets that opponent play the table as it lies. That choice is in the book, not in Dr. Dave’s short summary.',
