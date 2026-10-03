@@ -6,7 +6,7 @@ import { skillBarsHTML, weakestSkills, recommendations } from './skills.js';
 import { allDrills, drillsByCategory, isDrillUnlocked, CATEGORIES, getDrillById, displayDrillTitle, SHELVED_CATEGORIES, HIDDEN_DRILL_CATEGORIES } from './drills.js';
 import { ballPocketDrills, ballPocketStatus, BALL_POCKET_TEXT, BALL_POCKET_LEVELS } from './content/ballPocket.js';
 import { maxUnlockedBalls, ghostStats } from './ghost.js';
-import { GAMES, getGame, stageSpecs, getStages, getBosses, getBoss } from './games/registry.js';
+import { GAMES, GHOST_GAME, getGame, stageSpecs, getStages, getBosses, getBoss } from './games/registry.js';
 import * as E from './games/engine.js';
 import { renderStageTable } from './games/stageTable.js';
 import { esc, speedChip } from './games/recipe.js';
@@ -175,8 +175,10 @@ const TABLE_MATCHES = [
 ];
 export function renderArcade(state) {
   const matches = TABLE_MATCHES.map(([id, name, sub]) => `<button type="button" class="gameCard card" data-action="go" data-href="#tgame/${id}" data-game="${esc(id)}"><span class="gcIcon">${id === 'upusa' ? '⏱' : id === 'bank' ? '▣' : id}</span><span class="gcMain"><b>${esc(name)}</b><small>${esc(sub)}</small></span></button>`).join('');
+  const ghost = `<button type="button" class="gameCard card" data-action="go" data-href="#ghost" data-game="ghost"><span class="gcIcon">${GHOST_GAME.icon}</span><span class="gcMain"><b>${esc(GHOST_GAME.name)}</b><small>${esc(GHOST_GAME.tagline)} Includes 8-Ball Ghost.</small></span></button>`;
   return `<div class="title"><span class="eyebrow">TABLE GAMES</span><h1>At the table</h1><p>Rack counters for real games. Training modes are in Drills, under Career Drills.</p></div>
-    <button type="button" class="card simPromo friendsPromo" data-action="go" data-href="#friends"><span class="simPromoIcon">⚔</span><span class="simPromoText"><span class="eyebrow">PvP</span><b>Play with Friends</b><small>Score real matches head-to-head, run a group night or a tournament. Separate from your training ranks.</small></span><span class="simPromoGo">›</span></button>
+    <button type="button" class="card simPromo friendsPromo" data-action="go" data-href="#friends"><span class="simPromoIcon">⚔</span><span class="simPromoText"><b>Play with Friends</b><small>Score real matches head-to-head.</small></span><span class="simPromoGo">›</span></button>
+    ${ghost}
     <div class="arcadeGrid" data-table-matches>${matches}</div>`;
 }
 

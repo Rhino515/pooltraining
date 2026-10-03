@@ -1656,6 +1656,9 @@ body.fix-full #app{height:100dvh;padding:0}
 .buChecks label{display:flex;gap:8px;align-items:flex-start;font-size:14px;line-height:1.35}
 .diagramWrap.is-on{outline:3px solid #e2b657;outline-offset:2px}
 .simPromo .simPromoText{grid-column:1 / 2}
+.friendsPromo .simPromoText{grid-column:2;min-width:0}
+.friendsPromo .simPromoGo{grid-column:3}
+.friendsPromo .simPromoText small{display:block}
 
 .buEntry{grid-template-columns:1fr 24px}
 .buEntry .simPromoText{grid-column:auto}
