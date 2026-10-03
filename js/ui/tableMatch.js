@@ -8,6 +8,8 @@
  */
 import { timerHTML } from './shotTimer.js';
 import { createLoopMatch } from './loopGame.js';
+import { freshStraight, applyStraight, STRAIGHT_TARGETS, freshOnePocket, applyOnePocket } from './wpaScore.js';
+import { freshCribbage, applyCribbage, partnerOf } from './cribbageRules.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const pad = (n) => String(n).padStart(2, '0');
@@ -57,6 +59,9 @@ function head(title, sub) {
 
 export function createTableMatch(ctx, kind) {
   if (kind === 'loop') return createLoopMatch(ctx);
+  if (kind === 'straight') return straightScreen(ctx);
+  if (kind === 'onepocket') return onePocketScreen(ctx);
+  if (kind === 'cribbage') return cribbageScreen(ctx);
   const id = ['8', '9', '10', 'bank', 'upusa'].includes(kind) ? kind : '';
   if (!id) {
     return { render() { ctx.root.innerHTML = '<div class="card empty"><p>Unknown table game.</p></div>'; }, onAction() { return false; }, destroy() {} };
@@ -435,4 +440,205 @@ function upusaScreen(ctx) {
   }
   tick = setInterval(() => { if (alive) paintClocks(); }, 200);
   return { render, onAction, destroy() { alive = false; clearInterval(tick); } };
+}
+
+function straightScreen(ctx) {
+  let ui = freshStraight();
+  let alive = true;
+  function go(action, arg) {
+    ui = applyStraight(ui, action, arg);
+    render();
+  }
+  function render() {
+    if (!alive) return;
+    const done = !!ui.winner;
+    const locked = done || ui.needBreakChoice;
+    const dis = locked ? 'disabled' : '';
+    const extraDis = locked || !ui.canExtra ? 'disabled' : '';
+    const breakDis = locked || !ui.opening ? 'disabled' : '';
+    const who = ui.turn === 'you' ? 'Your shot.' : 'Opponent’s shot.';
+    ctx.root.innerHTML = `<div class="playScreen tableMatch" data-table-game="straight">
+      ${head('Straight Pool', `to ${ui.target}`)}
+      <div class="playBody">
+        <p class="ruleLine"><b>WPA 14.1 Continuous</b> (Rules of Play §7, effective 2025-09-15). Not a full referee. Fifteen numbered balls plus the cue ball. A called ball is 1 point, and each other ball pocketed on that same legal shot is 1. First to the chosen score wins. Scores may go negative. The shooter stays until a miss, safety, or foul. Opening break: cue ball in hand above the head string. If no called ball is pocketed, the cue ball and two object balls must each reach a rail, or it is a breaking foul (−2). A breaking foul does not count toward three fouls. If both happen on one shot, it is only the breaking foul. Three standard fouls: −1 for the third, then −15 more, re-rack all 15, and that player shoots an opening break (§7.11). Left out of the buttons: calling the ball, spotting balls, a cue ball or 15th that sits in the rack (§7.8b–d), a stalemate re-lag, and unsportsmanlike conduct. Those stay with the players. Source: WPA Rules of Play, wpapool.com, file 2026.01.02.</p>
+        <div class="chips">${STRAIGHT_TARGETS.map((n) => `<button type="button" class="chip${n === ui.target ? ' active' : ''}" data-action="st-target" data-v="${n}" ${ui.scored ? 'disabled' : ''}>${n}</button>`).join('')}</div>
+        <div class="chips">
+          <button type="button" class="chip${ui.breaker === 'you' ? ' active' : ''}" data-action="st-break" data-v="you" ${ui.scored || ui.you || ui.opp || ui.needBreakChoice ? 'disabled' : ''}>YOU BREAK</button>
+          <button type="button" class="chip${ui.breaker === 'opp' ? ' active' : ''}" data-action="st-break" data-v="opp" ${ui.scored || ui.you || ui.opp || ui.needBreakChoice ? 'disabled' : ''}>OPPONENT BREAKS</button>
+        </div>
+        <p class="muted small">${who}${ui.opening ? ' Opening break. Cue ball in hand above the head string.' : ''} Fouls in a row: you ${ui.foulsYou}, opponent ${ui.foulsOpp}. Balls down this rack: ${ui.down} / 14.</p>
+        ${ui.rackNote === '14' ? '<div class="rackNote">RE-RACK: rack those 14 with the apex left out. The 15th stays down. The shooter continues.</div>' : ''}
+        ${ui.rackNote === '15' ? '<div class="rackNote">RE-RACK: the 15th was pocketed on the same shot as the 14th. All 15 are re-racked (§7.8a). The shooter continues.</div>' : ''}
+        ${ui.note ? `<p class="muted small">${esc(ui.note)}</p>` : ''}
+        ${ui.needBreakChoice ? '<div class="rackNote"><p>Incoming player chooses.</p><button type="button" class="bigBtn" data-action="st-accept">ACCEPT TABLE</button><button type="button" class="bigBtn alt" data-action="st-rebreak">REQUIRE ANOTHER BREAK</button></div>' : ''}
+        <div class="ghostScore tmScore"><div><b>${ui.you}</b><span>YOU</span></div><em>to ${ui.target}</em><div><b>${ui.opp}</b><span>OPPONENT</span></div></div>
+        ${done ? `<div class="resultPanel pass inline"><h1>${ui.winner === 'you' ? 'YOU' : 'OPPONENT'} WINS</h1><p class="muted">${ui.you}–${ui.opp}</p></div>` : ''}
+      </div>
+      <div class="resultBar">
+        <button type="button" class="rb s3" data-action="st-point" ${dis}><b>POINT</b><small>+1 · STAY</small></button>
+        <button type="button" class="rb s3" data-action="st-extra" ${extraDis}><b>EXTRA</b><small>SAME LEGAL SHOT</small></button>
+        <button type="button" class="rb miss" data-action="st-miss" ${dis}><b>MISS</b><small>TURN PASSES</small></button>
+        <button type="button" class="rb alt" data-action="st-safety" ${dis}><b>SAFETY</b><small>SPOT ANY BALL</small></button>
+        <button type="button" class="rb alt" data-action="st-foul" ${dis}><b>FOUL</b><small>−1 · CUE STAYS</small></button>
+        <button type="button" class="rb miss" data-action="st-scratch" ${dis}><b>SCRATCH</b><small>−1 · IN HAND</small></button>
+        <button type="button" class="rb wide" data-action="st-bfoul" ${breakDis}><b>BREAK FOUL</b><small>−2 · NOT A THIRD FOUL</small></button>
+      </div>
+    </div>`;
+  }
+  function onAction(action, el) {
+    if (!action.startsWith('st-')) return false;
+    if (action === 'st-target') { go('target', el.dataset.v); return true; }
+    if (action === 'st-break') { go('breaker', el.dataset.v); return true; }
+    if (action === 'st-accept') { go('accept'); return true; }
+    if (action === 'st-rebreak') { go('rebreak'); return true; }
+    if (action === 'st-point') { go('point'); return true; }
+    if (action === 'st-extra') { go('extra'); return true; }
+    if (action === 'st-miss') { go('miss'); return true; }
+    if (action === 'st-safety') { go('safety'); return true; }
+    if (action === 'st-foul') { go('foul'); return true; }
+    if (action === 'st-scratch') { go('scratch'); return true; }
+    if (action === 'st-bfoul') { go('break-foul'); return true; }
+    return true;
+  }
+  return { render, onAction, destroy() { alive = false; } };
+}
+
+function onePocketScreen(ctx) {
+  let ui = freshOnePocket();
+  let alive = true;
+  function go(action, arg) {
+    ui = applyOnePocket(ui, action, arg);
+    render();
+  }
+  function render() {
+    if (!alive) return;
+    const done = !!ui.winner;
+    const dis = done ? 'disabled' : '';
+    const yourPocket = ui.pocket === 'left' ? 'left foot' : 'right foot';
+    const oppPocket = ui.pocket === 'left' ? 'right foot' : 'left foot';
+    const who = ui.turn === 'you' ? 'Your shot.' : 'Opponent’s shot.';
+    ctx.root.innerHTML = `<div class="playScreen tableMatch" data-table-game="onepocket">
+      ${head('One Pocket', `race ${ui.race}`)}
+      <div class="playBody">
+        <p class="ruleLine"><b>WPA One-Pocket</b> (Rules of Play §12, effective 2025-09-15). Not a full referee. Fifteen object balls, random triangle, apex on the foot spot. Each player has one foot pocket. First to 8 there wins the rack. Lag winner chooses who breaks the first rack. Later breaks alternate. The breaker chooses a foot pocket. Cue ball in hand above the head string. No special break requirement. The turn continues only after a ball in the shooter’s own pocket. A ball in the opponent’s pocket on a foul counts for them and is not spotted, unless the only foul is a cue-ball scratch (§12.5). Side and head pockets are spotted and score nothing. Three standard fouls in a row loses the rack (§12.9). If both would reach 8 on the same shot, the shooter wins (§12.11). Left out of the buttons: spotting balls on the table, a stalemate re-rack, forgetting to spot, and unsportsmanlike conduct. Those stay with the players. Source: WPA Rules of Play, wpapool.com, file 2026.01.02.</p>
+        <div class="racePick">${RACES.map((r) => `<button type="button" class="chip${r === ui.race ? ' active' : ''}" data-action="op-race" data-v="${r}" ${done ? 'disabled' : ''}>Race ${r}</button>`).join('')}</div>
+        <div class="chips">
+          <button type="button" class="chip${ui.youBreak ? ' active' : ''}" data-action="op-lag" data-v="you" ${ui.racksYou + ui.racksOpp || ui.rackLive ? 'disabled' : ''}>LAG WINNER BREAKS</button>
+          <button type="button" class="chip${!ui.youBreak ? ' active' : ''}" data-action="op-lag" data-v="opp" ${ui.racksYou + ui.racksOpp || ui.rackLive ? 'disabled' : ''}>LAG WINNER GIVES THE BREAK</button>
+        </div>
+        <div class="chips">
+          <button type="button" class="chip${ui.pocket === 'left' ? ' active' : ''}" data-action="op-pocket" data-v="left" ${ui.rackLive ? 'disabled' : ''}>YOU TAKE THE LEFT FOOT POCKET</button>
+          <button type="button" class="chip${ui.pocket === 'right' ? ' active' : ''}" data-action="op-pocket" data-v="right" ${ui.rackLive ? 'disabled' : ''}>YOU TAKE THE RIGHT FOOT POCKET</button>
+        </div>
+        <p class="muted small">${who} ${ui.youBreak ? 'You break this rack.' : 'Opponent breaks this rack.'} Your pocket: ${yourPocket}. Opponent: ${oppPocket}. ${ui.ballInHand ? 'Cue ball in hand above the head string.' : ''} ${ui.owedYou || ui.owedOpp ? `Owed balls: you ${ui.owedYou}, opponent ${ui.owedOpp}.` : ''} Fouls in a row: you ${ui.foulsYou}, opponent ${ui.foulsOpp}.</p>
+        ${ui.note ? `<p class="muted small">${esc(ui.note)}</p>` : ''}
+        <div class="ghostScore tmScore"><div><b>${ui.you}</b><span>YOU · ${ui.racksYou} RACKS</span></div><em>to 8</em><div><b>${ui.opp}</b><span>OPP · ${ui.racksOpp} RACKS</span></div></div>
+        ${done ? `<div class="resultPanel pass inline"><h1>${ui.winner === 'you' ? 'YOU' : 'OPPONENT'} WINS THE MATCH</h1><p class="muted">Race to ${ui.race} racks.</p></div>` : ''}
+      </div>
+      <div class="resultBar">
+        <button type="button" class="rb s3" data-action="op-mine" ${dis}><b>MY POCKET</b><small>+1 · STAY</small></button>
+        <button type="button" class="rb miss" data-action="op-theirs" ${dis}><b>THEIR POCKET</b><small>+1 THEM · TURN ENDS</small></button>
+        <button type="button" class="rb s3" data-action="op-both" ${dis}><b>BOTH</b><small>YOU +1 AND THEM +1</small></button>
+        <button type="button" class="rb miss" data-action="op-miss" ${dis}><b>MISS</b><small>TURN ENDS</small></button>
+        <button type="button" class="rb alt" data-action="op-foul" ${dis}><b>FOUL</b><small>−1 · CUE STAYS</small></button>
+        <button type="button" class="rb alt" data-action="op-scratch" ${dis}><b>SCRATCH</b><small>−1 · IN HAND</small></button>
+        <button type="button" class="rb wide" data-action="op-foul-theirs" ${dis}><b>FOUL + THEIR POCKET</b><small>THEM +1 · YOU −1</small></button>
+      </div>
+    </div>`;
+  }
+  function onAction(action, el) {
+    if (!action.startsWith('op-')) return false;
+    if (action === 'op-race') { go('race', el.dataset.v); return true; }
+    if (action === 'op-lag') { go('lag', el.dataset.v); return true; }
+    if (action === 'op-pocket') { go('pocket', el.dataset.v); return true; }
+    if (action === 'op-mine') { go('mine'); return true; }
+    if (action === 'op-theirs') { go('theirs'); return true; }
+    if (action === 'op-both') { go('both'); return true; }
+    if (action === 'op-miss') { go('miss'); return true; }
+    if (action === 'op-foul') { go('foul'); return true; }
+    if (action === 'op-scratch') { go('scratch'); return true; }
+    if (action === 'op-foul-theirs') { go('foul-theirs'); return true; }
+    return true;
+  }
+  return { render, onAction, destroy() { alive = false; } };
+}
+
+function cribbageScreen(ctx) {
+  let ui = freshCribbage();
+  let alive = true;
+  let group = false;
+  let queue = [];
+  function go(action, arg) {
+    ui = applyCribbage(ui, action, arg);
+    queue = [];
+    group = false;
+    render();
+  }
+  function render() {
+    if (!alive) return;
+    const done = !!ui.winner || ui.rackOver;
+    const wait = ui.needChoice;
+    const dis = done || wait ? 'disabled' : '';
+    const who = ui.turn === 'you' ? 'Your inning.' : 'Opponent’s inning.';
+    const need = ui.on.map((b) => partnerOf(b)).filter((n) => n != null);
+    const balls = ui.out.map((n) => `<button type="button" class="chip${queue.includes(n) ? ' active' : ''}" data-action="cr-ball" data-v="${n}" ${dis}>${n}</button>`).join('');
+    ctx.root.innerHTML = `<div class="playScreen tableMatch" data-table-game="cribbage">
+      ${head('Cribbage', 'first to 5')}
+      <div class="playBody">
+        <p class="ruleLine"><b>Cribbage is not in the WPA Rules of Play</b> (file 2026.01.02). Not a full referee. This follows the BCA Official Rules and Record Book (1992, pp. 75–76), the source of the published summary on Wikipedia, Cribbage (pool). Pairs that add to 15: 1+14, 2+13, 3+12, 4+11, 5+10, 6+9, 7+8. The 15 is a cribbage by itself only after every other object ball is pocketed. First to 5 wins. A full rack has 8 cribbages. Rack: 15 in the center, apex on the foot spot, and no two of the three corner balls may add to 15. Open break: pocket a ball or drive at least four object balls to a rail. A cribbage counts only when the two partners are pocketed on successive strokes in the same inning. Fouls do not subtract points. Three successive fouls by the same player loses the game. Left out of the buttons: the open-break check, spotting on the long string, and moving a kitchen ball to the foot spot when every object ball is behind the head string. Those stay with the players.</p>
+        <p class="muted small">Balls still out: ${ui.out.length}. Tap a number to pocket it. For more than one ball on the same stroke, turn on MORE ON THIS STROKE, tap each ball, then COUNT THIS STROKE.</p>
+        <div class="chips cribBalls">${balls || '<span class="muted">No balls left.</span>'}</div>
+        <div class="chips">
+          <button type="button" class="chip${group ? ' active' : ''}" data-action="cr-group" ${dis}>MORE ON THIS STROKE</button>
+          ${group ? `<button type="button" class="chip" data-action="cr-count" ${queue.length ? '' : 'disabled'}>COUNT THIS STROKE${queue.length ? ' · ' + queue.join(',') : ''}</button>` : ''}
+        </div>
+        ${ui.on.length ? `<div class="rackNote">ON ${ui.on.join(', ')}. NEED ${need.join(' OR ')}.</div>` : '<p class="muted small">Not on a ball.</p>'}
+        <p class="muted small">${who} ${ui.ballInHand ? 'Cue ball in hand behind the head string.' : ''} Fouls in a row: you ${ui.foulsYou}, opponent ${ui.foulsOpp}.</p>
+        ${ui.note ? `<p class="muted small">${esc(ui.note)}</p>` : ''}
+        ${wait ? '<div class="rackNote"><p>Incoming player chooses. Scoring stays off until then.</p><button type="button" class="bigBtn" data-action="cr-pos">SHOOT FROM POSITION</button><button type="button" class="bigBtn alt" data-action="cr-hand">CUE BALL IN HAND BEHIND THE HEAD STRING</button></div>' : ''}
+        <div class="ghostScore tmScore"><div><b>${ui.you}</b><span>YOU / 5</span></div><em>—</em><div><b>${ui.opp}</b><span>OPP / 5</span></div></div>
+        ${ui.winner ? `<div class="resultPanel pass inline"><h1>${ui.winner === 'you' ? 'YOU' : 'OPPONENT'} WINS</h1><p class="muted">${ui.you}–${ui.opp}</p></div>` : ''}
+        ${ui.rackOver ? '<div class="resultPanel inline"><h1>RACK OVER</h1><p>No balls left, and neither player reached 5. There is no re-rack.</p></div>' : ''}
+        ${done ? '<button type="button" class="bigBtn alt" data-action="cr-new">NEW GAME</button>' : ''}
+      </div>
+      <div class="resultBar">
+        <button type="button" class="rb miss" data-action="cr-miss" ${dis}><b>MISS</b><small>INNING ENDS</small></button>
+        <button type="button" class="rb alt" data-action="cr-foul" ${dis}><b>FOUL</b><small>NO POINT LOST</small></button>
+        <button type="button" class="rb miss" data-action="cr-scratch" ${dis}><b>SCRATCH</b><small>IN HAND · NOT OPTIONAL</small></button>
+      </div>
+    </div>`;
+  }
+  function onAction(action, el) {
+    if (!action.startsWith('cr-')) return false;
+    if (action === 'cr-new') {
+      ui = freshCribbage();
+      queue = [];
+      group = false;
+      render();
+      return true;
+    }
+    if (action === 'cr-pos') { go('choice', 'position'); return true; }
+    if (action === 'cr-hand') { go('choice', 'hand'); return true; }
+    if (ui.winner || ui.rackOver || ui.needChoice) return true;
+    if (action === 'cr-group') { group = !group; if (!group) queue = []; render(); return true; }
+    if (action === 'cr-count') {
+      if (queue.length) go('stroke', queue.slice());
+      return true;
+    }
+    if (action === 'cr-ball') {
+      const n = Number(el.dataset.v);
+      if (group) {
+        queue = queue.includes(n) ? queue.filter((x) => x !== n) : queue.concat(n);
+        render();
+        return true;
+      }
+      go('stroke', [n]);
+      return true;
+    }
+    if (action === 'cr-miss') { go('miss'); return true; }
+    if (action === 'cr-foul') { go('foul'); return true; }
+    if (action === 'cr-scratch') { go('scratch'); return true; }
+    return true;
+  }
+  return { render, onAction, destroy() { alive = false; } };
 }

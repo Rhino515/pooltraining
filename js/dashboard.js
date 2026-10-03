@@ -172,10 +172,13 @@ const TABLE_MATCHES = [
   ['10', '10-Ball', 'Rack counter. Optional timer, off until you turn it on.'],
   ['bank', 'Bank Pool', 'WPA bank pool. Short rack to 5, full rack to 8. Optional timer.'],
   ['upusa', 'Ultimate Pool USA', '30-minute match clock. 30-second shot clock.'],
-  ['loop', 'Loop', 'POOL BACKWARDS / CAROM TRAINING']
+  ['loop', 'Loop', 'POOL BACKWARDS / CAROM TRAINING'],
+  ['straight', 'Straight Pool', 'WPA 14.1. Called shot to a score.'],
+  ['onepocket', 'One Pocket', 'WPA one pocket. First to 8, race to racks.'],
+  ['cribbage', 'Cribbage', 'Pairs that add to 15. First to 5.']
 ];
 export function renderArcade(state) {
-  const matches = TABLE_MATCHES.map(([id, name, sub]) => `<button type="button" class="gameCard card" data-action="go" data-href="#tgame/${id}" data-game="${esc(id)}"><span class="gcIcon">${id === 'upusa' ? '⏱' : id === 'bank' ? '▣' : id === 'loop' ? '↺' : id}</span><span class="gcMain"><b>${esc(name)}</b><small>${esc(sub)}</small></span></button>`).join('');
+  const matches = TABLE_MATCHES.map(([id, name, sub]) => `<button type="button" class="gameCard card" data-action="go" data-href="#tgame/${id}" data-game="${esc(id)}"><span class="gcIcon">${id === 'upusa' ? '⏱' : id === 'bank' ? '▣' : id === 'loop' ? '↺' : id === 'straight' ? '14' : id === 'onepocket' ? '1P' : id === 'cribbage' ? '15' : id}</span><span class="gcMain"><b>${esc(name)}</b><small>${esc(sub)}</small></span></button>`).join('');
   const ghost = `<button type="button" class="gameCard card" data-action="go" data-href="#ghost" data-game="ghost"><span class="gcIcon">${GHOST_GAME.icon}</span><span class="gcMain"><b>${esc(GHOST_GAME.name)}</b><small>${esc(GHOST_GAME.tagline)} Includes 8-Ball Ghost.</small></span></button>`;
   return `<div class="title"><span class="eyebrow">TABLE GAMES</span><h1>At the table</h1><p>Rack counters for real games. Training modes are in Drills, under Career Drills.</p></div>
     <button type="button" class="card simPromo friendsPromo" data-action="go" data-href="#friends"><span class="simPromoIcon">⚔</span><span class="simPromoText"><b>Play with Friends</b><small>Score real matches head-to-head.</small></span><span class="simPromoGo">›</span></button>

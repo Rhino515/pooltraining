@@ -1722,3 +1722,9 @@ body.fix-full #app{height:100dvh;padding:0}
 .loopGame .rb.loopScratch{background:#2a1d0c;border:1px solid var(--gold);color:#ffe7a8}
 .loopGame .resultBar .rb.wide{flex:1 1 100%}
 .loopGame[data-loop-mode="solo"],.loopGame[data-loop-mode="pvp"]{padding-bottom:calc(250px + env(safe-area-inset-bottom))}
+
+/* Straight pool, one pocket, and cribbage scorekeepers only. */
+[data-table-game="straight"].playScreen,[data-table-game="onepocket"].playScreen,[data-table-game="cribbage"].playScreen{padding-bottom:calc(320px + env(safe-area-inset-bottom))}
+[data-table-game="straight"] .rb.alt,[data-table-game="onepocket"] .rb.alt,[data-table-game="cribbage"] .rb.alt{background:#15304c;border:1px solid #1f5f99;color:#dff6ff}
+[data-table-game="straight"] .rackNote,[data-table-game="onepocket"] .rackNote,[data-table-game="cribbage"] .rackNote{margin:8px 0;padding:10px 12px;border:1px solid var(--gold);border-radius:14px;background:#1a1408;font-weight:700;line-height:1.35}
+[data-table-game="cribbage"] .cribBalls .chip{min-width:44px;min-height:44px;font-weight:800}
