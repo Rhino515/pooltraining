@@ -288,9 +288,9 @@ export function renderProfile(state) {
 }
 
 // ------------------------------------------------------------------------------ drills
-/** Wide photo button. Efren Reyes, 2012 World 9-Ball. Photo by Vinod Divakaran / Doha Stadium Plus Qatar, Wikimedia Commons. */
+/** Wide photo button. Cropped so the face, the cue, and the ball stay in the short card. */
 function coursesCardHTML() {
-  return `<button type="button" class="coursesCard" data-action="go" data-href="#courses" data-courses="1"><img src="./images/courses/efren-reyes.jpg" alt="" width="1400" height="762"/><span class="coursesLabel">Drill Sets & Exams</span></button>`;
+  return `<button type="button" class="coursesCard" data-action="go" data-href="#courses" data-courses="1"><img src="./images/courses/efren-reyes.jpg" alt="" width="1400" height="530"/><span class="coursesLabel">Drill Sets & Exams</span></button>`;
 }
 
 export function renderCoursesPage() {
