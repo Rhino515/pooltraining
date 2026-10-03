@@ -11,7 +11,7 @@ import {
   applyShot, stopEarly, undoRun, present, statusLine, shotButtons, buMeta, newRun, withExamScore, examInstructions, BU_CREDIT
 } from '../content/buExam.js';
 import {
-  isSkillsId, skillsMeta, newSkillsRun, skillsApply, undoSkills, skillsStatus, skillsButtons, skillsImages, withSkillsScore, skillsText, SKILLS_CREDIT, S10_CHECKS
+  isSkillsId, skillsMeta, newSkillsRun, skillsApply, undoSkills, skillsStatus, skillsButtons, skillsImages, withSkillsScore, skillsText, SKILLS_CREDIT, S10_CHECKS, restartAskHTML
 } from '../content/buExam2.js';
 import {
   isMoreId, moreMeta, newMoreRun, moreApply, undoMore, moreStatus, moreText, moreImages, withMoreScore, MORE_CREDIT
@@ -99,6 +99,7 @@ export function createBuPlay(ctx, { id, exam = false } = {}) {
       <div class="diagramWrap${mirror ? ' is-mirror' : ''}">${renderStageTable(ch, { className: 'table-diagram', showCuePath: false, showAim: false, showObPath: false, showZones: false })}</div>
       <p class="buStatus">${esc(statusLine(id, run))}</p>
       ${actions}
+      ${exam ? restartAskHTML('fundamentals', true) : ''}
       ${link ? `<a class="drillLink" data-drill-link href="${esc(link)}" target="_blank" rel="noopener noreferrer nofollow"><small>Source</small><b>billiarduniversity.org</b></a>` : ''}
       <details class="card buHowCard" open>
         <summary>Instructions</summary>
@@ -242,6 +243,7 @@ function createSkillsPlay(ctx, { id, exam = false } = {}) {
       ${pictures()}
       <p class="buStatus">${esc(skillsStatus(id, run))}</p>
       ${actions}
+      ${exam ? restartAskHTML(meta.level, true) : ''}
       ${link ? `<a class="drillLink" data-drill-link href="${esc(link)}" target="_blank" rel="noopener noreferrer nofollow"><small>Source</small><b>billiarduniversity.org</b></a>` : ''}
       <details class="card buHowCard" open>
         <summary>Instructions</summary>
@@ -381,6 +383,7 @@ function createMorePlay(ctx, { id, exam = false } = {}) {
       ${pictures()}
       <p class="buStatus">${esc(moreStatus(id, run))}</p>
       ${actions}
+      ${exam ? restartAskHTML(meta.exam.key, true) : ''}
       <details class="card buHowCard" open>
         <summary>Instructions</summary>
         <pre class="buHow">${esc(moreText(id))}</pre>

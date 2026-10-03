@@ -7,6 +7,7 @@
  */
 import { challengeFromPkfDoc } from './pkfBuiltins.js';
 import { validatePooliq } from './schema.js';
+import { restartAskHTML } from './buExam2.js';
 
 export const MORE_CREDIT = 'Billiard University / Dr. Dave — billiarduniversity.org';
 
@@ -425,10 +426,22 @@ export function finishRdsRun(state) {
 }
 
 export function clearRdsSheet(state) {
-  const e = moreExamOf(state, 'rds');
-  e.cols = [];
+  return clearMoreExam(state, 'rds');
+}
+
+export function clearMoreExam(state, key) {
+  const exam = MORE_EXAMS[key];
+  if (!exam) return state;
+  return { ...state, [exam.stateKey]: emptyExam() };
+}
+
+export function clearMoreDrill(state, id) {
+  const m = moreMeta(id);
+  if (!m || m.kind === 'rack') return state;
+  const e = moreExamOf(state, m.exam.key);
+  delete e.scores[id];
   e.completed = null;
-  return { ...state, buExam4: e };
+  return { ...state, [m.exam.stateKey]: e };
 }
 
 function sheetCells(examKey, state) {
@@ -498,7 +511,7 @@ export function moreSheetHTML(state, examKey) {
   const exam = MORE_EXAMS[examKey];
   if (!exam) return '';
   const finish = examKey === 'rds'
-    ? `<button type="button" class="bigBtn" data-action="bu-finish" data-exam="rds">FINISH THIS RUN</button><button type="button" class="bigBtn alt" data-action="bu-clear" data-exam="rds">CLEAR SHEET</button>`
+    ? `<button type="button" class="bigBtn" data-action="bu-finish" data-exam="rds">FINISH THIS RUN</button>`
     : '';
   return `<div class="card buSheetCard" data-bu-sheet="${examKey}"><div class="eyebrow">SCORE SHEET</div><h3>${esc(exam.name)}</h3><p class="muted small">Filled when you score a drill. Nothing to retype.</p><div class="buSheet">${sheetCells(examKey, state)}</div><p class="buScoreLine">${esc(sheetTotal(examKey, state))}</p>${finish}</div>`;
 }
@@ -517,7 +530,7 @@ export function moreExamPageHTML(state, which) {
     ? `<p class="green">Completed ${esc(exam.name)}. ${e.completed.total != null ? `${e.completed.total} / ${e.completed.max}` : ''}</p>`
     : '<p class="muted">Score the drills in this exam. The sheet fills itself. Opening a drill is not enough, and these drills are not on the All list. This does not change Career rank.</p>';
   return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#courses">‹ Drill Sets & Exams</button><span class="eyebrow">BILLIARD UNIVERSITY</span><h1>${esc(exam.name)}</h1></div>
-    <div class="card">${done}<button type="button" class="bigBtn" data-action="go" data-href="#play/drills/${exam.start}/exam">START</button></div>
+    <div class="card">${done}<button type="button" class="bigBtn" data-action="go" data-href="#play/drills/${exam.start}/exam">START</button>${restartAskHTML(which)}</div>
     <details class="card buHowCard" open><summary>Instructions</summary><pre class="buHow">${esc(exam.intro)}</pre><small class="muted credit">${esc(MORE_CREDIT)}</small></details>
     ${moreSheetHTML(state, which)}
     <div class="stageList" data-bu-list="1" data-more-exam="${which}">${rows}</div>`;

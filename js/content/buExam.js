@@ -8,8 +8,8 @@
  */
 import { challengeFromPkfDoc } from './pkfBuiltins.js';
 import { validatePooliq } from './schema.js';
-import { skillsBannersHTML, skillsAccomplishmentHTML, skillsExamPageHTML } from './buExam2.js';
-import { moreBannersHTML, moreAccomplishmentHTML, moreExamPageHTML, MORE_EXAMS } from './buMore.js';
+import { skillsBannersHTML, skillsAccomplishmentHTML, skillsExamPageHTML, restartAskHTML, clearSkillsExam, clearSkillsDrill, isSkillsId } from './buExam2.js';
+import { moreBannersHTML, moreAccomplishmentHTML, moreExamPageHTML, MORE_EXAMS, clearMoreExam, clearMoreDrill, isMoreId } from './buMore.js';
 import { safetyAccomplishmentHTML } from './safetyMaster.js';
 
 export const BU_CREDIT = 'Billiard University / Dr. Dave — billiarduniversity.org';
@@ -595,6 +595,25 @@ export function accomplishmentHTML(state) {
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
+export function restartBuExam(state, which) {
+  if (which === 'bachelors' || which === 'masters' || which === 'doctorate') return clearSkillsExam(state, which);
+  if (MORE_EXAMS[which]) return clearMoreExam(state, which);
+  if (!which || which === 'fundamentals') return { ...state, buExam: emptyExam() };
+  return state;
+}
+
+export function resetBuDrill(state, id) {
+  if (isBuId(id)) {
+    const e = examOf(state);
+    delete e.scores[id];
+    e.completed = null;
+    return { ...state, buExam: e };
+  }
+  if (isSkillsId(id)) return clearSkillsDrill(state, id);
+  if (isMoreId(id)) return clearMoreDrill(state, id);
+  return state;
+}
+
 export function examPageHTML(state, which) {
   if (which === 'bachelors' || which === 'masters' || which === 'doctorate') return skillsExamPageHTML(state, which);
   if (MORE_EXAMS[which]) return moreExamPageHTML(state, which);
@@ -606,7 +625,7 @@ export function examPageHTML(state, which) {
   }).join('');
   const done = e.completed ? `<p class="green">Completed ${BU_EXAM_NAME}. Scores stay in your profile.</p>` : '<p class="muted">Finish all eight under these exam rules to record the accomplishment. Opening a drill is not enough. This does not change Career rank or Ball Pocketing level.</p>';
   return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#drills">‹ Drills</button><span class="eyebrow">BILLIARD UNIVERSITY</span><h1>${BU_EXAM_NAME}</h1><p>Dr. Dave's first exam. Eight drills, in order. Any drill can be done from the other side of the table. ${BU_CREDIT}</p></div>
-    <div class="card">${done}<button type="button" class="bigBtn" data-action="go" data-href="#play/drills/bu-f1/exam">START AT F1</button></div>
+    <div class="card">${done}<button type="button" class="bigBtn" data-action="go" data-href="#play/drills/bu-f1/exam">START AT F1</button>${restartAskHTML('fundamentals')}</div>
     ${fundamentalsSheetHTML(state)}
     <div class="stageList" data-bu-list="1">${rows}</div>`;
 }

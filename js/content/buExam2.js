@@ -524,6 +524,27 @@ export function skillsAccomplishmentHTML(state) {
   }).join('');
 }
 
+
+export function restartAskHTML(which, withDrill) {
+  const drill = withDrill ? '<button type="button" class="buRestartBtn" data-action="bu-reset-drill">Reset this drill</button>' : '';
+  return `<div class="buRestart" data-bu-restart="${esc(which)}"><div class="buRestartRow"><button type="button" class="buRestartBtn" data-action="bu-restart-ask">Restart this exam</button>${drill}</div><div class="buRestartAsk"><p>Restart this exam? The sheet and the scores for this run are cleared. Other exams, Career rank, and drills played outside this exam stay.</p><button type="button" class="bigBtn alt" data-action="bu-restart" data-exam="${esc(which)}">Restart</button><button type="button" class="buRestartBtn" data-action="bu-restart-no">Cancel</button></div></div>`;
+}
+
+export function clearSkillsExam(state, level) {
+  const exam = SKILLS_EXAMS[level];
+  if (!exam) return state;
+  return { ...state, [exam.stateKey]: emptyExam() };
+}
+
+export function clearSkillsDrill(state, id) {
+  const meta = skillsMeta(id);
+  if (!meta) return state;
+  const e = skillsExamOf(state, meta.level);
+  delete e.scores[id];
+  e.completed = null;
+  return { ...state, [meta.exam.stateKey]: e };
+}
+
 export function skillsExamPageHTML(state, level) {
   const exam = SKILLS_EXAMS[level];
   if (!exam) return '';
@@ -538,7 +559,7 @@ export function skillsExamPageHTML(state, level) {
     ? `<p class="green">Completed ${esc(exam.name)}. Scores stay in your profile.</p>`
     : '<p class="muted">Finish all ten under this exam’s rules to record the accomplishment. Opening a drill is not enough. Playing a drill from its category does not count. This does not change Career rank or Ball Pocketing level.</p>';
   return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#drills">‹ Drills</button><span class="eyebrow">BILLIARD UNIVERSITY</span><h1>${esc(exam.name)}</h1><p>Dr. Dave’s Exam II. Ten drills, S1 through S10, in order. S3 and S4 each include three layouts. ${esc(SKILLS_CREDIT)}</p></div>
-    <div class="card">${done}<button type="button" class="bigBtn" data-action="go" data-href="#play/drills/${exam.start}/exam">START AT S1</button></div>
+    <div class="card">${done}<button type="button" class="bigBtn" data-action="go" data-href="#play/drills/${exam.start}/exam">START AT S1</button>${restartAskHTML(level)}</div>
     ${skillsSheetHTML(state, level)}
     <div class="stageList" data-bu-list="1" data-skills-exam="${level}">${rows}</div>`;
 }

@@ -13,9 +13,9 @@ import { syncRank } from './career.js';
 import { withSkills } from './skills.js';
 import { drills, getDrillById, allDrills, knownDrillIds, displayDrillTitle } from './drills.js';
 import { ballPocketStatus } from './content/ballPocket.js';
-import { isBuId, examPageHTML } from './content/buExam.js';
+import { isBuId, examPageHTML, restartBuExam, resetBuDrill } from './content/buExam.js';
 import { isSkillsId } from './content/buExam2.js';
-import { isMoreId, finishRdsRun, clearRdsSheet } from './content/buMore.js';
+import { isMoreId, finishRdsRun } from './content/buMore.js';
 import { isSafetyId, safetyPageHTML } from './content/safetyMaster.js';
 import { renderHome, renderCareerPage, renderDrillsPage, renderCoursesPage, renderArcade, renderGameLobby, renderBossPage, renderProfile, renderSettings, renderLearn } from './dashboard.js';
 import { renderAnalyzePage, bindAnalyzeHandlers } from './analyze.js';
@@ -344,8 +344,25 @@ function handleAction(action, el, e) {
     renderRoute();
     return;
   }
-  if (action === 'bu-clear' && el?.dataset?.exam === 'rds') {
-    commit(clearRdsSheet(state));
+  if (action === 'bu-restart-ask') {
+    el?.closest('.buRestart')?.classList.add('is-ask');
+    return;
+  }
+  if (action === 'bu-restart-no') {
+    el?.closest('.buRestart')?.classList.remove('is-ask');
+    return;
+  }
+  if (action === 'bu-restart') {
+    const which = el?.dataset?.exam;
+    if (!which) return;
+    commit(restartBuExam(state, which));
+    navigate(which === 'fundamentals' ? '#buexam' : `#buexam/${which}`);
+    return;
+  }
+  if (action === 'bu-reset-drill') {
+    const id = el?.closest('[data-bu]')?.dataset?.bu;
+    if (!id) return;
+    commit(resetBuDrill(state, id));
     renderRoute();
     return;
   }

@@ -1671,6 +1671,15 @@ body.fix-full #app{height:100dvh;padding:0}
 .buCell strong{font-size:16px;line-height:1.1}
 .buMatrix{display:grid;gap:8px;margin:8px 16px}
 .buMatrix .buCell{cursor:pointer;font:inherit;width:100%}
+.buRestart{margin:8px 16px 4px}
+.card .buRestart{margin:10px 0 0}
+.buRestartRow{display:flex;flex-wrap:wrap;gap:4px 16px}
+.buRestartBtn{background:none;border:0;padding:4px 0;color:#9eb0c4;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.buRestartAsk{display:none;margin-top:6px;padding:10px 12px;border:1px solid #24507f;border-radius:12px;background:#071422}
+.buRestartAsk p{margin:0 0 8px;font-size:13px;line-height:1.35;color:#d5deea}
+.buRestart.is-ask .buRestartRow{display:none}
+.buRestart.is-ask .buRestartAsk{display:block}
+.buRestartAsk .bigBtn{margin-top:4px}
 
 .coursesCard{position:relative;display:block;width:100%;margin:2px 0 12px;padding:0;border:1px solid rgba(244,251,255,.55);border-radius:16px;overflow:hidden;cursor:pointer;background:#063a62;color:#fff;text-align:left;font:inherit;line-height:0}
 .coursesCard img{display:block;width:100%;height:auto;aspect-ratio:1400/530;object-fit:cover;object-position:center center}
