@@ -27,7 +27,7 @@ export const TIER_DIFFICULTY = { beginner: 2, intermediate: 4, advanced: 6, expe
 export const RANK_LADDER = {
   names: RANK_NAMES, // ['Rookie','Club Player','Shooter','Competitor','Advanced','Expert','Master','Elite','Pro','Champion']
   balls: [10, 10, 11, 11, 12, 12, 13, 14, 15, 0],
-  ballXp: [100, 150, 200, 250, 300, 350, 400, 450, 500, 0],
+  ballXp: [300, 450, 600, 750, 900, 1050, 1200, 1350, 2500, 0], // rank-up ×3; Pro and Champion ×5 (Champion stays 0)
   maxLabel: 'MAX RANK'
 };
 /** How the rank reads everywhere: "{rank} · {ball}-BALL" (ball badge shows the number) */
@@ -204,13 +204,13 @@ export const DRILL_RANK = {
   sources: ['drill', 'custom', 'content'], // built-in drills, Create Drill drills, rank-eligible installed .pooliq content
   ranks: [
     { name: 'BALL BANGER', xp: 0, passed: 0, strong: 0, mastered: 0, categories: 0 },
-    { name: 'Grinder', xp: 300, passed: 3, strong: 0, mastered: 0, categories: 0 },
-    { name: 'DRILLER', xp: 1000, passed: 6, strong: 2, mastered: 0, categories: 0 },
-    { name: 'STUDENT OF THE GAME', xp: 2500, passed: 10, strong: 4, mastered: 1, categories: 2 },
-    { name: 'Precision Player', xp: 5000, passed: 15, strong: 7, mastered: 3, categories: 3 },
-    { name: 'Drill Sergeant', xp: 9000, passed: 20, strong: 10, mastered: 6, categories: 4 },
-    { name: 'Drill Master', xp: 15000, passed: 28, strong: 15, mastered: 10, categories: 5 },
-    { name: 'Drill Legend', xp: 25000, passed: 36, strong: 22, mastered: 16, categories: 6 }
+    { name: 'Grinder', xp: 900, passed: 3, strong: 0, mastered: 0, categories: 0 },
+    { name: 'DRILLER', xp: 3000, passed: 6, strong: 2, mastered: 0, categories: 0 },
+    { name: 'STUDENT OF THE GAME', xp: 7500, passed: 10, strong: 4, mastered: 1, categories: 2 },
+    { name: 'Precision Player', xp: 15000, passed: 15, strong: 7, mastered: 3, categories: 3 },
+    { name: 'Drill Sergeant', xp: 27000, passed: 20, strong: 10, mastered: 6, categories: 4 },
+    { name: 'Drill Master', xp: 75000, passed: 28, strong: 15, mastered: 10, categories: 5 },
+    { name: 'Drill Legend', xp: 125000, passed: 36, strong: 22, mastered: 16, categories: 6 }
   ]
 };
 

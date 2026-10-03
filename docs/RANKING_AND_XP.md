@@ -18,15 +18,15 @@ Career keeps the existing rank names and requirements (`js/career.js`). v11 adds
 
 | # | Rank | Balls | Rank XP per ball | Rank XP total |
 |---|---|---|---|---|
-| 0 | Rookie | 10 | 100 | 1,000 |
-| 1 | Club Player | 10 | 150 | 1,500 |
-| 2 | Shooter | 11 | 200 | 2,200 |
-| 3 | Competitor | 11 | 250 | 2,750 |
-| 4 | Advanced | 12 | 300 | 3,600 |
-| 5 | Expert | 12 | 350 | 4,200 |
-| 6 | Master | 13 | 400 | 5,200 |
-| 7 | Elite | 14 | 450 | 6,300 |
-| 8 | Pro | 15 | 500 | 7,500 |
+| 0 | Rookie | 10 | 300 | 3,000 |
+| 1 | Club Player | 10 | 450 | 4,500 |
+| 2 | Shooter | 11 | 600 | 6,600 |
+| 3 | Competitor | 11 | 750 | 8,250 |
+| 4 | Advanced | 12 | 900 | 10,800 |
+| 5 | Expert | 12 | 1,050 | 12,600 |
+| 6 | Master | 13 | 1,200 | 15,600 |
+| 7 | Elite | 14 | 1,350 | 18,900 |
+| 8 | Pro | 15 | 2,500 | 37,500 |
 | 9 | **Champion** | — | — | **MAX RANK** |
 
 - Your **ball** is set by the Rank XP banked in your current rank: `ball = min(balls, 1 + floor(rankXp / ballXp))`, capped by any uncleared Skill Gate (see [SKILL_GATES_AND_PROMOTIONS.md](SKILL_GATES_AND_PROMOTIONS.md)).
@@ -94,13 +94,13 @@ Drill Rank is earned only from **built-in drills, Create Drill drills and rank-e
 | # | Drill Rank | Drill XP | Passed drills | Strong ⭐⭐ | Mastered ⭐⭐⭐ | Skill categories |
 |---|---|---|---|---|---|---|
 | 1 | BALL BANGER | 0 | 0 | 0 | 0 | 0 |
-| 2 | Grinder | 300 | 3 | 0 | 0 | 0 |
-| 3 | DRILLER | 1,000 | 6 | 2 | 0 | 0 |
-| 4 | STUDENT OF THE GAME | 2,500 | 10 | 4 | 1 | 2 |
-| 5 | Precision Player | 5,000 | 15 | 7 | 3 | 3 |
-| 6 | Drill Sergeant | 9,000 | 20 | 10 | 6 | 4 |
-| 7 | Drill Master | 15,000 | 28 | 15 | 10 | 5 |
-| 8 | Drill Legend | 25,000 | 36 | 22 | 16 | 6 |
+| 2 | Grinder | 900 | 3 | 0 | 0 | 0 |
+| 3 | DRILLER | 3,000 | 6 | 2 | 0 | 0 |
+| 4 | STUDENT OF THE GAME | 7,500 | 10 | 4 | 1 | 2 |
+| 5 | Precision Player | 15,000 | 15 | 7 | 3 | 3 |
+| 6 | Drill Sergeant | 27,000 | 20 | 10 | 6 | 4 |
+| 7 | Drill Master | 75,000 | 28 | 15 | 10 | 5 |
+| 8 | Drill Legend | 125,000 | 36 | 22 | 16 | 6 |
 
 "Skill categories" is the number of different primary skills among your passed drills. Because the counts are required alongside XP, you can't reach a rank by repeating one drill. A mastered drill also gives very little Drill XP on repeats.
 

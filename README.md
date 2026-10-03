@@ -28,6 +28,7 @@ Shot Simulator simplification. Playing-surface sizes (ball stays 2.25 in): 7 ft 
 - Cache `pool-iq-v14-2`, app version 14.
 - v14-1: 8-ball runout plays the group (not the 1-ball), shows a breakout for a tied-up ball, 3D is a low view from behind the cue ball, and full screen is the table plus EXIT.
 - v14-2: 3D view is a shaded table from behind the cue ball (wood rails, lit cloth, round balls, cue).
+- v14-44: Rank-up thresholds are higher. Career and Drill Rank XP needed to rank up is ×3, except the last two ranks on each ladder (Pro and Champion; Drill Master and Drill Legend) which are ×5. Earned XP and award amounts are unchanged. Cache `pool-iq-v14-44`.
 - v14-43: Billiard University Exam II – Skills, Bachelors and Doctorate (S1–S10 each). Separate accomplishments. Table photos only. No Career Rank XP. Banks stays shelved except these two bank drills. Cache `pool-iq-v14-43`.
 - v14-42: Exam I diagrams are the cropped table photos (F1–F8). The drill maker keeps one ADD button for balls, lines, targets, labels, boxes, and an uploaded diagram. Cache `pool-iq-v14-42`.
 - v14-41: Billiard University Exam I – Fundamentals (F1–F8) on the Drills page. Exact exam instructions and scoring. No Career Rank XP. Cache `pool-iq-v14-41`.

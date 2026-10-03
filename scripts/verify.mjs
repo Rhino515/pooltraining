@@ -470,7 +470,7 @@ let state = storage.defaultState();
   const boss1 = reg.bossForRank(1);
   // v11: the boss is the rank's PROMOTION TEST — it also needs Rank XP full + the Skill Gate cleared
   assert(!career.isBossUnlocked(st, boss1), 'v11: Promotion Test stays locked without Rank XP / Skill Gate');
-  st = { ...st, prog: { ...(st.prog || {}), v: 1, rankXpBy: { 0: 1000 }, gatesCleared: { 'g-rookie': 1 }, items: {}, tierXp: {}, stats: {}, events: [] } };
+  st = { ...st, prog: { ...(st.prog || {}), v: 1, rankXpBy: { 0: 3000 }, gatesCleared: { 'g-rookie': 1 }, items: {}, tierXp: {}, stats: {}, events: [] } };
   assert(career.isBossUnlocked(st, boss1), 'boss unlocks when every other requirement is met (incl. v11 Rank XP + gate)');
   // boss: fail
   const b = reg.getBoss(boss1.id);
@@ -799,7 +799,7 @@ let state = storage.defaultState();
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
   const missing = walk(path.join(root, 'js')).filter((f) => f.endsWith('.js')).map((f) => './' + path.relative(root, f)).filter((f) => !sw.includes(`'${f}'`));
-  assert(/'pool-iq-v14-43'/.test(sw), 'service worker cache is pool-iq-v14-43');
+  assert(/'pool-iq-v14-44'/.test(sw), 'service worker cache is pool-iq-v14-44');
   assertAll('service worker precaches every JS module (incl. simulator + Create Drill)', missing.map((m) => `missing ${m}`));
   const wordN = { one: 1, two: 2, three: 3, four: 4 };
   const probs = [];
@@ -1550,16 +1550,18 @@ let state = storage.defaultState();
   assert(CFG.RANK_LADDER.balls.slice(0, 9).every((b, i, a) => b >= 10 && b <= 15 && (i === 0 || b >= a[i - 1])) && CFG.RANK_LADDER.balls[9] === 0, 'v11: ball levels per rank scale up (10 → 15), Champion has none');
   // ball levels from Rank XP
   let st = fresh();
-  st.prog.rankXpBy = { 0: 250 };
+  const per0 = CFG.RANK_LADDER.ballXp[0];
+  const full0 = per0 * CFG.RANK_LADDER.balls[0];
+  st.prog.rankXpBy = { 0: per0 * 2 + 1 };
   let cs = RK.careerStatus(st);
-  assert(cs.ball === 3 && cs.title === 'Rookie · 3-Ball', `v11: 250 Rank XP in Rookie = ${cs.title}`);
-  st.prog.rankXpBy = { 0: 999 };
+  assert(cs.ball === 3 && cs.title === 'Rookie · 3-Ball', `v11: ${per0 * 2 + 1} Rank XP in Rookie = ${cs.title}`);
+  st.prog.rankXpBy = { 0: full0 - 1 };
   cs = RK.careerStatus(st);
   assert(cs.ball === 5 && cs.gateLocked && !cs.gateLocked.atGate, `v11: ball held at the Rookie Skill Gate (5-Ball) until foundations are passed (ball ${cs.ball})`);
   st.prog.gatesCleared = { 'g-rookie': 1 };
   cs = RK.careerStatus(st);
   assert(cs.ball === 10 && !cs.xpFull, 'v11: clearing the gate releases the ball (10-Ball, XP not yet full)');
-  st.prog.rankXpBy = { 0: 1000 };
+  st.prog.rankXpBy = { 0: full0 };
   assert(RK.careerStatus(st).xpFull, 'v11: Rank XP full at the last ball');
   // Rank XP never promotes by itself
   assert(career.syncRank(st).rankIndex === 0, 'v11: full Rank XP alone does not promote');
@@ -1599,9 +1601,9 @@ let state = storage.defaultState();
   assert(RK.promotionStatus(st).champion && RK.championStats(r.state).lifetimeXp === r.state.prog.lifetimeXp, 'v11: Champion stats (replaces "Master stats")');
   // overflow carry into the next rank
   st = fresh();
-  st.prog.rankXpBy = { 0: 990 };
+  st.prog.rankXpBy = { 0: AW.rankTotal(0) - 1 };
   r = AW.applyAward(st, { item: item({ key: 'test:over', tier: 'expert' }), ratio: 1, passed: true, at: T0 });
-  assert(r.state.prog.rankXpBy[0] === 1000 && r.state.prog.carry > 0 && r.state.prog.carry <= Math.round(AW.rankTotal(1) * CFG.XP.overflowCarry), `v11: overflow past full Rank XP carries (capped) into the next rank (${r.state.prog.carry})`);
+  assert(r.state.prog.rankXpBy[0] === AW.rankTotal(0) && r.state.prog.carry > 0 && r.state.prog.carry <= Math.round(AW.rankTotal(1) * CFG.XP.overflowCarry), `v11: overflow past full Rank XP carries (capped) into the next rank (${r.state.prog.carry})`);
   const promotedSt = RK.syncProgression({ ...r.state, rankIndex: 1 });
   assert(promotedSt.prog.rankXpBy[1] === r.state.prog.carry && promotedSt.prog.carry === 0 && promotedSt.prog.events[0].flags.includes('PROMOTED'), 'v11: entering the next rank starts with the carried XP');
   // multi-skill XP + skill levels
@@ -1649,9 +1651,13 @@ let state = storage.defaultState();
   assert(RK.drillRankStatus(fresh()).number === 1, 'Drill Rank: starts at BALL BANGER');
   st = fresh();
   const dItem = (i, tier = 'intermediate') => item({ key: `drill:t${i}`, source: 'drill', tier, drillRank: true, primary: CFG.SKILLS[i % 3].id, weights: { [CFG.SKILLS[i % 3].id]: 1 } });
-  for (let i = 0; i < 4; i++) st = AW.applyAward(st, { item: dItem(i), ratio: 0.8, passed: true, at: T0 + i * DAYMS }).state;
+  let drillsPlayed = 0;
+  while (drillsPlayed < 40 && RK.drillRankStatus(st).have.xp < CFG.DRILL_RANK.ranks[1].xp) {
+    st = AW.applyAward(st, { item: dItem(drillsPlayed), ratio: 0.8, passed: true, at: T0 + drillsPlayed * DAYMS }).state;
+    drillsPlayed += 1;
+  }
   const dr1 = RK.drillRankStatus(st);
-  assert(dr1.have.passed === 4 && dr1.have.xp >= CFG.DRILL_RANK.ranks[1].xp && dr1.number === 2 && dr1.name === 'Grinder', `Drill Rank: 4 passed drills + ${dr1.have.xp} Drill XP = Grinder`);
+  assert(dr1.have.passed >= 3 && dr1.have.xp >= CFG.DRILL_RANK.ranks[1].xp && dr1.number === 2 && dr1.name === 'Grinder', `Drill Rank: ${dr1.have.passed} passed drills + ${dr1.have.xp} Drill XP = Grinder`);
   assert(RK.drillRankStatus({ ...st, prog: { ...st.prog, drillXp: 99999 } }).number === 2, 'Drill Rank: XP alone is not enough (needs passed / strong / mastered counts)');
   // anti-farming: mastered drill repeated
   let fs2 = fresh();
@@ -2070,7 +2076,7 @@ let state = storage.defaultState();
   const dash = src('js/dashboard.js');
   const friends = src('js/ui/friends.js');
   const vendor = src('js/vendor/supabase.js');
-  assert(/'pool-iq-v14-43'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw) && !/'pool-iq-v14-5c'/.test(sw), 'v14: service worker cache is pool-iq-v14-43');
+  assert(/'pool-iq-v14-44'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw) && !/'pool-iq-v14-5c'/.test(sw), 'v14: service worker cache is pool-iq-v14-44');
   assert(sw.includes(`'./js/vendor/supabase.js'`) && sw.includes(`'./js/cloud/controller.js'`) && sw.includes(`'./js/ui/account.js'`), 'v13: sw precaches the bundled supabase-js and the cloud modules');
   assert(/supabase-js\/2\.117\.2/.test(vendor) && /createClient/.test(vendor) && !/cdn\.jsdelivr|unpkg\.com|esm\.sh/.test(idx + sw), 'v13: official supabase-js v2 UMD build is bundled locally (no CDN)');
   assert(/nqfwlpfyccbqetcyjijf/.test(cfg) && /sb_publishable_/.test(cfg) && !/sb_secret_|service_role|sbp_[0-9a-f]{10}/.test(cfg + sql + docs), 'v13: config carries the project ref + publishable key only (no secrets anywhere)');
@@ -2279,7 +2285,7 @@ let state = storage.defaultState();
   assert(!fixSrc.includes('drill_overrides') && !saveFn.includes('.delete('), 'v14-26: the editor never deletes the published row');
   assert(oeSrc.includes('publishedDoc(ch.id)') && !oeSrc.slice(oeSrc.indexOf('export function applyDrillEdit'), oeSrc.indexOf('export function editCount')).includes('getDrillEdit'), 'v14-26: the live drill is the published row, not the phone copy');
   assert(pubSrc.includes('andrewaphay') === false && pubSrc.includes('ownerAccountSignedIn'), 'v14-26: the client refuses publish unless the owner account is signed in');
-  assert(swSrc.includes('pool-iq-v14-43') && swSrc.includes('skipWaiting') && swSrc.includes('clients.claim'), 'v14-28: new cache skipWaiting and clients.claim');
+  assert(swSrc.includes('pool-iq-v14-44') && swSrc.includes('skipWaiting') && swSrc.includes('clients.claim'), 'v14-28: new cache skipWaiting and clients.claim');
   assert(fixSrc.includes('id="fixImport"') && fixSrc.includes('accept=".pooliq,.json,application/json,application/octet-stream,text/plain,*/*"') && !fixSrc.includes('text/json'), 'v14-27: IMPORT DRILL accept lets Android select .pooliq and .json');
   assert(appSrc.includes('controllerchange') && appSrc.includes('pooliq-sw-reloaded') && appSrc.includes('location.reload()'), 'v14-26: an open app reloads once when the new worker activates');
   const PUB = await import(js('drills/published.js'));
