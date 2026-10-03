@@ -2,6 +2,7 @@
  * Table-game scoring (v14-29).
  * 8-ball, 9-ball, 10-ball: rack counter plus the optional timer, and a rules menu.
  * The menu remembers WPA, BCA, APA, or bar in localStorage only. It does not score racks.
+ * Numbered steps start collapsed. A plus next to the title opens them. Switching rule sets keeps that choice.
  * Bank Pool: WPA Rules of Play §13, effective 2025-09-15
  *   https://wpapool.com/wp-content/uploads/2026/01/2026.01.02-WPA-Rules.pdf
  * Ultimate Pool USA: UPL League Manual v5.0
@@ -11,7 +12,7 @@ import { timerHTML } from './shotTimer.js';
 import { createLoopMatch } from './loopGame.js';
 import { freshStraight, applyStraight, STRAIGHT_TARGETS, freshOnePocket, applyOnePocket } from './wpaScore.js';
 import { freshCribbage, applyCribbage, partnerOf } from './cribbageRules.js';
-import { lsSet } from '../storage.js';
+import { readRulePrefs, writeRulePrefs, stepsAreOpen, toggleStepsOpen, stepToggleBtn } from './stepFold.js';
 import { HOW } from '../learn.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -74,7 +75,6 @@ export function createTableMatch(ctx, kind) {
   return raceScreen(ctx, id);
 }
 
-const RULE_KEY = 'poolIQRuleSet';
 const RULE_SETS = ['wpa', 'bca', 'apa', 'bar'];
 const RULE_NAME = { wpa: 'WPA', bca: 'BCA', apa: 'APA', bar: 'Bar' };
 const HOW_ID = {
@@ -190,21 +190,22 @@ const RULE_STEPS = {
 };
 
 function readRuleSets() {
-  const base = { 8: 'wpa', 9: 'wpa', 10: 'wpa' };
-  try {
-    const raw = JSON.parse(localStorage.getItem(RULE_KEY) || '');
-    if (!raw || typeof raw !== 'object') return base;
-    for (const id of ['8', '9', '10']) {
-      if (RULE_SETS.includes(raw[id])) base[id] = raw[id];
-    }
-  } catch { /* keep the default */ }
-  return base;
+  const prefs = readRulePrefs();
+  return { 8: prefs[8], 9: prefs[9], 10: prefs[10] };
 }
 
 function writeRuleSet(id, set) {
-  const all = readRuleSets();
+  const all = readRulePrefs();
   all[id] = set;
-  lsSet(RULE_KEY, JSON.stringify(all));
+  writeRulePrefs(all);
+}
+
+function stepsHead(title, action) {
+  return `<div class="stepHead"><span class="stepTitle">${esc(title)}</span>${stepToggleBtn(action, stepsAreOpen())}</div>`;
+}
+
+function stepsOpenAttr() {
+  return stepsAreOpen() ? '' : ' hidden';
 }
 
 function rulesBlock(id, set) {
@@ -215,10 +216,11 @@ function rulesBlock(id, set) {
     ? `<details class="ruleMore"><summary>Full rules</summary>${lines.map((line) => `<p class="ruleLine">${esc(line)}</p>`).join('')}</details>`
     : '';
   const chips = RULE_SETS.map((s) => `<button type="button" class="chip${s === set ? ' active' : ''}" data-action="tg-rule" data-v="${s}">${s === 'bar' ? 'BAR' : RULE_NAME[s]}</button>`).join('');
+  const open = stepsAreOpen();
   return `<div class="ruleMenu"><span class="ruleLab">RULES</span><div class="rulePick">${chips}</div></div>
-        <p class="playingSet">Playing ${RULE_NAME[set]} ${id}-ball</p>
-        <ol class="gameSteps">${steps}</ol>
-        ${more}`;
+        <div class="playingSet stepHead"><span class="stepTitle">Playing ${RULE_NAME[set]} ${id}-ball</span>${stepToggleBtn('tg-steps', open)}</div>
+        ${open ? `<ol class="gameSteps">${steps}</ol>
+        ${more}` : ''}`;
 }
 
 function raceScreen(ctx, id) {
@@ -250,6 +252,11 @@ function raceScreen(ctx, id) {
   }
   function onAction(action, el) {
     if (!action.startsWith('tg-')) return false;
+    if (action === 'tg-steps') {
+      toggleStepsOpen();
+      render();
+      return true;
+    }
     if (action === 'tg-rule') {
       const set = el.dataset.v;
       if (!RULE_SETS.includes(set) || set === ui.rules) return true;
@@ -330,6 +337,7 @@ function bankScreen(ctx) {
       ${head('Bank Pool', `${ui.rack === 'full' ? 'Full rack to 8' : 'Short rack to 5'} · race ${ui.race}`)}
       <div class="playBody">
         ${timerHTML('tg-bank')}
+${stepsHead('How to play', 'bk-steps')}<div class="stepBody"${stepsOpenAttr()}>
         <ol class="gameSteps">
           <li>Short rack is 9 balls in a diamond, and 5 points wins the rack. Full rack is 15 balls in a triangle, and 8 points wins the rack.</li>
           <li>The lag winner chooses who breaks. Later breaks switch. Cue ball in hand above the head string.</li>
@@ -344,6 +352,7 @@ function bankScreen(ctx) {
         <details class="ruleMore"><summary>Full rules</summary>
                 <p class="ruleLine"><b>WPA Bank Pool</b> (Rules of Play §13, effective 2025-09-15). Not a full referee. ${esc(ui.rack === 'full' ? 'Fifteen balls, triangle, eight points wins the rack.' : 'Nine balls, diamond, five points wins the rack.')} Lag winner chooses the first break. Later breaks alternate (general rule 1.3). A valid bank is one point. Another ball pocketed on that shot does not count. A miss ends the turn. A standard foul is minus one and the turn passes. Scratch: cue ball in hand behind the head string. Three fouls in a row loses the rack (3.13).</p>
         </details>
+        </div>
         <div class="chips">
           <button type="button" class="chip${ui.rack === 'short' ? ' active' : ''}" data-action="bk-rack" data-v="short">SHORT · 5</button>
           <button type="button" class="chip${ui.rack === 'full' ? ' active' : ''}" data-action="bk-rack" data-v="full">FULL · 8</button>
@@ -367,6 +376,7 @@ function bankScreen(ctx) {
     </div>`;
   }
   function onAction(action, el) {
+    if (action === 'bk-steps') { toggleStepsOpen(); render(); return true; }
     if (action === 'bk-rack' && !ui.racksYou && !ui.racksOpp && ui.you === 0 && ui.opp === 0) {
       ui.rack = el.dataset.v === 'full' ? 'full' : 'short';
       render();
@@ -632,6 +642,7 @@ function straightScreen(ctx) {
     ctx.root.innerHTML = `<div class="playScreen tableMatch" data-table-game="straight">
       ${head('Straight Pool', `to ${ui.target}`)}
       <div class="playBody">
+${stepsHead('How to play', 'st-steps')}<div class="stepBody"${stepsOpenAttr()}>
         <ol class="gameSteps">
           <li>Rack all 15 numbered balls. The apex goes on the foot spot.</li>
           <li>Lag for who shoots first. The cue ball starts in hand above the head string.</li>
@@ -648,6 +659,7 @@ function straightScreen(ctx) {
         <details class="ruleMore"><summary>Full rules</summary>
                 <p class="ruleLine"><b>WPA 14.1 Continuous</b> (Rules of Play §7, effective 2025-09-15). Not a full referee. Fifteen numbered balls plus the cue ball. A called ball is 1 point, and each other ball pocketed on that same legal shot is 1. First to the chosen score wins. Scores may go negative. The shooter stays until a miss, safety, or foul. Opening break: cue ball in hand above the head string. If no called ball is pocketed, the cue ball and two object balls must each reach a rail, or it is a breaking foul (−2). A breaking foul does not count toward three fouls. If both happen on one shot, it is only the breaking foul. Three standard fouls: −1 for the third, then −15 more, re-rack all 15, and that player shoots an opening break (§7.11). Left out of the buttons: calling the ball, spotting balls, a cue ball or 15th that sits in the rack (§7.8b–d), a stalemate re-lag, and unsportsmanlike conduct. Those stay with the players. Source: WPA Rules of Play, wpapool.com, file 2026.01.02.</p>
         </details>
+        </div>
         <div class="chips">${STRAIGHT_TARGETS.map((n) => `<button type="button" class="chip${n === ui.target ? ' active' : ''}" data-action="st-target" data-v="${n}" ${ui.scored ? 'disabled' : ''}>${n}</button>`).join('')}</div>
         <div class="chips">
           <button type="button" class="chip${ui.breaker === 'you' ? ' active' : ''}" data-action="st-break" data-v="you" ${ui.scored || ui.you || ui.opp || ui.needBreakChoice ? 'disabled' : ''}>YOU BREAK</button>
@@ -674,6 +686,7 @@ function straightScreen(ctx) {
   }
   function onAction(action, el) {
     if (!action.startsWith('st-')) return false;
+    if (action === 'st-steps') { toggleStepsOpen(); render(); return true; }
     if (action === 'st-target') { go('target', el.dataset.v); return true; }
     if (action === 'st-break') { go('breaker', el.dataset.v); return true; }
     if (action === 'st-accept') { go('accept'); return true; }
@@ -707,6 +720,7 @@ function onePocketScreen(ctx) {
     ctx.root.innerHTML = `<div class="playScreen tableMatch" data-table-game="onepocket">
       ${head('One Pocket', `race ${ui.race}`)}
       <div class="playBody">
+${stepsHead('How to play', 'op-steps')}<div class="stepBody"${stepsOpenAttr()}>
         <ol class="gameSteps">
           <li>Rack all 15 balls with no pattern. The apex goes on the foot spot.</li>
           <li>The lag winner chooses who breaks. Later breaks switch.</li>
@@ -723,6 +737,7 @@ function onePocketScreen(ctx) {
         <details class="ruleMore"><summary>Full rules</summary>
                 <p class="ruleLine"><b>WPA One-Pocket</b> (Rules of Play §12, effective 2025-09-15). Not a full referee. Fifteen object balls, random triangle, apex on the foot spot. Each player has one foot pocket. First to 8 there wins the rack. Lag winner chooses who breaks the first rack. Later breaks alternate. The breaker chooses a foot pocket. Cue ball in hand above the head string. No special break requirement. The turn continues only after a ball in the shooter’s own pocket. A ball in the opponent’s pocket on a foul counts for them and is not spotted, unless the only foul is a cue-ball scratch (§12.5). Side and head pockets are spotted and score nothing. Three standard fouls in a row loses the rack (§12.9). If both would reach 8 on the same shot, the shooter wins (§12.11). Left out of the buttons: spotting balls on the table, a stalemate re-rack, forgetting to spot, and unsportsmanlike conduct. Those stay with the players. Source: WPA Rules of Play, wpapool.com, file 2026.01.02.</p>
         </details>
+        </div>
         <div class="racePick">${RACES.map((r) => `<button type="button" class="chip${r === ui.race ? ' active' : ''}" data-action="op-race" data-v="${r}" ${done ? 'disabled' : ''}>Race ${r}</button>`).join('')}</div>
         <div class="chips">
           <button type="button" class="chip${ui.youBreak ? ' active' : ''}" data-action="op-lag" data-v="you" ${ui.racksYou + ui.racksOpp || ui.rackLive ? 'disabled' : ''}>LAG WINNER BREAKS</button>
@@ -750,6 +765,7 @@ function onePocketScreen(ctx) {
   }
   function onAction(action, el) {
     if (!action.startsWith('op-')) return false;
+    if (action === 'op-steps') { toggleStepsOpen(); render(); return true; }
     if (action === 'op-race') { go('race', el.dataset.v); return true; }
     if (action === 'op-lag') { go('lag', el.dataset.v); return true; }
     if (action === 'op-pocket') { go('pocket', el.dataset.v); return true; }
@@ -787,6 +803,7 @@ function cribbageScreen(ctx) {
     ctx.root.innerHTML = `<div class="playScreen tableMatch" data-table-game="cribbage">
       ${head('Cribbage', 'first to 5')}
       <div class="playBody">
+${stepsHead('How to play', 'cr-steps')}<div class="stepBody"${stepsOpenAttr()}>
         <ol class="gameSteps">
           <li>Rack all 15. Put the 15-ball in the center and the apex on the foot spot. No two corner balls may add to 15.</li>
           <li>Open break: pocket a ball, or drive at least four object balls to a rail.</li>
@@ -803,6 +820,7 @@ function cribbageScreen(ctx) {
         <details class="ruleMore"><summary>Full rules</summary>
                 <p class="ruleLine"><b>Cribbage is not in the WPA Rules of Play</b> (file 2026.01.02). Not a full referee. This follows the BCA Official Rules and Record Book (1992, pp. 75–76), the source of the published summary on Wikipedia, Cribbage (pool). Pairs that add to 15: 1+14, 2+13, 3+12, 4+11, 5+10, 6+9, 7+8. The 15 is a cribbage by itself only after every other object ball is pocketed. First to 5 wins. A full rack has 8 cribbages. Rack: 15 in the center, apex on the foot spot, and no two of the three corner balls may add to 15. Open break: pocket a ball or drive at least four object balls to a rail. A cribbage counts only when the two partners are pocketed on successive strokes in the same inning. Fouls do not subtract points. Three successive fouls by the same player loses the game. Left out of the buttons: the open-break check, spotting on the long string, and moving a kitchen ball to the foot spot when every object ball is behind the head string. Those stay with the players.</p>
         </details>
+        </div>
         <p class="muted small">Balls still out: ${ui.out.length}. Tap a number to pocket it. For more than one ball on the same stroke, turn on MORE ON THIS STROKE, tap each ball, then COUNT THIS STROKE.</p>
         <div class="chips cribBalls">${balls || '<span class="muted">No balls left.</span>'}</div>
         <div class="chips">
@@ -827,6 +845,7 @@ function cribbageScreen(ctx) {
   }
   function onAction(action, el) {
     if (!action.startsWith('cr-')) return false;
+    if (action === 'cr-steps') { toggleStepsOpen(); render(); return true; }
     if (action === 'cr-new') {
       ui = freshCribbage();
       queue = [];

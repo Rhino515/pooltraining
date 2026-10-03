@@ -1742,3 +1742,7 @@ body.fix-full #app{height:100dvh;padding:0}
 .tableMatch .rulePick{display:flex;flex:1 1 220px;flex-wrap:wrap;gap:8px;min-width:0}
 .tableMatch .rulePick .chip{flex:1 1 64px;min-width:64px;min-height:44px;text-align:center}
 .tableMatch .playingSet{margin:0 0 8px;font-weight:800}
+.playScreen .stepHead{display:flex;align-items:center;justify-content:flex-start;gap:8px;margin:0 0 8px}
+.playScreen .stepHead .stepTitle{font-weight:800;line-height:1.25}
+.playScreen .stepToggle{flex:none;width:44px;height:44px;margin:0;padding:0;border-radius:12px;border:1px solid #2a4a6c;background:#102033;color:var(--gold);font-size:28px;font-weight:800;line-height:1;cursor:pointer}
+.playScreen .stepBody[hidden]{display:none !important}

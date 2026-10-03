@@ -1,4 +1,4 @@
-const CACHE = 'pool-iq-v14-61';
+const CACHE = 'pool-iq-v14-62';
 const ASSETS = [
   './',
   './index.html',
@@ -448,6 +448,7 @@ const ASSETS = [
   './js/ui/loopGame.js',
   './js/ui/loopRules.js',
   './js/ui/tableMatch.js',
+  './js/ui/stepFold.js',
   './js/ui/simulator.js',
   './js/ui/tipPicker.js',
   './js/ui/wpaScore.js',

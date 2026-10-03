@@ -5,6 +5,7 @@ import {
   normalizeBag, freshSolo, applySolo, undoSolo, placeSolo, finishSolo,
   freshPvp, applyPvp, undoPvp, placePvp, recordPvp
 } from './loopRules.js';
+import { stepsAreOpen, toggleStepsOpen, stepToggleBtn } from './stepFold.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -59,6 +60,8 @@ function howHtml() {
     <p class="loopStrike">Strike a numbered object ball directly with your cue. The object ball must carom off the white cue ball and enter your called pocket.</p>
     ${rackSvg()}
     <p class="muted small">Bottom of the diagram is you. White is the apex nearest you. The 1 is not in the rack.</p>
+    <div class="stepHead"><span class="stepTitle">How to play</span>${stepToggleBtn('loop-steps', stepsAreOpen())}</div>
+    <div class="stepBody"${stepsAreOpen() ? '' : ' hidden'}>
     <ol class="gameSteps">
       <li>Rack 14 numbered balls plus the white cue ball. White is the front apex, closest to you. Do not flip the rack.</li>
       <li>The 1-ball stays in your hand. It is not in the triangle.</li>
@@ -92,6 +95,7 @@ function howHtml() {
     <h2>WINNING</h2>
     <p>Solo ends when 15 numbered balls are pocketed. The score is total shots. Personal best is the lowest finished score. 1 vs 1 ends when a player reaches 8. That player wins.</p>
     </details>
+    </div>
     <h2>WHY IT TRAINS</h2>
     <ul class="loopWhy">
       <li>Carom-angle recognition</li>
@@ -256,6 +260,7 @@ export function createLoopMatch(ctx) {
 
   function onAction(action, el) {
     if (!action || !action.startsWith('loop-')) return false;
+    if (action === 'loop-steps') { toggleStepsOpen(); render(); return true; }
     if (action === 'loop-home') { mode = 'home'; confirmNew = false; render(); return true; }
     if (action === 'loop-how') { mode = 'how'; confirmNew = false; render(); return true; }
     if (action === 'loop-solo') { mode = 'solo'; confirmNew = false; render(); return true; }
