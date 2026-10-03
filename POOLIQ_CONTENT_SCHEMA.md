@@ -125,6 +125,7 @@ A `shot` describes one table layout and how to play it. It maps 1:1 to Pool IQ's
 | `setupInstructions` | no | text ≤1500 | how to place the balls |
 | `whyExplanation` | no | object | **Why This Shot?** texts (≤1500 each): `whyCustom` (shown first), `whyContact`, `whySpeed`, `whySpin`, `whyRoute`, `whyAim` |
 | `hints` | no | ≤10 texts ≤300 | |
+| `diagramImage` | no | `"off"` or a `data:image/jpeg|png|webp;base64,…` under 380 KB | when set, this photo is the table diagram (no second drawn table). `"off"` shows the drawn table instead. Exam I uses shipped photos when this is omitted. |
 
 **Shot Recipe mapping.** The three gauges on the play screen come from the shot: **Aim View** = `aim` or the geometry of
 `cueBallPath[contactIndex]`/`ghost` vs `targetBall` (sin-θ offset label like "Right ½ · 30° cut"); **Tip** =
@@ -368,7 +369,7 @@ My Drills. Pool IQ **backup files** are rejected here (restore them from Setting
 `.pooliq` files are **data only**. On import Pool IQ:
 - parses strict JSON only (never `eval`, never runs scripts, never loads remote code, CSS, fonts or images);
 - rejects any text containing markup or code: HTML tags (`<script`, `<iframe`, `<img` …), `javascript:` / `vbscript:` /
-  `data:` URLs, event-handler attributes (`onclick=`, `onerror=` …), HTML character codes (`&#60;`), escaped markup,
+  `data:` URLs (the one exception is `shot.diagramImage`, which may be a jpeg, png, or webp data URL and is only shown as an image), event-handler attributes (`onclick=`, `onerror=` …), HTML character codes (`&#60;`), escaped markup,
   `eval(`, `new Function(`, `document.cookie`, CSS `expression(` / `url(` / `@import`;
 - rejects the keys `__proto__`, `constructor`, `prototype` anywhere (prototype pollution);
 - rejects unknown fields, caps file size, depth, number of values, text length and list lengths;

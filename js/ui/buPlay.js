@@ -88,7 +88,7 @@ export function createBuPlay(ctx, { id, exam = false } = {}) {
         <div class="phTitle"><small>${exam ? 'EXAM I – FUNDAMENTALS' : esc(displayDrillTitle(base.category))}</small><b>${esc(base.name)}</b></div>
         <div class="phStatus">${edit}<button type="button" class="phEdit" data-action="bu-flip">${mirror ? 'THIS SIDE' : 'OTHER SIDE'}</button></div>
       </div>
-      <div class="diagramWrap">${renderStageTable(ch, { className: 'table-diagram', showCuePath: false, showAim: false, showObPath: false, showZones: false })}</div>
+      <div class="diagramWrap${mirror ? ' is-mirror' : ''}">${renderStageTable(ch, { className: 'table-diagram', showCuePath: false, showAim: false, showObPath: false, showZones: false })}</div>
       <p class="buStatus">${esc(statusLine(id, run))}</p>
       ${actions}
       ${link ? `<a class="drillLink" data-drill-link href="${esc(link)}" target="_blank" rel="noopener noreferrer nofollow"><small>Source</small><b>billiarduniversity.org</b></a>` : ''}

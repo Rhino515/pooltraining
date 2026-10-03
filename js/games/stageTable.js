@@ -4,6 +4,7 @@
  * Rail contacts: small diamonds on the cushion. Target zones: a photo bullseye (green, red, dark center) with no numbers.
  */
 import { renderTableDiagram, BALL_RADIUS } from '../tableDiagram.js';
+import { DIAGRAM_RE } from '../content/schema.js';
 
 const BR = BALL_RADIUS;
 
@@ -86,7 +87,22 @@ function diamondNumbersSVG() {
  * @param {object} ch challenge
  * @param {object} opt { showCuePath, showAim, showObPath, showZones, step (train step index), dimOtherZones, highlight }
  */
+/** Photo that replaces the drawn table. A shipped Exam I page, or an uploaded diagramImage. "off" means draw the table. */
+export function diagramSrc(ch) {
+  if (!ch || ch.diagramImage === 'off') return '';
+  if (typeof ch.diagramImage === 'string' && DIAGRAM_RE.test(ch.diagramImage)) return ch.diagramImage;
+  const id = String(ch.id || '');
+  if (/^bu-f[1-8]$/.test(id)) return `./images/bu/${id}.png`;
+  return '';
+}
+
 export function renderStageTable(ch, opt = {}) {
+  const pic = opt.forceDrawn ? '' : diagramSrc(ch);
+  if (pic) {
+    const cls = escT(opt.className || 'table-diagram');
+    const alt = escT(ch.name || ch.title || 'Drill diagram');
+    return `<img class="${cls} drill-diagram" src="${escT(pic)}" alt="${alt}" />`;
+  }
   const o = { showCuePath: true, showAim: true, showObPath: true, showZones: true, ...opt };
   const step = ch.steps && o.step != null ? ch.steps[o.step] : null;
   const src = step || ch;

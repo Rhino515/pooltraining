@@ -68,7 +68,8 @@ export function builderFromShot(shot, item = {}, doc = null) {
     attribution: { ...(doc?.attribution || {}) },
     contentVersion: doc?.contentVersion || '1.0',
     careerEligible: !!doc?.careerEligible,
-    tableMarks: clone(s.tableMarks || [])
+    tableMarks: clone(s.tableMarks || []),
+    diagramImage: s.diagramImage || ''
   };
   for (const k of EXTRA_WHY) out[k] = s.whyExplanation?.[k] || '';
   if (sr) out.scoring = { ...b.scoring, mode: sr.mode, attempts: sr.attempts, made: sr.pass.made ?? b.scoring.made, stars: sr.pass.stars ?? b.scoring.stars, pockets: sr.pass.pockets ?? b.scoring.pockets, requirePocket: sr.requirePocket !== false };
@@ -188,6 +189,7 @@ export function shotFromBuilder(b, simRoute = null) {
   const hints = String(b.hints || '').split('\n').map(txt).filter(Boolean).slice(0, 10);
   if (hints.length) s.hints = hints;
   if (b.tableMarks?.length) s.tableMarks = clone(b.tableMarks);
+  if (b.diagramImage) s.diagramImage = b.diagramImage;
   return s;
 }
 

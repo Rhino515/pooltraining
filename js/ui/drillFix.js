@@ -18,7 +18,7 @@ import { TECHNIQUES } from '../content/schema.js';
 import { snapPoint, freeSpot } from '../sim/layouts.js';
 import { challengeFromPkfDoc } from '../content/pkfBuiltins.js';
 import { displayDrillTitle } from '../drills.js';
-import { openSheet, closeSheet, toast } from './sheet.js';
+import { openSheet, closeSheet, toast, sheetKind } from './sheet.js';
 import { shareOrDownload } from './share.js';
 import {
   drillEditorAllowed, removeDrillEdit, exportAllEdits, shippedDoc, drillLink, drillFromImport
@@ -445,19 +445,80 @@ export function createDrillFix(ctx, idOrSpec) {
     ui.msg = '';
     render();
   }
-  function marksPanel() {
-    const m = ui.sel?.kind === 'mark' ? shot().tableMarks?.[ui.sel.i] : null;
-    const edit = m ? `<label class="fld"><span>Wording</span><input id="fixMarkText" type="text" maxlength="80" value="${esc(m.text || '')}"/></label>
-      <label class="fld"><span>Color #rrggbb</span><input id="fixMarkColor" type="text" maxlength="7" value="${esc(m.color || '')}"/></label>
+  function diagramShowing() {
+    const v = shot().diagramImage;
+    if (v === 'off') return false;
+    if (v) return true;
+    return /^bu-f[1-8]$/.test(String(doc.id || id));
+  }
+  function diagramInput() {
+    let input = document.getElementById('fixDiagram');
+    if (input) return input;
+    input = document.createElement('input');
+    input.type = 'file';
+    input.id = 'fixDiagram';
+    input.accept = 'image/png,image/jpeg,image/webp';
+    input.hidden = true;
+    document.body.appendChild(input);
+    input.addEventListener('change', () => {
+      const file = input.files && input.files[0];
+      input.value = '';
+      if (file) ingestDiagram(file);
+    });
+    return input;
+  }
+  async function ingestDiagram(file) {
+    try {
+      const bmp = await createImageBitmap(file);
+      const maxW = 1000;
+      const scale = Math.min(1, maxW / Math.max(1, bmp.width));
+      const w = Math.max(1, Math.round(bmp.width * scale));
+      const h = Math.max(1, Math.round(bmp.height * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const g = canvas.getContext('2d');
+      g.fillStyle = '#ffffff';
+      g.fillRect(0, 0, w, h);
+      g.drawImage(bmp, 0, 0, w, h);
+      if (bmp.close) bmp.close();
+      let q = 0.82;
+      let url = canvas.toDataURL('image/jpeg', q);
+      while (url.length > 340000 && q > 0.45) {
+        q = Math.round((q - 0.08) * 100) / 100;
+        url = canvas.toDataURL('image/jpeg', q);
+      }
+      if (url.length > 380 * 1024 || !/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(url)) {
+        ui.msg = 'That picture is too large to save with the drill. Try a smaller one.';
+        closeSheet();
+        render();
+        return;
+      }
+      shot().diagramImage = url;
+      ui.msg = '';
+      closeSheet();
+      render();
+    } catch {
+      ui.msg = 'That picture could not be used.';
+      closeSheet();
+      render();
+    }
+  }
+  function openAddSheet() {
+    const zones = (shot().targetZones || []).filter((z) => z?.rings?.length);
+    const i = ui.sel?.kind === 'zone' ? ui.sel.i : 0;
+    const picks = zones.length > 1 ? `<div class="pockets">${shot().targetZones.map((zz, n) => zz?.rings ? `<button type="button" class="${n === i ? 'on' : ''}" data-action="df-zone-pick" data-i="${n}">Target ${n + 1}</button>` : '').join('')}</div>` : '';
+    openSheet(`<h2 class="sheetTitle">Add</h2>
+      <p class="muted small">Balls, lines, targets, labels, boxes, and a diagram photo. A photo replaces the drawn table. Remove it to drag the balls again.</p>
       <div class="fixAdd">
-        <button type="button" data-action="df-mark-dash">${m.dashed ? 'SOLID LINE' : 'DASHED LINE'}</button>
-        <button type="button" data-action="df-mark-fill">${m.fill ? 'NO FILL' : 'LIGHT FILL'}</button>
-        <button type="button" data-action="df-mark-num" data-d="1">NUMBER +</button>
-        <button type="button" data-action="df-mark-num" data-d="-1">NUMBER −</button>
-        <button type="button" data-action="df-mark-del">REMOVE MARK</button>
-      </div>` : '';
-    return `<div class="eyebrow">TABLE MARKS</div>
-      <div class="fixAdd">
+        <button type="button" data-action="df-add-cue">ADD CUE BALL</button>
+        <button type="button" data-action="df-add-ob">ADD OBJECT BALL</button>
+        <button type="button" data-action="df-remove-ball">REMOVE BALL</button>
+        <button type="button" data-action="df-rail-ball">ADD RAIL BALL</button>
+        <button type="button" data-action="df-add" data-kind="cuePath">ADD CUE LINE</button>
+        <button type="button" data-action="df-remove-cue-line">REMOVE CUE LINE</button>
+        <button type="button" data-action="df-add" data-kind="obPath">ADD OBJECT LINE</button>
+        <button type="button" data-action="df-remove-ob-line">REMOVE OBJECT LINE</button>
         <button type="button" data-action="df-mark" data-t="label">ADD LABEL</button>
         <button type="button" data-action="df-mark" data-t="arrow">ADD ARROW</button>
         <button type="button" data-action="df-mark" data-t="path">ADD PATH</button>
@@ -468,10 +529,27 @@ export function createDrillFix(ctx, idOrSpec) {
         <button type="button" data-action="df-mark" data-t="marker">ADD MARKER</button>
         <button type="button" data-action="df-mark" data-t="spot">ADD SPOT</button>
         <button type="button" data-action="df-mark" data-t="wheel">ADD WHEEL</button>
-        <button type="button" data-action="df-rail-ball">ADD RAIL BALL</button>
+        <button type="button" data-action="df-diagram">UPLOAD DIAGRAM</button>
+        <button type="button" data-action="df-diagram-clear"${diagramShowing() ? '' : ' disabled'}>REMOVE DIAGRAM</button>
       </div>
-      ${edit}
-      <p class="muted small">Labels, arrows, dashed paths, ghost outlines, boxes, the paper frame, the diamond grid, numbered markers and rail balls save with this drill when you tap SAVE.</p>`;
+      <div class="eyebrow">POCKETS</div>
+      <div class="pockets">${PKEYS.map((k) => `<button type="button" class="${markedPockets().includes(k) ? 'on' : ''}" data-action="df-pocket" data-p="${k}">${PSHORT[k]}</button>`).join('')}</div>
+      ${zones.length ? `<div class="eyebrow">BULLSEYE</div>${sizeButtons()}${picks}` : ''}
+    `, { id: 'add-piece' });
+  }
+    function marksPanel() {
+    const m = ui.sel?.kind === 'mark' ? shot().tableMarks?.[ui.sel.i] : null;
+    if (!m) return '';
+    return `<div class="eyebrow">SELECTED MARK</div>
+      <label class="fld"><span>Wording</span><input id="fixMarkText" type="text" maxlength="80" value="${esc(m.text || '')}"/></label>
+      <label class="fld"><span>Color #rrggbb</span><input id="fixMarkColor" type="text" maxlength="7" value="${esc(m.color || '')}"/></label>
+      <div class="fixAdd">
+        <button type="button" data-action="df-mark-dash">${m.dashed ? 'SOLID LINE' : 'DASHED LINE'}</button>
+        <button type="button" data-action="df-mark-fill">${m.fill ? 'NO FILL' : 'LIGHT FILL'}</button>
+        <button type="button" data-action="df-mark-num" data-d="1">NUMBER +</button>
+        <button type="button" data-action="df-mark-num" data-d="-1">NUMBER −</button>
+        <button type="button" data-action="df-mark-del">REMOVE MARK</button>
+      </div>`;
   }
   const GRAB = 5.6; // table units — a disc you can grab, not the thin ring stroke
   function zoneCenter(z) {
@@ -572,6 +650,22 @@ export function createDrillFix(ctx, idOrSpec) {
   function fitFullTable() {
     if (!ui.full) return;
     const slot = ctx.root.querySelector('.fixFit');
+    const img = slot?.querySelector('img.drill-diagram');
+    if (img && !slot.querySelector('svg')) {
+      const r = slot.getBoundingClientRect();
+      const sw = Math.max(0, r.width - 4);
+      const sh = Math.max(0, r.height - 4);
+      const nw = img.naturalWidth || 920;
+      const nh = img.naturalHeight || 520;
+      const aspect = nh ? nw / nh : 1.7;
+      const cssW = Math.min(sw, sh * aspect);
+      const cssH = cssW / aspect;
+      img.style.width = `${cssW}px`;
+      img.style.height = `${cssH}px`;
+      img.style.objectFit = 'contain';
+      if (!img.complete) img.addEventListener('load', () => { if (ui.full) fitFullTable(); }, { once: true });
+      return;
+    }
     const svg = slot?.querySelector('svg');
     if (!svg) return;
     spinFullSvg(svg);
@@ -615,18 +709,8 @@ export function createDrillFix(ctx, idOrSpec) {
             <button type="button" data-action="df-nudge" data-dx="0" data-dy="-0.25">▲ TOP</button>
             <button type="button" data-action="df-nudge" data-dx="0" data-dy="0.25">▼ BOTTOM</button>
           </div>
-          ${sizeButtons()}
-          <div class="fixAdd">
-            <button type="button" data-action="df-add-cue">ADD CUE BALL</button>
-            <button type="button" data-action="df-add-ob">ADD OBJECT BALL</button>
-            <button type="button" data-action="df-add" data-kind="cuePath">ADD CUE LINE</button>
-            <button type="button" data-action="df-remove-cue-line">REMOVE CUE LINE</button>
-            <button type="button" data-action="df-add" data-kind="obPath">ADD OBJECT LINE</button>
-            <button type="button" data-action="df-remove-ob-line">REMOVE OBJECT LINE</button>
-            <button type="button" data-action="df-remove-ball">REMOVE BALL</button>
-          </div>
-          <div class="pockets">${PKEYS.map((k) => `<button type="button" class="${markedPockets().includes(k) ? 'on' : ''}" data-action="df-pocket" data-p="${k}">${PSHORT[k]}</button>`).join('')}</div>
-          <p class="muted small">Drag a ball freely, or the bullseye. Nudge moves ¼ diamond. SAVE publishes this drill for everyone.</p>
+          <button type="button" class="bigBtn alt fixAddOpen" data-action="df-add-open">ADD</button>
+          <p class="muted small">Drag a ball freely, or the bullseye. Nudge moves ¼ diamond. ADD opens balls, lines, targets, and the diagram. SAVE publishes this drill for everyone.</p>
         </div>
       </div>
     </div>`;
@@ -634,6 +718,7 @@ export function createDrillFix(ctx, idOrSpec) {
       bindTable();
       fitFullTable();
       requestAnimationFrame(() => { if (ui.full) fitFullTable(); });
+      if (sheetKind() === 'add-piece') openAddSheet();
       return;
     }
     ctx.root.innerHTML = `<div class="playScreen drillFix" data-drill-fix="${esc(id)}" data-overridden="${overridden ? 1 : 0}">
@@ -650,12 +735,7 @@ export function createDrillFix(ctx, idOrSpec) {
           <button type="button" class="${ui.tool === 'ob' ? 'on' : ''}" data-action="df-tool" data-tool="ob">OBJECT PATH</button>
         </div>
         <button type="button" class="bigBtn fixSaveMain" data-action="df-save">SAVE</button>
-        <div class="fixAdd fixLines">
-          <button type="button" data-action="df-add" data-kind="cuePath">ADD CUE LINE</button>
-          <button type="button" data-action="df-remove-cue-line">REMOVE CUE LINE</button>
-          <button type="button" data-action="df-add" data-kind="obPath">ADD OBJECT LINE</button>
-          <button type="button" data-action="df-remove-ob-line">REMOVE OBJECT LINE</button>
-        </div>
+        <button type="button" class="bigBtn alt fixAddOpen" data-action="df-add-open">ADD</button>
       </div>
       <div class="fixScroll">
         <p class="fixSel">${esc(selLabel())}</p>
@@ -665,16 +745,8 @@ export function createDrillFix(ctx, idOrSpec) {
           <button type="button" data-action="df-nudge" data-dx="0" data-dy="-0.25">▲ TOP</button>
           <button type="button" data-action="df-nudge" data-dx="0" data-dy="0.25">▼ BOTTOM</button>
         </div>
-        <div class="fixAdd">
-          <button type="button" data-action="df-add-cue">ADD CUE BALL</button>
-          <button type="button" data-action="df-add-ob">ADD OBJECT BALL</button>
-          <button type="button" data-action="df-remove-ball">REMOVE BALL</button>
-        </div>
-        ${s.cueBallPosition ? `<div class="eyebrow">POCKETS</div>
-        <div class="pockets">${PKEYS.map((k) => `<button type="button" class="${markedPockets().includes(k) ? 'on' : ''}" data-action="df-pocket" data-p="${k}">${PSHORT[k]}</button>`).join('')}</div>
-        <p class="muted small">Tap a pocket to add or remove it. Every marked pocket shows on the diagram and in play.</p>` : '<p class="muted small">No balls to drag on this one. Title and description publish when you tap SAVE.</p>'}
+        ${s.cueBallPosition ? '' : '<p class="muted small">No balls to drag on this one. Title and description publish when you tap SAVE.</p>'}
         ${marksPanel()}
-        ${zonePanel()}
         <label class="fixFld">Title<input id="fixTitle" maxlength="80" value="${esc(doc.title || '')}"/></label>
         <label class="fixFld">Description<textarea id="fixDesc" maxlength="2000" rows="3">${esc(doc.description || '')}</textarea></label>
         <label class="fixFld">Category<input id="fixCat" maxlength="40" value="${esc(doc.category || '')}"/></label>
@@ -705,6 +777,7 @@ export function createDrillFix(ctx, idOrSpec) {
     bindTable();
     bindFields();
     bindImport();
+    if (sheetKind() === 'add-piece') openAddSheet();
   }
 
   function paintBulls(svg) {
@@ -1118,6 +1191,15 @@ export function createDrillFix(ctx, idOrSpec) {
     if (action === 'df-tech') { shot().technique = el.dataset.t; ui.msg = ''; render(); return true; }
     if (action === 'df-tip') { setTip(el.dataset.k, Number(el.dataset.d)); return true; }
     if (action === 'df-pt') { ui.sel = { kind: el.dataset.kind, i: Number(el.dataset.i) }; ui.tool = el.dataset.kind === 'cuePath' ? 'cue' : 'ob'; render(); return true; }
+    if (action === 'df-add-open') { openAddSheet(); return true; }
+    if (action === 'df-diagram') { diagramInput().click(); return true; }
+    if (action === 'df-diagram-clear') {
+      shot().diagramImage = 'off';
+      ui.msg = '';
+      closeSheet();
+      render();
+      return true;
+    }
     if (action === 'df-add-cue') { addCueBall(); return true; }
     if (action === 'df-add-ob') { addObjectBall(); return true; }
     if (action === 'df-mark') { addMark(el.dataset.t); return true; }
@@ -1184,5 +1266,5 @@ export function createDrillFix(ctx, idOrSpec) {
     return false;
   }
 
-  return { render, onAction, destroy() { alive = false; ac?.abort(); ac = null; drag = null; document.body.classList.remove('fix-full'); } };
+  return { render, onAction, destroy() { alive = false; ac?.abort(); ac = null; drag = null; document.body.classList.remove('fix-full'); document.getElementById('fixDiagram')?.remove(); } };
 }

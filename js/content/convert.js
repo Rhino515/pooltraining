@@ -6,7 +6,7 @@
  */
 import { aimInfo, fullnessLabel, shortFullness, POCKET_NAMES } from '../games/geometry.js';
 import { railsText, railsShort } from '../games/text.js';
-import { FORMAT, SCHEMA_VERSION, BALL_R, SHOT_KINDS, TECHNIQUES, ENGLISH_TYPES, SCORING_MODES, validatePooliq } from './schema.js';
+import { FORMAT, SCHEMA_VERSION, BALL_R, SHOT_KINDS, TECHNIQUES, ENGLISH_TYPES, SCORING_MODES, validatePooliq, isDiagramImage } from './schema.js';
 import { SKILL_NAMES } from '../storage.js';
 import { correctHeadOn } from '../games/headOn.js';
 
@@ -126,7 +126,8 @@ export function shotToChallenge(shot, meta = {}) {
     aim,
     route: deriveRoute(s),
     whyExplanation: why,
-    imported: true
+    imported: true,
+    ...(s.diagramImage ? { diagramImage: s.diagramImage } : {})
   };
 }
 
@@ -177,6 +178,7 @@ export function shotFromChallenge(ch) {
   for (const k of WHY_KEYS) if (ch.whyExplanation?.[k]) why[k] = ch.whyExplanation[k];
   if (Object.keys(why).length) s.whyExplanation = why;
   if (ch.hints?.length) s.hints = ch.hints.slice(0, 10);
+  if (isDiagramImage('diagramImage', ch.diagramImage)) s.diagramImage = ch.diagramImage;
   return s;
 }
 

@@ -3,7 +3,7 @@
  *
  * A .pooliq file is DATA ONLY: strict JSON, validated field by field against a whitelist before anything
  * is shown. Nothing in it is ever executed or inserted as HTML: unknown fields, HTML/script-like strings,
- * javascript:/data: URLs, event-handler text, prototype keys (__proto__, constructor, prototype),
+ * javascript:/data: URLs (except an optional shot.diagramImage jpeg/png/webp), event-handler text, prototype keys (__proto__, constructor, prototype),
  * oversized files, deep nesting and huge lists are rejected with a readable error list.
  *
  * validatePooliq(textOrObject) → { ok, errors[], warnings[], doc } where doc is the NORMALIZED document
@@ -69,6 +69,17 @@ export function unsafeReason(s) {
   return null;
 }
 
+/** Optional drill diagram photo. "off" hides a shipped photo. Anything else must be a jpeg, png, or webp data URL. */
+export const DIAGRAM_MAX = 380 * 1024;
+export const DIAGRAM_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
+export function isDiagramImage(path, v) {
+  if (typeof v !== 'string') return false;
+  const key = String(path || '').split('.').pop();
+  if (key !== 'diagramImage') return false;
+  if (v === 'off') return true;
+  return v.length <= DIAGRAM_MAX && DIAGRAM_RE.test(v);
+}
+
 const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 const r3 = (v) => Math.round(v * 1000) / 1000;
 
@@ -91,6 +102,7 @@ function prescan(raw, c) {
     if (++nodes > MAX_NODES) return;
     if (d > MAX_DEPTH) { if (!depthHit) c.err(p, `nested too deeply (max ${MAX_DEPTH} levels)`); depthHit = true; return; }
     if (typeof v === 'string') {
+      if (isDiagramImage(p, v)) return;
       if (v.length > MAX_STRING) c.err(p, `text is too long (${v.length} characters, max ${MAX_STRING})`);
       const why = unsafeReason(v);
       if (why) c.err(p, `contains ${why} — .pooliq files may only contain plain text, never code or markup`);
@@ -300,7 +312,12 @@ export const SHOT_FIELDS = {
   setupInstructions: text(1500),
   whyExplanation: T.obj(Object.fromEntries(WHY_KEYS.map((k) => [k, text(1500)]))),
   hints: T.arr(T.str(300, 1), 10),
-  tableMarks: T.arr(tableMark, 80)
+  tableMarks: T.arr(tableMark, 80),
+  diagramImage: (v, p, c) => {
+    if (v == null || v === '') return undefined;
+    if (!isDiagramImage(p, v)) return void c.err(p, 'must be a jpeg, png, or webp image, or "off"');
+    return v;
+  }
 };
 const scoringRules = T.obj({ mode: T.oneOf(SCORING_MODES), attempts: T.int(1, 50), pass: T.obj({ made: T.int(0, 50), stars: T.int(0, 150), pockets: T.int(0, 50) }), requirePocket: T.bool }, ['mode', 'attempts', 'pass']);
 const skillEffects = (v, p, c) => {
