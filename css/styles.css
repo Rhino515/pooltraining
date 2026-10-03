@@ -1693,3 +1693,32 @@ body.fix-full #app{height:100dvh;padding:0}
 .smTime{margin:0;text-align:center;font-weight:600}
 .smSec{margin:18px 0 0;font-size:15px;letter-spacing:.04em}
 .smQuote{margin:2px 0 8px}
+
+/* Loop table game only. Do not restyle other table games. */
+.loopGame .loopKicker{margin:8px 0 4px;color:var(--gold);font-size:12px;font-weight:800;letter-spacing:.08em}
+.loopGame .loopStrike{font-weight:700;line-height:1.4}
+.loopGame .loopSeq{margin:8px 0;padding:10px 12px;border:1px solid #1f3044;border-radius:12px;background:#0b1522}
+.loopGame .loopSeq b{display:block;color:var(--gold);font-size:12px;letter-spacing:.06em}
+.loopGame .loopSeq span{display:block;margin-top:4px;font-size:15px;line-height:1.35}
+.loopGame .loopHow h2{margin:16px 0 6px;font-size:15px;letter-spacing:.04em}
+.loopGame .loopHow p,.loopGame .loopHow li{font-size:14px;line-height:1.4}
+.loopGame .loopWhy{margin:6px 0 12px;padding-left:18px}
+.loopGame .loopWhy li{margin:4px 0}
+.loopGame .loopRack{display:block;width:100%;max-width:280px;height:auto;margin:8px auto}
+.loopGame .loopGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 12px}
+.loopGame .loopGrid div{padding:8px;text-align:center;background:#0b1522;border:1px solid #1f3044;border-radius:14px}
+.loopGame .loopGrid b{display:block;font-size:28px;font-variant-numeric:tabular-nums}
+.loopGame .loopGrid span{display:block;color:var(--muted);font-size:11px;letter-spacing:.06em}
+.loopGame .loopHero b small{font-size:22px;font-weight:700;color:var(--muted)}
+.loopGame .loopPvp em{font-size:12px;font-style:normal;font-weight:800;letter-spacing:.06em;text-align:center;color:var(--muted)}
+.loopGame .loopTurn{padding:4px 8px;border-radius:12px;outline:2px solid var(--gold)}
+.loopGame .loopBih{margin:10px 0;padding:12px;border:1px solid var(--gold);border-radius:14px;background:#1a1408}
+.loopGame .loopBih b{display:block;letter-spacing:.04em}
+.loopGame .loopBih p{margin:6px 0 0}
+.loopGame .loopNew{margin:0;color:var(--gold);font-weight:900;letter-spacing:.08em}
+.loopGame .loopConfirm{margin-top:8px;padding:10px 12px;border:1px solid #24507f;border-radius:12px;background:#071422}
+.loopGame .loopConfirm p{margin:0 0 8px}
+.loopGame .rb.alt{background:#15304c;border:1px solid #1f5f99;color:#dff6ff}
+.loopGame .rb.loopScratch{background:#2a1d0c;border:1px solid var(--gold);color:#ffe7a8}
+.loopGame .resultBar .rb.wide{flex:1 1 100%}
+.loopGame[data-loop-mode="solo"],.loopGame[data-loop-mode="pvp"]{padding-bottom:calc(250px + env(safe-area-inset-bottom))}

@@ -7,6 +7,7 @@
  *   https://league.ultimatepoolusa.com/docs/uplmanual.pdf
  */
 import { timerHTML } from './shotTimer.js';
+import { createLoopMatch } from './loopGame.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const pad = (n) => String(n).padStart(2, '0');
@@ -55,6 +56,7 @@ function head(title, sub) {
 }
 
 export function createTableMatch(ctx, kind) {
+  if (kind === 'loop') return createLoopMatch(ctx);
   const id = ['8', '9', '10', 'bank', 'upusa'].includes(kind) ? kind : '';
   if (!id) {
     return { render() { ctx.root.innerHTML = '<div class="card empty"><p>Unknown table game.</p></div>'; }, onAction() { return false; }, destroy() {} };

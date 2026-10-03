@@ -5,6 +5,7 @@
  * rankFloor (preserves a migrated user's rank), ghostUnlockFloor, activeSession, activeGhost, drillArchive.
  */
 import { defaultCalibration } from './games/speed.js';
+import { defaultLoopBag } from './ui/loopRules.js';
 
 export const STORAGE_KEY = 'poolIQStateV4';
 export const V3_KEY = 'poolIQStateV3';
@@ -57,7 +58,8 @@ export function defaultState() {
     ghostUnlockFloor: 3,
     activeSession: null,
     activeGhost: null,
-    settings: { units: 'imperial', coaching: 'auto' }
+    settings: { units: 'imperial', coaching: 'auto' },
+    loop: defaultLoopBag()
   };
 }
 
@@ -106,7 +108,8 @@ export function migrateToV4(parsed) {
     bosses: parsed.bosses && typeof parsed.bosses === 'object' ? parsed.bosses : {},
     speedCal: { ...defaultCalibration(), ...(parsed.speedCal || {}) },
     promotionAttempts: parsed.promotionAttempts || {},
-    settings: { ...base.settings, ...(parsed.settings || {}) }
+    settings: { ...base.settings, ...(parsed.settings || {}) },
+    loop: { ...base.loop, ...(parsed.loop && typeof parsed.loop === 'object' && !Array.isArray(parsed.loop) ? parsed.loop : {}) }
   };
   return out;
 }
