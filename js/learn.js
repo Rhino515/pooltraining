@@ -236,6 +236,17 @@ function card(href, tone, ico, title, text, photo) {
   </button>`;
 }
 
+const BRIDGE_PAGES = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => `./images/learn/bridges/page-${String(n).padStart(2, '0')}.jpg`);
+
+function bridgesRow(href) {
+  return `<div class="learnList"><button type="button" class="card learnRow" data-action="go" data-href="${href}"><b>Bridges</b></button></div>`;
+}
+
+function bridgesPage(backHref, backLabel) {
+  const pages = BRIDGE_PAGES.map((src, i) => `<div class="diagramWrap"><img class="table-diagram drill-diagram" src="${src}" alt="Bridges, page ${i + 1}" /></div>`).join('');
+  return page('Bridges', pages, backHref, backLabel);
+}
+
 function landing() {
   return `<div class="title learnPage" data-page-learn>
     <h1>Learn</h1>
@@ -244,6 +255,7 @@ function landing() {
       ${card('#learn/fundamentals', 'gold', ICO_CUE, 'Fundamentals', 'Stance, grip, bridge, aiming, stroke, cue ball control and core concepts.', './icons/learn-fundamentals.jpg')}
       ${card('#learn/play', 'blue', ICO_BOTH, 'How to Play & Rules', 'Game formats, scoring and rules for 8-ball, 9-ball, 10-ball and more. WPA, APA, BCA, Bar Rules and Ultimate Pool USA with explanations.', './icons/learn-play.jpg')}
     </div>
+    ${bridgesRow('#learn/bridges')}
   </div>`;
 }
 
@@ -371,7 +383,9 @@ export function learnHTML(args = []) {
   const c = args[2] || '';
   const d = args[3] || '';
   if (!a) return landing();
-  if (a === 'fundamentals') return page('Fundamentals', '<p class="muted">Lessons will show here.</p>');
+  if (a === 'bridges') return bridgesPage('#learn', 'Learn');
+  if (a === 'fundamentals' && b === 'bridges') return bridgesPage('#learn/fundamentals', 'Fundamentals');
+  if (a === 'fundamentals') return page('Fundamentals', bridgesRow('#learn/fundamentals/bridges'));
   if (a === 'play' && b === 'game' && c && d) return howPage(d, c, `#learn/play/game/${c}`, gameName(c));
   if (a === 'play' && b === 'game' && c) return gameSets(c);
   if (a === 'rules' && b && c) return howPage(b, c, `#learn/rules/${b}`, BODIES[b] || 'Rules');

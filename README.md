@@ -28,6 +28,7 @@ Shot Simulator simplification. Playing-surface sizes (ball stays 2.25 in): 7 ft 
 - Cache `pool-iq-v14-2`, app version 14.
 - v14-1: 8-ball runout plays the group (not the 1-ball), shows a breakout for a tied-up ball, 3D is a low view from behind the cue ball, and full screen is the table plus EXIT.
 - v14-2: 3D view is a shaded table from behind the cue ball (wood rails, lit cloth, round balls, cue).
+- v14-61: Bridges in Learn and in Fundamentals shows the nine scanned bridge pages, in order. Cache `pool-iq-v14-61`.
 - v14-60: Play with Friends lists every Table Games scorekeeper except Ghost (solo). Loop, Straight Pool, One Pocket, and Cribbage open the existing screens. Cache `pool-iq-v14-60`.
 - v14-59: 8-ball, 9-ball, and 10-ball have a rules menu for WPA, BCA, APA, and bar. The short numbered how-to follows the set you pick. Cache `pool-iq-v14-59`.
 - v14-58: Table games with a long rules paragraph now lead with a short numbered how-to. The full paragraph is one tap away. Cache `pool-iq-v14-58`.
