@@ -65,7 +65,7 @@ function homeRanksCard(state) {
     <span class="hrTop"><span class="eyebrow">YOUR RANKS</span><span class="hrView">View Profile ›</span></span>
     <span class="hrGrid">
       <span class="hrCareer">
-        ${rankBadgeSVG(cs, { size: 168 })}
+        ${rankBadgeSVG(cs, { size: 124 })}
         <span class="hrLevel">${esc(level)}</span>
         <span class="hrRankName">${esc(cs.name)}</span>
       </span>

@@ -28,7 +28,7 @@ export function championSVG(opts = {}) {
 /**
  * Career rank emblem: the real pool ball for that rank (yellow 1 through striped 10).
  * Rookie is the 1-ball through Champion the 10-ball. Balls 1–7 have no crown.
- * Balls 8, 9, and 10 keep the crowned 8-ball's crown. This is the rank, not the level ball inside it.
+ * Balls 8, 9, and 10 keep that crown and the laurel leaves. No star and no plaque. This is the rank, not the level ball inside it.
  */
 const CAREER_EMBLEM_NAMES = ['Rookie', 'Club Player', 'Shooter', 'Competitor', 'Advanced', 'Expert', 'Master', 'Elite', 'Pro', 'Champion'];
 export function careerEmblemBall(status) {
