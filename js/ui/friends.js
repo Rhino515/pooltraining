@@ -40,6 +40,21 @@ const av = (d, id, size = 40) => { const p = F.playerById(d, id); return p ? ava
 const backBtn = (href, label) => `<button type="button" class="linkish back" data-action="go" data-href="${href}">‹ ${esc(label)}</button>`;
 const chips = (action, list, cur) => `<div class="chips">${list.map(([v, l]) => `<button type="button" class="chip${String(cur) === String(v) ? ' active' : ''}" data-action="${action}" data-v="${esc(v)}">${esc(l)}</button>`).join('')}</div>`;
 
+/** Every Table Games hub game except Ghost (solo). Cards match the hub and open that scorekeeper. */
+const PVP_TABLE_GAMES = [
+  ['8', '8-Ball', 'Rack counter. Optional timer, off until you turn it on.'],
+  ['9', '9-Ball', 'Rack counter. Optional timer, off until you turn it on.'],
+  ['10', '10-Ball', 'Rack counter. Optional timer, off until you turn it on.'],
+  ['bank', 'Bank Pool', 'WPA bank pool. Short rack to 5, full rack to 8. Optional timer.'],
+  ['upusa', 'Ultimate Pool USA', '30-minute match clock. 30-second shot clock.'],
+  ['loop', 'Loop', 'POOL BACKWARDS / CAROM TRAINING'],
+  ['straight', 'Straight Pool', 'WPA 14.1. Called shot to a score.'],
+  ['onepocket', 'One Pocket', 'WPA one pocket. First to 8, race to racks.'],
+  ['cribbage', 'Cribbage', 'Pairs that add to 15. First to 5.']
+];
+const pvpGameIcon = (id) => (id === 'upusa' ? '⏱' : id === 'bank' ? '▣' : id === 'loop' ? '↺' : id === 'straight' ? '14' : id === 'onepocket' ? '1P' : id === 'cribbage' ? '15' : id);
+const pvpGameCards = () => `<h2>Games</h2><div class="arcadeGrid" data-pvp-games>${PVP_TABLE_GAMES.map(([id, name, sub]) => `<button type="button" class="gameCard card" data-action="go" data-href="#tgame/${id}" data-game="${esc(id)}"><span class="gcIcon">${pvpGameIcon(id)}</span><span class="gcMain"><b>${esc(name)}</b><small>${esc(sub)}</small></span></button>`).join('')}</div>`;
+
 // UI-only selections (not persisted until a match / session / tournament is created)
 const setup = { a: null, b: null, game: '8-ball', raceTo: PVP.defaultRace, pick: [], format: 'single', name: '', adv: false, sessionId: null, tournamentId: null, tmId: null };
 let pendingAvatar; // undefined = unchanged, null = removed, string = new photo
@@ -57,6 +72,7 @@ export function renderFriends() {
     ${d.live ? `<div class="card resumeCard" data-live-match><b>Match in progress</b><p class="muted">${esc(pName(d, d.live.players[0]))} ${d.live.score[d.live.players[0]]} – ${d.live.score[d.live.players[1]]} ${esc(pName(d, d.live.players[1]))} · race to ${d.live.raceTo}</p><button type="button" class="bigBtn" data-action="go" data-href="#fmatch/live">RESUME MATCH</button></div>` : ''}
     <button type="button" class="card simPromo lbPromo" data-action="go" data-href="#leaderboard"><span class="simPromoIcon">🏆</span><span class="simPromoText"><span class="eyebrow">ONLINE</span><b>Friends Leaderboard</b><small>Everyone with a Pool IQ account: Lifetime XP, Career rank and Drill Rank, with photos.</small></span><span class="simPromoGo">›</span></button>
     <div class="friendActs"><button type="button" class="bigBtn" data-action="go" data-href="#fmatch">⚔ NEW MATCH</button><button type="button" class="bigBtn alt" data-action="fr-session-new">GROUP SESSION</button><button type="button" class="bigBtn alt" data-action="go" data-href="#tnew">🏆 TOURNAMENT</button></div>
+    ${pvpGameCards()}
     <h2>Players <button type="button" class="miniAct" data-action="fr-add">＋ ADD PLAYER</button></h2>
     <div class="playerList">${players.map((p) => { const st = F.playerStats(d, p.id); return `<button type="button" class="card playerRow" data-action="go" data-href="#friend/${esc(p.id)}" data-player="${esc(p.id)}">${av(d, p.id, 44)}<span class="prMain"><b>${esc(p.name)}${p.isMe ? ' <small class="tag">YOU</small>' : ''}</b><small>${st.matches ? `${st.wins}–${st.losses} · ${st.winPct}% · ${st.streakType ? `${st.streakType}${st.currentStreak}` : ''}` : 'No matches yet'}</small></span>${!p.isMe && me ? (() => { const h = F.headToHead(d, me, p.id); return h.matches ? `<span class="prH2h">${h.winsA}–${h.winsB}</span>` : ''; })() : ''}</button>`; }).join('')}
       ${players.length < 2 ? '<p class="muted">Add the people you play with. Photos are optional and stay on this phone.</p>' : ''}</div>
