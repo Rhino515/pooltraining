@@ -10,10 +10,14 @@ import { awardSession } from '../progression/sessions.js';
 import {
   applyShot, stopEarly, undoRun, present, statusLine, shotButtons, buMeta, newRun, withExamScore, examInstructions, BU_CREDIT
 } from '../content/buExam.js';
+import {
+  isSkillsId, skillsMeta, newSkillsRun, skillsApply, undoSkills, skillsStatus, skillsButtons, skillsImages, withSkillsScore, skillsText, SKILLS_CREDIT, S10_CHECKS
+} from '../content/buExam2.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 export function createBuPlay(ctx, { id, exam = false } = {}) {
+  if (isSkillsId(id)) return createSkillsPlay(ctx, { id, exam });
   const base = getDrillById(id);
   if (!base?.buExam) {
     return { render() { ctx.root.innerHTML = ''; }, onAction() { return false; }, destroy() {} };
@@ -133,6 +137,152 @@ export function createBuPlay(ctx, { id, exam = false } = {}) {
     }
     if (action === 'play-exit') {
       ctx.go(exam ? '#buexam' : '#drills');
+      return true;
+    }
+    return false;
+  }
+
+  return { render, onAction, destroy() { alive = false; } };
+}
+
+function createSkillsPlay(ctx, { id, exam = false } = {}) {
+  const base = getDrillById(id);
+  const meta = skillsMeta(id);
+  if (!base?.buExam || !meta) {
+    return { render() { ctx.root.innerHTML = ''; }, onAction() { return false; }, destroy() {} };
+  }
+  let run = newSkillsRun(id);
+  let saved = false;
+  let alive = true;
+
+  function finish() {
+    if (saved || !run.done) return;
+    saved = true;
+    const score = Math.max(0, Math.min(meta.max, Number(run.score) || 0));
+    let state = ctx.getState();
+    const games = { ...(state.games || {}) };
+    const gs = games.drills || { stages: {}, pb: {}, sessions: [] };
+    const stages = { ...(gs.stages || {}) };
+    const old = stages[id] || { tries: 0, passed: false, bestScore: 0, bestStars: 0, history: [] };
+    const now = new Date().toISOString();
+    stages[id] = {
+      ...old,
+      tries: (old.tries || 0) + 1,
+      passed: old.passed || score > 0,
+      bestScore: Math.max(old.bestScore || 0, score),
+      bestStars: old.bestStars || 0,
+      lastScore: score,
+      lastPassed: score > 0,
+      lastDate: now,
+      firstPassDate: old.firstPassDate || (score > 0 ? now : null),
+      history: [...(old.history || []), { date: now, score, passed: score > 0, stars: 0, bu: true, exam: !!exam }].slice(-20)
+    };
+    games.drills = {
+      ...gs,
+      stages,
+      pb: { ...(gs.pb || {}) },
+      sessions: [...(gs.sessions || []), { stageId: id, date: now, score, passed: score > 0, stars: 0, attempts: run.shots || 0 }].slice(-100)
+    };
+    state = { ...state, games, activeSession: null };
+    const drill = getDrillById(id);
+    const session = { gameId: 'drills', stageId: id, attempts: [], startedAt: now };
+    const aw = awardSession(state, session, drill, { passed: score > 0, score, maxScore: meta.max });
+    state = aw.state;
+    if (exam) state = withSkillsScore(state, id, score, meta.max);
+    ctx.commit(state);
+  }
+
+  function pictures() {
+    const imgs = skillsImages(id);
+    if (imgs.length === 1) {
+      return `<div class="diagramWrap"><img class="table-diagram drill-diagram" src="${esc(imgs[0])}" alt="${esc(base.name)}" /></div>`;
+    }
+    const cur = Math.min(run.values.length, imgs.length - 1);
+    return imgs.map((src, i) => `<div class="diagramWrap${i === cur && !run.done ? ' is-on' : ''}"><p class="buStatus">Layout ${i + 1}</p><img class="table-diagram drill-diagram" src="${esc(src)}" alt="${esc(base.name)} layout ${i + 1}" /></div>`).join('');
+  }
+
+  function render() {
+    if (!alive) return;
+    const buttons = skillsButtons(id);
+    const edit = drillEditorAllowed() ? `<button type="button" class="phEdit" data-owner-edit="1" data-action="go" data-href="#drillfix/${esc(id)}">EDIT</button>` : '';
+    const link = drillLink(base.attribution?.sourceURL);
+    const done = run.done;
+    const score = done ? (run.score ?? 0) : null;
+    const next = exam && meta.next ? `#play/drills/${meta.next}/exam` : '';
+    const list = meta.exam.href;
+    let actions;
+    if (done) {
+      actions = `<p class="buScoreLine">Score ${score} / ${meta.max}</p>
+         ${exam && next ? `<button type="button" class="bigBtn" data-action="go" data-href="${next}">NEXT DRILL</button>` : ''}
+         ${exam && !next ? `<button type="button" class="bigBtn" data-action="go" data-href="${list}">EXAM LIST</button>` : ''}
+         <button type="button" class="bigBtn alt" data-action="bu-again">RUN AGAIN</button>`;
+    } else if (meta.kind === 'median3') {
+      const boxes = S10_CHECKS.map((label, i) => `<label data-action="bu-box" data-i="${i}"><input type="checkbox" tabindex="-1" ${run.checks[i] ? 'checked' : ''}/> <span>${esc(label)}</span></label>`).join('');
+      actions = `<div class="buChecks">${boxes}</div>
+         <button type="button" class="bigBtn" data-action="bu-break">SCORE THIS BREAK</button>
+         <button type="button" class="bigBtn alt" data-action="bu-undo">UNDO LAST</button>`;
+    } else {
+      actions = `<div class="buBar">
+           <button type="button" class="bigBtn" data-action="bu-hit" data-ok="1">${esc(buttons[0])}</button>
+           <button type="button" class="bigBtn alt" data-action="bu-hit" data-ok="0">${esc(buttons[1])}</button>
+         </div>
+         <button type="button" class="bigBtn alt" data-action="bu-undo">UNDO LAST SHOT</button>`;
+    }
+    const eyebrow = exam ? meta.exam.name.toUpperCase() : esc(displayDrillTitle(base.category));
+    ctx.root.innerHTML = `<div class="playScreen buPlay" data-bu="${esc(id)}" data-exam="${exam ? 1 : 0}" data-skills="${esc(meta.level)}">
+      <div class="playHead">
+        <button type="button" class="phBack" data-action="play-exit" aria-label="Exit">‹</button>
+        <div class="phTitle"><small>${eyebrow}</small><b>${esc(base.name)}</b></div>
+        <div class="phStatus">${edit}</div>
+      </div>
+      ${pictures()}
+      <p class="buStatus">${esc(skillsStatus(id, run))}</p>
+      ${actions}
+      ${link ? `<a class="drillLink" data-drill-link href="${esc(link)}" target="_blank" rel="noopener noreferrer nofollow"><small>Source</small><b>billiarduniversity.org</b></a>` : ''}
+      <details class="card buHowCard" open>
+        <summary>Instructions</summary>
+        <pre class="buHow">${esc(skillsText(id))}</pre>
+        <small class="muted credit">${esc(SKILLS_CREDIT)}</small>
+      </details>
+    </div>`;
+  }
+
+  function onAction(action, el) {
+    if (action === 'bu-hit') {
+      if (run.done) return true;
+      run = skillsApply(id, run, { type: 'hit', ok: el?.dataset?.ok === '1' });
+      if (run.done) finish();
+      render();
+      return true;
+    }
+    if (action === 'bu-box') {
+      if (run.done) return true;
+      const i = Number(el?.dataset?.i);
+      run = skillsApply(id, run, { type: 'box', i });
+      render();
+      return true;
+    }
+    if (action === 'bu-break') {
+      if (run.done) return true;
+      run = skillsApply(id, run, { type: 'break' });
+      if (run.done) finish();
+      render();
+      return true;
+    }
+    if (action === 'bu-undo') {
+      if (saved) return true;
+      run = undoSkills(id, run);
+      render();
+      return true;
+    }
+    if (action === 'bu-again') {
+      run = newSkillsRun(id);
+      saved = false;
+      render();
+      return true;
+    }
+    if (action === 'play-exit') {
+      ctx.go(exam ? meta.exam.href : '#drills');
       return true;
     }
     return false;

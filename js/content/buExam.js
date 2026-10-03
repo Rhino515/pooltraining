@@ -8,6 +8,7 @@
  */
 import { challengeFromPkfDoc } from './pkfBuiltins.js';
 import { validatePooliq } from './schema.js';
+import { skillsBannersHTML, skillsAccomplishmentHTML, skillsExamPageHTML } from './buExam2.js';
 
 export const BU_CREDIT = 'Billiard University / Dr. Dave — billiarduniversity.org';
 export const BU_EXAM_NAME = 'Exam I – Fundamentals';
@@ -580,16 +581,20 @@ export function withExamScore(state, id, score, max) {
 
 export function accomplishmentHTML(state) {
   const e = examOf(state);
-  if (!e.completed) return '';
-  const rows = e.completed.scores.map((s) => `<span>${s.id.replace('bu-', '').toUpperCase()} ${s.score}/${s.max}</span>`).join('');
-  const total = e.completed.scores.reduce((a, s) => a + s.score, 0);
-  const max = e.completed.scores.reduce((a, s) => a + s.max, 0);
-  return `<div class="card" data-bu-exam="done"><div class="eyebrow">BILLIARD UNIVERSITY</div><h3>${BU_EXAM_NAME}</h3><p>Completed. ${total} / ${max}</p><p class="muted small buScores">${rows}</p><small class="muted credit">${BU_CREDIT}</small></div>`;
+  let html = '';
+  if (e.completed) {
+    const rows = e.completed.scores.map((s) => `<span>${s.id.replace('bu-', '').toUpperCase()} ${s.score}/${s.max}</span>`).join('');
+    const total = e.completed.scores.reduce((a, s) => a + s.score, 0);
+    const max = e.completed.scores.reduce((a, s) => a + s.max, 0);
+    html = `<div class="card" data-bu-exam="done"><div class="eyebrow">BILLIARD UNIVERSITY</div><h3>${BU_EXAM_NAME}</h3><p>Completed. ${total} / ${max}</p><p class="muted small buScores">${rows}</p><small class="muted credit">${BU_CREDIT}</small></div>`;
+  }
+  return html + skillsAccomplishmentHTML(state);
 }
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-export function examPageHTML(state) {
+export function examPageHTML(state, which) {
+  if (which === 'bachelors' || which === 'doctorate') return skillsExamPageHTML(state, which);
   const e = examOf(state);
   const rows = BU_ORDER.map((id, i) => {
     const d = buDrills().find((x) => x.id === id);
@@ -603,5 +608,5 @@ export function examPageHTML(state) {
 }
 
 export function examBannerHTML() {
-  return `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#buexam" data-bu-entry="1"><span class="simPromoText"><span class="eyebrow">BILLIARD UNIVERSITY</span><b>${BU_EXAM_NAME}</b><small>F1–F8 · Dr. Dave. Also in each drill's category. Not a Career rank.</small></span><span class="simPromoGo">›</span></button>`;
+  return `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#buexam" data-bu-entry="1"><span class="simPromoText"><span class="eyebrow">BILLIARD UNIVERSITY</span><b>${BU_EXAM_NAME}</b><small>F1–F8 · Dr. Dave. Also in each drill's category. Not a Career rank.</small></span><span class="simPromoGo">›</span></button>` + skillsBannersHTML();
 }

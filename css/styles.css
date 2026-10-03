@@ -1652,6 +1652,9 @@ body.fix-full #app{height:100dvh;padding:0}
 .buBar{display:flex;flex-direction:column;gap:8px;margin:8px 16px}
 .buHowCard{margin:12px 16px}
 .buScores{display:flex;flex-wrap:wrap;gap:8px}
+.buChecks{display:flex;flex-direction:column;gap:8px;margin:8px 16px}
+.buChecks label{display:flex;gap:8px;align-items:flex-start;font-size:14px;line-height:1.35}
+.diagramWrap.is-on{outline:3px solid #e2b657;outline-offset:2px}
 .simPromo .simPromoText{grid-column:1 / 2}
 
 .buEntry{grid-template-columns:1fr 24px}

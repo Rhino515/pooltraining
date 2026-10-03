@@ -14,6 +14,7 @@ import { withSkills } from './skills.js';
 import { drills, getDrillById, allDrills, knownDrillIds, displayDrillTitle } from './drills.js';
 import { ballPocketStatus } from './content/ballPocket.js';
 import { isBuId, examPageHTML } from './content/buExam.js';
+import { isSkillsId } from './content/buExam2.js';
 import { renderHome, renderCareerPage, renderDrillsPage, renderArcade, renderGameLobby, renderBossPage, renderProfile, renderSettings, renderLearn } from './dashboard.js';
 import { renderAnalyzePage, bindAnalyzeHandlers } from './analyze.js';
 import { renderGhostLobby, renderGhostMatch, newGhostSession, newEightSession, applyRack, applyUndo, applyBreak, setBreakMade, useBallInHand, rulesSheetHTML, maxUnlockedBalls, matchOver } from './ghost.js';
@@ -138,14 +139,14 @@ function renderRoute() {
   if (name === 'play' && args[0]) {
     const [gameId, stageId] = args;
     const drill = gameId === 'drills' ? getDrillById(stageId) : null;
-    const pocketLocked = !!(drill && drill.category === 'Ball Pocketing' && !isBuId(drill.id) && drill.level > ballPocketStatus(state).current);
+    const pocketLocked = !!(drill && drill.category === 'Ball Pocketing' && !isBuId(drill.id) && !isSkillsId(drill.id) && drill.level > ballPocketStatus(state).current);
     const ok = gameId === 'drills' ? !!drill && !pocketLocked : stageId === 'endless' ? isEndlessUnlocked(state, gameId) : !!getStage(gameId, stageId) && isStageUnlocked(state, gameId, stageId);
     if (!ok) {
       const gone = gameId === 'drills' && isDrillHidden(stageId);
       toast(gone ? 'That drill is no longer in the app' : gameId !== 'drills' && getGame(gameId) && !isGameUnlocked(state, gameId) ? 'That game is still locked' : 'That stage is locked — pass the previous stage first');
       v.innerHTML = gameId === 'drills' ? renderDrillsPage(state, drillFilter, bpViewLevel) : renderGameLobby(state, gameId);
     } else {
-      if (gameId === 'drills' && isBuId(stageId)) screen = createBuPlay(ctx, { id: stageId, exam: args[2] === 'exam' });
+      if (gameId === 'drills' && (isBuId(stageId) || isSkillsId(stageId))) screen = createBuPlay(ctx, { id: stageId, exam: args[2] === 'exam' });
       else screen = createPlayScreen(ctx, { gameId, stageId });
       screen.render();
       playing = true;
@@ -258,7 +259,7 @@ function renderRoute() {
   else if (name === 'boss') v.innerHTML = renderBossPage(state, args[0]);
   else if (name === 'game') v.innerHTML = args[0] === 'ghost' ? renderGhostLobby(state, ghostPreset) : renderGameLobby(state, args[0]);
   else if (name === 'career') v.innerHTML = renderCareerPage(state);
-  else if (name === 'buexam') v.innerHTML = examPageHTML(state);
+  else if (name === 'buexam') v.innerHTML = examPageHTML(state, args[0]);
   else if (name === 'drills') {
     if (args[0] === 'pocket') {
       drillFilter = 'Ball Pocketing';

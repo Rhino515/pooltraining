@@ -93,6 +93,8 @@ export function diagramSrc(ch) {
   if (typeof ch.diagramImage === 'string' && DIAGRAM_RE.test(ch.diagramImage)) return ch.diagramImage;
   const id = String(ch.id || '');
   if (/^bu-f[1-8]$/.test(id)) return `./images/bu/${id}.png`;
+  if (/^bu-[bd]s[34]$/.test(id)) return `./images/bu/${id}-1.png`;
+  if (/^bu-[bd]s(?:10|[1-9])$/.test(id)) return `./images/bu/${id}.png`;
   return '';
 }
 

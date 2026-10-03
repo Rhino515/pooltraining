@@ -13,6 +13,7 @@ import { dataWritten } from '../storage.js';
 import { isUnlocked } from '../dev/dev.js';
 import { PKF_DOCS } from '../content/pkfLibrary.js';
 import { buDocs } from '../content/buExam.js';
+import { isSkillsId } from '../content/buExam2.js';
 import { validatePooliq, serialize, MAX_FILE_BYTES } from '../content/schema.js';
 import { challengeFromPkfDoc } from '../content/pkfBuiltins.js';
 import { publishedDoc } from './published.js';
@@ -182,7 +183,7 @@ export function applyDrillEdit(ch) {
     next.game = ch.game || 'drills';
     next.isDrill = true;
     next.drillEdit = true;
-    if (String(next.id || '').startsWith('bu-f')) {
+    if (String(next.id || '').startsWith('bu-f') || isSkillsId(next.id)) {
       delete next.level;
       next.xp = 0;
       next.buExam = true;

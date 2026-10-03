@@ -449,7 +449,7 @@ export function createDrillFix(ctx, idOrSpec) {
     const v = shot().diagramImage;
     if (v === 'off') return false;
     if (v) return true;
-    return /^bu-f[1-8]$/.test(String(doc.id || id));
+    return /^bu-f[1-8]$/.test(String(doc.id || id)) || /^bu-[bd]s(?:10|[1-9])$/.test(String(doc.id || id));
   }
   function diagramInput() {
     let input = document.getElementById('fixDiagram');
