@@ -1746,3 +1746,13 @@ body.fix-full #app{height:100dvh;padding:0}
 .playScreen .stepHead .stepTitle{font-weight:800;line-height:1.25}
 .playScreen .stepToggle{flex:none;width:44px;height:44px;margin:0;padding:0;border-radius:12px;border:1px solid #2a4a6c;background:#102033;color:var(--gold);font-size:28px;font-weight:800;line-height:1;cursor:pointer}
 .playScreen .stepBody[hidden]{display:none !important}
+
+/* v14-63: shot timer sound mute, stop, and optional friend's turn */
+.shotTimer .bigBtn{margin-top:0}
+.tmRun{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:stretch}
+.tmMute{min-height:56px;padding:0 12px;border-radius:14px;border:1px solid #2a4a6c;background:#102033;color:#dcecff;font-weight:800;font-size:13px;cursor:pointer}
+.tmMute[aria-pressed="true"]{color:var(--gold);border-color:#e2b45a}
+.tmFriend{align-self:flex-start;min-height:40px;margin:0;padding:0 12px;border-radius:12px;border:1px solid #2a4a6c;background:#102033;color:#d5dde8;font-weight:800;font-size:13px;cursor:pointer}
+.tmFriend[aria-pressed="true"]{color:var(--gold);border-color:#e2b45a}
+.shotTimer[data-friend="0"] .tmOpp{display:none}
+.tmOpp{display:flex;flex-direction:column;gap:8px}

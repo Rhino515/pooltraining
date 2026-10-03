@@ -29,7 +29,8 @@ export const KEYS = {
   devCopy: 'poolIQDevCopyV1', // v14-35 last good read of published on-screen words (dev/copy.js)
   tallyColumns: 'poolIQTallyColumnsV1', // v14-13 extra drill tally columns, this phone only (drills/tallyColumns.js)
   drillHidden: 'poolIQDrillHiddenV1', // v14-34 ids deleted for everyone; kept when the list cannot be read (drills/hidden.js)
-  ruleSet: 'poolIQRuleSet' // v14-59 last rules pick on 8, 9, and 10-ball (ui/tableMatch.js). v14-62 also stores open for the numbered steps. Not career, XP, or games.
+  ruleSet: 'poolIQRuleSet', // v14-59 last rules pick on 8, 9, and 10-ball (ui/tableMatch.js). v14-62 also stores open for the numbered steps. Not career, XP, or games.
+  shotTimer: 'poolIQShotTimer' // v14-63 timer on, friend's turn, and mute (ui/shotTimer.js). Not career, XP, or rack scores.
 };
 export const DATA_KEYS = Object.values(KEYS);
 export const META_KEY = 'poolIQMetaV1'; // seq/savedAt, lastBackupAt, nudge + install dismissals, persist result
@@ -322,7 +323,8 @@ const VALIDATE = {
   [KEYS.drillEdits]: (v) => isObj(v) && isObj(v.items),
   [KEYS.devCopy]: (v) => isObj(v) && isObj(v.items),
   [KEYS.tallyColumns]: (v) => isObj(v) && isObj(v.drills),
-  [KEYS.drillHidden]: (v) => isObj(v) && Array.isArray(v.ids)
+  [KEYS.drillHidden]: (v) => isObj(v) && Array.isArray(v.ids),
+  [KEYS.shotTimer]: isObj
 };
 
 /**
