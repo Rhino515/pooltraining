@@ -7,6 +7,7 @@ import { avatarHTML } from '../progression/badge.js';
 import { profileHeaderHTML, careerHeaderHTML, drillRankCardHTML, championStatsHTML, skillBreakdownHTML } from './progression.js';
 import { loadFriends, playerStats } from '../friends/model.js';
 import { toast } from './sheet.js';
+import { accomplishmentHTML } from '../content/buExam.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
@@ -32,6 +33,7 @@ export function renderMyStats(state, { signedIn = false } = {}) {
   const pvp = me ? playerStats(d, me.id) : null;
   return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#profile">‹ Profile</button><span class="eyebrow">MY STATS</span><h1>${esc(displayNameOf(p))}</h1></div>
     ${careerHeaderHTML(state, { compact: true })}${drillRankCardHTML(state, { compact: true })}
+    ${accomplishmentHTML(state)}
     <h2>Training</h2>${championStatsHTML(state)}
     ${pvp && pvp.matches ? `<h2>Friend matches (private)</h2><div class="card stats"><div><b>${pvp.wins}–${pvp.losses}</b><span>RECORD</span></div><div><b>${pvp.winPct}%</b><span>WIN RATE</span></div><div><b>${pvp.bestStreak}</b><span>BEST STREAK</span></div></div>` : ''}
     <h2>Skills</h2><div class="skills card">${skillBreakdownHTML(state)}</div>

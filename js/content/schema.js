@@ -234,6 +234,41 @@ const marker = T.obj({ rail: T.oneOf(RAIL_IDS), diamond: T.num(0, 8), label: T.s
 const text = (n) => T.str(n);
 const WHY_KEYS = ['whyCustom', 'whyContact', 'whySpeed', 'whySpin', 'whyRoute', 'whyAim'];
 
+const MARK_TYPES = ['label', 'arrow', 'path', 'ghost', 'rect', 'paper', 'grid', 'marker', 'wheel', 'spot'];
+const tableMark = (v, p, c) => {
+  if (!isObj(v) || typeof v.type !== 'string') return void c.err(p, 'must be a table mark with a type');
+  if (!MARK_TYPES.includes(v.type)) return void c.err(`${p}.type`, `must be one of: ${MARK_TYPES.join(', ')}`);
+  const out = { type: v.type };
+  for (const k of ['x', 'y', 'x1', 'y1', 'x2', 'y2', 'w', 'h', 'size', 'n', 'r']) {
+    if (v[k] == null) continue;
+    if (typeof v[k] !== 'number' || !Number.isFinite(v[k])) return void c.err(`${p}.${k}`, 'must be a number');
+    out[k] = v[k];
+  }
+  if (v.text != null) {
+    if (typeof v.text !== 'string' || v.text.length > 80) return void c.err(`${p}.text`, 'must be text, 80 characters or less');
+    out.text = v.text;
+  }
+  if (v.color != null) {
+    if (typeof v.color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(v.color)) return void c.err(`${p}.color`, 'must be a #rrggbb color');
+    out.color = v.color;
+  }
+  if (v.dashed != null) out.dashed = !!v.dashed;
+  if (v.fill != null) out.fill = !!v.fill;
+  if (v.anchor != null) {
+    if (!['start', 'middle', 'end'].includes(v.anchor)) return void c.err(`${p}.anchor`, 'must be start, middle, or end');
+    out.anchor = v.anchor;
+  }
+  if (v.points != null) {
+    if (!Array.isArray(v.points) || v.points.length > 24) return void c.err(`${p}.points`, 'must be a short list of points');
+    out.points = [];
+    for (const [i, pt0] of v.points.entries()) {
+      if (!isObj(pt0) || typeof pt0.x !== 'number' || typeof pt0.y !== 'number') return void c.err(`${p}.points[${i}]`, 'must be a point {x, y}');
+      out.points.push({ x: pt0.x, y: pt0.y });
+    }
+  }
+  return out;
+};
+
 export const SHOT_FIELDS = {
   kind: T.oneOf(SHOT_KINDS),
   cueBallPosition: (v, p, c) => {
@@ -264,7 +299,8 @@ export const SHOT_FIELDS = {
   instructions: text(1500),
   setupInstructions: text(1500),
   whyExplanation: T.obj(Object.fromEntries(WHY_KEYS.map((k) => [k, text(1500)]))),
-  hints: T.arr(T.str(300, 1), 10)
+  hints: T.arr(T.str(300, 1), 10),
+  tableMarks: T.arr(tableMark, 80)
 };
 const scoringRules = T.obj({ mode: T.oneOf(SCORING_MODES), attempts: T.int(1, 50), pass: T.obj({ made: T.int(0, 50), stars: T.int(0, 150), pockets: T.int(0, 50) }), requirePocket: T.bool }, ['mode', 'attempts', 'pass']);
 const skillEffects = (v, p, c) => {

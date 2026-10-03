@@ -192,6 +192,7 @@ export function createDrillFix(ctx, idOrSpec) {
       if (z.type === 'band') return { x: z.center, y: 25, _zone: z };
       return z;
     }
+    if (sel.kind === 'mark') return markAnchor(s.tableMarks?.[sel.i]);
     return null;
   }
   function placeZone(z, q) {
@@ -216,6 +217,7 @@ export function createDrillFix(ctx, idOrSpec) {
     if (!t) return;
     const q = { x: t.x + dxd * DIAMOND_UNITS, y: t.y + dyd * DIAMOND_UNITS };
     if (ui.sel.kind === 'zone') placeZone(shot().targetZones[ui.sel.i], q);
+    else if (ui.sel.kind === 'mark') shiftMark(marks()[ui.sel.i], q.x - t.x, q.y - t.y);
     else if (ui.sel.kind === 'cue' || ui.sel.kind === 'extraCue' || ui.sel.kind === 'ball' || ui.sel.kind === 'blocker') placeBall(t, q);
     else setPathPoint(ui.sel.kind, ui.sel.i, q);
     ui.msg = '';
@@ -386,7 +388,90 @@ export function createDrillFix(ctx, idOrSpec) {
     if (sel.kind === 'cuePath') return `Cue path point ${sel.i + 1}`;
     if (sel.kind === 'obPath') return `Object path point ${sel.i + 1}`;
     if (sel.kind === 'zone') return `Bullseye ${sel.i + 1}`;
+    if (sel.kind === 'mark') {
+      const m = shot().tableMarks?.[sel.i];
+      return m ? `Mark ${sel.i + 1} · ${m.type}` : 'Mark';
+    }
     return '';
+  }
+  function marks() { return shot().tableMarks || (shot().tableMarks = []); }
+  function markAnchor(m) {
+    if (!m) return null;
+    if (m.type === 'arrow' && m.x1 != null) return { x: (m.x1 + m.x2) / 2, y: (m.y1 + m.y2) / 2 };
+    if (m.type === 'path' && m.points?.[0]) return { x: m.points[0].x, y: m.points[0].y };
+    if ((m.type === 'rect' || m.type === 'paper') && m.x != null) return { x: m.x + (m.w || 0) / 2, y: m.y + (m.h || 0) / 2 };
+    if (m.x != null && m.y != null) return { x: m.x, y: m.y };
+    return null;
+  }
+  function shiftMark(m, dx, dy) {
+    if (!m) return;
+    for (const k of ['x', 'y', 'x1', 'y1', 'x2', 'y2']) {
+      if (typeof m[k] !== 'number') continue;
+      m[k] = f2(m[k] + (k[0] === 'x' ? dx : dy));
+    }
+    if (m.points) for (const pt of m.points) { pt.x = f2(pt.x + dx); pt.y = f2(pt.y + dy); }
+  }
+  function addMark(type) {
+    const list = marks();
+    if (list.length >= 80) { ui.msg = '80 marks is the limit.'; render(); return; }
+    const m = { type };
+    if (type === 'label') Object.assign(m, { x: 40, y: 20, text: 'label', size: 2.05, color: '#1c2428', anchor: 'middle' });
+    else if (type === 'arrow') Object.assign(m, { x1: 30, y1: 25, x2: 48, y2: 25, color: '#1a1a1a', dashed: false });
+    else if (type === 'path') Object.assign(m, { points: [{ x: 30, y: 30 }, { x: 50, y: 20 }], color: '#f5c542', dashed: true });
+    else if (type === 'ghost') Object.assign(m, { x: 50, y: 25, color: '#f4f7fb' });
+    else if (type === 'rect') Object.assign(m, { x: 40, y: 18, w: 12, h: 8, color: '#d7e2ea', fill: false, n: 1 });
+    else if (type === 'paper') Object.assign(m, { x: 70, y: 8, w: 8.5, h: 11, color: '#f7f7f7' });
+    else if (type === 'grid') Object.assign(m, {});
+    else if (type === 'marker') Object.assign(m, { x: 50, y: 12, n: 1, color: '#f4f7fb' });
+    else if (type === 'spot') Object.assign(m, { x: 60, y: 25, r: 0.7, color: '#1a1a1a' });
+    else if (type === 'wheel') Object.assign(m, { x: 20, y: 25, r: 8 });
+    list.push(m);
+    ui.sel = { kind: 'mark', i: list.length - 1 };
+    ui.tool = 'move';
+    ui.msg = '';
+    render();
+  }
+  function addRailBall() {
+    const s = shot();
+    const used = new Set([...(s.ballPositions || []).map((b) => b.n), ...(s.blockers || []).map((b) => b.n)]);
+    let n = 1;
+    while (used.has(n) && n <= 15) n += 1;
+    if (n > 15) { ui.msg = 'All 15 object balls are already on the table.'; render(); return; }
+    const spot = freeSpot(otherBalls(null), { x: 75, y: 1.13 });
+    s.ballPositions = [...(s.ballPositions || []), { n, x: f2(spot.x), y: 1.13 }];
+    if (s.targetBall == null) s.targetBall = n;
+    ui.sel = { kind: 'ball', n };
+    ui.tool = 'move';
+    ui.msg = '';
+    render();
+  }
+  function marksPanel() {
+    const m = ui.sel?.kind === 'mark' ? shot().tableMarks?.[ui.sel.i] : null;
+    const edit = m ? `<label class="fld"><span>Wording</span><input id="fixMarkText" type="text" maxlength="80" value="${esc(m.text || '')}"/></label>
+      <label class="fld"><span>Color #rrggbb</span><input id="fixMarkColor" type="text" maxlength="7" value="${esc(m.color || '')}"/></label>
+      <div class="fixAdd">
+        <button type="button" data-action="df-mark-dash">${m.dashed ? 'SOLID LINE' : 'DASHED LINE'}</button>
+        <button type="button" data-action="df-mark-fill">${m.fill ? 'NO FILL' : 'LIGHT FILL'}</button>
+        <button type="button" data-action="df-mark-num" data-d="1">NUMBER +</button>
+        <button type="button" data-action="df-mark-num" data-d="-1">NUMBER −</button>
+        <button type="button" data-action="df-mark-del">REMOVE MARK</button>
+      </div>` : '';
+    return `<div class="eyebrow">TABLE MARKS</div>
+      <div class="fixAdd">
+        <button type="button" data-action="df-mark" data-t="label">ADD LABEL</button>
+        <button type="button" data-action="df-mark" data-t="arrow">ADD ARROW</button>
+        <button type="button" data-action="df-mark" data-t="path">ADD PATH</button>
+        <button type="button" data-action="df-mark" data-t="ghost">ADD GHOST</button>
+        <button type="button" data-action="df-mark" data-t="rect">ADD BOX</button>
+        <button type="button" data-action="df-mark" data-t="paper">ADD PAPER</button>
+        <button type="button" data-action="df-mark" data-t="grid">ADD GRID</button>
+        <button type="button" data-action="df-mark" data-t="marker">ADD MARKER</button>
+        <button type="button" data-action="df-mark" data-t="spot">ADD SPOT</button>
+        <button type="button" data-action="df-mark" data-t="wheel">ADD WHEEL</button>
+        <button type="button" data-action="df-rail-ball">ADD RAIL BALL</button>
+      </div>
+      ${edit}
+      <p class="muted small">Labels, arrows, dashed paths, ghost outlines, boxes, the paper frame, the diamond grid, numbered markers and rail balls save with this drill when you tap SAVE.</p>`;
   }
   const GRAB = 5.6; // table units — a disc you can grab, not the thin ring stroke
   function zoneCenter(z) {
@@ -588,6 +673,7 @@ export function createDrillFix(ctx, idOrSpec) {
         ${s.cueBallPosition ? `<div class="eyebrow">POCKETS</div>
         <div class="pockets">${PKEYS.map((k) => `<button type="button" class="${markedPockets().includes(k) ? 'on' : ''}" data-action="df-pocket" data-p="${k}">${PSHORT[k]}</button>`).join('')}</div>
         <p class="muted small">Tap a pocket to add or remove it. Every marked pocket shows on the diagram and in play.</p>` : '<p class="muted small">No balls to drag on this one. Title and description publish when you tap SAVE.</p>'}
+        ${marksPanel()}
         ${zonePanel()}
         <label class="fixFld">Title<input id="fixTitle" maxlength="80" value="${esc(doc.title || '')}"/></label>
         <label class="fixFld">Description<textarea id="fixDesc" maxlength="2000" rows="3">${esc(doc.description || '')}</textarea></label>
@@ -723,6 +809,20 @@ export function createDrillFix(ctx, idOrSpec) {
       const bdNow = item ? Math.hypot(item.x - p.x, item.y - p.y) : Infinity;
       return zd <= bdNow ? grabbed : best;
     }
+    let markBest = null;
+    let md = 7;
+    (shot().tableMarks || []).forEach((m, i) => {
+      if ((m.type === 'rect' || m.type === 'paper') && m.w && m.h && p.x >= m.x && p.x <= m.x + m.w && p.y >= m.y && p.y <= m.y + m.h) {
+        markBest = { kind: 'mark', i };
+        md = 0;
+        return;
+      }
+      const a = markAnchor(m);
+      if (!a) return;
+      const d = Math.hypot(a.x - p.x, a.y - p.y);
+      if (d < md) { md = d; markBest = { kind: 'mark', i }; }
+    });
+    if (markBest && (!best || md < bd)) return markBest;
     if (best) return best;
     return zoneHit(p, false);
   }
@@ -782,6 +882,9 @@ export function createDrillFix(ctx, idOrSpec) {
         if (hnd && drag.from) hnd.setAttribute('transform', `translate(${dx} ${dy})`);
         const lab = svg.querySelector('text.zone-label');
         if (lab && drag.from && !band) lab.setAttribute('transform', `translate(${dx} ${dy})`);
+      } else if (drag.sel.kind === 'mark') {
+        const g = svg.querySelector(`g.tmark[data-mark-i="${drag.sel.i}"]`);
+        if (g && drag.from) g.setAttribute('transform', `translate(${f2(q.x - drag.from.x)} ${f2(q.y - drag.from.y)})`);
       } else {
         const c = [...svg.querySelectorAll('.fix-handle')].find((n) => Number(n.dataset.i) === drag.sel.i);
         if (c) { c.setAttribute('cx', String(q.x)); c.setAttribute('cy', String(q.y)); }
@@ -799,6 +902,7 @@ export function createDrillFix(ctx, idOrSpec) {
       ui.sel = d.sel;
       if (d.moved && d.to && d.item) {
         if (d.sel.kind === 'zone') placeZone(shot().targetZones[d.sel.i], d.to);
+        else if (d.sel.kind === 'mark') shiftMark(marks()[d.sel.i], d.to.x - d.from.x, d.to.y - d.from.y);
         else if (d.sel.kind === 'cue' || d.sel.kind === 'extraCue' || d.sel.kind === 'ball' || d.sel.kind === 'blocker') placeBall(d.item, d.to);
         else setPathPoint(d.sel.kind, d.sel.i, d.to);
       }
@@ -851,6 +955,18 @@ export function createDrillFix(ctx, idOrSpec) {
     desc?.addEventListener('input', () => { doc.description = desc.value.slice(0, 2000); });
     cat?.addEventListener('input', () => { doc.category = cat.value.slice(0, 40); });
     ctx.root.querySelector('#fixLink')?.addEventListener('input', () => { readLink(false); });
+    ctx.root.querySelector('#fixMarkText')?.addEventListener('input', (e) => {
+      const m = ui.sel?.kind === 'mark' ? shot().tableMarks?.[ui.sel.i] : null;
+      if (m) m.text = e.target.value.slice(0, 80);
+    });
+    ctx.root.querySelector('#fixMarkColor')?.addEventListener('change', (e) => {
+      const m = ui.sel?.kind === 'mark' ? shot().tableMarks?.[ui.sel.i] : null;
+      const c = String(e.target.value || '').trim();
+      if (!m) return;
+      if (/^#[0-9a-fA-F]{6}$/.test(c)) m.color = c;
+      else ui.msg = 'Color must look like #1a1a1a';
+      render();
+    });
   }
 
   function readLink(strict) {
@@ -1004,6 +1120,33 @@ export function createDrillFix(ctx, idOrSpec) {
     if (action === 'df-pt') { ui.sel = { kind: el.dataset.kind, i: Number(el.dataset.i) }; ui.tool = el.dataset.kind === 'cuePath' ? 'cue' : 'ob'; render(); return true; }
     if (action === 'df-add-cue') { addCueBall(); return true; }
     if (action === 'df-add-ob') { addObjectBall(); return true; }
+    if (action === 'df-mark') { addMark(el.dataset.t); return true; }
+    if (action === 'df-rail-ball') { addRailBall(); return true; }
+    if (action === 'df-mark-del') {
+      if (ui.sel?.kind === 'mark') marks().splice(ui.sel.i, 1);
+      if (!marks().length) delete shot().tableMarks;
+      ui.sel = { kind: 'cue' };
+      render();
+      return true;
+    }
+    if (action === 'df-mark-dash') {
+      const m = ui.sel?.kind === 'mark' ? marks()[ui.sel.i] : null;
+      if (m) m.dashed = !m.dashed;
+      render();
+      return true;
+    }
+    if (action === 'df-mark-fill') {
+      const m = ui.sel?.kind === 'mark' ? marks()[ui.sel.i] : null;
+      if (m) m.fill = !m.fill;
+      render();
+      return true;
+    }
+    if (action === 'df-mark-num') {
+      const m = ui.sel?.kind === 'mark' ? marks()[ui.sel.i] : null;
+      if (m) m.n = Math.max(0, Math.min(20, (m.n || 0) + Number(el.dataset.d || 1)));
+      render();
+      return true;
+    }
     if (action === 'df-remove-ball') { removeBall(); return true; }
     if (action === 'df-remove-cue-line') { removeCueLine(); return true; }
     if (action === 'df-remove-ob-line') { removeObjectLine(); return true; }

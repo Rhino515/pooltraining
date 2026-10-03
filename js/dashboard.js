@@ -22,6 +22,7 @@ import { COACH_LEVELS, COACH_LABEL, coachingLevel } from './games/coaching.js';
 import { TABLE_SIZES, CLOTH_SPEEDS, CALIBRATION_SPEEDS, speedLabel, formatSpeed, personalFactor, clothNote, calLookup } from './games/speed.js';
 import { learnHTML } from './learn.js';
 import { isDrillHidden } from './drills/hidden.js';
+import { examBannerHTML, accomplishmentHTML } from './content/buExam.js';
 import { ownerAccountSignedIn } from './dev/dev.js';
 
 function nextUpCard(state) {
@@ -273,6 +274,7 @@ export function renderProfile(state) {
   return `${devSeedBannerHTML(state)}${profileHeaderHTML(state, getProfile())}
     ${careerHeaderHTML(state, { compact: true })}
     ${drillRankCardHTML(state, { compact: true })}
+    ${accomplishmentHTML(state)}
     <div class="card stats"><div><b>${(state.prog?.lifetimeXp ?? state.xp) || 0}</b><span>LIFETIME XP</span></div><div><b>${passedStages}</b><span>STAGES PASSED</span></div><div><b>${E.totalStars(state)}★</b><span>STARS</span></div></div>
     <div class="chLinks"><button type="button" class="chip" data-action="go" data-href="#me/stats">My Stats</button><button type="button" class="chip" data-action="go" data-href="#skills">Skill Breakdown</button><button type="button" class="chip" data-action="go" data-href="#champion">${cs.champion ? 'Champion Stats' : 'Road to Champion'}</button><button type="button" class="chip" data-action="go" data-href="#friends">Friends & PvP</button><button type="button" class="chip lbChip" data-action="go" data-href="#leaderboard">🏆 Friends Leaderboard</button><button type="button" class="chip" data-action="go" data-href="#account">Online Account</button></div>
     <h2>Skill Breakdown</h2>
@@ -288,6 +290,7 @@ export function renderProfile(state) {
 export function renderDrillsPage(state, filter = 'All', bpViewLevel = null) {
   const list0 = allDrills().filter((d) => d.custom || !isDrillHidden(d.id));
   const head = `<div class="title drillsTitle"><span class="eyebrow">DRILL LIBRARY</span><h1>Drills</h1></div>
+    ${examBannerHTML()}
     ${drillRankCardHTML(state)}
     <div class="drillTools"><div class="drillBig"><button type="button" class="bigBtn createDrill" data-action="drill-create">＋ CREATE DRILL</button><button type="button" class="bigBtn myContentBtn" data-action="go" data-href="#content">▤ MY CONTENT<small>import .pooliq · packs · lessons · games</small></button></div>
     <div class="drillFileBtns"><button type="button" class="chip" data-action="drill-import">⤒ Import drills</button>${list0.some((d) => d.custom) ? '<button type="button" class="chip" data-action="drill-export">⤓ Export all</button>' : ''}</div></div>`;
@@ -307,7 +310,7 @@ export function renderDrillsPage(state, filter = 'All', bpViewLevel = null) {
   return `${head}
     <div class="catFilter">${cats.map((c) => `<button type="button" class="chip${c === filter ? ' active' : ''}" data-action="drill-filter" data-v="${esc(c)}">${esc(displayDrillTitle(c))}</button>`).join('')}</div>
     ${career ? careerDrillsHTML(state) : ''}
-    ${pocket ? ballPocketCategory(state, bpViewLevel) : ''}
+    ${pocket ? ballPocketCategory(state, bpViewLevel) + ballPocketExtras(state) : ''}
     ${emptyNote}
     ${list.length ? `<div class="grid">${list.map((d) => drillCard(state, d)).join('')}</div>` : ''}
     `;
@@ -323,6 +326,11 @@ function ballPocketBadgeSVG(level) {
   return `<img class="bpCue rankCue" src="./icons/rank-cue.png" alt="Ball Pocketing level ${Number(level) || 1}" data-bp-cue="${Number(level) || 1}"/>`;
 }
 
+function ballPocketExtras(state) {
+  const extra = allDrills().filter((d) => d.category === 'Ball Pocketing' && d.level == null && !isDrillHidden(d.id));
+  if (!extra.length) return '';
+  return `<section class="ballPocketExtra" data-section="Ball Pocketing exams"><h3>Exam drills</h3><p class="muted small">Not a Ball Pocketing level. These are not locked and do not change that rank.</p><div class="grid">${extra.map((d) => drillCard(state, d)).join('')}</div></section>`;
+}
 function ballPocketCategory(state, bpViewLevel) {
   const status = ballPocketStatus(state);
   const viewing = BALL_POCKET_LEVELS.includes(Number(bpViewLevel)) ? Number(bpViewLevel) : status.current;

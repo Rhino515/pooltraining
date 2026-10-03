@@ -12,6 +12,7 @@
 import { dataWritten } from '../storage.js';
 import { isUnlocked } from '../dev/dev.js';
 import { PKF_DOCS } from '../content/pkfLibrary.js';
+import { buDocs } from '../content/buExam.js';
 import { validatePooliq, serialize, MAX_FILE_BYTES } from '../content/schema.js';
 import { challengeFromPkfDoc } from '../content/pkfBuiltins.js';
 import { publishedDoc } from './published.js';
@@ -34,6 +35,7 @@ function shippedRaw(id) {
   if (!shippedById) {
     shippedById = new Map();
     for (const d of PKF_DOCS) if (d && d.id) shippedById.set(d.id, d);
+    for (const d of buDocs()) if (d && d.id) shippedById.set(d.id, d);
   }
   return shippedById.get(id) || null;
 }
@@ -180,6 +182,12 @@ export function applyDrillEdit(ch) {
     next.game = ch.game || 'drills';
     next.isDrill = true;
     next.drillEdit = true;
+    if (String(next.id || '').startsWith('bu-f')) {
+      delete next.level;
+      next.xp = 0;
+      next.buExam = true;
+      next.pq = { ...(next.pq || {}), rankXpEligible: false };
+    }
     return next;
   } catch {
     return ch;

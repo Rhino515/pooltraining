@@ -185,6 +185,73 @@ export function renderStageTable(ch, opt = {}) {
       over += `<g class="pick-badge"><circle cx="${f(b.x - 1.9)}" cy="${f(b.y - 1.9)}" r="1.15" fill="#ffc75b" stroke="#062a32" stroke-width="0.25"/><text x="${f(b.x - 1.9)}" y="${f(b.y - 1.4)}" text-anchor="middle" font-size="1.5" font-weight="900" fill="#062a32" font-family="system-ui,sans-serif">${i + 1}</text></g>`;
     });
   }
+
+function marksSVG(marks) {
+  let s = '';
+  const esc = escT;
+  for (const [i, m] of (marks || []).entries()) {
+    const hot = m.hot ? ' hot' : '';
+    const op = m.dim ? 0.28 : 1;
+    if (m.type === 'grid') {
+      s += `<g class="tmark diamond-guides" data-mark-i="${i}" opacity="0.55">`;
+      for (const x of [12.5, 25, 37.5, 50, 62.5, 75, 87.5]) s += `<line x1="${x}" y1="0" x2="${x}" y2="50" stroke="#d5eee4" stroke-width="0.18"/>`;
+      for (const y of [12.5, 25, 37.5]) s += `<line x1="0" y1="${y}" x2="100" y2="${y}" stroke="#d5eee4" stroke-width="0.18"/>`;
+      s += `</g>`;
+      continue;
+    }
+    if (m.type === 'path' || m.type === 'arrow') {
+      const pts = m.points?.length ? m.points : (m.x1 != null ? [{ x: m.x1, y: m.y1 }, { x: m.x2, y: m.y2 }] : []);
+      if (pts.length < 2) continue;
+      const col = m.color || '#f2fdff';
+      const dash = m.dashed !== false && m.type !== 'arrow' ? ' stroke-dasharray="1.3 0.8"' : (m.dashed ? ' stroke-dasharray="1.3 0.8"' : '');
+      s += `<g class="tmark${hot}" data-mark-i="${i}" opacity="${op}"><path d="${pathD(pts)}" fill="none" stroke="${col}" stroke-width="${m.hot ? 0.7 : 0.42}" stroke-linecap="round" stroke-linejoin="round"${dash} marker-end="url(#arrowHead)"/></g>`;
+      continue;
+    }
+    if (m.type === 'ghost') {
+      s += `<g class="tmark${hot}" data-mark-i="${i}"><circle cx="${f(m.x)}" cy="${f(m.y)}" r="${f(m.r || BR)}" fill="none" stroke="${m.color || '#f4f7fb'}" stroke-width="0.28" stroke-dasharray="0.45 0.32"/></g>`;
+      continue;
+    }
+    if (m.type === 'spot') {
+      s += `<g class="tmark${hot}" data-mark-i="${i}"><circle cx="${f(m.x)}" cy="${f(m.y)}" r="${f(m.r || 0.55)}" fill="${m.color || '#1a1a1a'}" stroke="#062a32" stroke-width="0.12"/></g>`;
+      continue;
+    }
+    if (m.type === 'marker') {
+      const r = m.r || 1.35;
+      s += `<g class="tmark${hot}" data-mark-i="${i}" opacity="${op}"><circle cx="${f(m.x)}" cy="${f(m.y)}" r="${f(r)}" fill="${m.hot ? '#ffc75b' : 'none'}" stroke="${m.color || '#f4f7fb'}" stroke-width="0.28"/>${m.n != null ? `<text x="${f(m.x)}" y="${f(m.y + 0.45)}" text-anchor="middle" font-size="1.5" font-weight="800" fill="${m.hot ? '#062a32' : '#f4f7fb'}" font-family="system-ui,sans-serif">${m.n}</text>` : ''}</g>`;
+      continue;
+    }
+    if (m.type === 'rect' || m.type === 'paper') {
+      const stroke = m.color || '#f4f7fb';
+      const fill = m.type === 'paper' ? 'none' : (m.fill ? 'rgba(180,180,180,0.45)' : 'none');
+      const sw = m.hot ? 0.7 : 0.4;
+      s += `<g class="tmark${hot}" data-mark-i="${i}" opacity="${op}"><rect x="${f(m.x)}" y="${f(m.y)}" width="${f(m.w)}" height="${f(m.h)}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${m.type === 'paper' ? '' : (m.dashed ? ' stroke-dasharray="1.1 0.7"' : '')}/>${m.n != null ? `<text x="${f(m.x + m.w / 2)}" y="${f(m.y + m.h / 2 + 0.7)}" text-anchor="middle" font-size="2.4" font-weight="800" fill="#f4f7fb" font-family="system-ui,sans-serif">${m.n}</text>` : ''}</g>`;
+      continue;
+    }
+    if (m.type === 'label') {
+      const lines = String(m.text || '').split('\n');
+      const size = m.size || 2.05;
+      const anchor = m.anchor || 'middle';
+      s += `<g class="tmark${hot}" data-mark-i="${i}">`;
+      lines.forEach((line, li) => {
+        s += `<text x="${f(m.x)}" y="${f(m.y + li * (size + 0.35))}" text-anchor="${anchor}" font-size="${size}" font-weight="700" fill="${m.color || '#1c2428'}" font-family="system-ui,sans-serif">${esc(line)}</text>`;
+      });
+      s += `</g>`;
+      continue;
+    }
+    if (m.type === 'wheel') {
+      const x = m.x, y = m.y, r = m.r || 8;
+      s += `<g class="tmark wagon" data-mark-i="${i}"><circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="none" stroke="#e7eef2" stroke-width="0.4"/><circle cx="${f(x)}" cy="${f(y)}" r="${f(r * 0.28)}" fill="none" stroke="#e7eef2" stroke-width="0.3"/>`;
+      for (const a of [0, 45, 90, 135]) {
+        const rad = a * Math.PI / 180;
+        s += `<line x1="${f(x + Math.cos(rad) * r * 0.28)}" y1="${f(y + Math.sin(rad) * r * 0.28)}" x2="${f(x + Math.cos(rad) * r)}" y2="${f(y + Math.sin(rad) * r)}" stroke="#e7eef2" stroke-width="0.28"/>`;
+      }
+      s += `</g>`;
+    }
+  }
+  return s;
+}
+
+  if (ch.tableMarks?.length) over += marksSVG(ch.tableMarks);
   let balls = [];
   if (ch.cueBallPosition) {
     const cb = step ? step.cueFrom : ch.cueBallPosition;

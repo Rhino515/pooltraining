@@ -196,7 +196,8 @@
       "text": "1 rail (bottom)",
       "short": "1 RAIL"
     },
-    "goal": "Pocket the 3 in the top-right corner and draw the cue ball off the bottom rail into the zone for the 9.",
+    "tableMarks": [{ "type": "label", "x": 40, "y": 20, "text": "template label", "color": "#1c2428" }],
+  "goal": "Pocket the 3 in the top-right corner and draw the cue ball off the bottom rail into the zone for the 9.",
     "instructions": "Shooting instructions shown on the play screen.",
     "setupInstructions": "Setup instructions (optional) — the SETUP diamond readout is generated from the coordinates automatically.",
     "whyExplanation": {

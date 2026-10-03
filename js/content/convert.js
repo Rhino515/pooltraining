@@ -119,6 +119,7 @@ export function shotToChallenge(shot, meta = {}) {
     objectBallPaths: obPaths,
     railContacts: (s.railContacts || []).map((c) => ({ x: c.x, y: c.y, rail: c.rail, by: c.by || 'cue', ...(c.order ? { order: c.order } : {}) })),
     referenceMarkers: (s.referenceMarkers || []).map((m) => ({ ...m })),
+    tableMarks: (s.tableMarks || []).map((m) => JSON.parse(JSON.stringify(m))),
     cueContact: cc,
     english: { hTips: cc.hTips, type: hType },
     speed: s.speed,
@@ -162,6 +163,7 @@ export function shotFromChallenge(ch) {
   else if ((ch.objectBallPath || []).length >= 2 && has(ch.targetBall)) s.objectBallPaths = [{ n: ch.targetBall, points: ch.objectBallPath.map(pt) }];
   if (ch.railContacts?.length) s.railContacts = ch.railContacts.map((c) => ({ x: c.x, y: c.y, rail: c.rail, ...(c.by ? { by: c.by } : {}), ...(c.order ? { order: c.order } : {}) }));
   if (ch.referenceMarkers?.length) s.referenceMarkers = ch.referenceMarkers.map((m) => ({ rail: m.rail, diamond: m.diamond, ...(m.label ? { label: m.label } : {}), ...(m.kind ? { kind: m.kind } : {}) }));
+  if (ch.tableMarks?.length) s.tableMarks = JSON.parse(JSON.stringify(ch.tableMarks));
   s.cueContact = { vTips: ch.cueContact?.vTips || 0, hTips: ch.cueContact?.hTips || 0 };
   if (ch.english?.type && ch.english.type !== 'none' && ENGLISH_TYPES.includes(ch.english.type)) s.english = { type: ch.english.type };
   if (TECHNIQUES.includes(ch.technique)) s.technique = ch.technique;

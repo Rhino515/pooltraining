@@ -1,4 +1,4 @@
-const CACHE = 'pool-iq-v14-40';
+const CACHE = 'pool-iq-v14-41';
 const ASSETS = [
   './',
   './index.html',
@@ -50,6 +50,8 @@ const ASSETS = [
   './js/content/pkfLibrary.js',
   './js/content/pkfBuiltins.js',
   './js/content/ballPocket.js',
+  './js/content/buExam.js',
+  './js/ui/buPlay.js',
   './js/customDrills.js',
   './js/dashboard.js',
   './js/dev/dev.js',

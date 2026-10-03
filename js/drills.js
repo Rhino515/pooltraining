@@ -38,6 +38,7 @@ import { shotToChallenge } from './content/convert.js';
 import { threeLaneSpeedDrill } from './games/data/threeLaneSpeed.js';
 import { pkfDrillChallenges } from './content/pkfBuiltins.js';
 import { ballPocketDrills } from './content/ballPocket.js';
+import { buDrills, isBuId, examInstructions, BU_CREDIT } from './content/buExam.js';
 import { applyDrillEdit } from './drills/ownerEdits.js';
 import { isDrillHidden } from './drills/hidden.js';
 
@@ -147,11 +148,27 @@ export function contentDrillChallenge(it) {
 export function refreshCustomDrills() {
   customCache = null;
 }
+function sealBu(ch) {
+  if (!ch || !isBuId(ch.id)) return ch;
+  const next = {
+    ...ch,
+    xp: 0,
+    buExam: true,
+    prerequisites: [],
+    credit: ch.credit || BU_CREDIT,
+    instructions: examInstructions(ch.id) || ch.instructions,
+    pq: { ...(ch.pq || {}), rankXpEligible: false }
+  };
+  delete next.level;
+  delete next.speed;
+  return next;
+}
 function collectDrills() {
-  const base = drills.map((d) => applyDrillEdit(d));
+  const base = drills.map((d) => sealBu(applyDrillEdit(d)));
   const pocket = ballPocketDrills().filter((c) => !base.some((d) => d.id === c.id));
-  const custom = customDrills().filter((c) => !base.some((d) => d.id === c.id) && !pocket.some((d) => d.id === c.id));
-  return [...base, ...pocket, ...custom];
+  const bu = buDrills().map((d) => sealBu(applyDrillEdit(d))).filter((c) => !base.some((d) => d.id === c.id) && !pocket.some((d) => d.id === c.id));
+  const custom = customDrills().filter((c) => !base.some((d) => d.id === c.id) && !pocket.some((d) => d.id === c.id) && !bu.some((d) => d.id === c.id));
+  return [...base, ...pocket, ...bu, ...custom];
 }
 /** Ids that exist in the library, including ones deleted for everyone. History keeps these. */
 export function knownDrillIds() {
