@@ -290,11 +290,11 @@ export function renderProfile(state) {
 // ------------------------------------------------------------------------------ drills
 /** Wide photo button. Efren Reyes, 2012 World 9-Ball. Photo by Vinod Divakaran / Doha Stadium Plus Qatar, Wikimedia Commons. */
 function coursesCardHTML() {
-  return `<button type="button" class="coursesCard" data-action="go" data-href="#courses" data-courses="1"><img src="./images/courses/efren-reyes.jpg" alt="" width="1400" height="762"/><span class="coursesLabel">COURSES</span></button>`;
+  return `<button type="button" class="coursesCard" data-action="go" data-href="#courses" data-courses="1"><img src="./images/courses/efren-reyes.jpg" alt="" width="1400" height="762"/><span class="coursesLabel">Drill Sets & Exams</span></button>`;
 }
 
 export function renderCoursesPage() {
-  return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#drills">‹ Drills</button><span class="eyebrow">DRILL LIBRARY</span><h1>Courses</h1></div>
+  return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#drills">‹ Drills</button><span class="eyebrow">DRILL LIBRARY</span><h1>Drill Sets & Exams</h1></div>
     ${examBannerHTML()}
     ${safetyBannerHTML()}`;
 }
