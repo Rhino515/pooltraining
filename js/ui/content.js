@@ -26,7 +26,7 @@ import { openSheet, closeSheet, toast } from './sheet.js';
 import { createPlayScreen } from './play.js';
 import { shareOrDownload } from './share.js';
 import * as CD from '../customDrills.js';
-import { customDrills, refreshCustomDrills, contentDrillId } from '../drills.js';
+import { customDrills, refreshCustomDrills, contentDrillId, displayDrillTitle } from '../drills.js';
 import { ownerAccountSignedIn } from '../dev/dev.js';
 
 export const ACCEPT = '.pooliq,.json,application/json,application/octet-stream,text/plain';
@@ -168,11 +168,11 @@ export function contentHubHTML() {
     const eligible = d.contentType === 'drill' && d.careerEligible;
     const playHref = eligible ? `#play/drills/${contentDrillId(it.uid)}` : `#cplay/${it.uid}`;
     return `<div class="cItem card" data-content-item="${esc(it.uid)}" data-id="${esc(it.id)}" data-type="${esc(d.contentType)}">
-      <div class="cTop">${mini}<div class="cMain">${badgesHTML(d, it.source)}<h3>${esc(d.title)}</h3><small class="muted" data-progress>${esc(itemProgressText(it, prog))}</small></div></div>
+      <div class="cTop">${mini}<div class="cMain">${badgesHTML(d, it.source)}<h3>${esc(displayDrillTitle(d.title))}</h3><small class="muted" data-progress>${esc(itemProgressText(it, prog))}</small></div></div>
       <div class="cActs"><button type="button" class="miniAct go" data-action="go" data-href="${d.contentType === 'pack' ? `#cview/${esc(it.uid)}` : esc(playHref)}">${d.contentType === 'pack' ? 'OPEN' : 'PLAY'}</button><button type="button" class="miniAct" data-action="go" data-href="#cview/${esc(it.uid)}">VIEW</button><button type="button" class="miniAct" data-action="go" data-href="#cedit/${esc(it.uid)}">EDIT</button><button type="button" class="miniAct" data-action="c-export" data-uid="${esc(it.uid)}">EXPORT</button><button type="button" class="miniAct danger" data-action="c-del" data-uid="${esc(it.uid)}">DELETE</button></div></div>`;
   };
   const customCard = (d) => `<div class="cItem card" data-custom-drill="${esc(d.id)}" data-type="drill">
-      <div class="cTop"><div class="cMini">${renderStageTable(d, { className: 'table-diagram micro', showAim: false })}</div><div class="cMain"><div class="cBadges"><span class="tag mine" data-badge="custom">CUSTOM</span><span class="tag">Drill</span><span class="tag">${esc(d.category)}</span></div><h3>${esc(d.name)}</h3><small class="muted">Made with Create Drill · counts in your training history</small></div></div>
+      <div class="cTop"><div class="cMini">${renderStageTable(d, { className: 'table-diagram micro', showAim: false })}</div><div class="cMain"><div class="cBadges"><span class="tag mine" data-badge="custom">CUSTOM</span><span class="tag">Drill</span><span class="tag">${esc(displayDrillTitle(d.category))}</span></div><h3>${esc(displayDrillTitle(d.name))}</h3><small class="muted">Made with Create Drill · counts in your training history</small></div></div>
       <div class="cActs"><button type="button" class="miniAct go" data-action="go" data-href="#play/drills/${esc(d.id)}">PLAY</button><button type="button" class="miniAct" data-action="drill-edit" data-id="${esc(d.id)}">EDIT</button><button type="button" class="miniAct" data-action="c-export-custom" data-id="${esc(d.id)}">EXPORT</button>${ownerAccountSignedIn() ? `<button type="button" class="miniAct danger" data-action="drill-del" data-id="${esc(d.id)}">DELETE</button>` : ''}</div></div>`;
   const sec = (key, title, list, empty) => `<section class="cSec" data-section="${key}"><h2 class="cSecTitle">${title} <small>${list.length}</small></h2>${list.length ? list.join('') : `<p class="muted small cEmpty">${empty}</p>`}</section>`;
   const drillsL = [...items.filter((i) => i.contentType === 'drill').map(card), ...customs.map(customCard)];
@@ -224,7 +224,7 @@ function exportDoc(doc) {
 }
 function conflictSheet(doc, same, fileName) {
   const inst = same[0];
-  openSheet(`<div class="eyebrow">ALREADY IN MY CONTENT</div><h2 class="sheetTitle">“${esc(doc.title)}” is already installed</h2>
+  openSheet(`<div class="eyebrow">ALREADY IN MY CONTENT</div><h2 class="sheetTitle">“${esc(displayDrillTitle(doc.title))}” is already installed</h2>
     <div class="verCompare" data-conflict><div><span>INSTALLED</span><b data-installed-version>v${esc(inst.contentVersion)}</b><small>${esc(fmtDate(inst.updatedAt || inst.installedAt))}${inst.edited ? ' · edited' : ''}</small></div><div><span>INCOMING</span><b data-incoming-version>v${esc(doc.contentVersion)}</b><small>${esc(fileName || 'imported file')}</small></div></div>
     <p class="muted small">Both use the id <b>${esc(doc.id)}</b>. Nothing is overwritten unless you choose REPLACE${same.length > 1 ? ` (replaces ${same.length} copies)` : ''}.</p>
     <button type="button" class="bigBtn danger" data-action="c-conflict" data-mode="replace">REPLACE INSTALLED</button>
@@ -240,7 +240,7 @@ function installPending(ctx, mode) {
   pending = null;
   refreshCustomDrills();
   closeSheet();
-  toast(mode === 'replace' ? `Replaced with v${out.item.contentVersion}` : mode === 'keepBoth' ? `Installed as a copy (${out.item.id})` : `“${out.item.title}” added to My Content`);
+  toast(mode === 'replace' ? `Replaced with v${out.item.contentVersion}` : mode === 'keepBoth' ? `Installed as a copy (${out.item.id})` : `“${displayDrillTitle(out.item.title)}” added to My Content`);
   ctx.go(`#cview/${out.item.uid}`);
 }
 export function contentAction(action, el, e, ctx) {
@@ -265,7 +265,7 @@ export function contentAction(action, el, e, ctx) {
     }
     case 'c-del': {
       const it = S.getItem(el.dataset.uid);
-      if (it) openSheet(`<h2 class="sheetTitle">Delete “${esc(it.title)}”?</h2><p class="muted">It is removed from My Content on this device, with its personal bests and progress. Export it first if you might want it back.</p><button type="button" class="bigBtn danger" data-action="c-del-do" data-uid="${esc(it.uid)}">DELETE</button><button type="button" class="bigBtn alt" data-action="sheet-close">CANCEL</button>`, { id: 'confirm' });
+      if (it) openSheet(`<h2 class="sheetTitle">Delete “${esc(displayDrillTitle(it.title))}”?</h2><p class="muted">It is removed from My Content on this device, with its personal bests and progress. Export it first if you might want it back.</p><button type="button" class="bigBtn danger" data-action="c-del-do" data-uid="${esc(it.uid)}">DELETE</button><button type="button" class="bigBtn alt" data-action="sheet-close">CANCEL</button>`, { id: 'confirm' });
       return true;
     }
     case 'c-del-do':
@@ -324,13 +324,13 @@ function packListHTML(r) {
       const st = states[i];
       const playable = r.sandbox || st !== 'locked' || devCheck();
       const best = prog?.stages?.[s.id]?.best;
-      return `<li class="stRow ${st}" data-stage-state="${st}" data-stage="${esc(s.id)}"><button type="button" data-action="${playable ? 'go' : 'c-locked'}" data-href="#cplay/${esc(r.ref)}/${i}"><span class="stNum">${i + 1}.</span><span class="stTitle">${esc(s.title)}<small>${esc(STAGE_TYPE[s.stageType] || typeLabel(s.contentType))} · ${esc(s.contentType === 'game' ? TEMPLATE_NAMES[s.template] : typeLabel(s.contentType))}${best != null ? ` · best ${best}` : ''}</small></span><span class="stIcon" aria-label="${st}">${st === 'done' ? '✓' : st === 'open' ? '🔓' : '🔒'}</span></button></li>`;
+      return `<li class="stRow ${st}" data-stage-state="${st}" data-stage="${esc(s.id)}"><button type="button" data-action="${playable ? 'go' : 'c-locked'}" data-href="#cplay/${esc(r.ref)}/${i}"><span class="stNum">${i + 1}.</span><span class="stTitle">${esc(displayDrillTitle(s.title))}<small>${esc(STAGE_TYPE[s.stageType] || typeLabel(s.contentType))} · ${esc(s.contentType === 'game' ? TEMPLATE_NAMES[s.template] : typeLabel(s.contentType))}${best != null ? ` · best ${best}` : ''}</small></span><span class="stIcon" aria-label="${st}">${st === 'done' ? '✓' : st === 'open' ? '🔓' : '🔒'}</span></button></li>`;
     }).join('')}</ol>
     ${r.sandbox ? '<p class="muted small">Play Test: every stage can be tried now. After you install the pack, stages unlock in order and your progress is saved.</p>' : ''}
   </div>`;
 }
 function lessonListHTML(d) {
-  return `<ol class="stepList" data-steps="${d.steps.length}">${d.steps.map((s) => `<li><span class="phase ph-${s.phase}">${esc(PHASE_NAMES[s.phase])}</span><b>${esc(s.title)}</b>${s.text ? `<small>${esc(s.text.length > 140 ? `${s.text.slice(0, 140)}…` : s.text)}</small>` : ''}</li>`).join('')}</ol>`;
+  return `<ol class="stepList" data-steps="${d.steps.length}">${d.steps.map((s) => `<li><span class="phase ph-${s.phase}">${esc(PHASE_NAMES[s.phase])}</span><b>${esc(displayDrillTitle(s.title))}</b>${s.text ? `<small>${esc(s.text.length > 140 ? `${s.text.slice(0, 140)}…` : s.text)}</small>` : ''}</li>`).join('')}</ol>`;
 }
 function gameRulesHTML(d) {
   const r = T.gameRules(d);
@@ -346,7 +346,7 @@ function gameRulesHTML(d) {
   if (d.template === 'quizExecution') rows.push(['Quiz points', r.quizPoints]);
   rows.push(['Stage order', r.order === 'difficulty' ? 'by difficulty' : 'as listed']);
   return `<div class="cvFacts" data-rules>${rows.map(([k, v]) => `<div><span>${esc(k)}</span><b>${esc(String(v))}</b></div>`).join('')}</div>
-    <ol class="stepList">${T.stageOrder(d).map((i) => d.stages[i]).map((s) => `<li><span class="phase">${s.difficulty ? `LEVEL ${s.difficulty}` : 'STAGE'}</span><b>${esc(s.title)}</b>${s.points != null ? `<small>${s.points} pts</small>` : ''}</li>`).join('')}</ol>`;
+    <ol class="stepList">${T.stageOrder(d).map((i) => d.stages[i]).map((s) => `<li><span class="phase">${s.difficulty ? `LEVEL ${s.difficulty}` : 'STAGE'}</span><b>${esc(displayDrillTitle(s.title))}</b>${s.points != null ? `<small>${s.points} pts</small>` : ''}</li>`).join('')}</ol>`;
 }
 
 export function createContentView(ctx, ref) {
@@ -387,7 +387,7 @@ export function createContentView(ctx, ref) {
   function render() {
     const d = r.doc;
     ctx.root.innerHTML = `<div class="contentView" data-view="${esc(d.contentType)}" data-ref="${esc(ref)}">
-      <div class="cvHead"><button type="button" class="phBack" data-action="go" data-href="#content" aria-label="Back to My Content">‹</button><div><span class="eyebrow">${r.sandbox ? 'PREVIEW · NOT INSTALLED YET' : 'MY CONTENT'}</span><h1 class="cvTitle">${esc(d.title)}</h1></div></div>
+      <div class="cvHead"><button type="button" class="phBack" data-action="go" data-href="#content" aria-label="Back to My Content">‹</button><div><span class="eyebrow">${r.sandbox ? 'PREVIEW · NOT INSTALLED YET' : 'MY CONTENT'}</span><h1 class="cvTitle">${esc(displayDrillTitle(d.title))}</h1></div></div>
       ${badgesHTML(d, r.source)}
       ${d.description ? `<p class="cvDesc">${esc(d.description)}</p>` : ''}
       ${r.sandbox && r.warnings?.length ? `<div class="warnBox small" data-warnings>${r.warnings.map((w) => `<div>⚠ ${esc(w)}</div>`).join('')}</div>` : ''}
@@ -399,9 +399,9 @@ export function createContentView(ctx, ref) {
   }
   function onAction(action, el, e) {
     if (action === 'cv-reveal') { ui.reveal = !ui.reveal; render(); return true; }
-    if (action === 'why-open' && ui.ch) { openSheet(`<div class="eyebrow">WHY THIS SHOT?</div><h2 class="sheetTitle">${esc(ui.ch.name)}</h2>${aimRowHTML(ui.ch)}${whyHTML(ui.ch)}<h3 class="su-h">Set it up (diamonds)</h3>${setupSheetHTML(ui.ch)}`, { id: 'why' }); return true; }
+    if (action === 'why-open' && ui.ch) { openSheet(`<div class="eyebrow">WHY THIS SHOT?</div><h2 class="sheetTitle">${esc(displayDrillTitle(ui.ch.name))}</h2>${aimRowHTML(ui.ch)}${whyHTML(ui.ch)}<h3 class="su-h">Set it up (diamonds)</h3>${setupSheetHTML(ui.ch)}`, { id: 'why' }); return true; }
     if (action === 'recipe-open' && ui.ch) { openSheet(`${recipeCardHTML(ui.ch, { cal: ctx.getState().speedCal })}<button type="button" class="bigBtn alt" data-action="sheet-close">CLOSE</button>`, { id: 'recipe' }); return true; }
-    if (action === 'setup-open' && ui.ch) { openSheet(`<div class="eyebrow">SETUP · DIAMOND POSITIONS</div><h2 class="sheetTitle">${esc(ui.ch.name)}</h2>${setupSheetHTML(ui.ch)}<button type="button" class="bigBtn" data-action="sheet-close">GOT IT</button>`, { id: 'setup' }); return true; }
+    if (action === 'setup-open' && ui.ch) { openSheet(`<div class="eyebrow">SETUP · DIAMOND POSITIONS</div><h2 class="sheetTitle">${esc(displayDrillTitle(ui.ch.name))}</h2>${setupSheetHTML(ui.ch)}<button type="button" class="bigBtn" data-action="sheet-close">GOT IT</button>`, { id: 'setup' }); return true; }
     return contentAction(action, el, e, ctx);
   }
   return { render, onAction, isPage: true };
@@ -433,9 +433,9 @@ function svgPoint(root, e) {
   return { x: p.x, y: p.y };
 }
 function sheetFor(ctx, a, ch) {
-  if (a === 'why-open') openSheet(`<div class="eyebrow">WHY THIS SHOT?</div><h2 class="sheetTitle">${esc(ch.name)}</h2>${aimRowHTML(ch)}${whyHTML(ch)}<h3 class="su-h">Set it up (diamonds)</h3>${setupSheetHTML(ch)}`, { id: 'why' });
+  if (a === 'why-open') openSheet(`<div class="eyebrow">WHY THIS SHOT?</div><h2 class="sheetTitle">${esc(displayDrillTitle(ch.name))}</h2>${aimRowHTML(ch)}${whyHTML(ch)}<h3 class="su-h">Set it up (diamonds)</h3>${setupSheetHTML(ch)}`, { id: 'why' });
   else if (a === 'recipe-open') openSheet(`${recipeCardHTML(ch, { cal: ctx.getState().speedCal })}<button type="button" class="bigBtn alt" data-action="sheet-close">CLOSE</button>`, { id: 'recipe' });
-  else if (a === 'setup-open') openSheet(`<div class="eyebrow">SETUP · DIAMOND POSITIONS</div><h2 class="sheetTitle">${esc(ch.name)}</h2>${setupSheetHTML(ch)}<button type="button" class="bigBtn" data-action="sheet-close">GOT IT</button>`, { id: 'setup' });
+  else if (a === 'setup-open') openSheet(`<div class="eyebrow">SETUP · DIAMOND POSITIONS</div><h2 class="sheetTitle">${esc(displayDrillTitle(ch.name))}</h2>${setupSheetHTML(ch)}<button type="button" class="bigBtn" data-action="sheet-close">GOT IT</button>`, { id: 'setup' });
   else return false;
   return true;
 }
@@ -658,7 +658,7 @@ function lessonRunner(ctx, env, item, key) {
       ${phaseBar()}
       ${ch ? `<div class="playTable">${renderStageTable(ch, { markers: 'all' })}</div>${setupLineHTML(ch)}` : ''}
       <div class="playBody">
-        <div class="lessonText"><h3>${esc(s.title)}</h3>${s.text ? `<p>${esc(s.text)}</p>` : ''}</div>
+        <div class="lessonText"><h3>${esc(displayDrillTitle(s.title))}</h3>${s.text ? `<p>${esc(s.text)}</p>` : ''}</div>
         ${ch ? `<div class="recipeRow">${recipeGaugesHTML(ch)}<button type="button" class="whyBtn" data-action="why-open">WHY THIS SHOT?</button></div>` : ''}
       </div>
       <div class="resultBar n2"><button type="button" class="rb alt" data-action="cl-prev" ${ui.i ? '' : 'disabled'}><b>‹ BACK</b></button><button type="button" class="rb s3" data-action="${toPlay ? 'cl-play' : 'cl-next'}"><b>${toPlay ? `START · ${s.scoringRules.attempts} ATTEMPTS` : ui.i >= steps.length - 1 ? 'FINISH LESSON' : 'CONTINUE ›'}</b></button></div>
@@ -899,7 +899,7 @@ export function editListHTML(uid) {
   const a = d.attribution || {};
   const n = (s) => (s.item.shot.ballPositions || []).length;
   return `<div class="contentView" data-edit-list="${esc(uid)}">
-    <div class="cvHead"><button type="button" class="phBack" data-action="go" data-href="#cview/${esc(uid)}" aria-label="Back">‹</button><div><span class="eyebrow">EDIT · ${esc(typeLabel(d.contentType).toUpperCase())}</span><h1 class="cvTitle">${esc(d.title)}</h1></div></div>
+    <div class="cvHead"><button type="button" class="phBack" data-action="go" data-href="#cview/${esc(uid)}" aria-label="Back">‹</button><div><span class="eyebrow">EDIT · ${esc(typeLabel(d.contentType).toUpperCase())}</span><h1 class="cvTitle">${esc(displayDrillTitle(d.title))}</h1></div></div>
     <h3 class="cvH">Shots — tap one to move balls, change SPEED, recipe and texts</h3>
     <div class="editShots">${shots.map((s) => `<button type="button" class="editShot" data-action="go" data-href="#cedit/${esc(uid)}/${esc(encodeLoc(s.loc))}"><span>${esc(s.label || d.title)}<small>SPEED ${formatSpeed(s.item.shot.speed)} · ${n(s)} ball${n(s) === 1 ? '' : 's'}</small></span><b>EDIT ›</b></button>`).join('')}</div>
     <div class="card dbSec"><h3>Details</h3>

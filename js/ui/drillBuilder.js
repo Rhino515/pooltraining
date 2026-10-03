@@ -18,7 +18,7 @@ import { speedDiagramSVG } from '../games/speedDiagram.js';
 import { toDiamonds, fmtDiamond } from '../games/diamonds.js';
 import { BALL_COLORS, POCKETS } from '../tableDiagram.js';
 import { SKILL_NAMES } from '../storage.js';
-import { CATEGORIES, refreshCustomDrills } from '../drills.js';
+import { CATEGORIES, refreshCustomDrills, displayDrillTitle, HIDDEN_DRILL_CATEGORIES } from '../drills.js';
 import * as CD from '../customDrills.js';
 import * as L from '../sim/layouts.js';
 import { R } from '../sim/physics.js';
@@ -298,7 +298,7 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
         ${b.routeMode === 'manual' ? '<p class="simStatus muted">Drawn route — the table shows the route you drew (the simulator is not used).</p>' : simStatus()}`, 'dbRecipe'),
       answerSection(),
       section('4 · Details', `<label class="fld"><span>Title</span><input id="db-title" type="text" maxlength="${cm ? 80 : 60}" value="${esc(b.title)}" placeholder="e.g. Draw to the side rail"/></label>
-        <div class="dbGrid2"><label class="fld"><span>Category</span>${cm ? `<input id="db-category" type="text" maxlength="40" value="${esc(b.category || '')}"/>` : `<select id="db-category">${CATEGORIES.map((c) => `<option${b.category === c ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select>`}</label>
+        <div class="dbGrid2"><label class="fld"><span>Category</span>${cm ? `<input id="db-category" type="text" maxlength="40" value="${esc(b.category || '')}"/>` : `<select id="db-category">${CATEGORIES.filter((c) => !HIDDEN_DRILL_CATEGORIES.has(c)).map((c) => `<option value="${esc(c)}"${b.category === c ? ' selected' : ''}>${esc(displayDrillTitle(c))}</option>`).join('')}</select>`}</label>
         <label class="fld"><span>Skill trained</span><select id="db-skill">${SKILL_NAMES.map((c) => `<option${b.skill === c ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select></label></div>
         <div class="dbRow"><span class="lbl">Level</span><div class="chips">${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="chip${Number(b.difficulty) === n ? ' active' : ''}" data-action="db-level" data-v="${n}">Level ${n}</button>`).join('')}</div></div>
         <label class="fld"><span>Instructions <small class="muted">(optional — auto text if blank)</small></span><textarea id="db-instructions" rows="3" maxlength="600">${esc(b.instructions)}</textarea></label>
@@ -551,7 +551,7 @@ export function createDrillBuilder(ctx, { editId = null, fromSim = false, existi
     const m = ui.msgs;
     const sr = ch.scoringRules;
     const passText = !sr ? '' : sr.mode === 'zone' ? `${sr.pass.stars}★${sr.requirePocket !== false ? ` & ${sr.pass.pockets} pots` : ''} in ${sr.attempts} attempts` : sr.mode === 'stars' ? `${sr.pass.stars}★ in ${sr.attempts} attempts` : `${sr.pass.made} of ${sr.attempts} made`;
-    openSheet(`<div class="eyebrow">PREVIEW · HOW IT WILL PLAY</div><h2 class="sheetTitle">${esc(ch.name)}</h2>
+    openSheet(`<div class="eyebrow">PREVIEW · HOW IT WILL PLAY</div><h2 class="sheetTitle">${esc(displayDrillTitle(ch.name))}</h2>
       <div class="previewTable">${renderStageTable(ch)}</div>${ch.cueBallPosition ? setupLineHTML(ch) : ''}${ch.cueContact ? legendHTML(ch) : ''}
       ${ch.cueContact ? `<div class="recipeRow">${recipeGaugesHTML(ch)}</div>` : ''}
       <p class="goal">${esc(ch.goal || '')}</p>${passText ? `<p class="muted small">Pass: ${esc(passText)} · Level ${ch.difficulty || b.difficulty}</p>` : ''}

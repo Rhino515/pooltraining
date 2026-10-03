@@ -62,10 +62,9 @@ export function masterChalkSVG(number, opts = {}) {
 export function drillBadgeSVG(number, opts = {}) {
   const size = opts.size || 56;
   const n = esc(number ?? '');
-  const h = Math.round(size * (134 / 108));
-  const fs = Math.max(9, Math.round(size * 0.30));
-  const side = size >= 48 ? `<b class="side" aria-hidden="true">${n}</b>` : '';
-  return `<span class="drillEmblem ${opts.cls || ''}" data-drillrank="${n}" style="width:${size}px;font-size:${fs}px" role="img" aria-label="${esc(opts.title || `Drill rank ${number}`)}"><img src="./icons/rank-drill.png" width="${size}" height="${h}" alt=""/><b>${n}</b>${side}</span>`;
+  const h = Math.round(size * (206 / 211));
+  const fs = Math.max(9, Math.round(size * 0.28));
+  return `<span class="drillEmblem ${opts.cls || ''}" data-drillrank="${n}" style="width:${size}px;font-size:${fs}px" role="img" aria-label="${esc(opts.title || `Drill rank ${number}`)}"><img src="./icons/rank-drill.png" width="${size}" height="${h}" alt=""/><b>${n}</b></span>`;
 }
 /** Default avatar: a ball with the player's initials; color from the name */
 export function initialsAvatarSVG(name = '', opts = {}) {

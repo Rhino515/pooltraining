@@ -11,7 +11,7 @@ import { APP_VERSION } from '../vault.js';
 import { RANK_LADDER, DRILL_RANK } from '../progression/config.js';
 import { typeLabel } from '../content/schema.js';
 import { openSheet, closeSheet, toast } from './sheet.js';
-import { allDrills } from '../drills.js';
+import { allDrills, displayDrillTitle } from '../drills.js';
 import { isDrillHidden } from '../drills/hidden.js';
 import { loadDrillEdits } from '../drills/ownerEdits.js';
 import * as CP from '../dev/copy.js';
@@ -46,7 +46,7 @@ export function renderDev(state) {
       <label class="bigBtn alt fileBtn">IMPORT OVERRIDES<input type="file" accept=".pooliq,.json,application/json" data-dev-import aria-label="Import an overrides pack"/></label></div>
     <h2>My Content (unrestricted)</h2>
     <div class="card devCard"><p class="muted small">While unlocked, pack stages can be played in any order. Mark imported content official / eligible to test how it counts.</p>
-      ${items.length ? items.map((it) => { const d = it.doc; return `<div class="devItem" data-dev-item="${esc(it.uid)}"><div><b>${esc(it.title)}</b><small class="muted">${esc(typeLabel(d.contentType))}${d.metadata?.official ? ' · OFFICIAL' : ''}</small></div><div class="chips"><button type="button" class="chip${d.careerEligible ? ' active' : ''}" data-action="dev-mark" data-uid="${esc(it.uid)}" data-k="careerEligible">Career-eligible</button><button type="button" class="chip${d.rankXpEligible ? ' active' : ''}" data-action="dev-mark" data-uid="${esc(it.uid)}" data-k="rankXpEligible">Rank XP</button><button type="button" class="chip${d.metadata?.official ? ' active' : ''}" data-action="dev-mark" data-uid="${esc(it.uid)}" data-k="official">Official</button><button type="button" class="chip" data-action="go" data-href="#cedit/${esc(it.uid)}">Edit</button><button type="button" class="chip danger" data-action="dev-del-content" data-uid="${esc(it.uid)}">Delete</button></div></div>`; }).join('') : '<p class="muted">No installed content.</p>'}
+      ${items.length ? items.map((it) => { const d = it.doc; return `<div class="devItem" data-dev-item="${esc(it.uid)}"><div><b>${esc(displayDrillTitle(it.title))}</b><small class="muted">${esc(typeLabel(d.contentType))}${d.metadata?.official ? ' · OFFICIAL' : ''}</small></div><div class="chips"><button type="button" class="chip${d.careerEligible ? ' active' : ''}" data-action="dev-mark" data-uid="${esc(it.uid)}" data-k="careerEligible">Career-eligible</button><button type="button" class="chip${d.rankXpEligible ? ' active' : ''}" data-action="dev-mark" data-uid="${esc(it.uid)}" data-k="rankXpEligible">Rank XP</button><button type="button" class="chip${d.metadata?.official ? ' active' : ''}" data-action="dev-mark" data-uid="${esc(it.uid)}" data-k="official">Official</button><button type="button" class="chip" data-action="go" data-href="#cedit/${esc(it.uid)}">Edit</button><button type="button" class="chip danger" data-action="dev-del-content" data-uid="${esc(it.uid)}">Delete</button></div></div>`; }).join('') : '<p class="muted">No installed content.</p>'}
       <button type="button" class="bigBtn alt" data-action="go" data-href="#content">OPEN MY CONTENT</button></div>
     <h2>On-screen words</h2>
     <div class="card devCard" data-copy-panel><p class="muted small">Hold any words, or tap Edit on a paragraph, heading, or list. Save publishes for everyone. The shipped file stays. Another account cannot edit.</p>
@@ -127,7 +127,7 @@ export function renderDevDrills() {
   const edits = new Set(Object.keys(loadDrillEdits().items));
   return `${head('Drills')}<p class="muted small">Built-in drills that are still in the app. A deleted drill is not listed. EDIT opens the phone editor.</p><div class="stageList">${list.map((d, i) => {
     const has = edits.has(d.id);
-    return `<div class="stageRow card devStage${has ? ' overridden' : ''}" data-dev-drill="${esc(d.id)}" data-overridden="${has ? 1 : 0}"><span class="srNum">${i + 1}</span><span class="srMain"><b>${esc(d.name)}</b><small>${has ? '<span class="tag gold">SAVED ON THIS PHONE</span> ' : ''}${esc(d.category || '')}</small></span><span class="srSide devBtns"><button type="button" class="miniAct" data-action="go" data-href="#drillfix/${esc(d.id)}">EDIT</button></span></div>`;
+    return `<div class="stageRow card devStage${has ? ' overridden' : ''}" data-dev-drill="${esc(d.id)}" data-overridden="${has ? 1 : 0}"><span class="srNum">${i + 1}</span><span class="srMain"><b>${esc(displayDrillTitle(d.name))}</b><small>${has ? '<span class="tag gold">SAVED ON THIS PHONE</span> ' : ''}${esc(displayDrillTitle(d.category || ''))}</small></span><span class="srSide devBtns"><button type="button" class="miniAct" data-action="go" data-href="#drillfix/${esc(d.id)}">EDIT</button></span></div>`;
   }).join('')}</div>`;
 }
 

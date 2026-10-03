@@ -357,14 +357,14 @@ function handleAction(action, el, e) {
     case 'drill-dup': {
       const c = CD.duplicateCustomDrill(el.dataset.id);
       refreshCustomDrills();
-      if (c) toast(`Duplicated as “${c.name}”`);
+      if (c) toast(`Duplicated as “${displayDrillTitle(c.name)}”`);
       renderRoute();
       break;
     }
     case 'drill-del': {
       if (!ownerAccountSignedIn()) { toast('Only the owner account can delete. Nothing was changed.'); break; }
       const d = customDrills().find((x) => x.id === el.dataset.id);
-      if (d) openSheet(`<h2 class="sheetTitle">Delete “${escHTML(d.name)}”?</h2><p class="muted">This removes the drill from this phone. It does not delete a file from the app. Your past results stay in your history. Export it first if you might want it back.</p><button type="button" class="bigBtn danger" data-action="drill-del-do" data-id="${escHTML(d.id)}">DELETE DRILL</button><button type="button" class="bigBtn alt" data-action="sheet-close">CANCEL</button>`, { id: 'confirm' });
+      if (d) openSheet(`<h2 class="sheetTitle">Delete “${escHTML(displayDrillTitle(d.name))}”?</h2><p class="muted">This removes the drill from this phone. It does not delete a file from the app. Your past results stay in your history. Export it first if you might want it back.</p><button type="button" class="bigBtn danger" data-action="drill-del-do" data-id="${escHTML(d.id)}">DELETE DRILL</button><button type="button" class="bigBtn alt" data-action="sheet-close">CANCEL</button>`, { id: 'confirm' });
       break;
     }
     case 'drill-del-do':

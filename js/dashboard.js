@@ -3,7 +3,7 @@
  */
 import { nextRankInfo, RANK_NAMES, RANK_REQUIREMENTS, requirementChecklist, nextUp, isBossUnlocked } from './career.js';
 import { skillBarsHTML, weakestSkills, recommendations } from './skills.js';
-import { allDrills, drillsByCategory, isDrillUnlocked, CATEGORIES, getDrillById, displayDrillTitle, SHELVED_CATEGORIES } from './drills.js';
+import { allDrills, drillsByCategory, isDrillUnlocked, CATEGORIES, getDrillById, displayDrillTitle, SHELVED_CATEGORIES, HIDDEN_DRILL_CATEGORIES } from './drills.js';
 import { ballPocketDrills, ballPocketStatus, BALL_POCKET_TEXT, BALL_POCKET_LEVELS } from './content/ballPocket.js';
 import { maxUnlockedBalls, ghostStats } from './ghost.js';
 import { GAMES, getGame, stageSpecs, getStages, getBosses, getBoss } from './games/registry.js';
@@ -204,16 +204,16 @@ export function renderGameLobby(state, gameId) {
     if (current) currentSet = true;
     return `<button type="button" class="stageRow card ${open ? '' : 'locked'} ${rec?.passed ? 'passed' : ''}${current ? ' current' : ''}" data-action="${open ? 'go' : 'locked-stage'}" data-href="#play/${gameId}/${s.id}" data-stage="${s.id}" data-open="${open ? 1 : 0}">
       ${(() => { const t = thumb(s.id); return `<span class="srLead${t ? ' hasThumb' : ''}">${t}<span class="srNum">${i + 1}</span></span>`; })()}
-      <span class="srMain"><b>${esc(s.name)}</b><small>${esc((s.instructions || '').slice(0, 90))}${(s.instructions || '').length > 90 ? '…' : ''}</small></span>
+      <span class="srMain"><b>${esc(displayDrillTitle(s.name))}</b><small>${esc((s.instructions || '').slice(0, 90))}${(s.instructions || '').length > 90 ? '…' : ''}</small></span>
       <span class="srSide">${open ? `${stars(rec?.bestStars || 0)}<small>${rec ? `Best ${rec.bestScore}` : 'New'}</small>${rec ? starsHTML(masteryOf(state, stageItem(gameId, s, i).key)) : ''}` : '<span class="lock">🔒</span>'}</span>
     </button>`;
   });
   const endless = g.endless ? (E.isEndlessUnlocked(state, gameId) ? `<button type="button" class="stageRow card endless" data-action="go" data-href="#play/${gameId}/endless" data-stage="endless"><span class="srNum">∞</span><span class="srMain"><b>Endless Mode</b><small>Random bank layouts, rising difficulty, 3 lives.</small></span><span class="srSide"><small>Best ${gs.pb?.endlessBest || 0}</small></span></button>` : `<div class="stageRow card locked"><span class="srNum">∞</span><span class="srMain"><b>Endless Mode</b><small>Pass the final stage to unlock.</small></span><span class="srSide lock">🔒</span></div>`) : '';
-  const hist = (gs.sessions || []).slice(-6).reverse().map((h) => `<div class="historyRow"><span>${esc(specs.find((s) => s.id === h.stageId)?.name || (h.stageId === 'endless' ? 'Endless' : h.stageId))}</span><span class="${h.passed ? 'green' : 'muted'}">${h.passed ? 'PASS' : '—'} ${h.score}</span><span class="muted">${new Date(h.date).toLocaleDateString()}</span></div>`).join('');
+  const hist = (gs.sessions || []).slice(-6).reverse().map((h) => `<div class="historyRow"><span>${esc(displayDrillTitle(specs.find((s) => s.id === h.stageId)?.name || (h.stageId === 'endless' ? 'Endless' : h.stageId)))}</span><span class="${h.passed ? 'green' : 'muted'}">${h.passed ? 'PASS' : '—'} ${h.score}</span><span class="muted">${new Date(h.date).toLocaleDateString()}</span></div>`).join('');
   const cal = gameId === 'speed' ? calibrationCard(state) + threeLaneCard(state) : '';
   return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#drills">‹ Drills</button><span class="eyebrow">${g.icon} ${esc(g.name.toUpperCase())}</span><h1>${esc(g.name)}</h1><p>${esc(g.tagline)}</p></div>
     ${!unlocked ? `<div class="card lockNote">🔒 Locked — reach <b>${esc(E.unlockLabel(gameId))}</b> to play.</div>` : ''}
-    ${active ? `<div class="card resumeCard"><b>Session in progress</b><p class="muted">${esc(specs.find((s) => s.id === active.stageId)?.name || 'Endless')} · ${active.attempts.length} shots recorded</p><button type="button" class="bigBtn" data-action="go" data-href="#play/${gameId}/${active.stageId}">RESUME</button></div>` : ''}
+    ${active ? `<div class="card resumeCard"><b>Session in progress</b><p class="muted">${esc(displayDrillTitle(specs.find((s) => s.id === active.stageId)?.name || 'Endless'))} · ${active.attempts.length} shots recorded</p><button type="button" class="bigBtn" data-action="go" data-href="#play/${gameId}/${active.stageId}">RESUME</button></div>` : ''}
     <div class="card stats"><div><b>${E.gameLevel(state, gameId)}/${specs.length}</b><span>LEVEL</span></div><div><b>${E.totalStars(state, gameId)}★</b><span>STARS</span></div><div><b data-pb>${gs.pb?.highScore || 0}</b><span>HIGH SCORE</span></div></div>
     ${cal}
     <h2>Stages</h2><div class="stageList">${rows.join('')}${endless}</div>
@@ -297,14 +297,15 @@ export function renderDrillsPage(state, filter = 'All', bpViewLevel = null) {
   }
   const by = drillsByCategory();
   const extraCats = Object.keys(by).filter((c) => c && !CATEGORIES.includes(c) && c !== 'Career Drills').sort();
-  const keepEmpty = new Set([...SHELVED_CATEGORIES, 'Safeties']);
-  const cats = ['All', 'Career Drills', ...CATEGORIES.filter((c) => by[c] || keepEmpty.has(c)), ...extraCats];
+  const keepEmpty = new Set([...SHELVED_CATEGORIES].filter((c) => !HIDDEN_DRILL_CATEGORIES.has(c)));
+  keepEmpty.add('Safeties');
+  const cats = ['All', 'Career Drills', ...CATEGORIES.filter((c) => !HIDDEN_DRILL_CATEGORIES.has(c) && (by[c] || keepEmpty.has(c))), ...extraCats.filter((c) => !HIDDEN_DRILL_CATEGORIES.has(c))];
   const career = filter === 'Career Drills';
   const pocket = filter === 'Ball Pocketing';
   const list = pocket || career ? [] : (filter === 'All' ? list0.filter((d) => d.category !== 'Ball Pocketing') : by[filter] || []);
   const emptyNote = !pocket && !career && filter !== 'All' && !list.length ? '<p class="muted emptyCat">No drills in this category.</p>' : '';
   return `${head}
-    <div class="catFilter">${cats.map((c) => `<button type="button" class="chip${c === filter ? ' active' : ''}" data-action="drill-filter" data-v="${esc(c)}">${esc(c)}</button>`).join('')}</div>
+    <div class="catFilter">${cats.map((c) => `<button type="button" class="chip${c === filter ? ' active' : ''}" data-action="drill-filter" data-v="${esc(c)}">${esc(displayDrillTitle(c))}</button>`).join('')}</div>
     ${career ? careerDrillsHTML(state) : ''}
     ${pocket ? ballPocketCategory(state, bpViewLevel) : ''}
     ${emptyNote}
@@ -354,7 +355,7 @@ function ballPocketCategory(state, bpViewLevel) {
 function drillCard(state, d, opts = {}) {
   const rec = state.games?.drills?.stages?.[d.id];
   const open = isDrillUnlocked(d, state) && !opts.locked;
-  const meta = `${d.custom ? '<span class="tag mine">MY DRILL</span> ' : ''}${d.contentUid ? `<span class="tag imp" data-badge="${d.imported ? 'imported' : 'custom'}">${d.imported ? 'IMPORTED' : 'MY CONTENT'}</span> ` : ''}<span class="tag">${esc(d.category)}</span>${d.difficulty ? ` <span class="tag">Level ${d.difficulty}</span>` : ''}`;
+  const meta = `${d.custom ? '<span class="tag mine">MY DRILL</span> ' : ''}${d.contentUid ? `<span class="tag imp" data-badge="${d.imported ? 'imported' : 'custom'}">${d.imported ? 'IMPORTED' : 'MY CONTENT'}</span> ` : ''}<span class="tag">${esc(displayDrillTitle(d.category))}</span>${d.difficulty ? ` <span class="tag">Level ${d.difficulty}</span>` : ''}`;
   const ms = rec ? masteryOf(state, drillItem(d).key) : 0;
   const pb = rec ? `<small class="pbLine">${starsHTML(ms)} Best ${rec.bestScore || 0} pts${rec.bestStars ? ` · ${'★'.repeat(rec.bestStars)}` : ''} · ${rec.tries || 0} session${rec.tries === 1 ? '' : 's'}${rec.passed ? ' · passed ✓' : ''}</small>` : '';
   const del = ownerAccountSignedIn() ? `<button type="button" class="miniAct danger" data-action="drill-del" data-id="${esc(d.id)}">Delete</button>` : '';

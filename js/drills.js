@@ -160,8 +160,14 @@ export function knownDrillIds() {
 /** Built-in + custom drills, minus drills deleted for everyone. Custom ids start with "cd-". */
 /** Display only. Stored titles, ids and .pooliq metadata keep the PKF prefix. */
 export function displayDrillTitle(name) {
-  return String(name ?? '').replace(/^PKF\s*·\s*/, '');
+  return String(name ?? '').replace(/^\s*PKF\b[\s·:\-–—]*/i, '');
 }
+
+/** Shown nowhere in Drills. The drills stay shelved (ids kept, not returned to the library). */
+export const HIDDEN_DRILL_CATEGORIES = new Set([
+  'PKF · Full Table with Sidespin',
+  'PKF · Full Table with Side Spin'
+]);
 
 /**
  * These categories stay listed, but their drills are not in the library.

@@ -17,6 +17,7 @@ import { POCKETS } from '../tableDiagram.js';
 import { TECHNIQUES } from '../content/schema.js';
 import { snapPoint, freeSpot } from '../sim/layouts.js';
 import { challengeFromPkfDoc } from '../content/pkfBuiltins.js';
+import { displayDrillTitle } from '../drills.js';
 import { openSheet, closeSheet, toast } from './sheet.js';
 import { shareOrDownload } from './share.js';
 import {
@@ -553,7 +554,7 @@ export function createDrillFix(ctx, idOrSpec) {
     ctx.root.innerHTML = `<div class="playScreen drillFix" data-drill-fix="${esc(id)}" data-overridden="${overridden ? 1 : 0}">
       <div class="playHead">
         <button type="button" class="phBack" data-action="go" data-href="${backHref()}" aria-label="Back">‹</button>
-        <div class="phTitle"><small>OWNER EDIT${overridden ? ' · LIVE' : ''}</small><b>${esc(doc.title || 'Drill')}</b></div>
+        <div class="phTitle"><small>OWNER EDIT${overridden ? ' · LIVE' : ''}</small><b>${esc(displayDrillTitle(doc.title || 'Drill'))}</b></div>
       </div>
       <div class="fixTop">
         ${s.cueBallPosition || (s.targetZones || []).length ? `<div class="fixTableWrap"><button type="button" class="fixExpand" data-action="df-full">FULL TABLE</button><div id="fixTable" class="fixTable">${table}</div></div>` : ''}

@@ -1022,10 +1022,10 @@ h1,h2,h3,h4{font-weight:700;letter-spacing:.1px}
 b,strong{font-weight:700}
 ::selection{background:#0a9dff55}
 
-/* header: POOLIQ wordmark from the home mockup — silver POOL, blue IQ, no gap */
+/* header wordmark: the installed app icon (icons/icon-512.png) — silver POOL, gold IQ */
 header{height:56px;padding:0 12px 0 14px;background:linear-gradient(180deg,#07111c,#050b14);border-bottom:1px solid #101a28}
-.brand{display:inline-block;font-size:30px;font-weight:800;letter-spacing:-.6px;line-height:.9;color:#fff;background:linear-gradient(180deg,#ffffff 0%,#f7fbff 46%,#c5d2e0 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.brand b{margin-left:-.22em;letter-spacing:-.8px;font-weight:800;background:linear-gradient(180deg,#5ec0ff 0%,#1496ff 46%,#0a6fe8 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.brand{display:block;line-height:0;background:none;color:inherit}
+.brandMark{display:block;height:30px;width:auto}
 header small{font-size:8.5px;font-weight:600;letter-spacing:2.35px;color:#c9d2df;margin-top:5px;text-transform:uppercase}
 .gearBtn{width:46px;height:46px;padding:0;border:0;border-radius:12px;display:grid;place-items:center;color:#aab4c7;background:transparent}
 .gearBtn:active{background:#0f1c2c}
@@ -1591,8 +1591,7 @@ body.fix-full #app{height:100dvh;padding:0}
 .rankEmblem{display:block;height:auto;object-fit:contain}
 .drillEmblem{position:relative;display:inline-block;line-height:0;flex:none;vertical-align:middle}
 .drillEmblem img{width:100%;height:auto;display:block}
-.drillEmblem b{position:absolute;left:30%;top:62%;transform:translate(-50%,-50%);color:#f4fbff;font-weight:900;line-height:1;text-shadow:0 1px 1px #041018}
-.drillEmblem b.side{left:70%;top:46%;font-size:.72em;opacity:.9}
+.drillEmblem b{position:absolute;left:30%;top:58%;transform:translate(-50%,-50%);color:#1a2433;font-weight:900;line-height:1;text-shadow:0 1px 0 #ffffff99}
 .homeRanks{display:block;width:100%;padding:10px 10px 8px;margin:0 0 8px;text-align:left;color:inherit;cursor:pointer;border:1px solid #d7b15a;border-radius:18px;background:radial-gradient(120% 90% at 18% 0%,#16304a 0%,#07111c 58%);box-shadow:0 0 0 1px #f6c45322,0 14px 30px #0008}
 .hrTop{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
 .homeRanks .eyebrow{color:var(--gold);letter-spacing:.16em}

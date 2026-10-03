@@ -181,7 +181,7 @@ export function createPlayScreen(ctx, key) {
     const isPattern = ev.mode === 'pattern';
     const patternPlanning = isPattern && !session.planLocked;
     const planning = vis.planner && !session.planLocked && !isPattern;
-    const title = C ? C.title : boss ? `BOSS · ${boss.name}` : `${game.name}${stage.level ? ` · Level ${stage.level}` : ''}`;
+    const title = C ? displayDrillTitle(C.title) : boss ? `BOSS · ${boss.name}` : `${game.name}${stage.level ? ` · Level ${stage.level}` : ''}`;
     const sub = C ? (ev.over ? 'Done' : `Attempt ${Math.min(ev.attemptsUsed + 1, ev.attemptsTotal)} of ${ev.attemptsTotal}`) : boss ? `Shot ${ev.shotIndex + 1}/${ev.shots.length} · ${shot.shot.skill}` : session.endless ? `Endless · Bank ${ev.attemptsUsed + 1}` : displayDrillTitle(stage.name);
     const tableOpts = patternPlanning
       ? { showCuePath: false, showAim: false, showObPath: false, showZones: false, hidePocket: true, pickedOrder: ui.patternPick }
