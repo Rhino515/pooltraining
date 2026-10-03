@@ -25,9 +25,15 @@ export function championSVG(opts = {}) {
   const id = `bc${++uid}`;
   return `<svg class="ballBadge champ ${opts.cls || ''}" data-ball="max" viewBox="0 0 100 100" width="${size}" height="${size}" role="img" aria-label="${esc(opts.title || 'Max rank')}"><defs><radialGradient id="${id}s" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#fff" stop-opacity=".6"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></radialGradient></defs><circle cx="50" cy="50" r="47" fill="none" stroke="#ffc75b" stroke-width="5"/><circle cx="50" cy="50" r="41" fill="#f5f7fa"/><path d="M30 60 L33 38 L42 49 L50 33 L58 49 L67 38 L70 60 Z" fill="#ffc75b" stroke="#8a6a12" stroke-width="2" stroke-linejoin="round"/><rect x="30" y="61" width="40" height="7" rx="2" fill="#ffc75b" stroke="#8a6a12" stroke-width="2"/><circle cx="50" cy="50" r="41" fill="url(#${id}s)"/></svg>`;
 }
-/** Rank badge for a Career level: ball n (or the Champion badge) */
+/**
+ * Career rank emblem: the mockup's crowned 8-ball (wreath, crown, CAREER RANK banner).
+ * The level number is text beside this image, not a different ball.
+ */
 export function rankBadgeSVG(status, opts = {}) {
-  return status.champion ? championSVG(opts) : ballSVG(status.ball, { title: status.title, ...opts });
+  const size = opts.size || 56;
+  const title = status?.champion ? (status.title || 'Max rank') : (status?.title || 'Career rank');
+  const h = Math.round(size * (334 / 344));
+  return `<img class="rankEmblem ${opts.cls || ''}" data-ball="${status?.champion ? 'max' : (status?.ball ?? '')}" src="./icons/rank-career.png" width="${size}" height="${h}" alt="${esc(title)}" style="width:${size}px;height:auto"/>`;
 }
 /**
  * Rank #9 drill emblem: an original cube of green billiard chalk (the familiar Master-chalk shape and color).
@@ -52,12 +58,14 @@ export function masterChalkSVG(number, opts = {}) {
     <text x="62" y="74" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-weight="900" font-size="22" fill="#f4efe2">${n}</text>
   </svg>`;
 }
-/** Drill Rank badge: a chalk cube with the drill rank number (visually distinct from the Career ball) */
+/** Drill Rank emblem: the mockup chalk cube. The number is the real drill rank, drawn over the face. */
 export function drillBadgeSVG(number, opts = {}) {
-  if (Number(number) === 9) return masterChalkSVG(number, opts);
   const size = opts.size || 56;
-  const max = opts.max;
-  return `<svg class="drillBadge ${opts.cls || ''}" data-drillrank="${number}" viewBox="0 0 100 100" width="${size}" height="${size}" role="img" aria-label="${esc(opts.title || `Drill rank ${number}`)}"><path d="M50 6 L90 26 L90 74 L50 94 L10 74 L10 26 Z" fill="${max ? '#3b2f0b' : '#0b2a3d'}" stroke="${max ? '#ffc75b' : '#46e7a0'}" stroke-width="4"/><path d="M50 6 L90 26 L50 46 L10 26 Z" fill="${max ? '#6b5418' : '#12506e'}" opacity=".9"/><text x="50" y="76" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-weight="900" font-size="34" fill="${max ? '#ffc75b' : '#46e7a0'}">${esc(number)}</text></svg>`;
+  const n = esc(number ?? '');
+  const h = Math.round(size * (134 / 108));
+  const fs = Math.max(9, Math.round(size * 0.30));
+  const side = size >= 48 ? `<b class="side" aria-hidden="true">${n}</b>` : '';
+  return `<span class="drillEmblem ${opts.cls || ''}" data-drillrank="${n}" style="width:${size}px;font-size:${fs}px" role="img" aria-label="${esc(opts.title || `Drill rank ${number}`)}"><img src="./icons/rank-drill.png" width="${size}" height="${h}" alt=""/><b>${n}</b>${side}</span>`;
 }
 /** Default avatar: a ball with the player's initials; color from the name */
 export function initialsAvatarSVG(name = '', opts = {}) {

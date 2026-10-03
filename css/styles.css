@@ -1022,11 +1022,11 @@ h1,h2,h3,h4{font-weight:700;letter-spacing:.1px}
 b,strong{font-weight:700}
 ::selection{background:#0a9dff55}
 
-/* header: POOL IQ wordmark + gear */
-header{height:66px;padding:0 14px 0 18px;background:linear-gradient(180deg,#050b14f7,#040a12ee);border-bottom:1px solid #152131}
-.brand{font-size:27px;font-weight:800;letter-spacing:-.3px;line-height:1;color:#fff}
-.brand b{color:var(--blue);font-weight:800;letter-spacing:-.5px}
-header small{font-size:9px;font-weight:600;letter-spacing:1.7px;color:#d3dae6;margin-top:4px}
+/* header: POOLIQ wordmark from the home mockup — silver POOL, blue IQ, no gap */
+header{height:56px;padding:0 12px 0 14px;background:linear-gradient(180deg,#07111c,#050b14);border-bottom:1px solid #101a28}
+.brand{display:inline-block;font-size:30px;font-weight:800;letter-spacing:-.6px;line-height:.9;color:#fff;background:linear-gradient(180deg,#ffffff 0%,#f7fbff 46%,#c5d2e0 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.brand b{margin-left:-.22em;letter-spacing:-.8px;font-weight:800;background:linear-gradient(180deg,#5ec0ff 0%,#1496ff 46%,#0a6fe8 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+header small{font-size:8.5px;font-weight:600;letter-spacing:2.35px;color:#c9d2df;margin-top:5px;text-transform:uppercase}
 .gearBtn{width:46px;height:46px;padding:0;border:0;border-radius:12px;display:grid;place-items:center;color:#aab4c7;background:transparent}
 .gearBtn:active{background:#0f1c2c}
 .gearIco{width:27px;height:27px;fill:currentColor;display:block}
@@ -1037,8 +1037,8 @@ nav button{display:flex;flex-direction:column;align-items:center;justify-content
 nav .navIco{width:23px;height:23px;fill:currentColor;display:block;flex:none}
 nav button span{font-size:9.5px;font-weight:500;margin-top:0;color:#a7b1c8;letter-spacing:-.1px;line-height:1.15}
 nav .scan{transform:none;height:auto;background:transparent;border:1px solid transparent;border-radius:12px}
-nav button.active,nav .scan.active{background:linear-gradient(180deg,#111f31,#0b1624);border-color:#24344a;color:var(--blue);box-shadow:inset 0 1px 0 #ffffff0f,0 4px 14px #0008}
-nav button.active span{color:#fff;font-weight:600}
+nav button.active,nav .scan.active{background:linear-gradient(180deg,#0e3f72,#0a2c56);border-color:#3cb4ff;color:#fff;box-shadow:0 0 16px #1a90ff88,inset 0 0 12px #4cc9ff33}
+nav button.active span{color:#fff;font-weight:700}
 @media(max-width:700px){nav button{width:auto;flex:1 1 0;min-width:0}}
 @media(max-width:400px){nav button span{font-size:8.6px;letter-spacing:-.25px}}
 @media(max-width:370px){nav button span{font-size:8.2px;letter-spacing:-.3px}nav .navIco{width:21px;height:21px}}
@@ -1524,11 +1524,11 @@ body.fix-full #app{height:100dvh;padding:0}
 .bpRankHead{display:flex;gap:12px;align-items:center}
 .bpRankNum{font-size:34px;font-weight:900;letter-spacing:.4px;margin:2px 0 6px}
 .bpRank p{margin:4px 0}
-.bpBadge{width:54px;flex:none}
-.bpBadge .bpCue{width:54px;height:100px;display:block}
+.bpBadge{width:42px;flex:none}
+.bpBadge .bpCue{width:42px;height:86px;object-fit:contain;display:block}
 .bpBadgeRow{display:flex;gap:8px;margin-top:10px}
-.bpMini{width:28px;opacity:.38}
-.bpMini .bpCue{width:28px;height:52px;display:block}
+.bpMini{width:22px;opacity:.38}
+.bpMini .bpCue{width:22px;height:46px;object-fit:contain;display:block}
 .bpMini.on,.bpMini.earned{opacity:1}
 .bpMini.on{outline:1px solid var(--gold,#f6c453);border-radius:8px}
 .bpLevels{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
@@ -1587,11 +1587,57 @@ body.fix-full #app{height:100dvh;padding:0}
 .learnPage h2{margin-top:18px}
 .learnRow{padding:14px 16px}
 
-/* v14-38 home ranks + career drills */
-.homeRanks{display:flex;flex-direction:column;gap:8px;width:100%;padding:12px 14px;margin-bottom:14px;text-align:left;color:inherit;cursor:pointer}
-.hrItem{display:flex;align-items:center;gap:12px;min-height:48px}
-.hrItem b{font-size:16px;line-height:1.15;font-weight:800}
-.hrCue .bpCue{width:28px;height:72px;display:block}
+/* v14-39 home mockup + rank photos */
+.rankEmblem{display:block;height:auto;object-fit:contain}
+.drillEmblem{position:relative;display:inline-block;line-height:0;flex:none;vertical-align:middle}
+.drillEmblem img{width:100%;height:auto;display:block}
+.drillEmblem b{position:absolute;left:30%;top:62%;transform:translate(-50%,-50%);color:#f4fbff;font-weight:900;line-height:1;text-shadow:0 1px 1px #041018}
+.drillEmblem b.side{left:70%;top:46%;font-size:.72em;opacity:.9}
+.homeRanks{display:block;width:100%;padding:10px 10px 8px;margin:0 0 8px;text-align:left;color:inherit;cursor:pointer;border:1px solid #d7b15a;border-radius:18px;background:radial-gradient(120% 90% at 18% 0%,#16304a 0%,#07111c 58%);box-shadow:0 0 0 1px #f6c45322,0 14px 30px #0008}
+.hrTop{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
+.homeRanks .eyebrow{color:var(--gold);letter-spacing:.16em}
+.hrView{color:#9fd4ff;font-size:13px;font-weight:700;white-space:nowrap}
+.hrGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);gap:6px;align-items:center}
+.hrCareer{display:flex;flex-direction:column;align-items:center;text-align:center;min-width:0}
+.hrCareer .rankEmblem{width:min(124px,34vw)}
+.hrLevel{color:var(--gold);font-weight:800;font-size:20px;letter-spacing:.06em;margin-top:0;line-height:1}
+.hrRankName{color:#f3e2b0;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.hrSide{display:flex;flex-direction:column;gap:12px;min-width:0}
+.hrRow{display:grid;grid-template-columns:54px minmax(0,1fr) 12px;gap:6px;align-items:center}
+.hrMeta{min-width:0}
+.hrMeta .k{display:block;color:#d5deea;font-size:10.5px;line-height:1.15;white-space:nowrap}
+.hrMeta .lv{display:block;color:#fff;font-weight:800;font-size:20px;line-height:1.05}
+.hrMeta .lv.gold{color:var(--gold)}
+.hrMeta .nm{display:block;color:#e7edf5;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;line-height:1.2}
+.hrChev{color:#3aa0ff;font-size:20px;font-weight:700}
+.hrRow .bpCue{width:40px;height:78px;object-fit:contain;display:block;justify-self:center}
+.homeNext{position:relative;overflow:hidden;border:1px solid #d7b15a;background:#071018;box-shadow:0 0 0 1px #f6c45322,0 12px 28px #0008}
+.homeNext .nxPhoto{position:absolute;inset:0 0 0 42%;background:url(../icons/home-next.jpg) right center/cover no-repeat;-webkit-mask-image:linear-gradient(90deg,transparent,#000 36%);mask-image:linear-gradient(90deg,transparent,#000 36%)}
+.homeNext .nxIn{position:relative;z-index:1;padding:8px 12px 6px}
+.homeNext h3{margin:0 0 1px;font-size:18px;line-height:1.05}
+.homeNext .muted{margin:0 0 6px;font-size:12.5px}
+.homeNext .bigBtn{position:relative;display:grid;grid-template-columns:22px 1fr 16px;align-items:center;width:100%;min-height:46px;padding:10px 8px;font-size:13.5px;white-space:nowrap;border-radius:14px;background:linear-gradient(180deg,#3ec2ff 0%,#1496ff 48%,#0a72ee 100%);box-shadow:0 8px 18px #0a78ff55,inset 0 1px 0 #ffffff66;letter-spacing:0}
+.homeNext .bigBtn::before{content:"";width:0;height:0;border-style:solid;border-width:6px 0 6px 11px;border-color:transparent transparent transparent #fff;justify-self:center}
+.homeNext .bigBtn::after{content:"›";justify-self:center;font-size:22px;font-weight:700;line-height:1}
+.homeBackup{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:8px;align-items:center;margin:8px 0;padding:10px 10px;border:1px solid #1e6cb5;border-radius:16px;background:linear-gradient(180deg,#0c1a2c,#071018)}
+.homeBackup .bkIco{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;color:#3aa0ff;border:1px solid #1e6cb5;background:#071422}
+.homeBackup .nudgeText b{display:block;font-size:14px}
+.homeBackup .nudgeText small{display:block;color:var(--muted);font-size:12px;line-height:1.35;margin-top:2px}
+.homeBackup .bkBtn{min-height:40px;padding:0 12px;border-radius:12px;border:1px solid #1e6cb5;background:#0c1c30;color:#7ec8ff;font-weight:800;letter-spacing:.04em;cursor:pointer}
+.qaTitle{color:var(--gold);letter-spacing:.16em;font-size:13px;font-weight:800;margin:10px 2px 6px}
+.quickAccess{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.qaTile{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-height:112px;padding:4px 6px 16px;border-radius:16px;border:1px solid #24507f;background:linear-gradient(180deg,#102033,#071018);color:inherit;text-align:left;cursor:pointer;box-shadow:inset 0 1px 0 #ffffff0c}
+.qaTile img{width:100%;height:40px;object-fit:contain;margin-bottom:1px}
+.qaTile b{font-size:13px;font-weight:800;line-height:1.15}
+.qaTile small{color:#d5deea;font-size:11px;line-height:1.25;font-weight:500}
+.qaChev{position:absolute;right:7px;bottom:6px;color:#3aa0ff;font-size:18px;font-weight:700;line-height:1}
 .careerDrills{margin:8px 0 16px}
 .careerDrills h2{margin:4px 0 8px}
 .emptyCat{margin:12px 4px}
+@media(max-width:420px){
+  .hrLevel{font-size:18px}
+  .hrMeta .lv{font-size:17px}
+  .hrMeta .k,.hrMeta .nm,.qaTile small{font-size:10px}
+  .qaTile b{font-size:12px}
+  .hrRow{grid-template-columns:46px minmax(0,1fr) 10px}
+}

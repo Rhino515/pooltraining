@@ -642,6 +642,7 @@ function homeExtras() {
   const sum = V.summarize(V.localBundle(localStorage).keys);
   const mode = installMode();
   return {
+    backup: { lastText: V.daysAgoText(meta.lastBackupAt) },
     nudge: V.nudgeDue(meta, sum) ? { lastText: V.daysAgoText(meta.lastBackupAt) } : null,
     install: (mode === 'prompt' || mode === 'ios') && !(meta.installDismissedAt && Date.now() - meta.installDismissedAt < 30 * DAY) ? mode : null
   };

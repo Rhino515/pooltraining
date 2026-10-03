@@ -26,18 +26,25 @@ import { ownerAccountSignedIn } from './dev/dev.js';
 
 function nextUpCard(state) {
   const n = nextUp(state);
-  return `<div class="card nextUp" data-next-href="${esc(n.href)}">
-    <div class="eyebrow">NEXT UP${n.rank ? ` · TOWARD ${esc(n.rank.toUpperCase())}` : ''}</div>
-    <h3>${esc(n.title)}</h3>
-    ${n.text ? `<p class="muted">${esc(n.text)}</p>` : ''}
-    <button type="button" class="bigBtn" data-action="go" data-href="${esc(n.href)}">${esc(n.linkText ? `GO: ${n.linkText}` : 'GO')}</button>
-    ${n.remaining ? `<small class="muted">${n.remaining} requirement${n.remaining > 1 ? 's' : ''} left for this rank</small>` : ''}
+  return `<div class="card nextUp homeNext" data-next-href="${esc(n.href)}">
+    <span class="nxPhoto" aria-hidden="true"></span>
+    <div class="nxIn">
+      <div class="eyebrow">NEXT UP${n.rank ? ` · TOWARD ${esc(n.rank.toUpperCase())}` : ''}</div>
+      <h3>${esc(n.title)}</h3>
+      ${n.text ? `<p class="muted">${esc(n.text)}</p>` : ''}
+      <button type="button" class="bigBtn" data-action="go" data-href="${esc(n.href)}">${esc(n.linkText ? `GO: ${n.linkText}` : 'GO')}</button>
+      ${n.remaining ? `<small class="muted">${n.remaining} requirement${n.remaining > 1 ? 's' : ''} left for this rank</small>` : ''}
+    </div>
   </div>`;
 }
 
 function homeExtrasHTML(x = {}) {
-  let out = '';
-  if (x.nudge) out += `<div class="card nudgeCard backupNudge" data-nudge="backup"><span class="nudgeIcon">⛨</span><span class="nudgeText"><b>Back up your progress</b><small>Last backup: ${esc(x.nudge.lastText)}. One tap saves a file you can restore on any phone.</small></span><button type="button" class="miniAct nudgeGo" data-action="backup-now">BACK UP</button><button type="button" class="nudgeX" data-action="nudge-dismiss" aria-label="Dismiss backup reminder">×</button></div>`;
+  const last = x.backup?.lastText || x.nudge?.lastText || 'never';
+  let out = `<div class="card homeBackup" data-home-backup>
+    <span class="bkIco" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M5 3h10.2L21 8.8V21a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h1zm1 2v5h9V5H6zm1 8h10v7H7v-7zm8-6h2v3h-2V7z"/></svg></span>
+    <span class="nudgeText"><b>Back up your progress</b><small>Last backup: ${esc(last)}. One tap saves a file you can restore on any phone.</small></span>
+    <button type="button" class="bkBtn" data-action="backup-now">BACK UP</button>
+  </div>`;
   if (x.install) out += `<div class="card nudgeCard installNudge" data-nudge="install"><span class="nudgeIcon">⤓</span><span class="nudgeText"><b>Install Pool IQ</b><small>${x.install === 'ios' ? 'Share → Add to Home Screen: full-screen, offline, safer storage.' : 'Full-screen, works offline, safer storage.'}</small></span><button type="button" class="miniAct nudgeGo" data-action="install-app">INSTALL</button><button type="button" class="nudgeX" data-action="install-dismiss" aria-label="Dismiss install tip">×</button></div>`;
   return out;
 }
@@ -51,32 +58,47 @@ function homeRanksCard(state) {
   const cs = careerStatus(state);
   const dr = drillRankStatus(state);
   const bp = ballPocketStatus(state);
+  const level = cs.champion ? 'MAX RANK' : `LEVEL ${cs.ball}`;
   return `<button type="button" class="card homeRanks" data-home-ranks data-action="go" data-href="#profile">
-    <span class="hrItem">${rankBadgeSVG(cs, { size: 40 })}<b>${esc(cs.title)}</b></span>
-    <span class="hrItem">${drillBadgeSVG(dr.number, { size: 40, max: dr.max })}<b>${esc(dr.name)}</b></span>
-    <span class="hrItem hrCue">${ballPocketBadgeSVG(bp.current)}<b>${bp.current}</b></span>
+    <span class="hrTop"><span class="eyebrow">YOUR RANKS</span><span class="hrView">View Profile ›</span></span>
+    <span class="hrGrid">
+      <span class="hrCareer">
+        ${rankBadgeSVG(cs, { size: 168 })}
+        <span class="hrLevel">${esc(level)}</span>
+        <span class="hrRankName">${esc(cs.name)}</span>
+      </span>
+      <span class="hrSide">
+        <span class="hrRow">
+          ${drillBadgeSVG(dr.number, { size: 54, max: dr.max, title: dr.name })}
+          <span class="hrMeta"><span class="k">Drill Rank</span><span class="lv">Lv. ${dr.number}</span><span class="nm">${esc(dr.name)}</span></span>
+          <span class="hrChev" aria-hidden="true">›</span>
+        </span>
+        <span class="hrRow">
+          ${ballPocketBadgeSVG(bp.current)}
+          <span class="hrMeta"><span class="k">Ball Pocketing Rank</span><span class="lv gold">Lv. ${bp.current}</span></span>
+          <span class="hrChev" aria-hidden="true">›</span>
+        </span>
+      </span>
+    </span>
   </button>`;
 }
 
+function quickAccessHTML() {
+  const tiles = [
+    ['#arcade', './icons/qa-table.png', 'Table Games', '8/9/10/Ultimate<br>Bank Pool'],
+    ['#drills', './icons/qa-drills.png', 'Drills', 'Career Drills<br>&amp; Training'],
+    ['#sim', './icons/qa-sim.png', 'Simulator', 'Runouts ·<br>Layouts · Shots'],
+    ['#learn', './icons/qa-learn.png', 'Learn', 'Fundamentals<br>How to Play<br>Rules']
+  ];
+  return `<h2 class="qaTitle">QUICK ACCESS</h2><div class="quickAccess">${tiles.map(([href, src, name, sub]) => `<button type="button" class="qaTile" data-action="go" data-href="${href}"><img src="${src}" alt=""/><b>${esc(name)}</b><small>${sub}</small><span class="qaChev" aria-hidden="true">›</span></button>`).join('')}</div>`;
+}
+
 export function renderHome(state, extras = {}) {
-  const info = nextRankInfo(state);
-  const pct = Math.round((info.progress || 0) * 100);
-  const weak = weakestSkills(state, 3);
-  const st = ghostStats(state);
-  void info; void pct;
   return `${devSeedBannerHTML(state)}
     ${homeRanksCard(state)}
-    ${homeExtrasHTML(extras)}
     ${nextUpCard(state)}
-    <button type="button" class="card simPromo" data-action="go" data-href="#sim"><span class="simPromoIcon">◔</span><span class="simPromoText"><span class="eyebrow">NEW</span><b>Shot Simulator</b><small>Set up any layout, shoot it and watch the physics — racks, run-outs, Find a Shot and more.</small></span><span class="simPromoGo">›</span></button>
-    <div class="dashActions">
-      <button type="button" class="dashAction card" data-action="go" data-href="#arcade"><span class="icon">🎯</span><b>Table Games</b><span>8-Ball · 9-Ball · 10-Ball</span></button>
-      <button type="button" class="dashAction card" data-action="go" data-href="#ghost"><span class="icon">♚</span><b>Ghost</b><span>Up to ${maxUnlockedBalls(state)}-ball · ${st.pct}% wins</span></button>
-      <button type="button" class="dashAction card" data-action="go" data-href="#training"><span class="icon">▥</span><b>Recommended</b><span>${esc(weakText(state))}</span></button>
-      <button type="button" class="dashAction card friendsAction" data-action="go" data-href="#friends"><span class="icon">⚔</span><b>Play with Friends</b><span>${esc(friendsText())}</span></button>
-    </div>
-    <h2>Skills</h2>
-    <div class="skills card" id="skills">${skillBreakdownHTML(state)}</div>`;
+    ${homeExtrasHTML(extras)}
+    ${quickAccessHTML()}`;
 }
 
 function weakText(state) {
@@ -295,36 +317,9 @@ function careerDrillsHTML(state) {
   return `<section class="careerDrills" data-section="Career Drills"><h2>Career Drills</h2><div class="arcadeGrid">${CAREER_DRILL_GAMES().map((g) => gameCard(state, g)).join('')}</div></section>`;
 }
 
-/** Pool-cue badges, house cue at level 1 up to a custom cue at level 5. Original art, no brand marks. */
-let bpCueUid = 0;
+/** Ball Pocketing emblem: the mockup cue. Levels stay numbers — this manual has no level names. */
 function ballPocketBadgeSVG(level) {
-  const cues = {
-    1: { shaft: '#c9a36a', shaftHi: '#e4c48a', butt: '#6a4324', wrap: '#5c3b22', wrapInk: '#3a2616', ferrule: '#d7d0c4', tip: '#8a7760', ring: '#5a4030', bumper: '#24180f', linen: false, scuff: true },
-    2: { shaft: '#e2b56a', shaftHi: '#f0d09a', butt: '#1c1e22', wrap: '#14161a', wrapInk: '#3c4148', ferrule: '#f7f4ee', tip: '#2d74c4', ring: '#b9c0c8', bumper: '#0c0e12', linen: true },
-    3: { shaft: '#f3d7a6', shaftHi: '#fff1d4', butt: '#2a1810', wrap: '#c4a15a', wrapInk: '#7a5a28', ferrule: '#fffaf3', tip: '#3c8adf', ring: '#e4e8ee', bumper: '#140e0c', linen: true },
-    4: { shaft: '#2a3138', shaftHi: '#4a555f', butt: '#10141a', wrap: '#0c1014', wrapInk: '#5c6772', ferrule: '#ffffff', tip: '#6eb6ff', ring: '#f2f5f8', bumper: '#07090c', linen: true, carbon: true, point: '#8d5a32' },
-    5: { shaft: '#f7e6c0', shaftHi: '#fff6e4', butt: '#14100e', wrap: '#0e0c0a', wrapInk: '#d4b36a', ferrule: '#fffdf8', tip: '#f4e2a6', ring: '#e8c56e', bumper: '#070605', linen: true, point: '#f0d48a', rings: 3 }
-  };
-  const c = cues[level] || cues[1];
-  const id = `bpc${++bpCueUid}`;
-  const linen = c.linen ? `<g stroke="${c.wrapInk}" stroke-width="0.45" opacity="0.85"><path d="M30.2 90 h11.6 M30.2 93 h11.6 M30.2 96 h11.6 M30.2 99 h11.6 M30.2 102 h11.6 M30.2 105 h11.6"/></g>` : '';
-  const scuff = c.scuff ? `<path d="M35 36 l2.4 7 M33.5 52 l3.2 -2.4 M36 64 l2 5" stroke="#6d4c2c" stroke-width="0.45" fill="none" opacity="0.75"/>` : '';
-  const carbon = c.carbon ? `<path d="M35 26 l1.6 5 M37.2 38 l-1.6 5 M35 50 l1.6 5 M37 62 l-1.4 5" stroke="#8b97a3" stroke-width="0.4" fill="none" opacity="0.7"/>` : '';
-  const point = c.point ? `<path d="M36 114 l2.6 6 h-5.2 z" fill="${c.point}"/>` : '';
-  const extraRings = c.rings ? `<rect x="30.4" y="80" width="11.2" height="1.1" fill="${c.ring}"/><rect x="30.4" y="109" width="11.2" height="1.1" fill="${c.ring}"/>` : '';
-  return `<svg class="bpCue" viewBox="26 2 20 128" role="img" aria-hidden="true">
-    <defs><linearGradient id="${id}" x1="0" x2="1"><stop offset="0" stop-color="${c.shaft}"/><stop offset="0.42" stop-color="${c.shaftHi}"/><stop offset="1" stop-color="${c.shaft}"/></linearGradient></defs>
-    <path d="M33.6 16 L38.4 16 L41.2 76 L30.8 76 Z" fill="url(#${id})"/>
-    ${scuff}${carbon}
-    <path d="M30.2 76 L41.8 76 L43.4 122 L28.6 122 Z" fill="${c.butt}"/>
-    <rect x="29.4" y="88" width="13.2" height="20" fill="${c.wrap}"/>
-    ${linen}${point}${extraRings}
-    <rect x="31" y="73.2" width="10" height="1.8" fill="${c.ring}"/>
-    <rect x="31.4" y="75.4" width="9.2" height="1.2" fill="${c.ring}" opacity="0.75"/>
-    <rect x="33.2" y="9.2" width="5.6" height="7.2" fill="${c.ferrule}"/>
-    <path d="M33.5 4.8 h5 q0.8 0.5 0.8 1.6 v3.2 h-6.6 v-3.2 q0-1.1 0.8-1.6z" fill="${c.tip}"/>
-    <rect x="29.2" y="122" width="13.6" height="3.6" rx="1" fill="${c.bumper}"/>
-  </svg>`;
+  return `<img class="bpCue rankCue" src="./icons/rank-cue.png" alt="Ball Pocketing level ${Number(level) || 1}" data-bp-cue="${Number(level) || 1}"/>`;
 }
 
 function ballPocketCategory(state, bpViewLevel) {
