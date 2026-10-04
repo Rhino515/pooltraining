@@ -1604,8 +1604,8 @@ body.fix-full #app{height:100dvh;padding:0}
 .drillEmblem{position:relative;display:inline-block;line-height:0;flex:none;vertical-align:middle}
 .drillEmblem img{width:100%;height:auto;display:block;object-fit:contain}
 .drRankNo{font-weight:900;color:var(--gold);margin-right:.35em}
-/* Chalk rank tiles stay rounded squares (blue rim, dark frame, cube filling it) at a fixed size. Hero 88px; list rows and the home rank row 64px. */
-.drillTile{display:grid;place-items:center;width:88px;height:88px;flex:none;box-sizing:border-box;padding:8%;border-radius:26%;border:6px solid #3ec4ff;background:radial-gradient(90% 80% at 50% 40%,#12324e 0%,#06101a 72%);box-shadow:0 0 0 1px #b7e6ff99,0 0 16px #1a8cff88,inset 0 0 20px #031018;overflow:hidden}
+/* Chalk rank tiles: the picture's own frame is the tile (no extra rim). Hero 88px; list rows and the home rank row 64px. */
+.drillTile{display:grid;place-items:center;width:88px;height:88px;flex:none;box-sizing:border-box;padding:0;border:0;border-radius:0;background:none;box-shadow:none;overflow:hidden}
 .drillTile img{width:100%;height:100%;object-fit:contain}
 .drTileRow .drillTile,.homeRanks .hrDrill .drillTile{width:64px;height:64px}
 .homeRanks .hrDrill{grid-template-columns:64px minmax(0,1fr) 12px}
