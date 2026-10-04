@@ -28,6 +28,7 @@ Shot Simulator simplification. Playing-surface sizes (ball stays 2.25 in): 7 ft 
 - Cache `pool-iq-v14-2`, app version 14.
 - v14-1: 8-ball runout plays the group (not the 1-ball), shows a breakout for a tied-up ball, 3D is a low view from behind the cue ball, and full screen is the table plus EXIT.
 - v14-2: 3D view is a shaded table from behind the cue ball (wood rails, lit cloth, round balls, cue).
+- v14-78: Runout Drill System (RDS) is a scored progression on Drill Sets & Exams. Three racks at a level. 2 out of 3 opens the next level, 1 of 3 stays, 0 of 3 goes down. Not on the All list. No Career XP change. Cache `pool-iq-v14-78`.
 - v14-71: Drill Rank emblems are the Master chalk cube, ground down a step at each rank. Rank 1 is fresh. Rank 2 is already used. The last rank is a ripped sticker and a small piece of chalk. The rank number sits beside the name, not on the chalk. Names, XP, and thresholds are unchanged. Cache `pool-iq-v14-71`.
 - v14-67: The header, and every screen's top controls, sit below the iPhone status bar (`env(safe-area-inset-top)`). The bottom nav stays above the home indicator. No extra band when the inset is 0. Cache `pool-iq-v14-67`.
 - v14-65: Home header has a small Sign in / Register link (the existing account screen). Signed in, it shows the display name, or Sign out if there is no name. Cache `pool-iq-v14-65`.

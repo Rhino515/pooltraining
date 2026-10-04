@@ -122,42 +122,106 @@ const SAF = [
   '20 – Tickie hide (9-ball):'
 ];
 
-const RDS_INTRO = `Instructions:
-${bullet('RDS consists of a set of 16 break and run challenges of increasing levels of difficulty.')}
-${bullet('In each level, you start with a break shot and then take ball in hand (BIH), meaning you can place the CB anywhere on the table.')}
-${bullet('There is no penalty for a scratch on the break, and balls pocketed on the break remain down (except for the 8 in 8-ball-rules racks, where you spot it or re-rack).')}
-${bullet('A miss or a scratch after the break ends a run.')}
-${bullet('If you run 2 of 3 racks at one level, where you make all the required balls without a miss or foul, you advance to the next higher level.')}
-${bullet('If you run only 1 of 3 racks, you stay at the current level.')}
-${bullet('If you miss on 3 racks in a row (0 of 3 racks), go down to the next lower level.')}
-${bullet('If you are trying RDS for the first time, pick a level at which you are confident to run 2 out of 3 racks and start there; otherwise start where you left off in your previous session.')}
-${bullet('After an RDS session (30 minutes to an hour of running racks), your ending level and associated rating should be a good indicator of your level of playing ability.')}
-${bullet('Use standard WPA rules with “CB fouls only” and no “3-point 9-ball break rule.” In rotation racks, combos are fine and slop counts; but if you pocket the highest numbered ball early, you must still run the remaining balls in rotation (except Level 14). In all 8-ball and straight pool racks, balls must be pocketed in called pockets (i.e., slop does not count).')}
-${bullet('RDS 100 is an alternative scored format, where you start with 100 points and attempt to run one rack at each level, deducting points left on the table after a miss or foul.')}
+const RDS_INTRO = `RDS consists of a set of 16 break-and-run challenges of increasing levels of difficulty.
 
-Rules:
-${bullet('If you run 2 of 3 racks at one level, where you make all the required balls without a miss or foul, you advance to the next higher level.')}
-${bullet('If you run only 1 of 3 racks, you stay at the current level.')}
-${bullet('If you miss on 3 racks in a row (0 of 3 racks), go down to the next lower level.')}`;
+You start with a break shot and then take ball in hand (BIH), meaning you can place the CB anywhere you want on the table. There is no penalty for a scratch on the break, and balls pocketed on the break remain down.
+
+RDS is progressive and adaptive. When you do well, the level gets harder; and when you do poorly, the level gets easier. If you run 2 out of 3 racks at one level, where you make all the required balls without a miss or foul, you go to the next higher level. If you run only 1 of 3, you stay at the current level. And if you do not run any of the 3, you go down to the next lower level. If you are trying RDS for the first time, pick a level at which you are confident to run 2 out of 3 racks and start there; otherwise, start where you left off in your previous RDS session. After a practice session, your ending level and associated rating should be a decent indicator of your level of playing ability.
+
+An alternative RDS format is a scored approach, where you start with 100 points and attempt to run one rack at each level, deducting points left on the table after a miss or foul. I call it RDS 100 and it was adopted by the Billiard University (BU) as one of its Playing-Ability Exams (Exam IV).
+
+This set plays the progressive version. Record 3 racks. The next level stays locked until the level before it is passed.`;
+
+export const RDS_RATINGS = [
+  'lower novice',
+  'mid novice',
+  'upper novice',
+  'lower beginner (D-)',
+  'mid beginner (D)',
+  'upper beginner (D+)',
+  'lower intermediate (C-)',
+  'mid intermediate (C)',
+  'upper intermediate (C+)',
+  'lower advanced (B-)',
+  'mid advanced (B)',
+  'upper advanced (B+)',
+  'lower shortstop (A-)',
+  'upper shortstop (A)',
+  'semipro / pro (A+/AA)',
+  'world class pro (A++/AAA)'
+];
+
+const RDS_SHARED = [
+  'You start with a break shot and then take ball in hand (BIH), meaning you can place the CB anywhere you want on the table.',
+  'There is no penalty for a scratch on the break, and balls pocketed on the break remain down.'
+];
 
 const RDS = [
-  ['Optional Level 1 – 6 balls, pocket OBs directly with no CB', ['break a rack of 6 balls.', 'remove the cue ball.', 'pocket each object ball directly, in any order.', 'wipe chalk marks off the balls when done.']],
+  ['Level 1 – 6 balls, pocket OBs directly with no CB', ['break a rack of 6 balls.', 'remove the cue ball.', 'pocket each object ball directly, in any order.', 'wipe chalk marks off the balls when done.']],
   ['Level 2 – 6 balls, any order, BIH on every shot', ['break a rack of 6 balls.', 'take cue ball in hand for each shot.', 'pocket each ball in any order.']],
   ['Level 3 – 6 balls, any order, 3 extra BIHs', ['break a rack of 6 balls.', 'take cue ball in hand after the break and any 3 other times during the run.', 'pocket each ball in any order.']],
   ['Level 4 – 6 balls, any order, 2 extra BIHs', ['break a rack of 6 balls.', 'take cue ball in hand after the break and any 2 other times during the run.', 'pocket each ball in any order.']],
   ['Level 5 – 6 balls, any order, 1 extra BIH', ['break a rack of 6 balls.', 'take cue ball in hand after the break and once any time during the run.', 'pocket each ball in any order.']],
-  ['Level 6 – 7 balls (3 solids, 3 stripes, 8), 8-ball rules, 1 extra BIH', ['break a rack of 6 balls (3 solids, 3 stripes) with the 8 ball added (in the center or back).', 'play standard 8-ball rules, except take cue ball in hand after the break and once any time during the run.', 'pocket all the stripes or all the solids, and then the 8.']],
+  ['Level 6 – 7 balls (3 solids, 3 stripes, 8), 8-ball rules, 1 extra BIH', ['break a rack of 6 balls (3 solids, 3 stripes) with the 8 ball added (in the center or back).', 'play standard 8-ball rules, except take cue ball in hand after the break.', 'pocket all the stripes or all the solids, and then the 8.']],
   ['Level 7 – 9 balls, any order, 1 extra BIH', ['break a rack of 9 balls.', 'take cue ball in hand after the break and once any time during the run.', 'pocket each ball in any order.']],
-  ['Level 8 – 9 balls (4 solids, 4 stripes, 8), 8-ball rules, 1 extra BIH', ['break a rack of 9 balls (4 solids, 4 stripes, with the 8 ball in the center).', 'play standard 8-ball rules, except take cue ball in hand after the break and once any time during the run.', 'pocket all the stripes or all the solids, and then the 8.']],
+  ['Level 8 – 9 balls (4 solids, 4 stripes, 8), 8-ball rules, 1 extra BIH', ['break a rack of 9 balls (4 solids, 4 stripes, with the 8 ball in the center).', 'play standard 8-ball rules, except take cue ball in hand after the break.', 'pocket all the stripes or all the solids, and then the 8.']],
   ['Level 9 – 15 balls, any order, 2 extra BIHs', ['break a rack of 15 balls.', 'take cue ball in hand after the break and any 2 other times during the run.', 'pocket each ball in any order.']],
   ['Level 10 – 6 balls, in order', ['break a rack of 6 balls.', 'take cue ball in hand after the break.', 'shoot the balls in rotation, always hitting the lowest-numbered ball 1st.']],
   ['Level 11 – 15 balls, any order', ['break a rack of 15 balls.', 'take cue ball in hand after the break.', 'pocket each ball in any order.']],
   ['Level 12 – 8-ball rules', ['break a rack of 15 balls.', 'play standard 8-ball rules, except take cue ball in hand after the break.', 'pocket all the stripes or all the solids, and then the 8.']],
   ['Level 13 – 9 balls (4 solids, 4 stripes, 8), 8-ball rules, remaining balls in order', ['break a rack of 9 balls (4 solids, 4 stripes, with the 8 ball in the center).', 'play standard 8-ball rules, except take cue ball in hand after the break.', 'pocket all the stripes or all the solids, and then the 8.', 'then pocket the remaining balls in rotation, always hitting the lowest-numbered ball 1st.']],
-  ['Level 14 – 9 balls, 9-ball rules', ['break a rack of 9 balls.', 'play standard 9-ball rules, except take cue ball in hand after the break.', 'shoot the balls in rotation, always hitting the lowest-numbered ball 1st.', 'pocketing the 9 at any time (even on the break) with a legal shot is a win and you get credit for all balls.']],
-  ['Level 15 – 15 balls, 8-ball rules, remaining balls in order', ['break a rack of 15 balls.', 'play standard 8-ball rules, except take cue ball in hand after the break.', 'pocket all the stripes or all the solids, and then the 8.', 'then pocket the remaining balls in rotation, always hitting the lowest-numbered ball 1st.']],
-  ['Level 16 – 15 balls, in order', ['break a rack of 15 balls.', 'take cue ball in hand after the break.', 'shoot the balls in rotation, always hitting the lowest-numbered ball 1st.']]
+  ['Level 14 – 9 balls, 9-ball rules', RDS_SHARED.slice()],
+  ['Level 15 – 15 balls, 8-ball rules, remaining balls in order', RDS_SHARED.slice()],
+  ['Level 16 – 15 balls, in order', RDS_SHARED.slice()]
 ];
+
+/**
+ * Progressive RDS, from the October 2020 article:
+ * 2 out of 3 (or 3 out of 3) goes to the next higher level.
+ * 1 of 3 stays. 0 of 3 goes down. There is no level above 16 or below 1.
+ */
+export function rdsOutcome(runs, level) {
+  const n = Math.max(0, Math.min(3, Number(runs) || 0));
+  const lv = Math.max(1, Math.min(16, Number(level) || 1));
+  let move;
+  let next;
+  if (n >= 2) {
+    move = 'up';
+    next = Math.min(16, lv + 1);
+  } else if (n === 1) {
+    move = 'stay';
+    next = lv;
+  } else {
+    move = 'down';
+    next = Math.max(1, lv - 1);
+  }
+  const rule = move === 'up'
+    ? 'You go to the next higher level.'
+    : move === 'stay'
+      ? 'You stay at the current level.'
+      : 'You go down to the next lower level.';
+  return {
+    runs: n,
+    level: lv,
+    move,
+    next,
+    passed: move === 'up',
+    line: `${n} out of 3. ${rule}`,
+    rating: RDS_RATINGS[next - 1]
+  };
+}
+
+export function rdsProgress(exam) {
+  const sets = Array.isArray(exam?.sets) ? exam.sets : [];
+  const passed = new Set();
+  for (const row of sets) {
+    if (row && Number(row.runs) >= 2) passed.add(Number(row.level));
+  }
+  let unlocked = 1;
+  while (unlocked < 16 && passed.has(unlocked)) unlocked += 1;
+  const asked = Math.max(1, Math.min(16, Number(exam?.current) || 1));
+  return { sets, passed, unlocked, current: Math.min(asked, unlocked) };
+}
 
 const E7 = `Instructions:
 ${bullet('Pocket the OB and draw the CB back from four different CB-OB distances (1-4 diamonds) to four different draw distances (1-4 diamonds).')}
@@ -181,7 +245,7 @@ Total Score (max: 100) =
 
 function rdsText(i) {
   const [title, lines] = RDS[i];
-  return `${title}\n${lines.map(bullet).join('\n')}`;
+  return `${title}\n${RDS_RATINGS[i]}\n${lines.map(bullet).join('\n')}`;
 }
 
 function buildDrills() {
@@ -192,7 +256,7 @@ function buildDrills() {
   });
   RDS.forEach((row, i) => {
     const n = i + 1;
-    out.push({ id: `bu-rds${n}`, exam: 'rds', n, name: row[0], kind: 'rack', max: 1, text: rdsText(i), images: [`./images/bu/bu-rds${n}.png`], buttons: ['RAN THE RACK', 'MISSED'] });
+    out.push({ id: `bu-rds${n}`, exam: 'rds', n, name: row[0], kind: 'rack', max: 3, text: rdsText(i), images: [`./images/bu/bu-rds${n}.png`], buttons: ['RAN THE RACK', 'MISS OR FOUL'] });
   });
   PPC.forEach((name, i) => {
     const n = i + 1;
@@ -212,7 +276,7 @@ const BY_ID = Object.fromEntries(DRILLS.map((d) => [d.id, d]));
 
 export const MORE_EXAMS = {
   advanced: { key: 'advanced', name: 'Exam III – Advanced Shots', stateKey: 'buExam3', href: '#buexam/advanced', start: 'bu-a1', blurb: 'A1–A25. 4 / 2 / 1 / 0 by attempt. Not on the All list. Not a Career rank.', intro: E3 },
-  rds: { key: 'rds', name: 'Exam IV – Runout Drill System', stateKey: 'buExam4', href: '#buexam/rds', start: 'bu-rds1', blurb: '16 break-and-run levels. Not on the All list. Not a Career rank.', intro: RDS_INTRO },
+  rds: { key: 'rds', name: 'Runout Drill System (RDS)', stateKey: 'buExam4', href: '#buexam/rds', start: 'bu-rds1', blurb: '16 levels. 2 out of 3 racks opens the next level. Not on the All list. Not a Career rank.', intro: RDS_INTRO },
   ppc: { key: 'ppc', name: 'Exam V – Placement Pool Challenge', stateKey: 'buExam5', href: '#buexam/ppc', start: 'bu-ppc1', blurb: 'Eighteen 9-ball and 8-ball layouts. Not on the All list. Not a Career rank.', intro: E5 },
   safety: { key: 'safety', name: 'Exam VI – Safety Challenge', stateKey: 'buExam6', href: '#buexam/safety', start: 'bu-saf1', blurb: '20 safeties, two tries each. Not the Safety Master book. Not on the All list.', intro: SAF_SCORE },
   draw: { key: 'draw', name: 'Exam VII – Draw Matrix', stateKey: 'buExam7', href: '#buexam/draw', start: 'bu-draw', blurb: 'Draw matrix. Not on the All list. Not a Career rank.', intro: E7 },
@@ -274,6 +338,7 @@ export function newMoreRun(id) {
   if (m?.kind === 'matrix') return { cells: Array(m.rows * m.cols).fill(null), done: false, score: null, shots: 0, log: [] };
   if (m?.kind === 'deduct') return { n: 0, done: false, score: null, shots: 0, log: [] };
   if (m?.kind === 'yesno') return { answers: [null, null], step: 0, done: false, score: null, shots: 0, log: [] };
+  if (m?.kind === 'rack') return { racks: [], runs: 0, done: false, score: null, shots: 0, log: [] };
   return { step: 0, done: false, score: null, shots: 0, log: [] };
 }
 
@@ -285,7 +350,7 @@ function scaleMatrix(m, cells) {
 export function moreApply(id, run, action) {
   const m = moreMeta(id);
   if (!m || run.done) return run;
-  const next = { ...run, log: run.log.slice(), cells: run.cells ? run.cells.slice() : undefined, answers: run.answers ? run.answers.slice() : undefined };
+  const next = { ...run, log: run.log.slice(), cells: run.cells ? run.cells.slice() : undefined, answers: run.answers ? run.answers.slice() : undefined, racks: run.racks ? run.racks.slice() : undefined };
   if (m.kind === 'tries3') {
     next.shots += 1;
     next.log.push({ ok: action.ok ? 1 : 0 });
@@ -315,10 +380,20 @@ export function moreApply(id, run, action) {
     return next;
   }
   if (m.kind === 'rack') {
-    next.done = true;
-    next.score = action.ok ? 1 : 0;
-    next.ran = !!action.ok;
+    if ((next.racks || []).length >= 3) return next;
+    next.racks = (next.racks || []).concat(!!action.ok);
+    next.shots += 1;
+    next.runs = next.racks.filter(Boolean).length;
     next.log.push({ ok: action.ok ? 1 : 0 });
+    if (next.racks.length >= 3) {
+      const o = rdsOutcome(next.runs, m.n);
+      next.done = true;
+      next.score = o.runs;
+      next.move = o.move;
+      next.nextLevel = o.next;
+      next.ran = o.passed;
+      next.line = o.line;
+    }
     return next;
   }
   if (m.kind === 'matrix' && action.type === 'cell') {
@@ -363,7 +438,12 @@ export function moreStatus(id, run) {
     return `Try ${run.step + 1} of 2`;
   }
   if (m.kind === 'deduct') return run.done ? `Deduction ${run.score}` : `Balls not pocketed legally: ${run.n}`;
-  if (m.kind === 'rack') return run.done ? (run.ran ? 'Ran the rack' : 'Missed') : `Level ${m.n} · mark this rack`;
+  if (m.kind === 'rack') {
+    if (run.done) return run.line || rdsOutcome(run.runs, m.n).line;
+    const sofar = (run.racks || []).length;
+    const runs = (run.racks || []).filter(Boolean).length;
+    return sofar ? `Rack ${sofar + 1} of 3 · ${runs} out of ${sofar}` : 'Rack 1 of 3';
+  }
   if (m.kind === 'matrix') {
     const sum = (run.cells || []).reduce((a, b) => a + (b || 0), 0);
     return `${sum} successful · score ${scaleMatrix(m, run.cells || [])} / 100`;
@@ -375,8 +455,13 @@ function emptyExam() { return { scores: {}, cols: [], completed: null }; }
 export function moreExamOf(state, key) {
   const exam = MORE_EXAMS[key];
   const e = exam ? state?.[exam.stateKey] : null;
-  if (!e || typeof e !== 'object') return emptyExam();
-  return { scores: { ...(e.scores || {}) }, cols: Array.isArray(e.cols) ? e.cols.slice() : [], completed: e.completed || null };
+  if (!e || typeof e !== 'object') return key === 'rds' ? { ...emptyExam(), sets: [], current: 1 } : emptyExam();
+  const out = { scores: { ...(e.scores || {}) }, cols: Array.isArray(e.cols) ? e.cols.slice() : [], completed: e.completed || null };
+  if (key === 'rds') {
+    out.sets = Array.isArray(e.sets) ? e.sets.map((row) => ({ ...row, racks: Array.isArray(row.racks) ? row.racks.slice() : [] })) : [];
+    out.current = Number.isFinite(Number(e.current)) ? Number(e.current) : 1;
+  }
+  return out;
 }
 
 export function withMoreScore(state, id, score, max, detail, open) {
@@ -385,8 +470,24 @@ export function withMoreScore(state, id, score, max, detail, open) {
   const key = m.exam.stateKey;
   const e = moreExamOf(state, m.exam.key);
   if (m.kind === 'rack') {
-    if (e.cols.length >= 8) return state;
-    e.cols.push({ level: m.n, ran: !!detail?.ran, at: new Date().toISOString() });
+    const racks = Array.isArray(detail?.racks) ? detail.racks.map(Boolean) : [];
+    if (racks.length !== 3) return state;
+    const prog = rdsProgress(e);
+    if (m.n > prog.unlocked) return state;
+    const o = rdsOutcome(racks.filter(Boolean).length, m.n);
+    e.sets = [...(e.sets || []), { level: m.n, racks, runs: o.runs, move: o.move, next: o.next, at: new Date().toISOString() }];
+    e.current = o.next;
+    e.completed = {
+      name: MORE_EXAMS.rds.name,
+      at: new Date().toISOString(),
+      credit: MORE_CREDIT,
+      ending: o.next,
+      total: o.next,
+      max: 16,
+      runs: o.runs,
+      move: o.move,
+      progressive: true
+    };
     return { ...state, [key]: e };
   }
   const prev = e.scores[id];
@@ -419,6 +520,12 @@ export function withMoreScore(state, id, score, max, detail, open) {
 
 export function finishRdsRun(state) {
   const e = moreExamOf(state, 'rds');
+  const prog = rdsProgress(e);
+  if (prog.sets.length) {
+    e.completed = { name: MORE_EXAMS.rds.name, at: new Date().toISOString(), credit: MORE_CREDIT, ending: prog.current, total: prog.current, max: 16, progressive: true };
+    e.current = prog.current;
+    return { ...state, buExam4: e };
+  }
   if (!e.cols.length) return state;
   const last = e.cols[e.cols.length - 1];
   e.completed = { name: MORE_EXAMS.rds.name, at: new Date().toISOString(), credit: MORE_CREDIT, ending: last.level, cols: e.cols.slice(), total: last.level, max: 16 };
@@ -449,8 +556,13 @@ function sheetCells(examKey, state) {
   const e = moreExamOf(state, examKey);
   const drills = DRILLS.filter((d) => d.exam === examKey);
   if (examKey === 'rds') {
-    const cols = Array.from({ length: 8 }, (_, i) => e.cols[i]);
-    return cols.map((c, i) => `<div class="buCell"><b>${i + 1}</b><small>Level</small><strong>${c ? c.level : '—'}</strong><small>${c ? (c.ran ? 'ran rack' : 'missed') : ''}</small></div>`).join('');
+    const latest = {};
+    for (const row of e.sets || []) latest[row.level] = row;
+    const word = { up: 'next higher', stay: 'stay', down: 'next lower' };
+    return drills.map((d) => {
+      const row = latest[d.n];
+      return `<div class="buCell"><b>${d.n}</b><small>${esc(RDS_RATINGS[d.n - 1])}</small><strong>${row ? `${row.runs} out of 3` : '—'}</strong><small>${row ? esc(word[row.move] || '') : ''}</small></div>`;
+    }).join('');
   }
   if (examKey === 'draw' || examKey === 'follow') {
     const d = drills[0];
@@ -499,8 +611,9 @@ function sheetTotal(examKey, state) {
     return `${Math.round(2.5 * (40 - misses) * 100) / 100} / 100`;
   }
   if (examKey === 'rds') {
-    const last = e.cols[e.cols.length - 1];
-    return last ? `Ending level ${last.level}` : 'No racks yet';
+    const prog = rdsProgress(e);
+    if (!prog.sets.length) return 'No racks yet';
+    return `Ending level ${prog.current} — ${RDS_RATINGS[prog.current - 1]}`;
   }
   const d = drills[0];
   const sc = e.scores[d.id];
@@ -510,10 +623,17 @@ function sheetTotal(examKey, state) {
 export function moreSheetHTML(state, examKey) {
   const exam = MORE_EXAMS[examKey];
   if (!exam) return '';
-  const finish = examKey === 'rds'
-    ? `<button type="button" class="bigBtn" data-action="bu-finish" data-exam="rds">FINISH THIS RUN</button>`
-    : '';
-  return `<div class="card buSheetCard" data-bu-sheet="${examKey}"><div class="eyebrow">SCORE SHEET</div><h3>${esc(exam.name)}</h3><p class="muted small">Filled when you score a drill. Nothing to retype.</p><div class="buSheet">${sheetCells(examKey, state)}</div><p class="buScoreLine">${esc(sheetTotal(examKey, state))}</p>${finish}</div>`;
+  const note = examKey === 'rds'
+    ? 'Filled from the 3 racks you record. Nothing to retype.'
+    : 'Filled when you score a drill. Nothing to retype.';
+  return `<div class="card buSheetCard" data-bu-sheet="${examKey}"><div class="eyebrow">SCORE SHEET</div><h3>${esc(exam.name)}</h3><p class="muted small">${note}</p><div class="buSheet">${sheetCells(examKey, state)}</div><p class="buScoreLine">${esc(sheetTotal(examKey, state))}</p></div>`;
+}
+
+function rdsMoveWord(move) {
+  if (move === 'up') return 'next higher level';
+  if (move === 'down') return 'next lower level';
+  if (move === 'stay') return 'stay at this level';
+  return '';
 }
 
 export function moreExamPageHTML(state, which) {
@@ -521,17 +641,40 @@ export function moreExamPageHTML(state, which) {
   if (!exam) return '';
   const e = moreExamOf(state, which);
   const drills = DRILLS.filter((d) => d.exam === which);
+  const prog = which === 'rds' ? rdsProgress(e) : null;
+  const latest = {};
+  if (prog) for (const row of prog.sets) latest[row.level] = row;
   const rows = drills.map((d, i) => {
+    if (which === 'rds') {
+      const open = d.n <= prog.unlocked;
+      const row = latest[d.n];
+      const bits = [RDS_RATINGS[d.n - 1]];
+      if (row) bits.push(`${row.runs} out of 3 · ${rdsMoveWord(row.move)}`);
+      else if (!open) bits.push('Locked');
+      const cls = `stageRow card${prog.passed.has(d.n) ? ' passed' : ''}${d.n === prog.current ? ' current' : ''}${open ? '' : ' locked'}`;
+      const inner = `<span class="srNum">${i + 1}</span><span class="srMain"><b>${esc(d.name)}</b><small>${esc(bits.join(' · '))}</small></span>`;
+      if (!open) return `<div class="${cls}" data-rds-locked="${d.n}">${inner}</div>`;
+      return `<button type="button" class="${cls}" data-action="go" data-href="#play/drills/${d.id}/exam" data-rds-level="${d.n}">${inner}</button>`;
+    }
     const sc = e.scores[d.id];
     const note = sc ? ` · ${sc.score}` : '';
     return `<button type="button" class="stageRow card" data-action="go" data-href="#play/drills/${d.id}/exam"><span class="srNum">${i + 1}</span><span class="srMain"><b>${esc(d.name)}</b><small>${note ? `exam${note}` : 'not scored yet'}</small></span></button>`;
   }).join('');
-  const done = e.completed
-    ? `<p class="green">Completed ${esc(exam.name)}. ${e.completed.total != null ? `${e.completed.total} / ${e.completed.max}` : ''}</p>`
-    : '<p class="muted">Score the drills in this exam. The sheet fills itself. Opening a drill is not enough, and these drills are not on the All list. This does not change Career rank.</p>';
+  let done;
+  let start = exam.start;
+  if (which === 'rds') {
+    start = `bu-rds${prog.current}`;
+    done = prog.sets.length
+      ? `<p class="green">Ending level ${prog.current} — ${esc(RDS_RATINGS[prog.current - 1])}</p>`
+      : '<p class="muted">Record 3 racks. If you run 2 out of 3, the next level opens. These drills are not on the All list. This does not change Career rank.</p>';
+  } else {
+    done = e.completed
+      ? `<p class="green">Completed ${esc(exam.name)}. ${e.completed.total != null ? `${e.completed.total} / ${e.completed.max}` : ''}</p>`
+      : '<p class="muted">Score the drills in this exam. The sheet fills itself. Opening a drill is not enough, and these drills are not on the All list. This does not change Career rank.</p>';
+  }
   return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#courses">‹ Drill Sets & Exams</button><span class="eyebrow">BILLIARD UNIVERSITY</span><h1>${esc(exam.name)}</h1></div>
-    <div class="card">${done}<button type="button" class="bigBtn" data-action="go" data-href="#play/drills/${exam.start}/exam">START</button>${restartAskHTML(which)}</div>
-    <details class="card buHowCard" open><summary>Instructions</summary><pre class="buHow">${esc(exam.intro)}</pre><small class="muted credit">${esc(MORE_CREDIT)}</small></details>
+    <div class="card" data-rds-set="${which === 'rds' ? '1' : '0'}">${done}<button type="button" class="bigBtn" data-action="go" data-href="#play/drills/${start}/exam">START</button>${restartAskHTML(which)}</div>
+    <details class="card buHowCard"><summary>Instructions</summary><pre class="buHow">${esc(exam.intro)}</pre><small class="muted credit">${esc(MORE_CREDIT)}</small></details>
     ${moreSheetHTML(state, which)}
     <div class="stageList" data-bu-list="1" data-more-exam="${which}">${rows}</div>`;
 }
@@ -543,6 +686,11 @@ export function moreBannersHTML() {
 export function moreAccomplishmentHTML(state) {
   return Object.values(MORE_EXAMS).map((exam) => {
     const e = moreExamOf(state, exam.key);
+    if (exam.key === 'rds') {
+      const prog = rdsProgress(e);
+      if (!prog.sets.length) return '';
+      return `<div class="card" data-bu-exam="done" data-more-exam="rds"><div class="eyebrow">BILLIARD UNIVERSITY</div><h3>${esc(exam.name)}</h3><p>Ending level ${prog.current} — ${esc(RDS_RATINGS[prog.current - 1])}</p><small class="muted credit">${esc(MORE_CREDIT)}</small></div>`;
+    }
     if (!e.completed) return '';
     return `<div class="card" data-bu-exam="done" data-more-exam="${exam.key}"><div class="eyebrow">BILLIARD UNIVERSITY</div><h3>${esc(exam.name)}</h3><p>Completed. ${e.completed.total} / ${e.completed.max}</p><small class="muted credit">${esc(MORE_CREDIT)}</small></div>`;
   }).join('');

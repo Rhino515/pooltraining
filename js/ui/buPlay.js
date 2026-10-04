@@ -14,7 +14,8 @@ import {
   isSkillsId, skillsMeta, newSkillsRun, skillsApply, undoSkills, skillsStatus, skillsButtons, skillsImages, withSkillsScore, skillsText, SKILLS_CREDIT, S10_CHECKS, restartAskHTML
 } from '../content/buExam2.js';
 import {
-  isMoreId, moreMeta, newMoreRun, moreApply, undoMore, moreStatus, moreText, moreImages, withMoreScore, MORE_CREDIT
+  isMoreId, moreMeta, newMoreRun, moreApply, undoMore, moreStatus, moreText, moreImages, withMoreScore, MORE_CREDIT,
+  rdsOutcome, rdsProgress, moreExamOf
 } from '../content/buMore.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -312,7 +313,7 @@ function createMorePlay(ctx, { id, exam = false } = {}) {
     if (meta.kind === 'rack') {
       if (!run.done || saved) return;
       saved = true;
-      ctx.commit(withMoreScore(ctx.getState(), id, run.score, meta.max, { ran: !!run.ran }));
+      ctx.commit(withMoreScore(ctx.getState(), id, run.score, meta.max, { racks: run.racks, runs: run.runs, move: run.move, ran: !!run.ran }));
       return;
     }
     if (meta.kind === 'matrix') {
@@ -329,7 +330,8 @@ function createMorePlay(ctx, { id, exam = false } = {}) {
   }
 
   function pictures() {
-    return moreImages(id).map((src) => `<div class="diagramWrap"><img class="table-diagram drill-diagram" src="${esc(src)}" alt="${esc(base.name)}" /></div>`).join('');
+    const rack = meta.kind === 'rack' ? ' rdsRack' : '';
+    return moreImages(id).map((src) => `<div class="diagramWrap"><img class="table-diagram drill-diagram${rack}" src="${esc(src)}" alt="${esc(base.name)}" /></div>`).join('');
   }
 
   function matrix() {
@@ -351,12 +353,34 @@ function createMorePlay(ctx, { id, exam = false } = {}) {
     const next = exam && meta.next ? `#play/drills/${meta.next}/exam` : '';
     const list = meta.exam.href;
     let actions = '';
-    if (done && meta.kind !== 'matrix') {
+    if (meta.kind === 'rack') {
+      const prog = rdsProgress(moreExamOf(ctx.getState(), 'rds'));
+      const locked = exam && meta.n > prog.unlocked;
+      if (locked) {
+        actions = `<p class="buScoreLine">Locked. Pass Level ${meta.n - 1} first.</p>
+          <button type="button" class="bigBtn" data-action="go" data-href="${list}">BACK TO THE SET</button>`;
+      } else if (done) {
+        const o = rdsOutcome(run.runs, meta.n);
+        const go = o.next !== meta.n;
+        const label = o.move === 'up' ? 'NEXT HIGHER LEVEL' : 'NEXT LOWER LEVEL';
+        actions = `<p class="buScoreLine" data-rds-result="1">${esc(o.line)}</p>
+          ${go ? `<button type="button" class="bigBtn" data-action="go" data-href="#play/drills/bu-rds${o.next}/exam">${label}</button>` : ''}
+          <button type="button" class="bigBtn alt" data-action="bu-again">RUN 3 MORE</button>
+          <button type="button" class="bigBtn alt" data-action="go" data-href="${list}">THE SET</button>`;
+      } else {
+        const labels = meta.buttons;
+        actions = `<div class="buBar">
+          <button type="button" class="bigBtn" data-action="bu-hit" data-ok="1">${esc(labels[0])}</button>
+          <button type="button" class="bigBtn alt" data-action="bu-hit" data-ok="0">${esc(labels[1])}</button>
+        </div>
+        <button type="button" class="bigBtn alt" data-action="bu-undo">UNDO</button>`;
+      }
+    } else if (done && meta.kind !== 'matrix') {
       actions = `<p class="buScoreLine">${esc(moreStatus(id, run))}</p>
         ${exam && next ? `<button type="button" class="bigBtn" data-action="go" data-href="${next}">NEXT</button>` : ''}
         ${exam && !next ? `<button type="button" class="bigBtn" data-action="go" data-href="${list}">EXAM SHEET</button>` : ''}
         <button type="button" class="bigBtn alt" data-action="bu-again">SCORE ANOTHER</button>`;
-    } else if (meta.kind === 'tries3' || meta.kind === 'yesno' || meta.kind === 'rack') {
+    } else if (meta.kind === 'tries3' || meta.kind === 'yesno') {
       const labels = meta.buttons;
       actions = `<div class="buBar">
         <button type="button" class="bigBtn" data-action="bu-hit" data-ok="1">${esc(labels[0])}</button>
@@ -381,10 +405,10 @@ function createMorePlay(ctx, { id, exam = false } = {}) {
         <div class="phTitle"><small>${esc(meta.exam.name)}</small><b>${esc(base.name)}</b></div>
       </div>
       ${pictures()}
-      <p class="buStatus">${esc(moreStatus(id, run))}</p>
+      ${(meta.kind === 'rack' && run.done) ? '' : `<p class="buStatus">${esc(moreStatus(id, run))}</p>`}
       ${actions}
       ${exam ? restartAskHTML(meta.exam.key, true) : ''}
-      <details class="card buHowCard" open>
+      <details class="card buHowCard"${meta.kind === 'rack' ? '' : ' open'}>
         <summary>Instructions</summary>
         <pre class="buHow">${esc(moreText(id))}</pre>
         <small class="muted credit">${esc(MORE_CREDIT)}</small>
@@ -395,6 +419,7 @@ function createMorePlay(ctx, { id, exam = false } = {}) {
   function onAction(action, el) {
     if (action === 'bu-hit') {
       if (run.done) return true;
+      if (meta.kind === 'rack' && exam && meta.n > rdsProgress(moreExamOf(ctx.getState(), 'rds')).unlocked) return true;
       run = moreApply(id, run, { ok: el?.dataset?.ok === '1' });
       persist();
       render();
@@ -418,7 +443,7 @@ function createMorePlay(ctx, { id, exam = false } = {}) {
       return true;
     }
     if (action === 'bu-undo') {
-      if (meta.kind === 'rack') return true;
+      if (saved || (meta.kind === 'rack' && run.done)) return true;
       saved = false;
       run = undoMore(id, run);
       if (meta.kind === 'matrix') persist();
