@@ -23,6 +23,7 @@ import { TABLE_SIZES, CLOTH_SPEEDS, CALIBRATION_SPEEDS, speedLabel, formatSpeed,
 import { learnHTML } from './learn.js';
 import { isDrillHidden } from './drills/hidden.js';
 import { examBannerHTML, accomplishmentHTML } from './content/buExam.js';
+import { setProgressBoxHTML, completedSetsLineHTML } from './content/setProgress.js';
 import { safetyBannerHTML } from './content/safetyMaster.js';
 import { ownerAccountSignedIn } from './dev/dev.js';
 import { homeAuthHTML } from './ui/account.js';
@@ -84,6 +85,7 @@ function homeRanksCard(state) {
         </span>
       </span>
     </span>
+    ${completedSetsLineHTML(state)}
   </button>`;
 }
 
@@ -301,6 +303,7 @@ export function renderProfile(state) {
   return `${devSeedBannerHTML(state)}${profileHeaderHTML(state, getProfile())}
     ${careerHeaderHTML(state, { compact: true })}
     ${drillRankCardHTML(state, { compact: true })}
+    ${setProgressBoxHTML(state)}
     ${accomplishmentHTML(state)}
     <div class="card stats"><div><b>${(state.prog?.lifetimeXp ?? state.xp) || 0}</b><span>LIFETIME XP</span></div><div><b>${passedStages}</b><span>STAGES PASSED</span></div><div><b>${E.totalStars(state)}★</b><span>STARS</span></div></div>
     <div class="chLinks"><button type="button" class="chip" data-action="go" data-href="#me/stats">My Stats</button><button type="button" class="chip" data-action="go" data-href="#skills">Skill Breakdown</button><button type="button" class="chip" data-action="go" data-href="#champion">${cs.champion ? 'Champion Stats' : 'Road to Champion'}</button><button type="button" class="chip" data-action="go" data-href="#friends">Friends & PvP</button><button type="button" class="chip lbChip" data-action="go" data-href="#leaderboard">🏆 Friends Leaderboard</button><button type="button" class="chip" data-action="go" data-href="#account">Online Account</button></div>

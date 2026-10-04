@@ -1800,11 +1800,11 @@ header{
 .tgTile:active{transform:translateY(1px)}
 
 /* Drill Sets & Exams progress. Profile box, and a small line on the Home ranks card. */
-.setProgressCard{margin-bottom:14px}
+.setProgressCard{margin-bottom:14px;padding:14px 14px 6px}
 .setProgressCard h3{margin:0 0 8px;font-size:16px}
 .setProgressCard .setNone{margin:0}
-.setRow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;align-items:center;width:100%;margin:0;padding:8px 0;border:0;border-top:1px solid #1f3044;background:none;color:inherit;text-align:left;cursor:pointer;font:inherit}
-.setRow .setName{font-size:13px;font-weight:700;line-height:1.25}
+.setProgRow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;align-items:center;width:100%;margin:0;padding:8px 0;border:0;border-top:1px solid #1f3044;background:none;color:inherit;text-align:left;cursor:pointer;font:inherit}
+.setProgRow .setName{font-size:13px;font-weight:700;line-height:1.25}
 .setMeter{grid-column:1 / -1;display:flex;align-items:center;gap:8px}
 .setBar{flex:1;height:6px;border-radius:99px;background:#122033;border:1px solid #24507f;overflow:hidden}
 .setBar > span{display:block;height:100%;background:linear-gradient(90deg,#f6c453,#c9922a)}
