@@ -93,11 +93,11 @@ export function renderPromoPage(state) {
 }
 
 // ------------------------------------------------------------------ Drill Rank
-export function drillRankCardHTML(state, { compact = false } = {}) {
+export function drillRankCardHTML(state, { compact = false, tile = false } = {}) {
   const dr = drillRankStatus(state);
-  return `<div class="card drillRankCard${dr.max ? ' max' : ''}" data-drill-rank="${dr.number}" data-action="go" data-href="#drillrank">
-    <div class="drBadge">${drillBadgeSVG(dr.number, { size: compact ? 56 : 68, max: dr.max })}</div>
-    <div class="drMain"><span class="eyebrow drEyebrow">DRILL RANK ${dr.number} / ${DRILL_RANK.ranks.length}</span><h3 data-drill-rank-name>${esc(dr.name)}</h3>
+  return `<div class="card drillRankCard${dr.max ? ' max' : ''}${tile ? ' drTileCard' : ''}" data-drill-rank="${dr.number}" data-action="go" data-href="#drillrank">
+    <div class="drBadge">${drillBadgeSVG(dr.number, { size: compact ? 56 : 68, max: dr.max, tile })}</div>
+    <div class="drMain"><span class="eyebrow drEyebrow">DRILL RANK ${dr.number} / ${DRILL_RANK.ranks.length}</span><h3 data-drill-rank-name><span class="drRankNo">${dr.number}</span> ${esc(dr.name)}</h3>
       ${dr.max ? '<small class="gold">MAX DRILL RANK</small>' : `<div class="drBar"><i style="width:${pct(dr.progress)}%"></i></div><small class="muted">Next: ${esc(dr.next)} · ${pct(dr.progress)}%</small>`}
       <div class="drCounts"><span>⭐ <b data-dr-passed>${dr.have.passed}</b> passed</span><span>⭐⭐ <b data-dr-strong>${dr.have.strong}</b> strong</span><span>⭐⭐⭐ <b data-dr-mastered>${dr.have.mastered}</b> mastered</span><span><b>${fmt(dr.have.xp)}</b> Drill XP</span></div>
     </div>
@@ -105,9 +105,9 @@ export function drillRankCardHTML(state, { compact = false } = {}) {
 }
 export function renderDrillRankPage(state) {
   const dr = drillRankStatus(state);
-  const rows = DRILL_RANK.ranks.map((r, i) => `<div class="drRow${i < dr.number ? ' earned' : ''}${i === dr.index + 1 ? ' next' : ''}" data-dr-row="${i + 1}"><span class="drNum">${drillBadgeSVG(i + 1, { size: 36, max: i === DRILL_RANK.ranks.length - 1 })}</span><span class="drInfo"><b>${esc(r.name)}</b><small>${i ? `${fmt(r.xp)} XP · ${r.passed} passed · ${r.strong} strong · ${r.mastered} mastered${r.categories ? ` · ${r.categories} skill categories` : ''}` : 'Start'}</small></span><span class="drState">${i < dr.number ? '✓' : ''}</span></div>`).join('');
+  const rows = DRILL_RANK.ranks.map((r, i) => `<div class="drRow drTileRow${i < dr.number ? ' earned' : ''}${i === dr.index + 1 ? ' next' : ''}" data-dr-row="${i + 1}"><span class="drNum">${drillBadgeSVG(i + 1, { tile: true, max: i === DRILL_RANK.ranks.length - 1 })}</span><span class="drInfo"><b><span class="drRankNo">${i + 1}</span> ${esc(r.name)}</b><small>${i ? `${fmt(r.xp)} XP · ${r.passed} passed · ${r.strong} strong · ${r.mastered} mastered${r.categories ? ` · ${r.categories} skill categories` : ''}` : 'Start'}</small></span><span class="drState">${i < dr.number ? '✓' : ''}</span></div>`).join('');
   return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#drills">‹ Drills</button><span class="eyebrow">DRILL RANK</span></div>
-    ${drillRankCardHTML(state)}
+    ${drillRankCardHTML(state, { tile: true })}
     ${dr.reqs.length ? `<div class="card checkList"><div class="eyebrow">TO REACH ${esc(dr.next.toUpperCase())}</div>${dr.reqs.map((q) => `<div class="checkRow" data-met="${q.met ? 1 : 0}">${tick(q.met)}<div class="crMain"><b>${esc(q.label)}</b> <small>(${fmt(q.have)}/${fmt(q.need)})</small></div></div>`).join('')}</div>` : ''}
     <h2>All Drill Ranks</h2><div class="card drRanks">${rows}</div>`;
 }
@@ -176,7 +176,7 @@ export function profileHeaderHTML(state, profile, { edit = true } = {}) {
   return `<div class="card profileHead" data-profile-head>
     <button type="button" class="phAvatar" data-action="go" data-href="#me" aria-label="Edit profile">${avatarHTML({ ...profile, name }, 76)}</button>
     <div class="phInfo"><span class="eyebrow">PLAYER PROFILE</span><h1 class="phName" data-player-name>${esc(name)}</h1>
-      <div class="phRanks"><span class="phRank" data-action="go" data-href="#career">${rankBadgeSVG(cs, { size: 28 })}<b>${esc(cs.title)}</b></span><span class="phRank dr" data-action="go" data-href="#drillrank">${drillBadgeSVG(dr.number, { size: 28, max: dr.max })}<b>${esc(dr.name)}</b></span></div>
+      <div class="phRanks"><span class="phRank" data-action="go" data-href="#career">${rankBadgeSVG(cs, { size: 28 })}<b>${esc(cs.title)}</b></span><span class="phRank dr" data-action="go" data-href="#drillrank">${drillBadgeSVG(dr.number, { size: 28, max: dr.max })}<b><span class="drRankNo">${dr.number}</span> ${esc(dr.name)}</b></span></div>
       ${edit ? `<button type="button" class="linkish" data-action="go" data-href="#me">${profile?.displayName ? 'Edit profile' : 'Add your name & photo'} ›</button>` : ''}
     </div>
   </div>`;

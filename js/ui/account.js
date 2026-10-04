@@ -183,7 +183,7 @@ function metricHTML(e, by) {
   const s = e.stats;
   if (!s) return '<span class="lbMetric muted">no stats yet</span>';
   if (by === 'career') return `<span class="lbMetric">${rankBadgeSVG({ champion: s.champion, ball: s.ball || 1, rankIndex: s.rank_index, name: s.rank_name, title: s.rank_title || s.rank_name }, { size: 34 })}<small>${esc(s.rank_name)}</small></span>`;
-  if (by === 'drill') return `<span class="lbMetric">${drillBadgeSVG(s.drill_rank, { size: 34 })}<small>${esc(s.drill_rank_name)}</small></span>`;
+  if (by === 'drill') return `<span class="lbMetric">${drillBadgeSVG(s.drill_rank, { size: 34 })}<small><span class="drRankNo">${s.drill_rank}</span> ${esc(s.drill_rank_name)}</small></span>`;
   return `<span class="lbMetric"><b>${fmtN(s.lifetime_xp)}</b><small>XP</small></span>`;
 }
 export function renderLeaderboard(st) {
@@ -208,7 +208,7 @@ export function playerCardHTML(e) {
   const m = s?.stats?.mastery || {};
   return `<div class="eyebrow">PLAYER PROFILE${e.isMe ? ' · YOU' : ''}</div>
     <div class="pcHead" data-player-card="${esc(e.id)}">${remoteAvatarHTML(e.name, e.avatarUrl, 88)}<div><h2 class="sheetTitle">${esc(e.name)}</h2>${s ? `<small class="muted">${esc(s.rank_title || s.rank_name)}</small>` : ''}</div></div>
-    ${s ? `<div class="pcBadges"><div>${rankBadgeSVG({ champion: s.champion, ball: s.ball || 1, rankIndex: s.rank_index, name: s.rank_name, title: s.rank_title || s.rank_name }, { size: 56 })}<b>${esc(s.rank_name)}</b><small>CAREER${s.champion ? ' · MAX' : s.ball ? ` · BALL ${s.ball}` : ''}</small></div><div>${drillBadgeSVG(s.drill_rank, { size: 56 })}<b>${esc(s.drill_rank_name)}</b><small>DRILL RANK ${s.drill_rank}</small></div></div>
+    ${s ? `<div class="pcBadges"><div>${rankBadgeSVG({ champion: s.champion, ball: s.ball || 1, rankIndex: s.rank_index, name: s.rank_name, title: s.rank_title || s.rank_name }, { size: 56 })}<b>${esc(s.rank_name)}</b><small>CAREER${s.champion ? ' · MAX' : s.ball ? ` · BALL ${s.ball}` : ''}</small></div><div>${drillBadgeSVG(s.drill_rank, { size: 56 })}<b><span class="drRankNo">${s.drill_rank}</span> ${esc(s.drill_rank_name)}</b><small>DRILL RANK ${s.drill_rank}</small></div></div>
     <div class="cmpGrid pcStats"><div><b>${fmtN(s.lifetime_xp)}</b><span>LIFETIME XP</span></div><div><b>${fmtN(s.stars)}★</b><span>STARS</span></div><div><b>${fmtN(s.drill_xp)}</b><span>DRILL XP</span></div><div><b>${fmtN(s.ghost_wins)}/${fmtN(s.ghost_matches)}</b><span>GHOST WINS</span></div><div><b>${fmtN(m.passed)}/${fmtN(m.strong)}/${fmtN(m.mastered)}</b><span>PASS/STRONG/MASTER</span></div>${s.pvp_wins != null ? `<div data-pc-pvp><b>${fmtN(s.pvp_wins)}–${fmtN(s.pvp_losses)}</b><span>FRIEND MATCHES</span></div>` : '<div><b>—</b><span>FRIEND MATCHES</span></div>'}</div>
     ${skills.length ? `<div class="pcSkills">${skills.map(([id, k]) => `<div class="kv"><span>${esc(skillName(id) || id)}</span><b>${esc(k.level)}</b></div>`).join('')}</div>` : ''}
     <small class="muted">Stats updated ${esc(fmtWhen(s.updated_at))}</small>` : '<p class="muted">This player hasn’t synced any stats yet.</p>'}

@@ -77,13 +77,13 @@ export function masterChalkSVG(number, opts = {}) {
     <text x="62" y="74" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-weight="900" font-size="22" fill="#f4efe2">${n}</text>
   </svg>`;
 }
-/** Drill Rank emblem: the mockup chalk cube. The number is the real drill rank, drawn over the face. */
+/** Drill Rank emblem: the Master chalk cube for this rank, worn further each step. No number on the art. */
 export function drillBadgeSVG(number, opts = {}) {
   const size = opts.size || 56;
-  const n = esc(number ?? '');
-  const h = Math.round(size * (206 / 211));
-  const fs = Math.max(9, Math.round(size * 0.28));
-  return `<span class="drillEmblem ${opts.cls || ''}" data-drillrank="${n}" style="width:${size}px;font-size:${fs}px" role="img" aria-label="${esc(opts.title || `Drill rank ${number}`)}"><img src="./icons/rank-drill.png" width="${size}" height="${h}" alt=""/><b>${n}</b></span>`;
+  const n = Math.max(1, Math.min(8, Math.round(Number(number) || 1)));
+  const tile = !!opts.tile;
+  const style = tile ? '' : ` style="width:${size}px"`;
+  return `<span class="drillEmblem${tile ? ' drillTile' : ''} ${opts.cls || ''}" data-drillrank="${n}"${style} role="img" aria-label="${esc(opts.title || `Drill rank ${n}`)}"><img src="./icons/rank-drill-${n}.png" width="${tile ? 400 : size}" height="${tile ? 400 : size}" alt=""/></span>`;
 }
 /** Default avatar: a ball with the player's initials; color from the name */
 export function initialsAvatarSVG(name = '', opts = {}) {

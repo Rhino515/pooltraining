@@ -1602,8 +1602,22 @@ body.fix-full #app{height:100dvh;padding:0}
 /* v14-39 home mockup + rank photos */
 .rankEmblem{display:block;height:auto;object-fit:contain}
 .drillEmblem{position:relative;display:inline-block;line-height:0;flex:none;vertical-align:middle}
-.drillEmblem img{width:100%;height:auto;display:block}
-.drillEmblem b{position:absolute;left:30%;top:58%;transform:translate(-50%,-50%);color:#1a2433;font-weight:900;line-height:1;text-shadow:0 1px 0 #ffffff99}
+.drillEmblem img{width:100%;height:auto;display:block;object-fit:contain}
+.drRankNo{font-weight:900;color:var(--gold);margin-right:.35em}
+/* Large rounded chalk tile: about half the card, thick rim, cube filling the frame. */
+.drillTile{display:grid;place-items:center;width:100%;aspect-ratio:1;box-sizing:border-box;padding:8%;border-radius:26%;border:6px solid #3ec4ff;background:radial-gradient(90% 80% at 50% 40%,#12324e 0%,#06101a 72%);box-shadow:0 0 0 1px #b7e6ff99,0 0 16px #1a8cff88,inset 0 0 20px #031018;overflow:hidden}
+.drillTile img{width:100%;height:100%;object-fit:contain}
+.homeRanks .hrGrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center}
+.homeRanks .hrDrill{display:block;position:relative}
+.homeRanks .hrDrill .drillTile{width:100%}
+.homeRanks .hrDrill .hrMeta{display:block;margin-top:6px;padding-right:16px}
+.homeRanks .hrDrill .hrChev{position:absolute;right:0;bottom:2px;top:auto}
+.drTileCard{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:12px}
+.drTileCard .drBadge{min-width:0;width:100%}
+.drTileCard .drillTile{width:100%}
+.drTileRow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:10px;align-items:center}
+.drTileRow .drNum{min-width:0;width:100%}
+.drTileRow .drillTile{width:100%}
 .homeRanks{display:block;width:100%;padding:10px 10px 8px;margin:0 0 8px;text-align:left;color:inherit;cursor:pointer;border:1px solid #d7b15a;border-radius:18px;background:radial-gradient(120% 90% at 18% 0%,#16304a 0%,#07111c 58%);box-shadow:0 0 0 1px #f6c45322,0 14px 30px #0008}
 .hrTop{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
 .homeRanks .eyebrow{color:var(--gold);letter-spacing:.16em}

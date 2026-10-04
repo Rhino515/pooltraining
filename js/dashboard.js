@@ -72,9 +72,9 @@ function homeRanksCard(state) {
         <span class="hrRankName">${esc(cs.name)}</span>
       </span>
       <span class="hrSide">
-        <span class="hrRow">
-          ${drillBadgeSVG(dr.number, { size: 54, max: dr.max, title: dr.name })}
-          <span class="hrMeta"><span class="k">Drill Rank</span><span class="lv">Lv. ${dr.number}</span><span class="nm">${esc(dr.name)}</span></span>
+        <span class="hrRow hrDrill">
+          ${drillBadgeSVG(dr.number, { tile: true, max: dr.max, title: dr.name })}
+          <span class="hrMeta"><span class="k">Drill Rank</span><span class="lv">Lv. ${dr.number}</span><span class="nm"><span class="drRankNo">${dr.number}</span> ${esc(dr.name)}</span></span>
           <span class="hrChev" aria-hidden="true">›</span>
         </span>
         <span class="hrRow">
