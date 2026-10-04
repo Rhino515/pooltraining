@@ -342,7 +342,7 @@ function careerDrillsHTML(state) {
   return `<section class="careerDrills" data-section="Career Drills"><h2>Career Drills</h2><div class="arcadeGrid">${CAREER_DRILL_GAMES().map((g) => gameCard(state, g)).join('')}</div></section>`;
 }
 
-/** Ball Pocketing emblem: one cue tile per level. 1–3 wood, 4–5 carbon. Levels stay numbers. */
+/** Ball Pocketing emblem: one framed cue from Andrew's rank art per level. The medallion number is part of the picture. */
 function ballPocketBadgeSVG(level) {
   const lv = Math.max(1, Math.min(5, Number(level) || 1));
   return `<img class="bpCue rankCue" src="./icons/rank-cue-${lv}.png" alt="Ball Pocketing level ${lv}" data-bp-cue="${lv}"/>`;

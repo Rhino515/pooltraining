@@ -1537,12 +1537,11 @@ body.fix-full #app{height:100dvh;padding:0}
 .bpRankNum{font-size:34px;font-weight:900;letter-spacing:.4px;margin:2px 0 6px}
 .bpRank p{margin:4px 0}
 .bpBadge{width:min(156px,42vw);flex:none}
-.bpBadge .bpCue{width:100%;height:auto;aspect-ratio:1;object-fit:contain;display:block}
-.bpBadgeRow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.bpBadge .bpCue{width:100%;height:auto;object-fit:contain;display:block}
+.bpBadgeRow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;align-items:start}
 .bpMini{width:auto;opacity:.5}
-.bpMini .bpCue{width:100%;height:auto;aspect-ratio:1;object-fit:contain;display:block}
+.bpMini .bpCue{width:100%;height:auto;object-fit:contain;display:block}
 .bpMini.on,.bpMini.earned{opacity:1}
-.bpMini.on{outline:2px solid var(--gold,#f6c453);outline-offset:3px;border-radius:22px}
 .bpLevels{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .bpReq{margin:6px 0 0;font-size:13px}
 .bpReq.met{color:var(--green)}
@@ -1626,7 +1625,7 @@ body.fix-full #app{height:100dvh;padding:0}
 .hrMeta .lv.gold{color:var(--gold)}
 .hrMeta .nm{display:block;color:#e7edf5;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;line-height:1.2}
 .hrChev{color:#3aa0ff;font-size:20px;font-weight:700}
-.hrRow .bpCue{width:54px;height:54px;object-fit:contain;display:block;justify-self:center}
+.hrRow .bpCue{width:54px;height:auto;object-fit:contain;display:block;justify-self:center}
 .homeNext{position:relative;overflow:hidden;border:1px solid #d7b15a;background:#071018;box-shadow:0 0 0 1px #f6c45322,0 12px 28px #0008}
 .homeNext .nxPhoto{position:absolute;inset:0 0 0 42%;background:url(../icons/home-next.jpg) right center/cover no-repeat;-webkit-mask-image:linear-gradient(90deg,transparent,#000 36%);mask-image:linear-gradient(90deg,transparent,#000 36%)}
 .homeNext .nxIn{position:relative;z-index:1;padding:8px 12px 6px}
