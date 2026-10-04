@@ -342,9 +342,10 @@ function careerDrillsHTML(state) {
   return `<section class="careerDrills" data-section="Career Drills"><h2>Career Drills</h2><div class="arcadeGrid">${CAREER_DRILL_GAMES().map((g) => gameCard(state, g)).join('')}</div></section>`;
 }
 
-/** Ball Pocketing emblem: the mockup cue. Levels stay numbers — this manual has no level names. */
+/** Ball Pocketing emblem: one cue tile per level. 1–3 wood, 4–5 carbon. Levels stay numbers. */
 function ballPocketBadgeSVG(level) {
-  return `<img class="bpCue rankCue" src="./icons/rank-cue.png" alt="Ball Pocketing level ${Number(level) || 1}" data-bp-cue="${Number(level) || 1}"/>`;
+  const lv = Math.max(1, Math.min(5, Number(level) || 1));
+  return `<img class="bpCue rankCue" src="./icons/rank-cue-${lv}.png" alt="Ball Pocketing level ${lv}" data-bp-cue="${lv}"/>`;
 }
 
 function ballPocketExtras(state) {
