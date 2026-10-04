@@ -6,7 +6,7 @@ import { skillBarsHTML, weakestSkills, recommendations } from './skills.js';
 import { allDrills, drillsByCategory, isDrillUnlocked, CATEGORIES, getDrillById, displayDrillTitle, SHELVED_CATEGORIES, HIDDEN_DRILL_CATEGORIES } from './drills.js';
 import { ballPocketDrills, ballPocketStatus, BALL_POCKET_TEXT, BALL_POCKET_LEVELS } from './content/ballPocket.js';
 import { maxUnlockedBalls, ghostStats } from './ghost.js';
-import { GAMES, GHOST_GAME, getGame, stageSpecs, getStages, getBosses, getBoss } from './games/registry.js';
+import { GAMES, getGame, stageSpecs, getStages, getBosses, getBoss } from './games/registry.js';
 import * as E from './games/engine.js';
 import { renderStageTable } from './games/stageTable.js';
 import { esc, speedChip } from './games/recipe.js';
@@ -180,13 +180,30 @@ const TABLE_MATCHES = [
   ['onepocket', 'One Pocket', 'WPA one pocket. First to 8, race to racks.'],
   ['cribbage', 'Cribbage', 'Pairs that add to 15. First to 5.']
 ];
+/** Cropped tiles from Andrew's table-games sheet. The label is already in the art. */
+const TG_SRC = {
+  friends: './icons/tg-friends.png',
+  ghost: './icons/tg-ghost.png',
+  '8': './icons/tg-8.png',
+  '9': './icons/tg-9.png',
+  '10': './icons/tg-10.png',
+  bank: './icons/tg-bank.png',
+  upusa: './icons/tg-upusa.png',
+  loop: './icons/tg-loop.png',
+  straight: './icons/tg-straight.png',
+  onepocket: './icons/tg-onepocket.png',
+  cribbage: './icons/tg-cribbage.png'
+};
+const tgTile = (id, href, name) => `<button type="button" class="tgTile" data-action="go" data-href="${href}" data-game="${esc(id)}"><img src="${TG_SRC[id]}" alt="${esc(name)}"/></button>`;
 export function renderArcade(state) {
-  const matches = TABLE_MATCHES.map(([id, name, sub]) => `<button type="button" class="gameCard card" data-action="go" data-href="#tgame/${id}" data-game="${esc(id)}"><span class="gcIcon">${id === 'upusa' ? '⏱' : id === 'bank' ? '▣' : id === 'loop' ? '↺' : id === 'straight' ? '14' : id === 'onepocket' ? '1P' : id === 'cribbage' ? '15' : id}</span><span class="gcMain"><b>${esc(name)}</b><small>${esc(sub)}</small></span></button>`).join('');
-  const ghost = `<button type="button" class="gameCard card" data-action="go" data-href="#ghost" data-game="ghost"><span class="gcIcon">${GHOST_GAME.icon}</span><span class="gcMain"><b>${esc(GHOST_GAME.name)}</b><small>${esc(GHOST_GAME.tagline)} Includes 8-Ball Ghost.</small></span></button>`;
+  void state;
+  const tiles = [
+    ['friends', '#friends', 'Play with Friends'],
+    ['ghost', '#ghost', 'Ghost'],
+    ...TABLE_MATCHES.map(([id, name]) => [id, `#tgame/${id}`, name])
+  ];
   return `<div class="title"><span class="eyebrow">TABLE GAMES</span><h1>At the table</h1><p>Rack counters for real games. Training modes are in Drills, under Career Drills.</p></div>
-    <button type="button" class="card simPromo friendsPromo" data-action="go" data-href="#friends"><span class="simPromoIcon">⚔</span><span class="simPromoText"><b>Play with Friends</b><small>Score real matches head-to-head.</small></span><span class="simPromoGo">›</span></button>
-    ${ghost}
-    <div class="arcadeGrid" data-table-matches>${matches}</div>`;
+    <div class="tgGrid" data-table-matches>${tiles.map(([id, href, name]) => tgTile(id, href, name)).join('')}</div>`;
 }
 
 export function renderGameLobby(state, gameId) {

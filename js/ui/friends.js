@@ -52,8 +52,18 @@ const PVP_TABLE_GAMES = [
   ['onepocket', 'One Pocket', 'WPA one pocket. First to 8, race to racks.'],
   ['cribbage', 'Cribbage', 'Pairs that add to 15. First to 5.']
 ];
-const pvpGameIcon = (id) => (id === 'upusa' ? '⏱' : id === 'bank' ? '▣' : id === 'loop' ? '↺' : id === 'straight' ? '14' : id === 'onepocket' ? '1P' : id === 'cribbage' ? '15' : id);
-const pvpGameCards = () => `<h2>Games</h2><div class="arcadeGrid" data-pvp-games>${PVP_TABLE_GAMES.map(([id, name, sub]) => `<button type="button" class="gameCard card" data-action="go" data-href="#tgame/${id}" data-game="${esc(id)}"><span class="gcIcon">${pvpGameIcon(id)}</span><span class="gcMain"><b>${esc(name)}</b><small>${esc(sub)}</small></span></button>`).join('')}</div>`;
+const PVP_TG_SRC = {
+  '8': './icons/tg-8.png',
+  '9': './icons/tg-9.png',
+  '10': './icons/tg-10.png',
+  bank: './icons/tg-bank.png',
+  upusa: './icons/tg-upusa.png',
+  loop: './icons/tg-loop.png',
+  straight: './icons/tg-straight.png',
+  onepocket: './icons/tg-onepocket.png',
+  cribbage: './icons/tg-cribbage.png'
+};
+const pvpGameCards = () => `<h2>Games</h2><div class="tgGrid" data-pvp-games>${PVP_TABLE_GAMES.map(([id, name]) => `<button type="button" class="tgTile" data-action="go" data-href="#tgame/${id}" data-game="${esc(id)}"><img src="${PVP_TG_SRC[id]}" alt="${esc(name)}"/></button>`).join('')}</div>`;
 
 // UI-only selections (not persisted until a match / session / tournament is created)
 const setup = { a: null, b: null, game: '8-ball', raceTo: PVP.defaultRace, pick: [], format: 'single', name: '', adv: false, sessionId: null, tournamentId: null, tmId: null };

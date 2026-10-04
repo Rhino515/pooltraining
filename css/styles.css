@@ -1791,3 +1791,9 @@ header{
   padding-bottom:calc(18px + env(safe-area-inset-bottom, 0px));
 }
 .sheet{max-height:calc(88vh - env(safe-area-inset-top, 0px))}
+
+/* Table Games picture tiles. Art includes the blue border and the label. */
+.tgGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:4px 0 8px}
+.tgTile{display:block;width:100%;margin:0;padding:0;border:0;background:transparent;cursor:pointer;border-radius:22px;line-height:0}
+.tgTile img{display:block;width:100%;height:auto}
+.tgTile:active{transform:translateY(1px)}
