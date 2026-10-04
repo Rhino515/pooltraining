@@ -17,7 +17,7 @@ import { isBuId, examPageHTML, restartBuExam, resetBuDrill } from './content/buE
 import { isSkillsId } from './content/buExam2.js';
 import { isMoreId, finishRdsRun } from './content/buMore.js';
 import { isSafetyId, safetyPageHTML } from './content/safetyMaster.js';
-import { renderHome, renderCareerPage, renderDrillsPage, renderCoursesPage, renderArcade, renderGameLobby, renderBossPage, renderProfile, renderSettings, renderLearn } from './dashboard.js';
+import { renderHome, renderCareerPage, renderDrillsPage, renderCoursesPage, renderArcade, renderGameLobby, renderBossPage, renderProfile, renderSettings, renderLearn, homeAuthHTML } from './dashboard.js';
 import { renderAnalyzePage, bindAnalyzeHandlers } from './analyze.js';
 import { renderGhostLobby, renderGhostMatch, newGhostSession, newEightSession, applyRack, applyUndo, applyBreak, setBreakMade, useBallInHand, rulesSheetHTML, maxUnlockedBalls, matchOver } from './ghost.js';
 import { createPlayScreen } from './ui/play.js';
@@ -128,7 +128,22 @@ const NAV_FOR = { account: 'profile', leaderboard: 'profile', gate: 'career', pr
 
 function setChrome(playing, navName) {
   document.body.classList.toggle('playing', playing);
+  const onHome = !playing && navName === 'home';
+  document.body.classList.toggle('onHome', onHome);
+  paintHomeAuth(onHome);
   document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('active', b.dataset.page === navName));
+}
+/** Home header only: existing #account flow, or Sign out when there is no display name. */
+function paintHomeAuth(show) {
+  const slot = document.getElementById('homeAuth');
+  if (!slot) return;
+  if (!show) {
+    if (slot.childElementCount) slot.replaceChildren();
+    return;
+  }
+  const st = cloud.status();
+  const html = homeAuthHTML(st);
+  if (slot.innerHTML !== html) slot.innerHTML = html;
 }
 
 function renderRoute() {

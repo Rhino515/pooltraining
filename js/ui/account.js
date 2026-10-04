@@ -35,6 +35,16 @@ const back = (href, label) => `<button type="button" class="linkish back" data-a
 const msgBox = (m) => (m ? `<p class="acMsg ${m.ok ? 'ok' : 'err'}" data-ac-msg="${m.ok ? 'ok' : 'err'}" role="status">${esc(m.text)}</p>` : '<p class="acMsg" data-ac-msg="" role="status"></p>');
 
 // ------------------------------------------------------------------ account screens
+/** Tiny Home-header control. Opens the existing #account screen (or signs out). Not a second login. */
+export function homeAuthHTML(st = {}) {
+  if (st.user) {
+    const name = String(st.profileName || '').trim();
+    if (name) return `<button type="button" class="homeAuthLink" data-home-auth="account" data-action="go" data-href="#account" title="${esc(name)}">${esc(name)}</button>`;
+    return `<button type="button" class="homeAuthLink" data-home-auth="signout" data-action="ac-signout">Sign out</button>`;
+  }
+  return `<button type="button" class="homeAuthLink" data-home-auth="guest" data-action="go" data-href="#account">Sign in / Register</button>`;
+}
+
 export function renderAuthCallback() {
   return `<div class="title"><span class="eyebrow">ONLINE ACCOUNT</span><h1>One moment</h1><p>Finishing the link from your email…</p></div><div class="card settingsCard" data-auth-callback><p class="muted">If nothing happens, open <b>Settings → Online account</b>.</p><button type="button" class="bigBtn alt" data-action="go" data-href="#account">ACCOUNT</button></div>`;
 }

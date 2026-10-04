@@ -1030,6 +1030,12 @@ header small{font-size:8.5px;font-weight:600;letter-spacing:2.35px;color:#c9d2df
 .gearBtn{width:46px;height:46px;padding:0;border:0;border-radius:12px;display:grid;place-items:center;color:#aab4c7;background:transparent}
 .gearBtn:active{background:#0f1c2c}
 .gearIco{width:27px;height:27px;fill:currentColor;display:block}
+.headTools{display:flex;align-items:center;flex:none;gap:0;margin-left:6px}
+.homeAuth{display:none;align-items:center;min-width:0}
+body.onHome .homeAuth{display:flex}
+.homeAuthLink{appearance:none;-webkit-appearance:none;margin:0;max-width:118px;padding:5px 8px;border:1px solid #2a4d70;border-radius:999px;background:transparent;color:#d7f4ff;font-size:11px;font-weight:650;letter-spacing:0;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.homeAuthLink:active{background:#0f1c2c}
+@media(max-width:400px){body.onHome .brandMark{height:26px}body.onHome header small{letter-spacing:1.15px;font-size:7.5px}.homeAuthLink{max-width:124px;font-size:11px;padding:5px 8px}}
 
 /* bottom nav: filled icons, label under, active tab in a raised rounded box (like the mockup's top nav) */
 nav{height:auto;min-height:68px;padding:6px 4px calc(6px + env(safe-area-inset-bottom));background:linear-gradient(180deg,#060d17f5,#040a12fa);border-top:1px solid #152131;gap:2px;align-items:stretch}

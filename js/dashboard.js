@@ -25,6 +25,8 @@ import { isDrillHidden } from './drills/hidden.js';
 import { examBannerHTML, accomplishmentHTML } from './content/buExam.js';
 import { safetyBannerHTML } from './content/safetyMaster.js';
 import { ownerAccountSignedIn } from './dev/dev.js';
+import { homeAuthHTML } from './ui/account.js';
+export { homeAuthHTML };
 
 function nextUpCard(state) {
   const n = nextUp(state);
@@ -96,6 +98,7 @@ function quickAccessHTML() {
 }
 
 export function renderHome(state, extras = {}) {
+  // Sign in / Register is the header chip (homeAuthHTML), not a card on this page.
   return `${devSeedBannerHTML(state)}
     ${homeRanksCard(state)}
     ${nextUpCard(state)}

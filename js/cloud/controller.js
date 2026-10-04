@@ -46,6 +46,14 @@ export function createCloud(env) {
   /** Refresh what is on screen without closing an open sheet or jumping the scroll position */
   function refresh({ full = false } = {}) {
     const r = env.routeName();
+    if (r === 'home') {
+      const slot = document.getElementById('homeAuth');
+      if (slot && document.body.classList.contains('onHome')) {
+        const html = AU.homeAuthHTML(status());
+        if (slot.innerHTML !== html) slot.innerHTML = html;
+      }
+      return;
+    }
     if (!CLOUD_ROUTES.has(r)) return;
     const changed = sig() !== lastRendered;
     if ((full || changed) && !sheetKind() && !document.body.classList.contains('playing')) { env.renderRoute(); return; }

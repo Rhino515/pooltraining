@@ -28,6 +28,7 @@ Shot Simulator simplification. Playing-surface sizes (ball stays 2.25 in): 7 ft 
 - Cache `pool-iq-v14-2`, app version 14.
 - v14-1: 8-ball runout plays the group (not the 1-ball), shows a breakout for a tied-up ball, 3D is a low view from behind the cue ball, and full screen is the table plus EXIT.
 - v14-2: 3D view is a shaded table from behind the cue ball (wood rails, lit cloth, round balls, cue).
+- v14-65: Home header has a small Sign in / Register link (the existing account screen). Signed in, it shows the display name, or Sign out if there is no name. Cache `pool-iq-v14-65`.
 - v14-64: Bridges stays under Learn / Fundamentals only, as a photo button cropped from the closed-bridge page. It is not on the Learn home. Cache `pool-iq-v14-64`.
 - v14-63: The optional table-game shot timer ticks while it runs and alarms once at zero. Mute quiets it. Friend's turn is off until turned on: Opponent pocketed does not start your clock, Opponent missed does. Cache `pool-iq-v14-63`.
 - v14-62: Numbered how-to steps on 8-ball, 9-ball, 10-ball, Loop, Straight Pool, One Pocket, Cribbage, and Bank Pool start collapsed. A plus next to the title opens them and a minus closes them. The rules chips stay up. Cache `pool-iq-v14-62`.
