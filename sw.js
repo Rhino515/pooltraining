@@ -1,4 +1,4 @@
-const CACHE = 'pool-iq-v14-65';
+const CACHE = 'pool-iq-v14-66';
 const ASSETS = [
   './',
   './index.html',
@@ -298,6 +298,7 @@ const ASSETS = [
   './images/safety/sm-77-tip.png',
   './images/courses/efren-reyes.jpg',
   './images/learn/bridges/card.jpg',
+  './images/learn/stance/card.jpg',
   './images/learn/bridges/page-01.jpg',
   './images/learn/bridges/page-02.jpg',
   './images/learn/bridges/page-03.jpg',

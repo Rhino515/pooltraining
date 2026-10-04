@@ -1753,6 +1753,18 @@ body.fix-full #app{height:100dvh;padding:0}
 .playScreen .stepToggle{flex:none;width:44px;height:44px;margin:0;padding:0;border-radius:12px;border:1px solid #2a4a6c;background:#102033;color:var(--gold);font-size:28px;font-weight:800;line-height:1;cursor:pointer}
 .playScreen .stepBody[hidden]{display:none !important}
 
+/* Stance and Stroke under Fundamentals. Same plus/minus as the table-game steps. Default open. */
+.learnPage .stanceVideo{display:block;width:100%;margin:4px 0 8px;aspect-ratio:16/9;border:0;border-radius:16px;background:#041018}
+.learnPage .stanceFold{margin:8px 0 12px}
+.learnPage .stanceFold>summary{list-style:none;cursor:pointer}
+.learnPage .stanceFold>summary::-webkit-details-marker{display:none}
+.learnPage .stanceFold>summary::marker{content:""}
+.learnPage .stepHead{display:flex;align-items:center;justify-content:flex-start;gap:8px;margin:0 0 8px}
+.learnPage .stepHead .stepTitle{font-weight:800;line-height:1.25}
+.learnPage .stepToggle{flex:none;width:44px;height:44px;margin:0;padding:0;border-radius:12px;border:1px solid #2a4a6c;background:#102033;color:var(--gold);font-size:28px;font-weight:800;line-height:1;display:grid;place-items:center}
+.learnPage .stanceFold>summary .stepToggle::before{content:"+"}
+.learnPage .stanceFold[open]>summary .stepToggle::before{content:"\2212"}
+
 /* v14-63: shot timer sound mute, stop, and optional friend's turn */
 .shotTimer .bigBtn{margin-top:0}
 .tmRun{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:stretch}
