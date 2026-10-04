@@ -19,39 +19,65 @@ import { SAFETY_NAME, SAFETY_ORDER, safetyOf } from './safetyMaster.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-/** Short gold marks. Distinct shape per set. Not a photo. */
-const LOOK = {
-  fundamentals: { short: 'Exam I', mark: 'round' },
-  bachelors: { short: 'Bach.', mark: 'shield' },
-  masters: { short: 'Mast.', mark: 'diamond' },
-  doctorate: { short: 'Doct.', mark: 'hex' },
-  advanced: { short: 'Adv.', mark: 'square' },
-  rds: { short: 'RDS', mark: 'notch' },
-  ppc: { short: 'Place', mark: 'tag' },
-  safety: { short: 'Safe', mark: 'crest' },
-  draw: { short: 'Draw', mark: 'pill' },
-  follow: { short: 'Follow', mark: 'point' },
-  safetyMaster: { short: 'S.Mast', mark: 'ribbon' }
+/**
+ * One completion medal for every finished set. Same leaves, disc, and ribbon.
+ * Exams differ only by metal, rim, or a small center mark. The name under it
+ * says which one (Exam I, Exam II, RDS, Safety Master). Not a photo.
+ */
+const SHORT = {
+  fundamentals: 'Exam I',
+  bachelors: 'Exam II',
+  masters: 'Masters',
+  doctorate: 'Doctorate',
+  advanced: 'Exam III',
+  rds: 'RDS',
+  ppc: 'Exam V',
+  safety: 'Exam VI',
+  draw: 'Exam VII',
+  follow: 'Exam VIII',
+  safetyMaster: 'Safety Master'
 };
 
-const MARK_SVG = {
-  round: '<circle cx="8" cy="8" r="5.2" fill="none" stroke="#f6c453" stroke-width="1.6"/>',
-  shield: '<path d="M8 1.8 13.2 4v4.2c0 3.2-2.1 5.2-5.2 6.2C4.9 13.4 2.8 11.4 2.8 8.2V4Z" fill="none" stroke="#f6c453" stroke-width="1.4"/>',
-  diamond: '<path d="M8 1.8 14 8 8 14.2 2 8Z" fill="none" stroke="#f6c453" stroke-width="1.4"/>',
-  hex: '<path d="M8 1.6 13.4 4.6v6.8L8 14.4 2.6 11.4V4.6Z" fill="none" stroke="#f6c453" stroke-width="1.4"/>',
-  square: '<rect x="2.4" y="2.4" width="11.2" height="11.2" fill="none" stroke="#f6c453" stroke-width="1.4"/>',
-  notch: '<path d="M8 1.6 9.7 6h4.6l-3.7 2.8 1.4 4.6L8 10.6 4 13.4l1.4-4.6L1.7 6h4.6Z" fill="#f6c453"/>',
-  tag: '<path d="M2.2 3.2h7.2L14 8l-4.6 4.8H2.2Z" fill="none" stroke="#f6c453" stroke-width="1.4"/>',
-  crest: '<circle cx="8" cy="8" r="5.4" fill="none" stroke="#f6c453" stroke-width="1.2"/><circle cx="8" cy="8" r="2.2" fill="#f6c453"/>',
-  pill: '<rect x="1.6" y="4.2" width="12.8" height="7.6" rx="3.8" fill="none" stroke="#f6c453" stroke-width="1.4"/>',
-  point: '<path d="M8 1.8 14.2 13.6H1.8Z" fill="none" stroke="#f6c453" stroke-width="1.4"/>',
-  ribbon: '<path d="M3 2h10v9.2L8 14.2 3 11.2Z" fill="none" stroke="#f6c453" stroke-width="1.4"/>'
+const STYLES = {
+  fundamentals: { disc: '#f6c453', rim: '#7a5814', rimW: 1.5, inner: '#fff6d4', innerW: 0.9, leaf: '#e2b14a', ribbon: '#c9922a', ribbon2: '#a97822', ink: '#7a5814', mark: 'star' },
+  bachelors: { disc: '#f8e3a4', rim: '#6e5420', rimW: 2.2, inner: '#fffaf0', innerW: 0.7, leaf: '#ecd08a', ribbon: '#d4b06a', ribbon2: '#b8924a', ink: '#6e5420', mark: 'ring' },
+  masters: { disc: '#e0b03a', rim: '#4a320c', rimW: 1.7, inner: '#f6d78a', innerW: 1.5, leaf: '#c9963a', ribbon: '#a97822', ribbon2: '#8a6418', ink: '#4a320c', mark: 'dot' },
+  doctorate: { disc: '#f3d07a', rim: '#8a6a28', rimW: 2.6, inner: '#fff1c8', innerW: 0.6, leaf: '#e8c56a', ribbon: '#c9a04a', ribbon2: '#a88840', ink: '#6a4e16', mark: 'bar' },
+  advanced: { disc: '#d7a441', rim: '#f3e2b0', rimW: 1.6, inner: '#fff6d4', innerW: 0.8, leaf: '#c4923a', ribbon: '#b8862a', ribbon2: '#8a6418', ink: '#5c4310', mark: 'star' },
+  rds: { disc: '#f6c453', rim: '#fff6d4', rimW: 2.1, inner: '#7a5814', innerW: 0.8, leaf: '#e8c56a', ribbon: '#d4a84b', ribbon2: '#c9922a', ink: '#7a5814', mark: 'ring' },
+  ppc: { disc: '#c9922a', rim: '#5a3e10', rimW: 1.8, inner: '#f0d48a', innerW: 1.3, leaf: '#b8862a', ribbon: '#8a5a14', ribbon2: '#6e4810', ink: '#3d2c0c', mark: 'dot' },
+  safety: { disc: '#ffe7a8', rim: '#a88840', rimW: 1.4, inner: '#fffaf0', innerW: 1.1, leaf: '#f0d48a', ribbon: '#e2b14a', ribbon2: '#c9922a', ink: '#8a6418', mark: 'bar' },
+  draw: { disc: '#e8c36a', rim: '#3d2c0c', rimW: 2.4, inner: '#fff6d4', innerW: 0.7, leaf: '#d4a84b', ribbon: '#a97822', ribbon2: '#7a5814', ink: '#3d2c0c', mark: 'star' },
+  follow: { disc: '#f0d090', rim: '#9a7428', rimW: 1.3, inner: '#7a5814', innerW: 1.4, leaf: '#e2c07a', ribbon: '#c9a04a', ribbon2: '#a88840', ink: '#6e5420', mark: 'ring' },
+  safetyMaster: { disc: '#f6c453', rim: '#fff1c8', rimW: 2.5, inner: '#a97822', innerW: 0.9, leaf: '#e8c56a', ribbon: '#c9922a', ribbon2: '#e2b14a', ink: '#7a5814', mark: 'dot' }
 };
 
-function look(id, name) {
-  if (LOOK[id]) return LOOK[id];
-  const short = String(name || id).split(/[–—-]/)[0].trim().slice(0, 10) || String(id);
-  return { short, mark: 'round' };
+function centerMark(kind, ink) {
+  if (kind === 'star') return `<path fill="${ink}" d="M32 21.4 33.6 25.3 37.8 25.7 34.6 28.5 35.5 32.6 32 30.5 28.5 32.6 29.4 28.5 26.2 25.7 30.4 25.3Z"/>`;
+  if (kind === 'ring') return `<circle cx="32" cy="28" r="3.4" fill="none" stroke="${ink}" stroke-width="1.5"/>`;
+  if (kind === 'dot') return `<circle cx="32" cy="28" r="2.6" fill="${ink}"/>`;
+  if (kind === 'bar') return `<rect x="27" y="26.6" width="10" height="2.7" rx="1.2" fill="${ink}"/>`;
+  return '';
+}
+
+function medalSVG(style) {
+  const s = style || STYLES.fundamentals;
+  return `<svg viewBox="0 0 64 64" aria-hidden="true"><path fill="${s.ribbon}" d="M24 38 18 58 32 50V38Z"/><path fill="${s.ribbon2}" d="M40 38 46 58 32 50V38Z"/><g fill="${s.leaf}"><ellipse cx="16" cy="22" rx="3.4" ry="6.4" transform="rotate(-48 16 22)"/><ellipse cx="12.5" cy="31" rx="3.4" ry="6.4" transform="rotate(-12 12.5 31)"/><ellipse cx="15.5" cy="40" rx="3.2" ry="5.8" transform="rotate(24 15.5 40)"/><ellipse cx="48" cy="22" rx="3.4" ry="6.4" transform="rotate(48 48 22)"/><ellipse cx="51.5" cy="31" rx="3.4" ry="6.4" transform="rotate(12 51.5 31)"/><ellipse cx="48.5" cy="40" rx="3.2" ry="5.8" transform="rotate(-24 48.5 40)"/></g><circle cx="32" cy="28" r="13.2" fill="${s.disc}" stroke="${s.rim}" stroke-width="${s.rimW}"/><circle cx="32" cy="28" r="9.2" fill="none" stroke="${s.inner}" stroke-width="${s.innerW}"/><path d="M24.5 23.2c2.2-3.2 6.2-4.6 10-3.2" fill="none" stroke="#fff6d8" stroke-width="1.2" stroke-linecap="round" opacity=".75"/>${centerMark(s.mark, s.ink)}</svg>`;
+}
+
+function shortName(id, name) {
+  if (SHORT[id]) return SHORT[id];
+  const raw = String(name || id).trim();
+  const parts = raw.split(/\s*[–—]\s*/);
+  if (parts.length > 1 && /^exam\b/i.test(parts[0])) {
+    const rest = parts[1].replace(/^skills,?\s*/i, '').trim();
+    if (rest && !/^exam$/i.test(rest)) return rest.slice(0, 18);
+  }
+  const paren = raw.match(/\(([^)]+)\)/);
+  if (paren && paren[1]) return paren[1].slice(0, 18);
+  const head = (parts[0] || raw).trim();
+  if (/^exam$/i.test(head)) return String(id).slice(0, 18);
+  return head.slice(0, 18) || String(id);
 }
 
 function hasScore(row) {
@@ -67,8 +93,8 @@ function fromScores({ id, name, href, order, scores }) {
   const filled = ids.filter((k) => hasScore(bag[k])).length;
   if (!filled) return null;
   const done = ids.filter((k) => hasScore(bag[k]) && !bag[k].open).length;
-  const { short, mark } = look(id, name);
-  return { id, name, href, short, mark, done, total, finished: done === total };
+  const short = shortName(id, name);
+  return { id, name, href, short, done, total, finished: done === total };
 }
 
 function rdsRow(state, exam) {
@@ -90,13 +116,12 @@ function rdsRow(state, exam) {
   } else {
     done = order.filter((k) => hasScore(scores[k]) && !scores[k].open).length;
   }
-  const { short, mark } = look(exam.key, exam.name);
+  const short = shortName(exam.key, exam.name);
   return {
     id: exam.key,
     name: exam.name,
     href: exam.href,
     short,
-    mark,
     done,
     total,
     finished: done >= total
@@ -156,8 +181,7 @@ export function readSetProgress(state) {
 }
 
 export function setEmblemHTML(row) {
-  const svg = MARK_SVG[row.mark] || MARK_SVG.round;
-  return `<span class="setEmblem" data-mark="${esc(row.mark)}" data-set-emblem="${esc(row.id)}" title="${esc(row.name)}"><svg viewBox="0 0 16 16" aria-hidden="true">${svg}</svg><b>${esc(row.short)}</b></span>`;
+  return `<span class="setEmblem" data-set-emblem="${esc(row.id)}" title="${esc(row.name)}">${medalSVG(STYLES[row.id])}<b>${esc(row.short)}</b></span>`;
 }
 
 function meterHTML(row) {
