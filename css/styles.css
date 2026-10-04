@@ -1774,3 +1774,16 @@ body.fix-full #app{height:100dvh;padding:0}
 .tmFriend[aria-pressed="true"]{color:var(--gold);border-color:#e2b45a}
 .shotTimer[data-friend="0"] .tmOpp{display:none}
 .tmOpp{display:flex;flex-direction:column;gap:8px}
+
+/* v14-67: iPhone status bar. viewport-fit=cover is already set, so env() is real.
+   Inset is 0 on desktop and on phones with no notch, so the header stays 56px tall. */
+header{
+  height:calc(56px + env(safe-area-inset-top, 0px));
+  padding-top:env(safe-area-inset-top, 0px);
+}
+#app{padding-bottom:calc(92px + env(safe-area-inset-bottom, 0px))}
+.modal{
+  padding-top:calc(18px + env(safe-area-inset-top, 0px));
+  padding-bottom:calc(18px + env(safe-area-inset-bottom, 0px));
+}
+.sheet{max-height:calc(88vh - env(safe-area-inset-top, 0px))}
