@@ -247,50 +247,35 @@ function bridgesPage(backHref, backLabel) {
   return page('Bridges', pages, backHref, backLabel);
 }
 
-const STANCE_WATCH = 'https://www.youtube.com/watch?v=QiBunV0Ba8w&t=68s';
-const STANCE_EMBED = 'https://www.youtube.com/embed/QiBunV0Ba8w?start=68';
+const STANCE_WATCH = 'https://www.youtube.com/watch?v=DNODSvQWRa4';
+const STANCE_EMBED = 'https://www.youtube.com/embed/DNODSvQWRa4';
 
-/** Sharivari, in the order he says them. Wording is his. Nothing added. */
+/** Ron, "the Pool Student", in the order he says them. Wording is his. Nothing added. */
 const STANCE_STEPS = [
-  'You can find the aiming line by visualizing a straight line from the heart of the pocket to the object ball. Then extend the line and connect it to the center of the ghost ball.',
-  'No matter where the cue ball is positioned, the aim remains the same, just directed at the center of the ghost ball.',
-  'Extend the aiming line all the way to the floor.',
-  'Align your dominant foot on the aiming line. He is a left-handed player, so he aligns his left foot. If you are a right-handed player, align your right foot.',
-  'Do not step next to the aiming line and then go down. You are in a really awkward position. You do not have room for the cue.',
-  'It does not have to be exactly that part of your foot. It can vary. It is personal preference.',
-  'As a beginner, align your cue on that aiming line. If you look over your cue, you should have the aiming line exactly underneath your cue.',
-  'Do not step the other foot to the front. You do not have room for your cue to move nicely. Your foot and your hip are in the way.',
-  'Take a step to the side. Then you have room for cueing.',
-  'Do not step too far to the side. The cue is on the baseline. Your wrist is on the baseline. Your elbow is not on that baseline anymore. Your elbow also has to be on the baseline, so you are cueing as straight as possible on the aiming line.',
-  'You do not have to step exactly like this or like this. This is personal preference. He likes to step just like this. Very natural — not perfectly to the side. Just in this direction. This is his personal feel-good stance.',
-  'Do not stand that close to the ball. The rule: your arm should be extended.',
-  'All the aiming happens when you are standing, when you are aligning yourself. Tiny movements can actually make a difference. On a long, difficult shot, align that foot until you have a feeling that it is perfectly aligned.',
-  'Step onto the baseline, take a step to the side, and go down. If you are still a beginner, you can go down from the first step. He does not like to do this.',
-  'Your arm is all the way extended. Everything should be aligned on the baseline: the cue, your eyes and your foot, the wrist and your elbow, with the aiming line.',
-  'Cue straight along that aiming line.',
-  'On a shot with an angle, align yourself again on that straight line. Bring your cue over the cue ball. The tip stays at the ghost ball. Bring your cue back until it is in line with the ghost ball. Try to never leave that line, and shoot into that direction.',
-  'Stand while you are aiming. Then the whole process starts. You go down.',
-  'Lock into the shot, seeing if everything is all right.',
-  'Once you are feeling comfortable, start your strokes, seeing if everything is aligned correctly.',
-  'Pull back really smooth. Maybe you can pause a bit, but you do not have to.',
-  'Push the cue just straight forward and follow through.',
-  'Accelerate just a tiny bit through the cue ball so that the tip hits the cue ball just a fraction before the cue is traveling at its highest speed. The better your timing is, the more rotation you can get into the cue ball without increasing the speed of the shot.',
-  'Decelerating before even making contact with the cue ball will very often make you miss the shot. A person throwing something and not releasing it when their arm is moving at its highest speed does not make any sense. It is an unnatural movement, most of the time caused by nerves and uncertainty when shooting.',
-  'You do not have to hit that hard if you want to draw the cue ball back. A smooth stroke, with cue action and the right timing.',
-  'When the object ball and the cue ball are very close together, shorten your bridge length. If you are really far away, you will lose a lot of control.',
-  'When you do not need a lot of action, and you just want to stun over, do not pull back all the way and do not follow through a long way. Tiny pre-strokes or tiny back swings, then follow through a tiny, tiny bit. Whenever you do not need a lot of action, keep everything very short and compact.',
-  'When you need more action on the cue ball, that short bridge length and those tiny strokes would not be ideal. Go back a bit further. A bigger back swing, and follow through a bit more. Not maximum.',
-  'Hold the cue not too tight, even on your final stroke. Otherwise it can harm your accuracy in terms of hitting the right spot on the cue ball.',
-  'Your wrist is not bent to the left or to the right. It is just a passive part of your body. It hangs down, and you are holding the cue loosely in your hand.',
-  'Before going down, know what kind of spin you want to add, the speed you are going to use, and how the stroke should feel. Then, regardless of the outcome, stroke exactly the way you have imagined.',
-  'While you are doing your pre-strokes in the air, visualize everything and start to feel the shot. How the shot should look and feel in your arm, the speed, and so on.',
-  'When you are down and you just do not have the feeling that everything is right, stand up, chalk again, and restart the whole process.',
-  'Stay as still as possible and only move your arm.',
-  'Should you drop your elbow or not? It depends on the amount of cue action you need. There is no right or wrong here.',
-  'Do not overpower the shot. Rely on cueing straight and following through nicely.',
-  'The transition between the backwards and forwards motion should be very smooth. Make a pause or do not make a pause. As long as it is smooth, it is okay. All the cue action comes from the forward motion.',
-  'Do not rush the shot. Your muscles maybe tighten up and you will jump up or choke on the shot.',
-  'Stay down after the shot and feel which position your body is in. If your cue is pointing this or that way after the shot, you had some technique issues.'
+  'Shot making consistency is how we place our feet within the shot line. Where do we put our body? We have to put it in the right place, and it all begins with our foot placement.',
+  'Here we\'ve got this line going directly into that corner, and this tape on the floor, which extends the line. This is the shot line.',
+  'The critical part here is I try to stay inside of the line. I put my first foot forward, which is my right foot. I\'m a right-hander. Then I put my left foot over here.',
+  'It\'s important to be this side of the line with my body. I need clearance for my lever.',
+  'I don\'t want to be too close to the line or over the line. Then I\'m cramping myself with my cue, and I can hit my hand actually on my body as I go through the shot.',
+  'I try to stay just short of the shot line, and then step over to the side with my left foot. This is huge right here.',
+  'If I crowd this foot too close to this line, and then come down on it, my cue will be veered to the left.',
+  'When I step properly into the shot line, my cue is right along the blue tape.',
+  'When I move my front foot too close to the shot line, my upper body torso moves the cue away from the shot line.',
+  'Step into the shot line correctly, where our front foot is away from the shot line, and notice right away the cue is over the blue tape.',
+  'I simply have to push the cue forward straight down the line.',
+  'If I move this way, the cue goes over the line. It\'s veered off. If I bring my foot this way, my whole body this way, the cue goes right straight down the line.',
+  'Very, very important to have that foot placement over here from the shot line.',
+  'This is 13 in from the inside of this line to that line, and I\'m 5 ft 8, and that\'s what works best for me. If you\'re taller, you\'re probably going to be wider, and if you\'re shorter, probably going to be closer.',
+  'You can put tape on the floor as well to get the feel of this. When I go down on it, I\'m automatically right there. I could even close my eyes and most likely make this shot.',
+  'My rear leg, if I bend it like this and I\'m on the shot, this crowds my body into the shot line.',
+  'If I stiffen my back leg, I\'m more rigid. It keeps my body, my upper body, my torso in the right position, but it also puts weight forward. It puts weight on my bridge hand.',
+  'I\'m putting quite a bit of weight on that with that rear leg locked. Some of you may not be able to lock your rear leg because you might have had an injury. But if you can, definitely lock the rear leg.',
+  'It\'ll give you a stable stance, because you have a great tripod here. This foot being over, this foot being locked, and you have pressure down with your bridge hand. You\'re very, very stable.',
+  'Shot making consistency starts with our foot placement. My right foot is up against the shot line. My left foot is away from the shot line about 12, 13 in.',
+  'When I get down on the shot, I should be pretty lined up.',
+  'If I bring my front foot too close to the shot line, rear foot right up to it, front foot about 5 in away, my cue is not down the shot line, because my upper body or my upper torso is crowding the shot line.',
+  'If I just slide over a little bit, the cue wants to gravitate right over the line.',
+  'Step properly into the shot line. Right foot up against it, left foot off to the side, drop into the line, feathers, stop at the back of the cue ball, make a nice smooth stroke.'
 ];
 
 function stanceCard(href) {
@@ -303,7 +288,7 @@ function stanceVideo() {
 
 function stancePage() {
   const steps = STANCE_STEPS.map((line) => `<li>${esc(line)}</li>`).join('');
-  const body = `<p class="learnSrc"><b>Source:</b> Sharivari, YouTube. The steps below are his words from this video, in order.</p>
+  const body = `<p class="learnSrc"><b>Source:</b> Ron, “the Pool Student”, YouTube. The steps below are his words from this video, in order.</p>
     ${stanceVideo()}
     <details class="stanceFold" open>
       <summary class="stepHead"><span class="stepTitle">Stance and stroke</span><span class="stepToggle" aria-hidden="true"></span></summary>
