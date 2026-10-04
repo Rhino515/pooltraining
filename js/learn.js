@@ -297,29 +297,13 @@ function stanceCard(href) {
   return `<button type="button" class="coursesCard" data-action="go" data-href="${href}"><img src="./images/learn/stance/card.jpg" alt="" width="1400" height="530"/><span class="coursesLabel">Stance and Stroke</span></button>`;
 }
 
-function stanceOnIPhone() {
-  try {
-    const nav = globalThis.navigator;
-    if (!nav) return false;
-    const ua = nav.userAgent || '';
-    const platform = nav.platform || '';
-    const touch = nav.maxTouchPoints || 0;
-    return /iPhone|iPad|iPod/i.test(ua) || (platform === 'MacIntel' && touch > 1);
-  } catch {
-    return false;
-  }
-}
-
 function stanceVideo() {
-  if (stanceOnIPhone()) {
-    return `<p class="muted">On iPhone this opens in YouTube, from about 1:08.</p><a class="bigBtn" href="${STANCE_WATCH}" target="_blank" rel="noopener noreferrer">OPEN IN YOUTUBE</a>`;
-  }
-  return `<iframe class="stanceVideo" src="${STANCE_EMBED}" title="Stance and Stroke" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe><p class="learnSrc"><a href="${STANCE_WATCH}" target="_blank" rel="noopener noreferrer">${esc(STANCE_WATCH)}</a></p>`;
+  return `<iframe class="stanceVideo" src="${STANCE_EMBED}" title="Stance and Stroke" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe><p class="learnSrc"><a href="${STANCE_WATCH}" target="_blank" rel="noopener noreferrer">Open in YouTube</a></p>`;
 }
 
 function stancePage() {
   const steps = STANCE_STEPS.map((line) => `<li>${esc(line)}</li>`).join('');
-  const body = `${src('Sharivari, YouTube. The steps below are his words from this video, in order.', STANCE_WATCH)}
+  const body = `<p class="learnSrc"><b>Source:</b> Sharivari, YouTube. The steps below are his words from this video, in order.</p>
     ${stanceVideo()}
     <details class="stanceFold" open>
       <summary class="stepHead"><span class="stepTitle">Stance and stroke</span><span class="stepToggle" aria-hidden="true"></span></summary>
