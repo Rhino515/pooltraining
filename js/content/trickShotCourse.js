@@ -849,7 +849,6 @@ export function solutionText(shot) {
 }
 export function howToHTML(shot) {
   const steps = [
-    ['Place the balls', shot.lines.join(' ')],
     ['Aim', shot.aim],
     ['Cue ball', `${tipWords(shot.tip).cue}. ${shot.english}${shot.englishWhy ? ' ' + shot.englishWhy : ''}`],
     ['Speed', `${shot.speed}. ${shot.speedWhy || ''} ${shot.stroke || ''}`.trim()],
@@ -877,7 +876,7 @@ export function trickProgressRows(state) {
 export function trickBannersHTML(state) {
   const open = examUnlocked(state || {});
   const n = LEVELS.length;
-  const course = `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#trick" data-trick="course"><span class="simPromoText"><span class="eyebrow">DRILL SET</span><b>${esc(COURSE_TITLE)}</b><small>${n} levels. Make each shot 3 times. Not on the All list. Not a Career rank.</small></span><span class="simPromoGo">›</span></button>`;
+  const course = `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#trick" data-trick="course"><span class="simPromoText"><span class="eyebrow">DRILL SET</span><b>${esc(COURSE_TITLE)}</b><small>${PASS_RULE} ${n} levels, then the exam.</small></span><span class="simPromoGo">›</span></button>`;
   const exam = open
     ? `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#trick/exam" data-trick="exam"><span class="simPromoText"><span class="eyebrow">EXAM</span><b>${esc(EXAM_TITLE)}</b><small>8 shots, one skill each. Make each shot 3 times.</small></span><span class="simPromoGo">›</span></button>`
     : `<div class="card simPromo buEntry is-locked" data-trick="exam" data-trick-locked="1"><span class="simPromoText"><span class="eyebrow">EXAM</span><b>${esc(EXAM_TITLE)}</b><small>Locked until all ${n} levels are passed.</small></span></div>`;

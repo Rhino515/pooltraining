@@ -7,7 +7,7 @@ import {
   COURSE_TITLE, EXAM_TITLE, PASS_RULE, LEVELS, TRICK_SCORE,
   levelUnlocked, levelPassed, levelRecord, examUnlocked, readCourse,
   startLevel, startExam, trickTap, trickUndo, trickView, trickPractice, trickReplay,
-  shotsInRun, runMax, scoreRun, diagramHTML, setupHTML, cueGraphicHTML, howToHTML, solutionText, starsHTML
+  shotsInRun, runMax, scoreRun, diagramHTML, cueGraphicHTML, howToHTML, solutionText, starsHTML
 } from '../content/trickShotCourse.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -52,14 +52,13 @@ function playHTML(state, showSolution) {
     <p class="trickPass">${esc(PASS_RULE)}</p>
     <p class="kickMeta">Score ${running.score} / ${runMax(cur)} · Makes ${makes} / ${TRICK_SCORE.makesRequired}</p>
     <div class="kickTable" data-trick-table>${diagramHTML(shot, { solution: showSolution })}</div>
-    ${setupHTML(shot)}
     ${cueGraphicHTML(shot)}
     <div class="kickSolve"><button type="button" class="chip${showSolution ? ' active' : ''}" data-action="trick-solution" aria-pressed="${showSolution ? 'true' : 'false'}">${showSolution ? 'Hide solution' : 'Show Solution'}</button> ${dotHTML(slot?.attempts)} <span data-trick-makes>Makes ${makes} / ${TRICK_SCORE.makesRequired}</span></div>
     ${showSolution ? `<p class="kickFacts" data-trick-rails>${esc(solutionText(shot))}</p>` : ''}
     ${howToHTML(shot)}
     <div class="kickStations" data-trick-progress>${row}</div>
     ${acts}
-    <p class="muted small">Shoot this on your table. The app does not hit the balls. A miss does not fail the level.</p>
+    <p class="muted small">Shoot this on your table. A miss does not fail the level.</p>
   </div>`;
 }
 
@@ -112,7 +111,7 @@ function listHTML(state) {
     ? `<button type="button" class="stageRow card" data-action="go" data-href="#trick/exam" data-trick-exam="1"><span class="srNum">●</span><span class="srMain"><b>${esc(EXAM_TITLE)}</b><small>8 shots. Make each one 3 times.</small></span></button>`
     : `<button type="button" class="stageRow card locked" disabled data-trick-exam="1" data-trick-exam-locked="1"><span class="srNum">🔒</span><span class="srMain"><b>${esc(EXAM_TITLE)}</b><small>Locked until all ${LEVELS.length} levels are passed.</small></span></button>`;
   return `<div class="playScreen kickPage" data-trick-home="1">
-    <div class="title"><button type="button" class="linkish back" data-action="go" data-href="#courses">‹ Drill Sets & Exams</button><span class="eyebrow">DRILL SET</span><h1>${esc(COURSE_TITLE)}</h1><p>${PASS_RULE} ${LEVELS.length} levels, then the exam. Not on the All list. Not a Career rank. No Career XP.</p></div>
+    <div class="title"><button type="button" class="linkish back" data-action="go" data-href="#courses">‹ Drill Sets & Exams</button><span class="eyebrow">DRILL SET</span><h1>${esc(COURSE_TITLE)}</h1><p>${PASS_RULE} ${LEVELS.length} levels, then the exam.</p></div>
     <div class="card"><p>${passed} of ${LEVELS.length} levels passed.</p><button type="button" class="bigBtn alt" data-action="go" data-href="#trick/stats">Course stats</button></div>
     <div class="stageList" data-trick-levels="1">${rows}${exam}</div>
   </div>`;
