@@ -180,7 +180,8 @@ const TABLE_MATCHES = [
   ['loop', 'Loop', 'POOL BACKWARDS / CAROM TRAINING'],
   ['straight', 'Straight Pool', 'WPA 14.1. Called shot to a score.'],
   ['onepocket', 'One Pocket', 'WPA one pocket. First to 8, race to racks.'],
-  ['cribbage', 'Cribbage', 'Pairs that add to 15. First to 5.']
+  ['cribbage', 'Cribbage', 'Pairs that add to 15. First to 5.'],
+  ['kicksafe', 'Kick Safe', 'Defensive 9-ball. Fouls score. Race to 5.']
 ];
 /** Cropped tiles from Andrew's table-games sheet. The label is already in the art. */
 const TG_SRC = {
@@ -194,7 +195,8 @@ const TG_SRC = {
   loop: './icons/tg-loop.png',
   straight: './icons/tg-straight.png',
   onepocket: './icons/tg-onepocket.png',
-  cribbage: './icons/tg-cribbage.png'
+  cribbage: './icons/tg-cribbage.png',
+  kicksafe: './icons/tg-kicksafe.png'
 };
 const tgTile = (id, href, name) => `<button type="button" class="tgTile" data-action="go" data-href="${href}" data-game="${esc(id)}"><img src="${TG_SRC[id]}" alt="${esc(name)}"/></button>`;
 export function renderArcade(state) {

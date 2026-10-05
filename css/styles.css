@@ -1818,3 +1818,18 @@ header{
 .hrSets .setEmblem{max-width:72px;gap:0}
 .hrSets .setEmblem svg{width:18px;height:18px}
 .hrSets .setEmblem b{max-width:72px;font-size:10px;font-weight:800}
+
+/* Kick Safe scorekeeper only. Does not change other table games or the tile grid. */
+[data-table-game="kicksafe"][data-kick-mode="pvp"].playScreen,[data-table-game="kicksafe"][data-kick-mode="solo"].playScreen{padding-bottom:calc(420px + env(safe-area-inset-bottom))}
+[data-table-game="kicksafe"] .ghostScore em{font-size:12px;font-style:normal;font-weight:800;letter-spacing:.04em;color:var(--muted);text-align:center}
+[data-table-game="kicksafe"] .rb.alt{background:#15304c;border:1px solid #1f5f99;color:#dff6ff}
+[data-table-game="kicksafe"] .ksOn{outline:2px solid var(--gold);border-radius:12px}
+[data-table-game="kicksafe"] .ksLab{margin:10px 0 4px;font-size:12px;font-weight:800;letter-spacing:.04em;color:var(--muted)}
+[data-table-game="kicksafe"] .ksLine{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0;font-weight:800;font-size:18px}
+[data-table-game="kicksafe"] .ksStats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 12px}
+[data-table-game="kicksafe"] .ksStats div{padding:8px;text-align:center;background:#0b1522;border:1px solid #1f3044;border-radius:14px}
+[data-table-game="kicksafe"] .ksStats b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
+[data-table-game="kicksafe"] .ksStats span{display:block;color:var(--muted);font-size:11px;letter-spacing:.04em}
+[data-table-game="kicksafe"] .ksConfirm{margin-top:8px;padding:10px 12px;border:1px solid #24507f;border-radius:12px;background:#071422}
+[data-table-game="kicksafe"] .ksConfirm p{margin:0 0 8px}
+[data-table-game="kicksafe"] .resultBar .rb.wide{flex:1 1 100%}

@@ -6,6 +6,7 @@
  */
 import { defaultCalibration } from './games/speed.js';
 import { defaultLoopBag } from './ui/loopRules.js';
+import { defaultKickSafeBag, normalizeBag as normalizeKickSafe } from './ui/kickSafeRules.js';
 
 export const STORAGE_KEY = 'poolIQStateV4';
 export const V3_KEY = 'poolIQStateV3';
@@ -59,7 +60,8 @@ export function defaultState() {
     activeSession: null,
     activeGhost: null,
     settings: { units: 'imperial', coaching: 'auto' },
-    loop: defaultLoopBag()
+    loop: defaultLoopBag(),
+    kickSafe: defaultKickSafeBag()
   };
 }
 
@@ -109,7 +111,8 @@ export function migrateToV4(parsed) {
     speedCal: { ...defaultCalibration(), ...(parsed.speedCal || {}) },
     promotionAttempts: parsed.promotionAttempts || {},
     settings: { ...base.settings, ...(parsed.settings || {}) },
-    loop: { ...base.loop, ...(parsed.loop && typeof parsed.loop === 'object' && !Array.isArray(parsed.loop) ? parsed.loop : {}) }
+    loop: { ...base.loop, ...(parsed.loop && typeof parsed.loop === 'object' && !Array.isArray(parsed.loop) ? parsed.loop : {}) },
+    kickSafe: normalizeKickSafe(parsed.kickSafe)
   };
   return out;
 }

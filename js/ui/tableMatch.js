@@ -10,6 +10,7 @@
  */
 import { timerHTML } from './shotTimer.js';
 import { createLoopMatch } from './loopGame.js';
+import { createKickSafe } from './kickSafe.js';
 import { freshStraight, applyStraight, STRAIGHT_TARGETS, freshOnePocket, applyOnePocket } from './wpaScore.js';
 import { freshCribbage, applyCribbage, partnerOf } from './cribbageRules.js';
 import { readRulePrefs, writeRulePrefs, stepsAreOpen, toggleStepsOpen, stepToggleBtn } from './stepFold.js';
@@ -66,6 +67,7 @@ export function createTableMatch(ctx, kind) {
   if (kind === 'straight') return straightScreen(ctx);
   if (kind === 'onepocket') return onePocketScreen(ctx);
   if (kind === 'cribbage') return cribbageScreen(ctx);
+  if (kind === 'kicksafe') return createKickSafe(ctx);
   const id = ['8', '9', '10', 'bank', 'upusa'].includes(kind) ? kind : '';
   if (!id) {
     return { render() { ctx.root.innerHTML = '<div class="card empty"><p>Unknown table game.</p></div>'; }, onAction() { return false; }, destroy() {} };
