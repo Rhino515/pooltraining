@@ -1,4 +1,4 @@
-const CACHE = 'pool-iq-v14-94';
+const CACHE = 'pool-iq-v14-95';
 const ASSETS = [
   './',
   './index.html',
@@ -389,12 +389,15 @@ const ASSETS = [
   './js/content/trickShotCourse.js',
   './js/content/pkfKickAssets.js',
   './js/content/pkfKickingCourse.js',
+  './js/content/pkfBankAssets.js',
+  './js/content/pkfBankingCourse.js',
   './js/content/setProgress.js',
   './js/ui/buPlay.js',
   './js/ui/safetyPlay.js',
   './js/ui/kickingPlay.js',
   './js/ui/trickPlay.js',
   './js/ui/pkfKickPlay.js',
+  './js/ui/pkfBankPlay.js',
   './js/customDrills.js',
   './js/dashboard.js',
   './js/dev/dev.js',
@@ -612,6 +615,10 @@ const ASSETS = [
   './images/pkf-kick/PKF_Kicking_PDF_279.jpg',
   './images/pkf-kick/PKF_Kicking_PDF_280.jpg',
   './images/pkf-kick/PKF_Kicking_PDF_281.jpg',
+  './images/pkf-bank/PKF_Banking_PDF_267.jpg',
+  './images/pkf-bank/PKF_Banking_PDF_268.jpg',
+  './images/pkf-bank/PKF_Banking_PDF_269.jpg',
+  './images/pkf-bank/PKF_Banking_PDF_270.jpg',
 ];
 self.addEventListener('install', (e) => {
   // take over as soon as this cache is published; the page reloads once on controllerchange

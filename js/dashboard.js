@@ -28,6 +28,7 @@ import { safetyBannerHTML } from './content/safetyMaster.js';
 import { offRailBannersHTML } from './content/kickingCourse.js';
 import { trickBannersHTML } from './content/trickShotCourse.js';
 import { pkfBannersHTML } from './content/pkfKickingCourse.js';
+import { pkfBankBannersHTML } from './content/pkfBankingCourse.js';
 import { ownerAccountSignedIn, isUnlocked as devOn } from './dev/dev.js';
 import { devBypass } from './dev/gate.js';
 import { devSwitchHTML } from './ui/dev.js';
@@ -339,7 +340,8 @@ export function renderCoursesPage(state) {
     ${ballPocketBannerHTML()}
     ${offRailBannersHTML(state)}
     ${trickBannersHTML(state)}
-    ${pkfBannersHTML(state)}`;
+    ${pkfBannersHTML(state)}
+    ${pkfBankBannersHTML(state, { dev: devBypass() })}`;
 }
 
 export function renderDrillsPage(state, filter = 'All', bpViewLevel = null) {

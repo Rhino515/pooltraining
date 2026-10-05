@@ -799,7 +799,7 @@ let state = storage.defaultState();
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
   const missing = walk(path.join(root, 'js')).filter((f) => f.endsWith('.js')).map((f) => './' + path.relative(root, f)).filter((f) => !sw.includes(`'${f}'`));
-  assert(/'pool-iq-v14-94'/.test(sw), 'service worker cache is pool-iq-v14-94');
+  assert(/'pool-iq-v14-95'/.test(sw), 'service worker cache is pool-iq-v14-95');
   assertAll('service worker precaches every JS module (incl. simulator + Create Drill)', missing.map((m) => `missing ${m}`));
   const wordN = { one: 1, two: 2, three: 3, four: 4 };
   const probs = [];
@@ -2076,7 +2076,7 @@ let state = storage.defaultState();
   const dash = src('js/dashboard.js');
   const friends = src('js/ui/friends.js');
   const vendor = src('js/vendor/supabase.js');
-  assert(/'pool-iq-v14-94'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw) && !/'pool-iq-v14-5c'/.test(sw), 'v14: service worker cache is pool-iq-v14-94');
+  assert(/'pool-iq-v14-95'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw) && !/'pool-iq-v14-5c'/.test(sw), 'v14: service worker cache is pool-iq-v14-95');
   assert(sw.includes(`'./js/vendor/supabase.js'`) && sw.includes(`'./js/cloud/controller.js'`) && sw.includes(`'./js/ui/account.js'`), 'v13: sw precaches the bundled supabase-js and the cloud modules');
   assert(/supabase-js\/2\.117\.2/.test(vendor) && /createClient/.test(vendor) && !/cdn\.jsdelivr|unpkg\.com|esm\.sh/.test(idx + sw), 'v13: official supabase-js v2 UMD build is bundled locally (no CDN)');
   assert(/nqfwlpfyccbqetcyjijf/.test(cfg) && /sb_publishable_/.test(cfg) && !/sb_secret_|service_role|sbp_[0-9a-f]{10}/.test(cfg + sql + docs), 'v13: config carries the project ref + publishable key only (no secrets anywhere)');
@@ -2285,7 +2285,7 @@ let state = storage.defaultState();
   assert(!fixSrc.includes('drill_overrides') && !saveFn.includes('.delete('), 'v14-26: the editor never deletes the published row');
   assert(oeSrc.includes('publishedDoc(ch.id)') && !oeSrc.slice(oeSrc.indexOf('export function applyDrillEdit'), oeSrc.indexOf('export function editCount')).includes('getDrillEdit'), 'v14-26: the live drill is the published row, not the phone copy');
   assert(pubSrc.includes('andrewaphay') === false && pubSrc.includes('ownerAccountSignedIn'), 'v14-26: the client refuses publish unless the owner account is signed in');
-  assert(swSrc.includes('pool-iq-v14-94') && swSrc.includes('skipWaiting') && swSrc.includes('clients.claim'), 'v14-28: new cache skipWaiting and clients.claim');
+  assert(swSrc.includes('pool-iq-v14-95') && swSrc.includes('skipWaiting') && swSrc.includes('clients.claim'), 'v14-28: new cache skipWaiting and clients.claim');
   assert(fixSrc.includes('id="fixImport"') && fixSrc.includes('accept=".pooliq,.json,application/json,application/octet-stream,text/plain,*/*"') && !fixSrc.includes('text/json'), 'v14-27: IMPORT DRILL accept lets Android select .pooliq and .json');
   assert(appSrc.includes('controllerchange') && appSrc.includes('pooliq-sw-reloaded') && appSrc.includes('location.reload()'), 'v14-26: an open app reloads once when the new worker activates');
   const PUB = await import(js('drills/published.js'));
@@ -2508,6 +2508,79 @@ let state = storage.defaultState();
   DEV.setDevModeOn(true);
   CL.setCurrentUserForTests(null);
   assert(!G.devBypass(), 'v14-92: signing out ends the bypass');
+}
+
+// ---------------------------------------------------------------- v14-95: PKF Banking Systems Course (Drill Sets & Exams)
+{
+  const { spawnSync } = await import('child_process');
+  const fsMod = await import('fs');
+  const run = spawnSync(process.execPath, [path.join(root, 'scripts', 'pkfBankingCourse.test.mjs')], { encoding: 'utf8' });
+  assert(run.status === 0 && /ALL pkfBankingCourse TESTS PASSED/.test(run.stdout), `v14-95: scripts/pkfBankingCourse.test.mjs passes${run.status === 0 ? '' : `\n${run.stdout}\n${run.stderr}`}`);
+  const PB = await import(js('content/pkfBankingCourse.js'));
+  const PBP = await import(js('ui/pkfBankPlay.js'));
+  const DASH = await import(js('dashboard.js'));
+  const SP = await import(js('content/setProgress.js'));
+  const DEV = await import(js('dev/dev.js'));
+  const CL = await import(js('cloud/client.js'));
+  const G = await import(js('dev/gate.js'));
+  G.setDevBypass(() => DEV.isUnlocked());
+  const st0 = storage.defaultState();
+  const screen = (args, s0 = st0, acts = []) => {
+    let s = s0;
+    const ctx = { getState: () => s, commit: (n) => (s = n), root: { innerHTML: '', querySelector: () => null } };
+    const sc = PBP.createPkfBankScreen(ctx, args);
+    sc.render();
+    for (const [a, v] of acts) sc.onAction(a, { dataset: v == null ? {} : { v: String(v) } });
+    return { html: ctx.root.innerHTML, state: s };
+  };
+  const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
+  const appSrc = fsMod.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
+  assert(['js/content/pkfBankAssets.js', 'js/content/pkfBankingCourse.js', 'js/ui/pkfBankPlay.js', 'images/pkf-bank/PKF_Banking_PDF_267.jpg', 'images/pkf-bank/PKF_Banking_PDF_270.jpg'].every((f) => swSrc.includes(`'./${f}'`)), 'v14-95: service worker precaches the banking course + original JPEGs');
+  assert(appSrc.includes("name === 'pkfbank'") && appSrc.includes("pkfbank: 'drills'"), 'v14-95: #pkfbank routes under the Drills tab');
+  assert(!('pkfBankingSystems' in st0), 'v14-95: state.pkfBankingSystems is not in defaultState (Career XP untouched)');
+  const courses = DASH.renderCoursesPage(st0);
+  assert(courses.includes('data-pkfbank="course"') && courses.includes('PKF Banking Systems Course') && courses.includes('data-pkfbank-locked="1"'), 'v14-95: Drill Sets & Exams lists the course and a locked exam');
+  assert(courses.indexOf('data-pkfkick="course"') < courses.indexOf('data-pkfbank="course"'), 'v14-95: listed after PKF Kicking Systems Course');
+  assert(!DASH.renderDrillsPage(st0).includes('pkfbank') && !DASH.renderArcade(st0).includes('pkfbank') && !DASH.renderLearn([]).includes('pkfbank'), 'v14-95: not on All, Table Games or Learn');
+  CL.setCurrentUserForTests(null);
+  const list = screen([]).html;
+  assert(list.includes('data-pkfbank-home="1"') && list.includes('disabled data-pkfbank-section="find-path-drill"') && list.includes('data-pkfbank-exam-locked="1"'), 'v14-95: list shows locks for everyone else');
+  assert(screen(['corner-bank-drill']).html.includes('data-pkfbank-home="1"'), 'v14-95: a locked section link goes back to the list');
+  assert(!/not on all|career xp|storage key/i.test(list), 'v14-95: no internal notes in UI');
+  // lock-answer flow on the real screen
+  const learn = screen(['path-context']);
+  assert(learn.html.includes('data-pkfbank-play="1"') && learn.html.includes('images/pkf-bank/PKF_Banking_PDF_267.jpg') && learn.html.includes('VIEW FULL PKF EXAMPLE') && learn.html.includes('pkfb-ack'), 'v14-95: LEARN shows the original PKF page region + enlarge');
+  const q = screen(['path-context'], st0, [['pkfb-ack'], ['pkfb-next'], ['pkfb-ack'], ['pkfb-next']]);
+  assert(q.html.includes('data-action="pkfb-lock" disabled') && !q.html.includes('data-pkfb-sol') && !q.html.includes('VIEW FULL PKF EXAMPLE') && q.html.includes('data-pkfb-hint="1"'), 'v14-95: question: LOCK ANSWER disabled until a choice; solution + full page hidden; GUIDED hint shown');
+  const picked = screen(['path-context'], q.state, [['pkfb-choice', '40']]);
+  assert(picked.html.includes('data-action="pkfb-lock" ') && !picked.html.includes('data-action="pkfb-lock" disabled') && !picked.html.includes('data-pkfb-sol'), 'v14-95: choice enables LOCK ANSWER, solution still hidden');
+  const locked = screen(['path-context'], picked.state, [['pkfb-lock']]);
+  assert(locked.html.includes('data-pkfb-verdict="wrong"') && locked.html.includes('data-pkfb-sol="1"') && locked.html.includes('PKF SOLUTION · ORIGINAL PAGE') && locked.html.includes('VIEW FULL PKF EXAMPLE') && locked.html.includes('is-right'), 'v14-95: LOCK ANSWER reveals the PKF solution + original page');
+  // shoot screen
+  let sh = PB.startSection(st0, 'path-context');
+  const skipTo = (s, sec, id) => { let x = PB.startSection(s, sec); for (let i = 0; i < 40; i++) { const c = PB.bankOf(x).current; if (c.order[c.cursor] === id) return x; const l = PB.lessonById(c.order[c.cursor]); if (l.answer != null) x = PB.lockAnswer(PB.selectChoice(x, l.answer)); else if (l.shoot) x = PB.markExecution(x, 'make'); else x = PB.acknowledgeLearn(x); x = PB.nextLesson(x); } return x; };
+  const devAll = { ...st0, pkfBankingSystems: { sections: Object.fromEntries(PB.SECTIONS.map((s) => [s.id, { passed: true }])) } };
+  sh = skipTo(devAll, 'find-path-drill', 'fp-shoot');
+  const shoot = screen(['find-path-drill'], sh);
+  assert(shoot.html.includes('NOW SHOOT IT') && shoot.html.includes('data-action="pkfb-exec" data-v="make"') && shoot.html.includes('does not hit the balls'), 'v14-95: NOW SHOOT IT offers MAKE / MISS');
+  // set progress + emblems
+  const doneState = { ...st0, pkfBankingSystems: { sections: Object.fromEntries(PB.SECTIONS.map((s) => [s.id, { passed: true }])), exam: { passed: true, attempts: 1 } } };
+  const rows = SP.readSetProgress(doneState).filter((r) => r.id.startsWith('pkfBank'));
+  assert(rows.length === 2 && rows.every((r) => r.finished) && SP.completedSetsLineHTML(doneState).includes('data-set-emblem="pkfBank"') && SP.completedSetsLineHTML(doneState).includes('data-set-emblem="pkfBankExam"'), 'v14-95: profile progress + home emblems for course and exam');
+  assert(!SP.readSetProgress(st0).some((r) => r.id.startsWith('pkfBank')), 'v14-95: no row before starting');
+  // Dev Mode owner ON: locked sections + exam open as DEV PREVIEW, nothing saved
+  CL.setCurrentUserForTests({ id: 'owner-1', email: 'andrewaphay@gmail.com' });
+  DEV.setDevModeOn(true);
+  const devList = screen([]).html;
+  assert(!devList.includes('disabled data-pkfbank-section') && devList.includes('data-dev-open="1"') && DASH.renderCoursesPage(st0).includes('data-pkfbank="exam" data-dev-open="1"'), 'v14-95: owner Dev Mode ON opens every section + exam');
+  const prev = screen(['corner-bank-drill']);
+  assert(prev.html.includes('data-dev-preview="1"') && PB.bankOf(prev.state).current?.dev, 'v14-95: locked section opens as DEV PREVIEW');
+  const exPrev = screen(['exam']);
+  assert(exPrev.html.includes('data-dev-preview="1"') && PB.bankOf(exPrev.state).current?.mode === 'exam', 'v14-95: locked exam opens as DEV PREVIEW');
+  DEV.setDevModeOn(false);
+  assert(screen([]).html.includes('disabled data-pkfbank-section="find-path-drill"'), 'v14-95: owner Dev Mode OFF keeps locks');
+  DEV.setDevModeOn(true);
+  CL.setCurrentUserForTests(null);
 }
 
 console.log('\n--- Summary ---');
