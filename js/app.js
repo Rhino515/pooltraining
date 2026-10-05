@@ -3,7 +3,7 @@
  * Routes: #home #career #drills #learn #analyze #arcade (shown as "Table Games"; #tablegames alias) #profile (#stats alias) #settings
  *         #ghost[/balls/race] #ghostmatch #game/<id> #play/<game>/<stage> #boss/<id> #bossplay/<id>
  *         #sim[/s=<code>|/target] (Shot Simulator) #drillnew[/fromsim] #drilledit/<id> (Create Drill)
- *         #courses (course list) #kicking (Off the Rail) #drillfix/<id> (owner drill editor — only while DEV MODE is unlocked)
+ *         #courses (course list) #bpset (Ball Pocketing PDF drills) #kicking (Off the Rail) #drillfix/<id> (owner drill editor — only while DEV MODE is unlocked)
  *         #content (My Content) #cimport (import error) #cview/<ref> #cplay/<ref>[/<stage>] #cedit/<uid>[/<loc>]  (.pooliq content, ui/content.js)
  */
 import { loadState, saveState, resetState, archiveUnknownDrills, onDataWrite, lsSet, idbAdapter } from './storage.js';
@@ -12,7 +12,7 @@ import { initInstall, installMode, promptInstall, installSheetHTML, isIOS, isAnd
 import { syncRank } from './career.js';
 import { withSkills } from './skills.js';
 import { drills, getDrillById, allDrills, knownDrillIds, displayDrillTitle } from './drills.js';
-import { ballPocketStatus } from './content/ballPocket.js';
+import { ballPocketStatus, ballPocketPageHTML } from './content/ballPocket.js';
 import { isBuId, examPageHTML, restartBuExam, resetBuDrill } from './content/buExam.js';
 import { isSkillsId } from './content/buExam2.js';
 import { isMoreId, finishRdsRun } from './content/buMore.js';
@@ -125,7 +125,7 @@ function parseHash() {
   return { name: name || 'home', args };
 }
 
-const NAV_FOR = { kicking: 'drills', account: 'profile', leaderboard: 'profile', gate: 'career', promo: 'career', champion: 'career', training: 'career', skill: 'profile', skills: 'profile', me: 'profile', drillrank: 'drills', friends: 'arcade', friend: 'arcade', h2h: 'arcade', fmatch: 'arcade', fsession: 'arcade', tourney: 'arcade', tnew: 'arcade', dev: 'profile', devgame: 'profile', devdrills: 'profile', devedit: 'profile', devkeys: 'profile', content: 'drills', cimport: 'drills', cview: 'drills', cplay: 'drills', cedit: 'drills', sim: 'sim', drillnew: 'drills', drilledit: 'drills', drillfix: 'drills', buexam: 'drills', safety: 'drills', courses: 'drills', home: 'home', career: 'career', drills: 'drills', learn: 'learn', analyze: 'sim', arcade: 'arcade', tablegames: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', tgame: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
+const NAV_FOR = { kicking: 'drills', account: 'profile', leaderboard: 'profile', gate: 'career', promo: 'career', champion: 'career', training: 'career', skill: 'profile', skills: 'profile', me: 'profile', drillrank: 'drills', friends: 'arcade', friend: 'arcade', h2h: 'arcade', fmatch: 'arcade', fsession: 'arcade', tourney: 'arcade', tnew: 'arcade', dev: 'profile', devgame: 'profile', devdrills: 'profile', devedit: 'profile', devkeys: 'profile', content: 'drills', cimport: 'drills', cview: 'drills', cplay: 'drills', cedit: 'drills', sim: 'sim', drillnew: 'drills', drilledit: 'drills', drillfix: 'drills', buexam: 'drills', safety: 'drills', courses: 'drills', bpset: 'drills', home: 'home', career: 'career', drills: 'drills', learn: 'learn', analyze: 'sim', arcade: 'arcade', tablegames: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', tgame: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
 
 function setChrome(playing, navName) {
   document.body.classList.toggle('playing', playing);
@@ -158,7 +158,8 @@ function renderRoute() {
   if (name === 'play' && args[0]) {
     const [gameId, stageId] = args;
     const drill = gameId === 'drills' ? getDrillById(stageId) : null;
-    const pocketLocked = !!(drill && drill.category === 'Ball Pocketing' && !isBuId(drill.id) && !isSkillsId(drill.id) && drill.level > ballPocketStatus(state).current);
+    const fromSet = args[2] === 'set';
+    const pocketLocked = !fromSet && !!(drill && drill.category === 'Ball Pocketing' && !isBuId(drill.id) && !isSkillsId(drill.id) && drill.level > ballPocketStatus(state).current);
     const ok = gameId === 'drills' ? !!drill && !pocketLocked : stageId === 'endless' ? isEndlessUnlocked(state, gameId) : !!getStage(gameId, stageId) && isStageUnlocked(state, gameId, stageId);
     if (!ok) {
       const gone = gameId === 'drills' && isDrillHidden(stageId);
@@ -167,7 +168,7 @@ function renderRoute() {
     } else {
       if (gameId === 'drills' && isSafetyId(stageId)) screen = createSafetyPlay(ctx, { id: stageId, course: args[2] === 'safety' });
       else if (gameId === 'drills' && (isBuId(stageId) || isSkillsId(stageId) || isMoreId(stageId))) screen = createBuPlay(ctx, { id: stageId, exam: args[2] === 'exam' });
-      else screen = createPlayScreen(ctx, { gameId, stageId });
+      else screen = createPlayScreen(ctx, { gameId, stageId, fromSet });
       screen.render();
       playing = true;
     }
@@ -285,7 +286,8 @@ function renderRoute() {
     screen = createKickingScreen(ctx, args);
     screen.render();
     playing = true;
-  } else if (name === 'courses') v.innerHTML = renderCoursesPage(state);
+  } else if (name === 'bpset') v.innerHTML = ballPocketPageHTML(state);
+  else if (name === 'courses') v.innerHTML = renderCoursesPage(state);
   else if (name === 'drills') {
     if (args[0] === 'pocket') {
       drillFilter = 'Ball Pocketing';

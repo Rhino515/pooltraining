@@ -4,8 +4,9 @@
  * (Exam I, Skills exams, the other Billiard University exams, Safety Master).
  * No Career XP, rank names, or existing storage keys are changed.
  *
- * Ball Pocketing is a rank of its own. It is not a row on Drill Sets & Exams,
- * so it is not listed here.
+ * Ball Pocketing rank stays off this list. The PDF course is a row of its own
+ * (images only, no rank ladder, no Career XP). It appears once a PDF drill
+ * has a saved session.
  *
  * RDS (Exam IV) is included only when its stages exist (moreExams.moreMeta order).
  * A single 3-rack set is progress, not a finish. The emblem appears when every
@@ -17,6 +18,7 @@ import { SKILLS_EXAMS, skillsExamOf } from './buExam2.js';
 import * as moreExams from './buMore.js';
 import { SAFETY_NAME, SAFETY_ORDER, safetyOf } from './safetyMaster.js';
 import { offRailProgress } from './kickingCourse.js';
+import { ballPocketCourseRow } from './ballPocket.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
@@ -38,7 +40,8 @@ const SHORT = {
   follow: 'Exam VIII',
   safetyMaster: 'Safety Master',
   offRail: 'Off the Rail',
-  offRailExam: 'Off the Rail Exam'
+  offRailExam: 'Off the Rail Exam',
+  ballPocket: 'Ball Pocketing'
 };
 
 const STYLES = {
@@ -54,7 +57,8 @@ const STYLES = {
   follow: { disc: '#f0d090', rim: '#9a7428', rimW: 1.3, inner: '#7a5814', innerW: 1.4, leaf: '#e2c07a', ribbon: '#c9a04a', ribbon2: '#a88840', ink: '#6e5420', mark: 'ring' },
   offRail: { disc: '#f6c453', rim: '#7a5814', rimW: 1.5, inner: '#fff6d4', innerW: 0.9, leaf: '#e2b14a', ribbon: '#c9922a', ribbon2: '#a97822', ink: '#7a5814', mark: 'rail' },
   offRailExam: { disc: '#f6c453', rim: '#7a5814', rimW: 1.5, inner: '#fff6d4', innerW: 0.9, leaf: '#e2b14a', ribbon: '#c9922a', ribbon2: '#a97822', ink: '#7a5814', mark: 'flag' },
-  safetyMaster: { disc: '#f6c453', rim: '#fff1c8', rimW: 2.5, inner: '#a97822', innerW: 0.9, leaf: '#e8c56a', ribbon: '#c9922a', ribbon2: '#e2b14a', ink: '#7a5814', mark: 'dot' }
+  safetyMaster: { disc: '#f6c453', rim: '#fff1c8', rimW: 2.5, inner: '#a97822', innerW: 0.9, leaf: '#e8c56a', ribbon: '#c9922a', ribbon2: '#e2b14a', ink: '#7a5814', mark: 'dot' },
+  ballPocket: { disc: '#f6c453', rim: '#fff1c8', rimW: 2.5, inner: '#a97822', innerW: 0.9, leaf: '#e8c56a', ribbon: '#c9922a', ribbon2: '#e2b14a', ink: '#7a5814', mark: 'dot' }
 };
 
 function centerMark(kind, ink) {
@@ -184,6 +188,8 @@ export function readSetProgress(state) {
     scores: safety.scores
   });
   if (course) rows.push(course);
+  const pocket = ballPocketCourseRow(state);
+  if (pocket) rows.push(pocket);
   for (const row of offRailProgress(state)) rows.push(row);
   return rows;
 }

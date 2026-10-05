@@ -4,7 +4,7 @@
 import { nextRankInfo, RANK_NAMES, RANK_REQUIREMENTS, requirementChecklist, nextUp, isBossUnlocked } from './career.js';
 import { skillBarsHTML, weakestSkills, recommendations } from './skills.js';
 import { allDrills, drillsByCategory, isDrillUnlocked, CATEGORIES, getDrillById, displayDrillTitle, SHELVED_CATEGORIES, HIDDEN_DRILL_CATEGORIES } from './drills.js';
-import { ballPocketDrills, ballPocketStatus, BALL_POCKET_TEXT, BALL_POCKET_LEVELS } from './content/ballPocket.js';
+import { ballPocketDrills, ballPocketStatus, BALL_POCKET_TEXT, BALL_POCKET_LEVELS, ballPocketBannerHTML } from './content/ballPocket.js';
 import { maxUnlockedBalls, ghostStats } from './ghost.js';
 import { GAMES, getGame, stageSpecs, getStages, getBosses, getBoss } from './games/registry.js';
 import * as E from './games/engine.js';
@@ -329,6 +329,7 @@ export function renderCoursesPage(state) {
   return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#drills">‹ Drills</button><span class="eyebrow">DRILL LIBRARY</span><h1>Drill Sets & Exams</h1></div>
     ${examBannerHTML()}
     ${safetyBannerHTML()}
+    ${ballPocketBannerHTML()}
     ${offRailBannersHTML(state)}`;
 }
 
@@ -414,7 +415,10 @@ function drillCard(state, d, opts = {}) {
   const pb = rec ? `<small class="pbLine">${starsHTML(ms)} Best ${rec.bestScore || 0} pts${rec.bestStars ? ` · ${'★'.repeat(rec.bestStars)}` : ''} · ${rec.tries || 0} session${rec.tries === 1 ? '' : 's'}${rec.passed ? ' · passed ✓' : ''}</small>` : '';
   const del = ownerAccountSignedIn() ? `<button type="button" class="miniAct danger" data-action="drill-del" data-id="${esc(d.id)}">Delete</button>` : '';
   const tools = d.custom ? `<div class="drillBtns"><button type="button" class="miniAct" data-action="drill-edit" data-id="${esc(d.id)}">Edit</button><button type="button" class="miniAct" data-action="drill-dup" data-id="${esc(d.id)}">Duplicate</button><button type="button" class="miniAct" data-action="drill-history" data-id="${esc(d.id)}">History</button><button type="button" class="miniAct" data-action="drill-export" data-id="${esc(d.id)}">Export</button>${del}</div>` : d.contentUid ? `<div class="drillBtns"><button type="button" class="miniAct" data-action="go" data-href="#cview/${esc(d.contentUid)}">My Content</button><button type="button" class="miniAct" data-action="go" data-href="#cedit/${esc(d.contentUid)}">Edit</button><button type="button" class="miniAct" data-action="drill-history" data-id="${esc(d.id)}">History</button></div>` : '';
-  return `<div class="drill card ${open ? '' : 'locked'}" data-drill="${esc(d.id)}"><div class="diagramWrap mini">${renderStageTable(d, { className: 'table-diagram mini' })}</div>${meta}<h3>${esc(displayDrillTitle(d.name))}</h3><p>${esc(d.goal || d.instructions || '')}</p>${d.lanes ? `<div class="laneChips">${d.lanes.map((l) => speedChip(l.speed)).join('')}</div>` : (typeof d.speed === 'number' ? speedChip(d.speed) : '')}${d.credit ? `<small class="muted credit">${esc(d.credit)}</small>` : ''}${pb}<button type="button" class="${rec?.passed ? 'done' : ''}" data-action="go" data-href="#play/drills/${esc(d.id)}" ${open ? '' : 'disabled'}>${rec?.passed ? 'Passed ✓ — Train again' : 'Train'}</button>${tools}</div>`;
+  const diagram = d.pdfTable
+    ? `<img class="table-diagram mini drill-diagram" src="${esc(d.pdfTable)}" alt="${esc(displayDrillTitle(d.name))}" />`
+    : renderStageTable(d, { className: 'table-diagram mini' });
+  return `<div class="drill card ${open ? '' : 'locked'}" data-drill="${esc(d.id)}"><div class="diagramWrap mini">${diagram}</div>${meta}<h3>${esc(displayDrillTitle(d.name))}</h3><p>${esc(d.goal || d.instructions || '')}</p>${d.lanes ? `<div class="laneChips">${d.lanes.map((l) => speedChip(l.speed)).join('')}</div>` : (typeof d.speed === 'number' ? speedChip(d.speed) : '')}${d.credit ? `<small class="muted credit">${esc(d.credit)}</small>` : ''}${pb}<button type="button" class="${rec?.passed ? 'done' : ''}" data-action="go" data-href="#play/drills/${esc(d.id)}" ${open ? '' : 'disabled'}>${rec?.passed ? 'Passed ✓ — Train again' : 'Train'}</button>${tools}</div>`;
 }
 
 // ------------------------------------------------------------------------------ settings

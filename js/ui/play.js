@@ -59,6 +59,7 @@ export function createPlayScreen(ctx, key) {
   // Content sessions live only in memory — nothing is committed to the Career state (Play Test isolation).
   resetUI();
   const C = key.content || null;
+  const fromSet = !!key.fromSet;
   let state = ctx.getState();
   let session = C ? E.newSession('drills', C.challenge.id) : getSessionFor(state, key);
   if (!session) {
@@ -191,12 +192,17 @@ export function createPlayScreen(ctx, key) {
     // v11.1 multi-lane drills: show every lane (start spots, routes, target circles) with the current lane highlighted
     const laneSrc = ch.lane && stage.laneOverlay ? { ...ch, laneOverlay: stage.laneOverlay.map((l) => ({ ...l, active: l.key === ch.lane.key })), targetZones: stage.targetZones } : null;
     const tableSrc = ev.mode === 'train' ? stage : isPattern ? stage : laneSrc || ch;
-    const tableSVG = renderStageTable(tableSrc, ev.mode === 'train' ? { ...tableOpts, step } : tableOpts);
+    const pdfShot = !!(stage && stage.pdfTable) && !session.bossId && ev.mode !== 'calibration' && ev.mode !== 'pattern';
+    const tableSVG = pdfShot
+      ? `<div class="diagramWrap"><img class="table-diagram drill-diagram" src="${esc(stage.pdfTable)}" alt="${esc(stage.name)}" /></div>`
+      : renderStageTable(tableSrc, ev.mode === 'train' ? { ...tableOpts, step } : tableOpts);
     const goalText = vis.goalOnly ? ch.expertGoal || ch.goal : ch.goal;
     let mid = '';
     if (patternPlanning) mid = patternPlannerHTML(stage);
     else if (planning) mid = plannerHTML(ch, level);
-    else {
+    else if (pdfShot) {
+      mid = `<pre class="buHow bpPrint">${esc(stage.instructions || stage.description || '')}</pre>`;
+    } else {
       mid = `<div class="recipeRow">${recipeGaugesHTML(ch, { hideAim: !vis.aim, hideRoute: !vis.cuePath && !vis.obPath })}<button type="button" class="whyBtn" data-action="why-open">WHY THIS SHOT?</button></div>`;
       // v11.1: speed drills (lags) always show the plain-English speed sentence with its mini-table diagram
       // v11.1: speed drills (lags) show the plain speed meaning with its mini-table diagram. It stands in for the
@@ -219,14 +225,14 @@ export function createPlayScreen(ctx, key) {
       ${headerHTML(ev, title, sub)}
       ${drillLinkHTML()}
       <div class="playTable">${tableSVG}</div>
-      ${setupLineHTML(tableSrc)}
-      ${patternPlanning ? '<div class="legend small">Tap the balls in the order you would run them.</div>' : legendHTML(ch)}
+      ${pdfShot ? '' : setupLineHTML(tableSrc)}
+      ${pdfShot ? '' : (patternPlanning ? '<div class="legend small">Tap the balls in the order you would run them.</div>' : legendHTML(ch))}
       <div class="playBody">
         ${mid}
-        ${!planning && !patternPlanning && ch.kind === 'lag' ? '' : `<div class="goalLine"><span class="coachTag" data-action="coach-info">${COACH_LABEL[level]}</span><p class="goal">${esc(goalText)}</p></div>`}
+        ${pdfShot || (!planning && !patternPlanning && ch.kind === 'lag') ? '' : `<div class="goalLine"><span class="coachTag" data-action="coach-info">${COACH_LABEL[level]}</span><p class="goal">${esc(goalText)}</p></div>`}
         <div class="progressLine"><span class="muted">${esc(need)}</span><span class="muted">${esc(ev.progressText || (boss ? `${ev.passedCount} passed` : ''))}</span></div>
         ${progressHTML(ev)}
-        ${ch.instructions && !patternPlanning ? `<details class="instr"><summary>Setup &amp; instructions</summary><p>${esc(ch.instructions)}</p>${ch.criteria ? `<ol class="criteria" start="0">${ch.criteria.map((c) => `<li>${esc(c)}</li>`).join('')}</ol>` : ''}</details>` : ''}
+        ${ch.instructions && !patternPlanning && !pdfShot ? `<details class="instr"><summary>Setup &amp; instructions</summary><p>${esc(ch.instructions)}</p>${ch.criteria ? `<ol class="criteria" start="0">${ch.criteria.map((c) => `<li>${esc(c)}</li>`).join('')}</ol>` : ''}</details>` : ''}
       </div>
       ${barHTML}
     </div>`;
@@ -521,7 +527,7 @@ export function createPlayScreen(ctx, key) {
     }
     if (action === 'play-exit') {
       if (C) { ctx.go(C.exitHref); return true; }
-      ctx.go(session.bossId ? '#career' : session.gameId === 'drills' ? '#drills' : `#game/${session.gameId}`);
+      ctx.go(fromSet ? '#bpset' : session.bossId ? '#career' : session.gameId === 'drills' ? '#drills' : `#game/${session.gameId}`);
       return true;
     }
     return false;
