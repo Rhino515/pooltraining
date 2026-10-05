@@ -1659,6 +1659,7 @@ body.fix-full #app{height:100dvh;padding:0}
 }
 
 .buHow{white-space:pre-wrap;font:13px/1.45 ui-sans-serif,system-ui,sans-serif;margin:8px 0}
+.bpHowto{width:100%;height:auto;display:block;margin:8px 0;background:#fff;border-radius:10px}
 .buStatus,.buScoreLine{margin:8px 16px;font-weight:700}
 .buBar{display:flex;flex-direction:column;gap:8px;margin:8px 16px}
 .buHowCard{margin:12px 16px}

@@ -1,8 +1,9 @@
 /**
  * Ball Pocketing — the printed manual, not a redraw.
  * Each drill's diagram is the table cropped from Andrew's PDF.
- * The description is the words printed on that drill's page, then the
- * level's printed how-to (pages 2, 8, 14, 21, and 30).
+ * The description keeps the printed words. The how-to shown on the drill
+ * is the level's instruction page itself (pages 2, 8, 14, 21, and 30),
+ * one full page per level, not a retyped paragraph.
  * Levels stay 1–5. Rank, cue badges, and XP awards are unchanged.
  * The Drill Sets course lists only these PDF drills, in PDF order.
  */
@@ -87,6 +88,7 @@ export function ballPocketDrills() {
       isDrill: true,
       kind: 'pot',
       pdfTable: `./images/ball-pocket/${d.id}.jpg`,
+      pdfHowto: `./images/ball-pocket/howto-l${d.level}.jpg`,
       targetBall: 1,
       attemptCount: d.attempts,
       scoringRules: { mode: 'binary', attempts: d.attempts, pass: { made: 0 } },

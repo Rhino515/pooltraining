@@ -201,7 +201,10 @@ export function createPlayScreen(ctx, key) {
     if (patternPlanning) mid = patternPlannerHTML(stage);
     else if (planning) mid = plannerHTML(ch, level);
     else if (pdfShot) {
-      mid = `<pre class="buHow bpPrint">${esc(stage.instructions || stage.description || '')}</pre>`;
+      // The level how-to is the scanned instruction page, not a retyped paragraph.
+      mid = stage.pdfHowto
+        ? `<img class="bpHowto" src="${esc(stage.pdfHowto)}" alt="Level ${esc(stage.level || '')} instructions" />`
+        : `<pre class="buHow bpPrint">${esc(stage.instructions || stage.description || '')}</pre>`;
     } else {
       mid = `<div class="recipeRow">${recipeGaugesHTML(ch, { hideAim: !vis.aim, hideRoute: !vis.cuePath && !vis.obPath })}<button type="button" class="whyBtn" data-action="why-open">WHY THIS SHOT?</button></div>`;
       // v11.1: speed drills (lags) always show the plain-English speed sentence with its mini-table diagram

@@ -1,4 +1,4 @@
-const CACHE = 'pool-iq-v14-87';
+const CACHE = 'pool-iq-v14-88';
 const ASSETS = [
   './',
   './index.html',
@@ -546,6 +546,11 @@ const ASSETS = [
   './images/ball-pocket/bp-l5-14.jpg',
   './images/ball-pocket/bp-l5-15.jpg',
   './images/ball-pocket/bp-l5-16.jpg',
+  './images/ball-pocket/howto-l1.jpg',
+  './images/ball-pocket/howto-l2.jpg',
+  './images/ball-pocket/howto-l3.jpg',
+  './images/ball-pocket/howto-l4.jpg',
+  './images/ball-pocket/howto-l5.jpg',
 ];
 self.addEventListener('install', (e) => {
   // take over as soon as this cache is published; the page reloads once on controllerchange
