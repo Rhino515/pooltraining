@@ -94,13 +94,13 @@ Drill Rank is earned only from **built-in drills, Create Drill drills and rank-e
 | # | Drill Rank | Drill XP | Passed drills | Strong ⭐⭐ | Mastered ⭐⭐⭐ | Skill categories |
 |---|---|---|---|---|---|---|
 | 1 | BALL BANGER | 0 | 0 | 0 | 0 | 0 |
-| 2 | Grinder | 900 | 3 | 0 | 0 | 0 |
-| 3 | DRILLER | 3,000 | 6 | 2 | 0 | 0 |
-| 4 | STUDENT OF THE GAME | 7,500 | 10 | 4 | 1 | 2 |
-| 5 | Precision Player | 15,000 | 15 | 7 | 3 | 3 |
-| 6 | Drill Sergeant | 27,000 | 20 | 10 | 6 | 4 |
-| 7 | Drill Master | 75,000 | 28 | 15 | 10 | 5 |
-| 8 | Drill Legend | 125,000 | 36 | 22 | 16 | 6 |
+| 2 | Grinder | 2,700 | 3 | 0 | 0 | 0 |
+| 3 | DRILLER | 9,000 | 6 | 2 | 0 | 0 |
+| 4 | STUDENT OF THE GAME | 22,500 | 10 | 4 | 1 | 2 |
+| 5 | Precision Player | 45,000 | 15 | 7 | 3 | 3 |
+| 6 | Drill Sergeant | 81,000 | 20 | 10 | 6 | 4 |
+| 7 | Drill Master | 225,000 | 28 | 15 | 10 | 5 |
+| 8 | Drill Legend | 375,000 | 36 | 22 | 16 | 6 |
 
 "Skill categories" is the number of different primary skills among your passed drills. Because the counts are required alongside XP, you can't reach a rank by repeating one drill. A mastered drill also gives very little Drill XP on repeats.
 
