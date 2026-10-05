@@ -84,7 +84,8 @@ function countWord(n) {
 /** Diamond language for a ball on a crossing. Diagram and words use the same point. */
 export function diamondPhrase(p) {
   const out = Math.round(p.x / 12.5);
-  const up = Math.round(p.y / 12.5);
+  // y 0 is the top cushion. "Up from the bottom" is the distance to y = 50.
+  const up = Math.round((50 - p.y) / 12.5);
   return `${countWord(out)} out from the head short rail, ${countWord(up)} up from the bottom long rail`;
 }
 
@@ -92,7 +93,9 @@ function railPhrase(hit, rail) {
   const along = rail === 'left' || rail === 'right' ? hit.y : hit.x;
   const near = nearestDiamond(along);
   const exact = near.err < 0.35;
-  const n = Math.round(near.diamond / 12.5);
+  const n = rail === 'left' || rail === 'right'
+    ? Math.round((50 - near.diamond) / 12.5)
+    : Math.round(near.diamond / 12.5);
   const where = rail === 'left' || rail === 'right'
     ? `${countWord(n)} up from the bottom long rail`
     : `${countWord(n)} out from the head short rail`;
@@ -206,46 +209,57 @@ function tipWords(tip) {
 }
 
 const LEVEL_META = [
-  { n: 1, name: 'ONE-RAIL FUNDAMENTALS', blurb: 'Easy one-rail contact. Long rail and short rail. Center ball, medium speed.' },
-  { n: 2, name: 'ONE-RAIL ANGLES', blurb: 'A shallow kick, a steep kick, a long-table kick, and a different cue-ball diamond.' },
-  { n: 3, name: 'TWO-RAIL KICKS', blurb: 'Long then short, short then long, a cross-table kick, and a corner route.' },
-  { n: 4, name: 'THREE-RAIL KICKS', blurb: 'Four three-rail routes. Use the route the solution names.' },
-  { n: 5, name: 'ENGLISH & SPEED', blurb: 'Center ball is not enough. Running english, reverse english, and a speed change.' },
-  { n: 6, name: 'BLOCKED KICKS', blurb: 'A ball blocks the straight line. Kick around it: one rail, two rails, and three rails.' },
-  { n: 7, name: 'KICK & POCKET', blurb: 'Precise contact. On a required-pocket shot, contact without the pocket is a miss.' },
-  { n: 8, name: 'KICK POSITION & KICK SAFETY', blurb: 'Confirm the leave. Contact alone is not the result.' }
+  { id: 1, rails: 1, name: 'ONE-RAIL FUNDAMENTALS', blurb: 'Easy one-rail contact. Long rail and short rail. Center ball, medium speed.' },
+  { id: 2, rails: 1, name: 'ONE-RAIL ANGLES', blurb: 'A long return, a steep kick, a long-table kick, and a different cue-ball diamond.' },
+  { id: 9, rails: 1, name: 'ONE-RAIL RUNNING', blurb: 'Running english on one rail. Top and bottom, head side and foot side.' },
+  { id: 10, rails: 1, name: 'ONE-RAIL REVERSE', blurb: 'Reverse english holds the cue ball closer to the rail you kicked.' },
+  { id: 11, rails: 1, name: 'ONE-RAIL PACE', blurb: 'Follow and draw on a true one-rail line. The tip changes the speed, not the track.' },
+  { id: 3, rails: 2, name: 'TWO-RAIL KICKS', blurb: 'Long then short, short then long, a cross-table kick, and a corner route.' },
+  { id: 12, rails: 2, name: 'TWO-RAIL FAR SIDE', blurb: 'The same two-rail ideas from the foot half of the table.' },
+  { id: 13, rails: 2, name: 'TWO-RAIL RUNNING', blurb: 'Running english changes where the two-rail kick finishes.' },
+  { id: 14, rails: 2, name: 'TWO-RAIL REVERSE', blurb: 'Reverse english holds the last rebound closer to that rail.' },
+  { id: 15, rails: 2, name: 'TWO-RAIL SPEED', blurb: 'Soft through firm. Follow is for distance. The diamond line stays the line.' },
+  { id: 4, rails: 3, name: 'THREE-RAIL KICKS', blurb: 'Four three-rail routes. Use the route the solution names.' },
+  { id: 16, rails: 3, name: 'THREE-RAIL FAR SIDE', blurb: 'Three-rail routes that start on the foot half of the table.' },
+  { id: 17, rails: 3, name: 'THREE-RAIL RUNNING', blurb: 'Running english changes where a three-rail kick finishes.' },
+  { id: 18, rails: 3, name: 'THREE-RAIL REVERSE', blurb: 'Reverse english holds the three-rail finish closer to the last rail.' },
+  { id: 19, rails: 3, name: 'THREE-RAIL SPEED', blurb: 'Medium through firm, with follow when the third rail needs it.' },
+  { id: 5, rails: 0, name: 'ENGLISH & SPEED', blurb: 'Center ball is not enough. Running english, reverse english, and a speed change.' },
+  { id: 6, rails: 0, name: 'BLOCKED KICKS', blurb: 'A ball blocks the straight line. Kick around it: one rail, two rails, and three rails.' },
+  { id: 7, rails: 0, name: 'KICK & POCKET', blurb: 'Precise contact. On a required-pocket shot, contact without the pocket is a miss.' },
+  { id: 8, rails: 0, name: 'KICK POSITION & KICK SAFETY', blurb: 'Confirm the leave. Contact alone is not the result.' }
 ];
 
 function S(raw) { return raw; }
 
 const RAW = [
   // Level 1 — natural one-rail, center, medium
-  S({ level: 1, ball: 1, cue: { x: 12.5, y: 25 }, ob: { x: 75, y: 12.5 }, rails: ['bottom'], speed: 'Medium', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Center ball, medium speed. The mirror line from the cue ball through the image of the 1-ball hits the bottom long rail on the diamond three out from the head rail, and comes back to the 1-ball one diamond up.' }),
+  S({ level: 1, ball: 1, cue: { x: 12.5, y: 25 }, ob: { x: 75, y: 12.5 }, rails: ['bottom'], speed: 'Medium', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Center ball, medium speed. The mirror line from the cue ball through the image of the 1-ball hits the bottom long rail on the diamond three out from the head rail, and comes back to the 1-ball three diamonds up from the bottom long rail.' }),
   S({ level: 1, ball: 2, cue: { x: 25, y: 37.5 }, ob: { x: 87.5, y: 25 }, rails: ['top'], speed: 'Medium', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Same idea off the top long rail. Center ball and medium speed. The contact is the diamond five out from the head rail.' }),
   S({ level: 1, ball: 3, cue: { x: 25, y: 12.5 }, ob: { x: 25, y: 37.5 }, rails: ['right'], speed: 'Medium', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Both balls are two diamonds out from the head rail. Kick the foot short rail at two diamonds up, center ball, medium speed, and the cue ball comes back to the 3-ball.' }),
   S({ level: 1, ball: 4, cue: { x: 75, y: 37.5 }, ob: { x: 75, y: 12.5 }, rails: ['left'], speed: 'Medium', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Both balls are six diamonds out. Kick the head short rail at two diamonds up. Center ball, medium speed, natural angle.' }),
   // Level 2 — angles and speed, still no english
-  S({ level: 2, ball: 5, cue: { x: 12.5, y: 12.5 }, ob: { x: 62.5, y: 12.5 }, rails: ['bottom'], speed: 'Soft', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Shallow kick. Both balls are one diamond up from the bottom rail, so the cue ball runs along the table and comes back only a little. Soft speed is enough for this short return.' }),
+  S({ level: 2, ball: 5, cue: { x: 12.5, y: 12.5 }, ob: { x: 62.5, y: 12.5 }, rails: ['bottom'], speed: 'Soft', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Both balls are three diamonds up from the bottom long rail, one diamond off the top. Soft speed. The cue ball goes to the bottom long rail at three diamonds out and comes back on that line to the 5-ball.' }),
   S({ level: 2, ball: 6, cue: { x: 12.5, y: 12.5 }, ob: { x: 12.5, y: 37.5 }, rails: ['right'], speed: 'Medium-Soft', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Steep kick. The balls are stacked one diamond out, so the cue ball goes almost straight into the foot short rail and comes back up the same diamond. Medium-soft keeps it from jumping off that steep return.' }),
   S({ level: 2, ball: 7, cue: { x: 25, y: 12.5 }, ob: { x: 87.5, y: 25 }, rails: ['bottom'], speed: 'Medium', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Long-table one-rail. The 7-ball is seven diamonds out. Medium speed carries the cue ball to the diamond five out on the bottom rail and back up to the center line.' }),
   S({ level: 2, ball: 1, cue: { x: 50, y: 25 }, ob: { x: 12.5, y: 12.5 }, rails: ['top'], speed: 'Medium-Firm', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'The cue ball is on a different diamond: four out and two up, the center of the table. Medium-firm, center ball. The mirror line hits the top long rail two diamonds out.' }),
   // Level 3 — two-rail
-  S({ level: 3, ball: 2, cue: { x: 25, y: 37.5 }, ob: { x: 62.5, y: 25 }, rails: ['bottom', 'right'], speed: 'Medium', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Long then short. Diamond system: bottom long rail at five diamonds out, then the foot short rail three diamonds up, into the 2-ball.' }),
-  S({ level: 3, ball: 3, cue: { x: 50, y: 12.5 }, ob: { x: 75, y: 25 }, rails: ['left', 'bottom'], speed: 'Medium', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Short then long. Diamond system: head short rail at three diamonds up, then the bottom long rail at two diamonds out, into the 3-ball.' }),
+  S({ level: 3, ball: 2, cue: { x: 25, y: 37.5 }, ob: { x: 62.5, y: 25 }, rails: ['bottom', 'right'], speed: 'Medium', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Long then short. Diamond system: bottom long rail at five diamonds out, then the foot short rail one diamond up from the bottom, into the 2-ball.' }),
+  S({ level: 3, ball: 3, cue: { x: 50, y: 12.5 }, ob: { x: 75, y: 25 }, rails: ['left', 'bottom'], speed: 'Medium', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Short then long. Diamond system: head short rail at one diamond up from the bottom, then the bottom long rail at two diamonds out, into the 3-ball.' }),
   S({ level: 3, ball: 4, cue: { x: 25, y: 37.5 }, ob: { x: 75, y: 12.5 }, rails: ['top', 'bottom'], speed: 'Medium-Firm', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Cross-table. The mirror line hits the top long rail approximately at three diamonds out, then the bottom long rail approximately at five diamonds out. Medium-firm, because the cue ball crosses the table twice.' }),
-  S({ level: 3, ball: 5, cue: { x: 50, y: 37.5 }, ob: { x: 25, y: 25 }, rails: ['right', 'top'], speed: 'Medium', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Corner route. Diamond system: foot short rail one diamond up from the bottom, then the top long rail at six diamonds out, back to the 5-ball.' }),
+  S({ level: 3, ball: 5, cue: { x: 50, y: 37.5 }, ob: { x: 25, y: 25 }, rails: ['right', 'top'], speed: 'Medium', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Corner route. Diamond system: foot short rail three diamonds up from the bottom, then the top long rail at six diamonds out, back to the 5-ball.' }),
   // Level 4 — three-rail, four routes
-  S({ level: 4, ball: 6, cue: { x: 25, y: 12.5 }, ob: { x: 62.5, y: 25 }, rails: ['bottom', 'right', 'top'], speed: 'Medium-Firm', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Route: bottom long rail at five diamonds out, foot short rail one diamond up, top long rail at seven diamonds out. That is the only route that tracks into the 6-ball.' }),
-  S({ level: 4, ball: 7, cue: { x: 25, y: 12.5 }, ob: { x: 75, y: 12.5 }, rails: ['top', 'left', 'bottom'], speed: 'Medium-Firm', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Route: top long rail at one diamond out, head short rail one diamond up, bottom long rail at three diamonds out. Do not cut the 7-ball straight along the first diamond.' }),
-  S({ level: 4, ball: 1, cue: { x: 25, y: 37.5 }, ob: { x: 62.5, y: 25 }, rails: ['top', 'right', 'bottom'], speed: 'Firm', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Route: top long rail at five diamonds out, foot short rail three diamonds up, bottom long rail at seven diamonds out. Firm speed, center ball, so it survives three rails.' }),
-  S({ level: 4, ball: 2, cue: { x: 25, y: 37.5 }, ob: { x: 50, y: 12.5 }, rails: ['bottom', 'left', 'top'], speed: 'Firm', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Route: bottom long rail at one diamond out, head short rail three diamonds up, top long rail at three diamonds out, into the 2-ball one diamond off the bottom.' }),
+  S({ level: 4, ball: 6, cue: { x: 25, y: 12.5 }, ob: { x: 62.5, y: 25 }, rails: ['bottom', 'right', 'top'], speed: 'Medium-Firm', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Route: bottom long rail at five diamonds out, foot short rail three diamonds up from the bottom, top long rail at seven diamonds out. That is the only route that tracks into the 6-ball.' }),
+  S({ level: 4, ball: 7, cue: { x: 25, y: 12.5 }, ob: { x: 75, y: 12.5 }, rails: ['top', 'left', 'bottom'], speed: 'Medium-Firm', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Route: top long rail at one diamond out, head short rail three diamonds up from the bottom, bottom long rail at three diamonds out. Do not cut the 7-ball straight along the first diamond.' }),
+  S({ level: 4, ball: 1, cue: { x: 25, y: 37.5 }, ob: { x: 62.5, y: 25 }, rails: ['top', 'right', 'bottom'], speed: 'Firm', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Route: top long rail at five diamonds out, foot short rail one diamond up from the bottom, bottom long rail at seven diamonds out. Firm speed, center ball, so it survives three rails.' }),
+  S({ level: 4, ball: 2, cue: { x: 25, y: 37.5 }, ob: { x: 50, y: 12.5 }, rails: ['bottom', 'left', 'top'], speed: 'Firm', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Route: bottom long rail at one diamond out, head short rail one diamond up from the bottom, top long rail at three diamonds out, into the 2-ball three diamonds up from the bottom.' }),
   // Level 5 — english and speed. Path for side-english is the aimed diamond, not the center-ball mirror of the real ball.
-  S({ level: 5, ball: 3, cue: { x: 12.5, y: 25 }, ob: { x: 75, y: 25 }, naturalOb: { x: 75, y: 12.5 }, rails: ['bottom'], speed: 'Medium-Firm', tip: { vTips: 0, hTips: 1, englishLabel: 'running right' }, english: 'running', allowPocket: true, why: 'A center-ball hit off the bottom-rail diamond three out rebounds to the diamond one up at six diamonds out, and misses this 3-ball on the center line. Right running english opens that rebound so the cue ball climbs off the rail to the center diamond. The cue ball is traveling toward the foot rail, so right is running.' }),
-  S({ level: 5, ball: 4, cue: { x: 25, y: 12.5 }, ob: { x: 87.5, y: 12.5 }, naturalOb: { x: 87.5, y: 25 }, rails: ['bottom'], speed: 'Medium', tip: { vTips: 0, hTips: -1, englishLabel: 'reverse left' }, english: 'reverse', allowPocket: true, why: 'Center ball off the diamond five out runs up to the center line at seven diamonds out and misses the 4-ball, which is only one diamond off the bottom rail. Left reverse english holds the cue ball on the rail so it comes off shorter, into that ball.' }),
+  S({ level: 5, ball: 3, cue: { x: 12.5, y: 25 }, ob: { x: 75, y: 25 }, naturalOb: { x: 75, y: 12.5 }, rails: ['bottom'], speed: 'Medium-Firm', tip: { vTips: 0, hTips: -1, englishLabel: 'reverse left' }, english: 'reverse', allowPocket: true, why: 'A center-ball hit off the bottom long rail at three diamonds out rebounds to six diamonds out and three diamonds up from the bottom, and misses this 3-ball on the center line. The cue ball is traveling toward the foot rail, so left is reverse. Reverse english holds the rebound shorter, down to the center line.' }),
+  S({ level: 5, ball: 4, cue: { x: 25, y: 12.5 }, ob: { x: 87.5, y: 12.5 }, naturalOb: { x: 87.5, y: 25 }, rails: ['bottom'], speed: 'Medium', tip: { vTips: 0, hTips: 1, englishLabel: 'running right' }, english: 'running', allowPocket: true, why: 'Center ball off the bottom long rail at five diamonds out comes up to the center line at seven diamonds out and misses the 4-ball, which is three diamonds up from the bottom, one diamond off the top. The cue ball is traveling toward the foot rail, so right is running. Running english opens the rebound up to that ball.' }),
   S({ level: 5, ball: 5, cue: { x: 50, y: 12.5 }, ob: { x: 25, y: 37.5 }, rails: ['bottom', 'right', 'top'], speed: 'Firm', tip: { vTips: 0.5, hTips: 0, englishLabel: 'half tip of follow' }, english: 'follow', allowPocket: true, why: 'Center ball at medium speed dies before the third rail. Firm speed with a half tip of follow keeps the cue ball moving through the third rail. The line is still the diamond route; the follow is for distance, not a new track.' }),
-  S({ level: 5, ball: 6, cue: { x: 62.5, y: 12.5 }, ob: { x: 12.5, y: 25 }, naturalOb: { x: 12.5, y: 12.5 }, rails: ['bottom'], speed: 'Medium-Soft', tip: { vTips: 0, hTips: -1, englishLabel: 'running left' }, english: 'running', allowPocket: true, why: 'Center ball off the diamond three out stays on the first diamond and misses the 6-ball on the center line. The cue ball is traveling toward the head rail, so left english is running and opens the rebound. Medium-soft keeps that wider angle from running past the ball.' }),
+  S({ level: 5, ball: 6, cue: { x: 62.5, y: 12.5 }, ob: { x: 12.5, y: 25 }, naturalOb: { x: 12.5, y: 12.5 }, rails: ['bottom'], speed: 'Medium-Soft', tip: { vTips: 0, hTips: 1, englishLabel: 'reverse right' }, english: 'reverse', allowPocket: true, why: 'Center ball off the bottom long rail at three diamonds out runs to one diamond out and three diamonds up, and misses the 6-ball on the center line. The cue ball is traveling toward the head rail, so right is reverse. Reverse english holds the cue ball closer to the rail. Medium-soft keeps that shorter rebound on the 6-ball.' }),
   // Level 6 — blocker on the straight diamond line
-  S({ level: 6, ball: 7, cue: { x: 12.5, y: 12.5 }, ob: { x: 37.5, y: 12.5 }, blocker: { x: 25, y: 12.5 }, rails: ['bottom'], speed: 'Medium', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'The 8-ball sits on the straight diamond between the cue ball and the 7-ball, one diamond up. Kick the bottom long rail at two diamonds out and come back to the 7-ball.' }),
+  S({ level: 6, ball: 7, cue: { x: 12.5, y: 12.5 }, ob: { x: 37.5, y: 12.5 }, blocker: { x: 25, y: 12.5 }, rails: ['bottom'], speed: 'Medium', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'The 8-ball sits on the straight diamond between the cue ball and the 7-ball, three diamonds up from the bottom, one diamond off the top. Kick the bottom long rail at two diamonds out and come back to the 7-ball.' }),
   S({ level: 6, ball: 2, cue: { x: 12.5, y: 12.5 }, ob: { x: 12.5, y: 37.5 }, blocker: { x: 12.5, y: 25 }, rails: ['right'], speed: 'Medium', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'The 8-ball blocks the diamond one out. Kick the foot short rail at two diamonds up. The cue ball goes around the 8 and back up that same diamond to the 2-ball.' }),
   S({ level: 6, ball: 3, cue: { x: 12.5, y: 12.5 }, ob: { x: 37.5, y: 37.5 }, blocker: { x: 25, y: 25 }, rails: ['left', 'bottom'], speed: 'Medium-Firm', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'The 8-ball blocks the diagonal. Two-rail diamond system around it: head short rail at two diamonds up, then the bottom long rail at two diamonds out, into the 3-ball.' }),
   S({ level: 6, ball: 4, cue: { x: 12.5, y: 12.5 }, ob: { x: 12.5, y: 37.5 }, blocker: { x: 12.5, y: 25 }, rails: ['bottom', 'right', 'top'], speed: 'Firm', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Three rails around the same 8-ball. Bottom long rail approximately at five diamonds out, foot short rail at two diamonds up, then the top long rail approximately at five diamonds out. Firm speed.' }),
@@ -256,9 +270,55 @@ const RAW = [
   S({ level: 7, ball: 1, cue: { x: 12.5, y: 25 }, ob: { x: 75, y: 12.5 }, rails: ['bottom'], speed: 'Medium', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Precise one-rail contact only. The bottom-rail diamond three out is the shot. Pocketing the 1-ball is a bonus, not the requirement.' }),
   // Level 8 — the player confirms the leave. Contact alone is not enough.
   S({ level: 8, ball: 3, cue: { x: 12.5, y: 25 }, ob: { x: 62.5, y: 25 }, blocker: { x: 37.5, y: 25 }, rails: ['bottom'], speed: 'Soft', tip: { vTips: 0, hTips: 0 }, english: 'none', confirm: true, allowPocket: false, zone: { x: 25, y: 25, r: 12 }, successLabel: 'Cue ball finished behind the 8', why: 'Soft, center ball, off the bottom rail at three diamonds out. Intended finish: the cue ball stays on the head side of the 8, around one or two diamonds out on the center line, so the 8 still blocks the 3-ball. Getting to the 3-ball and rolling past the 8 is not the result.' }),
-  S({ level: 8, ball: 1, cue: { x: 37.5, y: 12.5 }, ob: { x: 87.5, y: 12.5 }, rails: ['bottom'], speed: 'Medium-Soft', tip: { vTips: 0, hTips: 0 }, english: 'none', confirm: true, allowPocket: false, successLabel: 'Both balls are safe', why: 'Kick safe off the bottom rail at five diamonds out. Intended finish: the 1-ball stays one diamond up from the bottom long rail, and the cue ball comes back short of it, not in a pocket and not in the open.' }),
-  S({ level: 8, ball: 2, cue: { x: 25, y: 12.5 }, ob: { x: 87.5, y: 25 }, rails: ['bottom'], speed: 'Medium', tip: { vTips: 0, hTips: 0 }, english: 'none', confirm: true, allowPocket: false, successLabel: 'The 2-ball reached the foot rail', why: 'A full hit off the diamond five out sends the 2-ball along that line into the foot short rail, one diamond up from the bottom, clear of the corner pocket. Pocketing it is not the result. Confirm only if the 2-ball reached that rail.' }),
-  S({ level: 8, ball: 6, cue: { x: 12.5, y: 25 }, ob: { x: 75, y: 12.5 }, rails: ['bottom'], speed: 'Medium-Soft', tip: { vTips: 0, hTips: 0 }, english: 'none', confirm: true, allowPocket: true, zone: { x: 62.5, y: 25, r: 6 }, successLabel: 'Cue ball stopped on the center diamond', why: 'Medium-soft off the bottom rail at three diamonds out. The return line crosses the center line at five diamonds out. Intended finish: the cue ball stops on that diamond (62.5, two up), short of the 6-ball. If you also pocket the 6-ball and the cue ball is still there, that is the same leave plus the pocket bonus.' })
+  S({ level: 8, ball: 1, cue: { x: 37.5, y: 12.5 }, ob: { x: 87.5, y: 12.5 }, rails: ['bottom'], speed: 'Medium-Soft', tip: { vTips: 0, hTips: 0 }, english: 'none', confirm: true, allowPocket: false, successLabel: 'Both balls are safe', why: 'Kick safe off the bottom rail at five diamonds out. Intended finish: the 1-ball stays three diamonds up from the bottom long rail, one diamond off the top, and the cue ball comes back short of it, not in a pocket and not in the open.' }),
+  S({ level: 8, ball: 2, cue: { x: 25, y: 12.5 }, ob: { x: 87.5, y: 25 }, rails: ['bottom'], speed: 'Medium', tip: { vTips: 0, hTips: 0 }, english: 'none', confirm: true, allowPocket: false, successLabel: 'The 2-ball reached the foot rail', why: 'A full hit off the diamond five out sends the 2-ball along that line into the foot short rail, three diamonds up from the bottom, one diamond off the top, clear of the corner pocket. Pocketing it is not the result. Confirm only if the 2-ball reached that rail.' }),
+  S({ level: 8, ball: 6, cue: { x: 12.5, y: 25 }, ob: { x: 75, y: 12.5 }, rails: ['bottom'], speed: 'Medium-Soft', tip: { vTips: 0, hTips: 0 }, english: 'none', confirm: true, allowPocket: true, zone: { x: 62.5, y: 25, r: 6 }, successLabel: 'Cue ball stopped on the center diamond', why: 'Medium-soft off the bottom rail at three diamonds out. The return line crosses the center line at five diamonds out. Intended finish: the cue ball stops on that diamond (62.5, two up), short of the 6-ball. If you also pocket the 6-ball and the cue ball is still there, that is the same leave plus the pocket bonus.' }),
+  // Levels 9–19. New ids. Stored progress for levels 1–8 is not renumbered.
+  S({ level: 9, ball: 1, cue: { x: 12.5, y: 25 }, ob: { x: 62.5, y: 12.5 }, naturalOb: { x: 62.5, y: 25 }, rails: ['bottom'], speed: 'Medium', tip: { vTips: 0, hTips: 1, englishLabel: 'running right' }, english: 'running', allowPocket: true, why: 'Center ball off the bottom long rail at three diamonds out comes back to the center line, five diamonds out, and misses this 1-ball three diamonds up from the bottom. The cue ball is traveling toward the foot rail, so right is running. Running english opens the rebound up off the rail, to one diamond off the top.' }),
+  S({ level: 9, ball: 3, cue: { x: 25, y: 37.5 }, ob: { x: 75, y: 25 }, naturalOb: { x: 75, y: 12.5 }, rails: ['top'], speed: 'Medium-Firm', tip: { vTips: 0, hTips: 1, englishLabel: 'running right' }, english: 'running', allowPocket: true, why: 'Center ball off the top long rail at five diamonds out rebounds to six diamonds out and three diamonds up, and misses this 3-ball on the center line. The cue ball is traveling toward the foot rail, so right is running. Running english opens the rebound down off the top rail to the center line. Medium-firm.' }),
+  S({ level: 9, ball: 5, cue: { x: 62.5, y: 25 }, ob: { x: 12.5, y: 12.5 }, naturalOb: { x: 12.5, y: 25 }, rails: ['bottom'], speed: 'Medium-Soft', tip: { vTips: 0, hTips: -1, englishLabel: 'running left' }, english: 'running', allowPocket: true, why: 'Center ball off the bottom long rail at three diamonds out comes back to the center line, one diamond out, and misses this 5-ball three diamonds up. The cue ball is traveling toward the head rail, so left is running. Running english opens the rebound up to one diamond off the top. Medium-soft, so it does not run past the ball.' }),
+  S({ level: 9, ball: 7, cue: { x: 75, y: 12.5 }, ob: { x: 50, y: 25 }, naturalOb: { x: 50, y: 12.5 }, rails: ['top'], speed: 'Soft', tip: { vTips: 0, hTips: -1, englishLabel: 'running left' }, english: 'running', allowPocket: true, why: 'Center ball off the top long rail at five diamonds out stays three diamonds up, four diamonds out, and misses this 7-ball on the center line. The cue ball is traveling toward the head rail, so left is running. Running english opens the rebound down to the center line. Soft speed is enough for this shorter kick.' }),
+  S({ level: 10, ball: 2, cue: { x: 12.5, y: 12.5 }, ob: { x: 62.5, y: 25 }, naturalOb: { x: 62.5, y: 12.5 }, rails: ['bottom'], speed: 'Medium', tip: { vTips: 0, hTips: -1, englishLabel: 'reverse left' }, english: 'reverse', allowPocket: true, why: 'Center ball off the bottom long rail at three diamonds out climbs to five diamonds out and three diamonds up, and misses this 2-ball on the center line. The cue ball is traveling toward the foot rail, so left is reverse. Reverse english holds the cue ball closer to the bottom rail.' }),
+  S({ level: 10, ball: 4, cue: { x: 12.5, y: 37.5 }, ob: { x: 87.5, y: 37.5 }, naturalOb: { x: 87.5, y: 25 }, rails: ['bottom'], speed: 'Medium-Firm', tip: { vTips: 0, hTips: -1, englishLabel: 'reverse left' }, english: 'reverse', allowPocket: true, why: 'Center ball off the bottom long rail at three diamonds out comes up to the center line at seven diamonds out, and misses this 4-ball one diamond up from the bottom. Traveling toward the foot rail, left is reverse, and it holds the rebound on the rail. Medium-firm carries the longer trip.' }),
+  S({ level: 10, ball: 6, cue: { x: 75, y: 37.5 }, ob: { x: 25, y: 25 }, naturalOb: { x: 25, y: 12.5 }, rails: ['bottom'], speed: 'Soft', tip: { vTips: 0, hTips: 1, englishLabel: 'reverse right' }, english: 'reverse', allowPocket: true, why: 'Center ball off the bottom long rail at five diamonds out climbs to two diamonds out and three diamonds up, and misses this 6-ball on the center line. The cue ball is traveling toward the head rail, so right is reverse. Reverse english holds it down to the center line. Soft speed.' }),
+  S({ level: 10, ball: 1, cue: { x: 62.5, y: 37.5 }, ob: { x: 12.5, y: 25 }, naturalOb: { x: 12.5, y: 37.5 }, rails: ['top'], speed: 'Firm', tip: { vTips: 0, hTips: 1, englishLabel: 'reverse right' }, english: 'reverse', allowPocket: true, why: 'Center ball off the top long rail at three diamonds out drops to one diamond out and one diamond up from the bottom, and misses this 1-ball on the center line. Traveling toward the head rail, right is reverse, and it holds the cue ball closer to the top rail. Firm, because the hold takes speed off.' }),
+  S({ level: 11, ball: 2, cue: { x: 75, y: 12.5 }, ob: { x: 12.5, y: 25 }, rails: ['bottom'], speed: 'Firm', tip: { vTips: 0.5, hTips: 0, englishLabel: 'half tip of follow' }, english: 'follow', allowPocket: true, why: 'True one-rail. Bottom long rail at three diamonds out, back to the 2-ball one diamond out on the center line. A half tip of follow keeps the cue ball moving through that long return. Firm speed. The line does not change. The follow is for distance.' }),
+  S({ level: 11, ball: 4, cue: { x: 75, y: 12.5 }, ob: { x: 25, y: 37.5 }, rails: ['top'], speed: 'Medium-Firm', tip: { vTips: 0.5, hTips: 0, englishLabel: 'half tip of follow' }, english: 'follow', allowPocket: true, why: 'Top long rail at five diamonds out, into the 4-ball two diamonds out and one diamond up from the bottom. Medium-firm with a half tip of follow. The cue ball is on the foot half of the table, three diamonds up.' }),
+  S({ level: 11, ball: 6, cue: { x: 87.5, y: 37.5 }, ob: { x: 87.5, y: 12.5 }, rails: ['bottom'], speed: 'Medium-Soft', tip: { vTips: -0.5, hTips: 0, englishLabel: 'half tip of draw' }, english: 'draw', allowPocket: true, why: 'Both balls are seven diamonds out. Bottom long rail at seven diamonds out, straight back to the 6-ball three diamonds up. A half tip of draw checks the cue ball so it does not follow into the top rail. Medium-soft.' }),
+  S({ level: 11, ball: 7, cue: { x: 62.5, y: 12.5 }, ob: { x: 62.5, y: 37.5 }, rails: ['right'], speed: 'Soft', tip: { vTips: -0.5, hTips: 0, englishLabel: 'half tip of draw' }, english: 'draw', allowPocket: true, why: 'Steep kick off the foot half. Both balls are five diamonds out. Foot short rail at two diamonds up, and the cue ball comes back on that diamond to the 7-ball one diamond up from the bottom. Soft, with a half tip of draw.' }),
+  S({ level: 12, ball: 1, cue: { x: 62.5, y: 12.5 }, ob: { x: 12.5, y: 12.5 }, rails: ['bottom', 'left'], speed: 'Medium', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Far side of the table, long then short. Bottom long rail at two diamonds out, then the head short rail at two diamonds up, into the 1-ball one diamond out and three diamonds up. Center ball, medium speed.' }),
+  S({ level: 12, ball: 3, cue: { x: 62.5, y: 12.5 }, ob: { x: 87.5, y: 37.5 }, rails: ['top', 'right'], speed: 'Medium-Soft', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Short route on the foot half. Top long rail at six diamonds out, then the foot short rail at two diamonds up, into the 3-ball seven diamonds out and one diamond up. Medium-soft, center ball.' }),
+  S({ level: 12, ball: 5, cue: { x: 62.5, y: 25 }, ob: { x: 25, y: 12.5 }, rails: ['right', 'top'], speed: 'Firm', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Short then long, from the center line on the foot half. Foot short rail at three diamonds up, then the top long rail at five diamonds out, back to the 5-ball two diamonds out and three diamonds up. Firm, center ball.' }),
+  S({ level: 12, ball: 7, cue: { x: 62.5, y: 25 }, ob: { x: 25, y: 37.5 }, rails: ['right', 'bottom'], speed: 'Medium-Firm', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'The other corner from the same cue ball. Foot short rail at one diamond up from the bottom, then the bottom long rail at five diamonds out, into the 7-ball two diamonds out and one diamond up. Medium-firm, center ball.' }),
+  S({ level: 13, ball: 2, cue: { x: 12.5, y: 12.5 }, ob: { x: 37.5, y: 25 }, naturalOb: { x: 37.5, y: 37.5 }, rails: ['left', 'bottom'], speed: 'Medium', tip: { vTips: 0, hTips: -1, englishLabel: 'running left' }, english: 'running', allowPocket: true, why: 'Center ball goes head short rail at two diamonds up, then the bottom long rail at two diamonds out, and finishes one diamond up at three diamonds out. This 2-ball is on the center line. Traveling toward the head rail, left is running, and it opens the last rebound up off the bottom rail. Medium speed.' }),
+  S({ level: 13, ball: 4, cue: { x: 12.5, y: 12.5 }, ob: { x: 87.5, y: 25 }, naturalOb: { x: 87.5, y: 37.5 }, rails: ['top', 'bottom'], speed: 'Medium-Firm', tip: { vTips: 0, hTips: 1, englishLabel: 'running right' }, english: 'running', allowPocket: true, why: 'Cross-table. Center ball hits the top long rail at two diamonds out, then the bottom long rail at six diamonds out, and finishes one diamond up at seven diamonds out. The 4-ball is on the center line. Traveling toward the foot rail, right is running. Medium-firm, because the cue ball crosses twice.' }),
+  S({ level: 13, ball: 6, cue: { x: 12.5, y: 25 }, ob: { x: 37.5, y: 37.5 }, naturalOb: { x: 37.5, y: 25 }, rails: ['left', 'top'], speed: 'Soft', tip: { vTips: 0, hTips: -1, englishLabel: 'running left' }, english: 'running', allowPocket: true, why: 'Center ball goes head short rail at three diamonds up, then the top long rail at one diamond out, and finishes on the center line. This 6-ball is one diamond up. Traveling toward the head rail, left is running, and it opens the rebound down off the top rail. Soft speed on this short two-rail.' }),
+  S({ level: 13, ball: 1, cue: { x: 12.5, y: 37.5 }, ob: { x: 87.5, y: 25 }, naturalOb: { x: 87.5, y: 12.5 }, rails: ['bottom', 'top'], speed: 'Medium-Soft', tip: { vTips: 0, hTips: 1, englishLabel: 'running right' }, english: 'running', allowPocket: true, why: 'Center ball hits the bottom long rail at two diamonds out, then the top long rail at six diamonds out, and finishes three diamonds up. The 1-ball is on the center line, seven diamonds out. Traveling toward the foot rail, right is running. Medium-soft.' }),
+  S({ level: 14, ball: 3, cue: { x: 12.5, y: 12.5 }, ob: { x: 50, y: 37.5 }, naturalOb: { x: 50, y: 25 }, rails: ['left', 'bottom'], speed: 'Medium', tip: { vTips: 0, hTips: 1, englishLabel: 'reverse right' }, english: 'reverse', allowPocket: true, why: 'Center ball goes head short rail at two diamonds up, then the bottom long rail at two diamonds out, and finishes on the center line at four diamonds out. This 3-ball is one diamond up. Traveling into the head rail first, the cue ball is moving toward the head, so right is reverse and holds the last rebound on the bottom rail. Medium.' }),
+  S({ level: 14, ball: 5, cue: { x: 12.5, y: 25 }, ob: { x: 37.5, y: 12.5 }, naturalOb: { x: 37.5, y: 25 }, rails: ['left', 'top'], speed: 'Medium-Firm', tip: { vTips: 0, hTips: 1, englishLabel: 'reverse right' }, english: 'reverse', allowPocket: true, why: 'Center ball goes head short rail at three diamonds up, then the top long rail at one diamond out, and finishes on the center line. The 5-ball is three diamonds up. Right reverse, traveling toward the head rail, holds the cue ball closer to the top rail. Medium-firm.' }),
+  S({ level: 14, ball: 6, cue: { x: 50, y: 12.5 }, ob: { x: 25, y: 37.5 }, naturalOb: { x: 25, y: 25 }, rails: ['right', 'bottom'], speed: 'Soft', tip: { vTips: 0, hTips: -1, englishLabel: 'reverse left' }, english: 'reverse', allowPocket: true, why: 'From the center of the table, foot short rail at one diamond up, then the bottom long rail at six diamonds out. Center ball finishes on the center line at two diamonds out. This 6-ball is one diamond up. Traveling toward the foot rail, left is reverse. Soft speed on the hold.' }),
+  S({ level: 14, ball: 7, cue: { x: 50, y: 37.5 }, ob: { x: 25, y: 12.5 }, naturalOb: { x: 25, y: 25 }, rails: ['right', 'top'], speed: 'Firm', tip: { vTips: 0, hTips: -1, englishLabel: 'reverse left' }, english: 'reverse', allowPocket: true, why: 'Foot short rail at three diamonds up, then the top long rail at six diamonds out. Center ball finishes on the center line. The 7-ball is three diamonds up, two diamonds out. Traveling toward the foot rail, left is reverse and holds the last rebound on the top rail. Firm, so the hold still gets there.' }),
+  S({ level: 15, ball: 2, cue: { x: 12.5, y: 25 }, ob: { x: 25, y: 12.5 }, rails: ['left', 'top'], speed: 'Soft', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Short two-rail, so soft speed is enough. Head short rail at three diamonds up, then the top long rail at one diamond out, into the 2-ball two diamonds out and three diamonds up. Center ball.' }),
+  S({ level: 15, ball: 4, cue: { x: 25, y: 12.5 }, ob: { x: 62.5, y: 25 }, rails: ['top', 'right'], speed: 'Medium-Soft', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Top long rail at five diamonds out, then the foot short rail at three diamonds up, into the 4-ball five diamonds out on the center line. Medium-soft, center ball.' }),
+  S({ level: 15, ball: 6, cue: { x: 25, y: 25 }, ob: { x: 50, y: 12.5 }, rails: ['bottom', 'right'], speed: 'Medium-Firm', tip: { vTips: 0.5, hTips: 0, englishLabel: 'half tip of follow' }, english: 'follow', allowPocket: true, why: 'Bottom long rail at six diamonds out, then the foot short rail at one diamond up, into the 6-ball four diamonds out and three diamonds up. Medium-firm with a half tip of follow. The follow keeps the cue ball moving after two rails. It does not change the diamond line.' }),
+  S({ level: 15, ball: 7, cue: { x: 12.5, y: 12.5 }, ob: { x: 87.5, y: 37.5 }, rails: ['top', 'bottom'], speed: 'Firm', tip: { vTips: 0.5, hTips: 0, englishLabel: 'half tip of follow' }, english: 'follow', allowPocket: true, why: 'Long cross-table. Top long rail at two diamonds out, then the bottom long rail at six diamonds out, into the 7-ball seven diamonds out and one diamond up. Firm, with a half tip of follow, because the cue ball crosses the table twice.' }),
+  S({ level: 16, ball: 1, cue: { x: 62.5, y: 12.5 }, ob: { x: 37.5, y: 12.5 }, rails: ['top', 'right', 'bottom'], speed: 'Medium', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Foot half, three rails, center ball. Top long rail at six diamonds out, foot short rail at two diamonds up, bottom long rail at six diamonds out, into the 1-ball three diamonds out and three diamonds up. Medium speed.' }),
+  S({ level: 16, ball: 3, cue: { x: 62.5, y: 12.5 }, ob: { x: 62.5, y: 37.5 }, rails: ['bottom', 'left', 'top'], speed: 'Medium-Firm', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Same cue ball, the long way around the head. Bottom long rail at two diamonds out, head short rail at two diamonds up, top long rail at two diamonds out, into the 3-ball five diamonds out and one diamond up. Medium-firm.' }),
+  S({ level: 16, ball: 5, cue: { x: 62.5, y: 25 }, ob: { x: 25, y: 37.5 }, rails: ['bottom', 'right', 'top'], speed: 'Firm', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'From the center line. Bottom long rail at seven diamonds out, foot short rail at one diamond up, top long rail at five diamonds out, into the 5-ball two diamonds out and one diamond up. Firm, center ball.' }),
+  S({ level: 16, ball: 7, cue: { x: 62.5, y: 37.5 }, ob: { x: 62.5, y: 12.5 }, rails: ['top', 'left', 'bottom'], speed: 'Medium-Soft', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Top long rail at two diamonds out, head short rail at two diamonds up, bottom long rail at two diamonds out, back to the 7-ball five diamonds out and three diamonds up. Medium-soft. This is the shorter three-rail on the head side of the cue ball.' }),
+  S({ level: 17, ball: 2, cue: { x: 12.5, y: 12.5 }, ob: { x: 87.5, y: 25 }, naturalOb: { x: 87.5, y: 12.5 }, rails: ['left', 'bottom', 'top'], speed: 'Medium', tip: { vTips: 0, hTips: -1, englishLabel: 'running left' }, english: 'running', allowPocket: true, why: 'Center ball goes head short rail at two diamonds up, bottom long rail at two diamonds out, top long rail at six diamonds out, and finishes three diamonds up at seven diamonds out. The 2-ball is on the center line. Traveling toward the head rail, left is running, and it opens the last rebound down off the top rail. Medium.' }),
+  S({ level: 17, ball: 4, cue: { x: 12.5, y: 25 }, ob: { x: 75, y: 25 }, naturalOb: { x: 75, y: 37.5 }, rails: ['left', 'top', 'bottom'], speed: 'Medium-Firm', tip: { vTips: 0, hTips: -1, englishLabel: 'running left' }, english: 'running', allowPocket: true, why: 'Center ball goes head short rail at three diamonds up, top long rail at one diamond out, bottom long rail at five diamonds out, and finishes one diamond up at six diamonds out. The 4-ball is on the center line. Left running, toward the head rail, opens that last rebound up off the bottom. Medium-firm.' }),
+  S({ level: 17, ball: 6, cue: { x: 25, y: 12.5 }, ob: { x: 50, y: 25 }, naturalOb: { x: 50, y: 37.5 }, rails: ['top', 'left', 'bottom'], speed: 'Medium-Soft', tip: { vTips: 0, hTips: -1, englishLabel: 'running left' }, english: 'running', allowPocket: true, why: 'Center ball hits the top long rail at one diamond out, the head short rail at three diamonds up, then the bottom long rail at three diamonds out, and finishes one diamond up at four diamonds out. The 6-ball is on the center line. Left is running. Medium-soft.' }),
+  S({ level: 17, ball: 1, cue: { x: 25, y: 12.5 }, ob: { x: 62.5, y: 37.5 }, naturalOb: { x: 62.5, y: 25 }, rails: ['bottom', 'right', 'top'], speed: 'Firm', tip: { vTips: 0, hTips: 1, englishLabel: 'running right' }, english: 'running', allowPocket: true, why: 'Center ball hits the bottom long rail at five diamonds out, the foot short rail at three diamonds up, then the top long rail at seven diamonds out, and finishes on the center line. The 1-ball is one diamond up, five diamonds out. Traveling toward the foot rail, right is running. Firm speed for three rails.' }),
+  S({ level: 18, ball: 3, cue: { x: 12.5, y: 25 }, ob: { x: 87.5, y: 37.5 }, naturalOb: { x: 87.5, y: 25 }, rails: ['left', 'top', 'bottom'], speed: 'Medium', tip: { vTips: 0, hTips: 1, englishLabel: 'reverse right' }, english: 'reverse', allowPocket: true, why: 'Center ball goes head short rail at three diamonds up, top long rail at one diamond out, bottom long rail at five diamonds out, and finishes on the center line at seven diamonds out. This 3-ball is one diamond up. Traveling toward the head rail, right is reverse, and it holds the last rebound on the bottom rail. Medium.' }),
+  S({ level: 18, ball: 5, cue: { x: 12.5, y: 25 }, ob: { x: 87.5, y: 12.5 }, naturalOb: { x: 87.5, y: 25 }, rails: ['left', 'bottom', 'top'], speed: 'Medium-Firm', tip: { vTips: 0, hTips: 1, englishLabel: 'reverse right' }, english: 'reverse', allowPocket: true, why: 'Center ball goes head short rail at one diamond up, bottom long rail at one diamond out, top long rail at five diamonds out, and finishes on the center line. The 5-ball is three diamonds up, seven diamonds out. Right reverse holds the last rebound closer to the top rail. Medium-firm.' }),
+  S({ level: 18, ball: 4, cue: { x: 25, y: 12.5 }, ob: { x: 62.5, y: 37.5 }, naturalOb: { x: 62.5, y: 25 }, rails: ['top', 'left', 'bottom'], speed: 'Firm', tip: { vTips: 0, hTips: 1, englishLabel: 'reverse right' }, english: 'reverse', allowPocket: true, why: 'Center ball hits the top long rail at one diamond out, the head short rail at three diamonds up, then the bottom long rail at three diamonds out, and finishes on the center line. The 4-ball is one diamond up. Right is reverse while the cue ball travels toward the head rail. Firm.' }),
+  S({ level: 18, ball: 2, cue: { x: 25, y: 12.5 }, ob: { x: 62.5, y: 12.5 }, naturalOb: { x: 62.5, y: 25 }, rails: ['bottom', 'right', 'top'], speed: 'Medium-Soft', tip: { vTips: 0, hTips: -1, englishLabel: 'reverse left' }, english: 'reverse', allowPocket: true, why: 'Center ball hits the bottom long rail at five diamonds out, the foot short rail at three diamonds up, then the top long rail at seven diamonds out, and finishes on the center line. The 2-ball is three diamonds up, five diamonds out. Traveling toward the foot rail, left is reverse. Medium-soft.' }),
+  S({ level: 19, ball: 2, cue: { x: 12.5, y: 12.5 }, ob: { x: 87.5, y: 12.5 }, rails: ['top', 'bottom', 'right'], speed: 'Medium', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Three rails, center ball, medium. Top long rail at two diamonds out, bottom long rail at six diamonds out, foot short rail at two diamonds up, into the 2-ball seven diamonds out and three diamonds up.' }),
+  S({ level: 19, ball: 4, cue: { x: 12.5, y: 37.5 }, ob: { x: 87.5, y: 37.5 }, rails: ['bottom', 'top', 'right'], speed: 'Medium-Firm', tip: { vTips: 0.5, hTips: 0, englishLabel: 'half tip of follow' }, english: 'follow', allowPocket: true, why: 'Bottom long rail at two diamonds out, top long rail at six diamonds out, foot short rail at two diamonds up, into the 4-ball seven diamonds out and one diamond up. Medium-firm with a half tip of follow so the cue ball is still moving at the third rail. The follow does not change the diamond line.' }),
+  S({ level: 19, ball: 6, cue: { x: 25, y: 12.5 }, ob: { x: 50, y: 37.5 }, rails: ['top', 'left', 'bottom'], speed: 'Firm', tip: { vTips: 0.5, hTips: 0, englishLabel: 'half tip of follow' }, english: 'follow', allowPocket: true, why: 'Top long rail at one diamond out, head short rail at three diamonds up, bottom long rail at three diamonds out, into the 6-ball four diamonds out and one diamond up. Firm, half tip of follow.' }),
+  S({ level: 19, ball: 7, cue: { x: 37.5, y: 12.5 }, ob: { x: 37.5, y: 37.5 }, rails: ['bottom', 'right', 'top'], speed: 'Medium-Soft', tip: { vTips: 0, hTips: 0 }, english: 'none', allowPocket: true, why: 'Bottom long rail at six diamonds out, foot short rail at two diamonds up, top long rail at six diamonds out, back to the 7-ball three diamonds out and one diamond up. Medium-soft, center ball. Both balls are three diamonds out.' }),
+
 ];
 
 function hydrate(raw, index) {
@@ -302,31 +362,54 @@ function hydrate(raw, index) {
 }
 
 function buildLevels() {
-  const levels = LEVEL_META.map((m) => ({ ...m, stations: [] }));
+  const levels = LEVEL_META.map((m) => ({ ...m, n: m.id, stations: [] }));
+  const byId = new Map(levels.map((level) => [level.id, level]));
   for (const raw of RAW) {
-    const level = levels[raw.level - 1];
+    const level = byId.get(raw.level);
+    if (!level) throw new Error(`unknown level ${raw.level}`);
     level.stations.push(hydrate(raw, level.stations.length));
   }
   for (const level of levels) {
-    if (level.stations.length !== 4) throw new Error(`level ${level.n} has ${level.stations.length} stations`);
+    if (level.stations.length !== 4) throw new Error(`level ${level.id} has ${level.stations.length} stations`);
+    if (level.rails) {
+      for (const st of level.stations) {
+        if (st.rails.length !== level.rails) throw new Error(`level ${level.id} station is not ${level.rails} rails`);
+      }
+    }
   }
   return levels;
 }
 
 export const LEVELS = buildLevels();
 
-export const EXAM_PICKS = [[1, 0], [2, 1], [3, 0], [4, 0], [5, 0], [6, 0], [7, 0], [8, 1]];
+export const EXAM_PICKS = [
+  [1, 0], [2, 1], [9, 0], [10, 0], [11, 0],
+  [3, 0], [12, 0], [13, 0], [14, 0], [15, 0],
+  [4, 0], [16, 0], [17, 0], [18, 0], [19, 0],
+  [5, 0], [6, 0], [7, 0], [8, 1]
+];
+
+export function levelById(id) {
+  const n = Number(id);
+  return LEVELS.find((level) => level.id === n) || null;
+}
+
+export function nextLevelId(id) {
+  const i = LEVELS.findIndex((level) => level.id === Number(id));
+  if (i < 0 || i + 1 >= LEVELS.length) return null;
+  return LEVELS[i + 1].id;
+}
 
 export function examStations() {
   return EXAM_PICKS.map(([level, index], i) => {
-    const src = LEVELS[level - 1].stations[index];
-    return { ...src, id: `exam-${i + 1}`, exam: true, from: `Level ${level} · ${LEVELS[level - 1].name}` };
+    const src = levelById(level).stations[index];
+    return { ...src, id: `exam-${i + 1}`, exam: true, from: `Level ${level} · ${levelById(level).name}` };
   });
 }
 
 export const EXAM_STATIONS = examStations();
 
-export function levelByNumber(n) { return LEVELS[n - 1] || null; }
+export function levelByNumber(n) { return levelById(n); }
 
 export function stationMax() {
   return (KICK_SCORE.attemptPoints[1] || 0) + KICK_SCORE.pocketBonus;
@@ -471,7 +554,7 @@ export function withKicking(state, kc) {
 
 export function passedLevelCount(kc) {
   let n = 0;
-  for (let i = 1; i <= 8; i++) if (kc?.levels?.[i]?.passed || kc?.levels?.[String(i)]?.passed) n += 1;
+  for (const level of LEVELS) if (levelRecord(kc, level.id)?.passed) n += 1;
   return n;
 }
 
@@ -480,19 +563,24 @@ export function levelRecord(kc, n) {
 }
 
 export function isLevelOpen(kc, level) {
-  const n = Number(level);
-  if (n < 1 || n > 8) return false;
-  for (let i = 1; i < n; i++) if (!levelRecord(kc, i)?.passed) return false;
+  const id = Number(level);
+  const idx = LEVELS.findIndex((row) => row.id === id);
+  if (idx < 0) return false;
+  // Already-passed levels stay open. A new id is never treated as passed.
+  if (levelRecord(kc, id)?.passed) return true;
+  for (let i = 0; i < idx; i++) if (!levelRecord(kc, LEVELS[i].id)?.passed) return false;
   return true;
 }
 
 export function isExamOpen(kc) {
-  return passedLevelCount(kc) >= 8;
+  return passedLevelCount(kc) >= LEVELS.length;
 }
 
 function stationsFor(cur) {
   if (cur.mode === 'exam' || cur.parent === 'exam') return EXAM_STATIONS;
-  return LEVELS[cur.level - 1].stations;
+  const level = levelById(cur.level);
+  if (!level) return [];
+  return level.stations;
 }
 
 function runScore(cur, stations) {
@@ -710,19 +798,20 @@ export function courseStats(kc) {
   const successPct = doneStations ? Math.round((makes / doneStations) * 100) : 0;
   let best = 0;
   let levelStationsHit = 0;
-  for (let i = 1; i <= 8; i++) {
-    const rec = levelRecord(kc, i);
+  for (const level of LEVELS) {
+    const rec = levelRecord(kc, level.id);
     if (!rec) continue;
     best += rec.bestScore || 0;
     levelStationsHit += rec.successes || 0;
   }
   const passed = passedLevelCount(kc);
+  const stationTotal = LEVELS.length * 4;
   return {
     ...stats,
     successPct,
     best,
-    courseCompletion: `${passed} / 8`,
-    levelCompletion: `${levelStationsHit} / 32`,
+    courseCompletion: `${passed} / ${LEVELS.length}`,
+    levelCompletion: `${levelStationsHit} / ${stationTotal}`,
     passed
   };
 }
@@ -739,8 +828,8 @@ export function offRailProgress(state) {
       href: '#kicking',
       short: COURSE_TITLE,
       done,
-      total: 8,
-      finished: done >= 8
+      total: LEVELS.length,
+      finished: done >= LEVELS.length
     });
   }
   const examStarted = !!(kc.exam?.attempts || kc.exam?.passed || (kc.current && kc.current.mode === 'exam'));
@@ -761,26 +850,47 @@ export function offRailProgress(state) {
 export function offRailBannersHTML(state) {
   const kc = kickingOf(state || {});
   const open = isExamOpen(kc);
-  const course = `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#kicking" data-offrail="course"><span class="simPromoText"><span class="eyebrow">DRILL SET</span><b>${esc(COURSE_TITLE)}</b><small>8 levels. Shoot the kick on your table. Not on the All list. Not a Career rank.</small></span><span class="simPromoGo">›</span></button>`;
+  const n = LEVELS.length;
+  const course = `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#kicking" data-offrail="course"><span class="simPromoText"><span class="eyebrow">DRILL SET</span><b>${esc(COURSE_TITLE)}</b><small>${n} levels. Shoot the kick on your table. Not on the All list. Not a Career rank.</small></span><span class="simPromoGo">›</span></button>`;
   const exam = open
-    ? `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#kicking/exam" data-offrail="exam"><span class="simPromoText"><span class="eyebrow">EXAM</span><b>${esc(EXAM_TITLE)}</b><small>8 shots, one from each level. Pass at 80%.</small></span><span class="simPromoGo">›</span></button>`
-    : `<div class="card simPromo buEntry is-locked" data-offrail="exam" data-offrail-locked="1"><span class="simPromoText"><span class="eyebrow">EXAM</span><b>${esc(EXAM_TITLE)}</b><small>Locked until all 8 levels are passed.</small></span></div>`;
+    ? `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#kicking/exam" data-offrail="exam"><span class="simPromoText"><span class="eyebrow">EXAM</span><b>${esc(EXAM_TITLE)}</b><small>${n} shots, one from each level. Pass at 80%.</small></span><span class="simPromoGo">›</span></button>`
+    : `<div class="card simPromo buEntry is-locked" data-offrail="exam" data-offrail-locked="1"><span class="simPromoText"><span class="eyebrow">EXAM</span><b>${esc(EXAM_TITLE)}</b><small>Locked until all ${n} levels are passed.</small></span></div>`;
   return course + exam;
 }
 
+const LEGAL_X = [0, 12.5, 25, 37.5, 50, 62.5, 75, 87.5, 100];
+const LEGAL_Y = [0, 12.5, 25, 37.5, 50];
+const POCKET_POINTS = [[0, 0], [50, 0], [100, 0], [0, 50], [50, 50], [100, 50]];
+
+function legalBall(p) {
+  if (!p) return true;
+  const xOk = LEGAL_X.some((x) => Math.abs(x - p.x) < 1e-6);
+  const yOk = LEGAL_Y.some((y) => Math.abs(y - p.y) < 1e-6);
+  if (!xOk || !yOk) return false;
+  if (POCKET_POINTS.some(([x, y]) => Math.abs(x - p.x) < 1e-6 && Math.abs(y - p.y) < 1e-6)) return false;
+  return true;
+}
+
 export function auditStations() {
-  if (LEVELS.length !== 8) throw new Error('expected 8 levels');
-  if (EXAM_STATIONS.length !== 8) throw new Error('expected 8 exam stations');
-  const half = [6.25, 18.75, 31.25, 43.75, 56.25, 68.75, 81.25, 93.75, 1.125];
+  const problems = [];
+  if (EXAM_STATIONS.length !== LEVELS.length) problems.push('exam is not one station from each level');
+  const groups = { 1: [], 2: [], 3: [] };
+  for (const level of LEVELS) if (level.rails) groups[level.rails].push(level.id);
+  for (const n of [1, 2, 3]) if (groups[n].length !== 5) problems.push(`${n}-rail group has ${groups[n].length}`);
+  const later = LEVELS.filter((level) => !level.rails).map((level) => level.id);
+  if (later.join(',') !== '5,6,7,8') problems.push('later topics moved');
+  let stations = 0;
   for (const level of LEVELS) {
     for (const st of level.stations) {
-      for (const p of [st.cue, st.ob, st.blocker, st.naturalOb].filter(Boolean)) {
-        if (half.some((h) => Math.abs(p.x - h) < 1e-6 || Math.abs(p.y - h) < 1e-6)) throw new Error('half-diamond ball');
-        if (!onCrossing(p)) throw new Error('ball off crossing');
+      stations += 1;
+      for (const ball of [st.cue, st.ob, st.blocker, st.naturalOb].filter(Boolean)) {
+        if (!legalBall(ball)) problems.push(`illegal ball L${level.id} ${st.ball} ${ball.x},${ball.y}`);
       }
+      if (level.rails && st.rails.length !== level.rails) problems.push(`rail count L${level.id}`);
     }
   }
-  return true;
+  if (problems.length) throw new Error(problems.join('; '));
+  return { illegal: 0, stations, levels: LEVELS.length };
 }
 
 auditStations();

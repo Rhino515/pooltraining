@@ -7,7 +7,8 @@ import {
   kickingOf, isLevelOpen, isExamOpen, levelRecord, passedLevelCount,
   startLevel, startExam, kickTap, kickUndo, kickView, kickPractice, kickRetry,
   courseStats, diagramHTML, howToHTML, ballName, diamondPhrase, freshStation, stationMax,
-  difficultyOf, attemptsFor, pocketRequired, designatedPocket, difficultyNote, setDifficulty, DIFFICULTIES
+  difficultyOf, attemptsFor, pocketRequired, designatedPocket, difficultyNote, setDifficulty, DIFFICULTIES,
+  levelById, nextLevelId
 } from '../content/kickingCourse.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -60,7 +61,7 @@ function playHTML(state, showSolution, howOpen) {
   const kc = kickingOf(state);
   const cur = kc.current;
   const exam = cur.mode === 'exam' || cur.parent === 'exam';
-  const stations = exam ? EXAM_STATIONS : LEVELS[cur.level - 1].stations;
+  const stations = exam ? EXAM_STATIONS : levelById(cur.level).stations;
   const view = Math.min(cur.view ?? cur.cursor, cur.cursor);
   const si = cur.order[view];
   const station = stations[si];
@@ -71,7 +72,7 @@ function playHTML(state, showSolution, howOpen) {
   const live = view === cur.cursor && !rec.done && cur.phase === 'play';
   const { score, max } = running(cur, stations);
   const shotNo = view + 1;
-  const title = exam ? EXAM_TITLE : (cur.mode === 'practice' ? 'Practice' : LEVELS[cur.level - 1].name);
+  const title = exam ? EXAM_TITLE : (cur.mode === 'practice' ? 'Practice' : levelById(cur.level).name);
   const used = marks.filter((m) => m !== 'empty').length;
   const attemptN = rec.done ? (rec.madeOn || used) : (used + 1);
   const rails = station.rails.map((r, i) => `${i + 1}. ${r === 'top' ? 'top long rail' : r === 'bottom' ? 'bottom long rail' : r === 'left' ? 'head short rail' : 'foot short rail'}`).join(' · ');
@@ -112,8 +113,9 @@ function resultsHTML(state) {
     ? `<p><b>Failed stations.</b> ${sum.failed.map((f) => esc(f.name)).join(', ')}.</p>`
     : '<p>No failed stations.</p>';
   let next = '';
-  if (!practice && passed && cur.mode === 'level' && cur.level < 8) next = `<p class="green">NEXT LEVEL UNLOCKED</p><button type="button" class="bigBtn" data-action="go" data-href="#kicking/${cur.level + 1}">NEXT LEVEL</button>`;
-  if (!practice && passed && cur.mode === 'level' && cur.level === 8 && isExamOpen(kickingOf(state))) next = `<p class="green">All 8 levels are passed. ${esc(EXAM_TITLE)} is unlocked.</p><button type="button" class="bigBtn" data-action="go" data-href="#kicking/exam">OPEN ${esc(EXAM_TITLE).toUpperCase()}</button>`;
+  const nxt = cur.mode === 'level' ? nextLevelId(cur.level) : null;
+  if (!practice && passed && nxt) next = `<p class="green">NEXT LEVEL UNLOCKED</p><button type="button" class="bigBtn" data-action="go" data-href="#kicking/${nxt}">NEXT LEVEL</button>`;
+  if (!practice && passed && cur.mode === 'level' && !nxt && isExamOpen(kickingOf(state))) next = `<p class="green">All ${LEVELS.length} levels are passed. ${esc(EXAM_TITLE)} is unlocked.</p><button type="button" class="bigBtn" data-action="go" data-href="#kicking/exam">OPEN ${esc(EXAM_TITLE).toUpperCase()}</button>`;
   const practiceBtn = !practice && !passed && sum.failed.length
     ? `<button type="button" class="bigBtn alt" data-action="kick-practice">Practice these</button>`
     : '';
@@ -156,9 +158,9 @@ function listHTML(state) {
   }).join('');
   const passed = passedLevelCount(kc);
   return `<div class="playScreen kickPage" data-offrail-home="1">
-    <div class="title"><button type="button" class="linkish back" data-action="go" data-href="#courses">‹ Drill Sets & Exams</button><span class="eyebrow">DRILL SET</span><h1>${esc(COURSE_TITLE)}</h1><p>Eight levels. Place the balls where the diagram shows, shoot the kick on your table, and tap what happened. Pass requirement: ${KICK_SCORE.passPercent}% of the stations.</p></div>
+    <div class="title"><button type="button" class="linkish back" data-action="go" data-href="#courses">‹ Drill Sets & Exams</button><span class="eyebrow">DRILL SET</span><h1>${esc(COURSE_TITLE)}</h1><p>${LEVELS.length} levels. Five one-rail, five two-rail, five three-rail, then english, blocked kicks, kick and pocket, and kick position. Place the balls where the diagram shows, shoot the kick on your table, and tap what happened. Pass requirement: ${KICK_SCORE.passPercent}% of the stations.</p></div>
     ${difficultyHTML(kc.difficulty)}
-    <div class="card"><p>${passed} of 8 levels passed.</p><button type="button" class="bigBtn alt" data-action="go" data-href="#kicking/stats">Course stats</button></div>
+    <div class="card"><p>${passed} of ${LEVELS.length} levels passed.</p><button type="button" class="bigBtn alt" data-action="go" data-href="#kicking/stats">Course stats</button></div>
     <div class="stageList" data-offrail-levels="1">${rows}</div>
   </div>`;
 }
@@ -189,7 +191,7 @@ function lockedExamHTML(state) {
   return `<div class="playScreen kickPage" data-offrail-exam-locked="1">
     <div class="title"><button type="button" class="linkish back" data-action="go" data-href="#courses">‹ Drill Sets & Exams</button><span class="eyebrow">EXAM</span><h1>${esc(EXAM_TITLE)}</h1></div>
     ${difficultyHTML(kickingOf(state).difficulty)}
-    <div class="card"><p>Locked until all 8 levels are passed.</p><button type="button" class="bigBtn" data-action="go" data-href="#kicking">Back to ${esc(COURSE_TITLE)}</button></div>
+    <div class="card"><p>Locked until all ${LEVELS.length} levels are passed.</p><button type="button" class="bigBtn" data-action="go" data-href="#kicking">Back to ${esc(COURSE_TITLE)}</button></div>
   </div>`;
 }
 

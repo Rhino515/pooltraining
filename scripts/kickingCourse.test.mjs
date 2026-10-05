@@ -53,7 +53,7 @@ assert(rec.points === 0 && rec.success === false && rec.done && rec.marks.length
 rec = recordAttempt(open, freshStation(), 'pocket', 'intermediate');
 assert(rec.points === 5 && rec.pocketed, 'intermediate pocket bonus adds 2');
 
-const mustPocket = LEVELS[6].stations.find((s) => s.requirePocket);
+const mustPocket = LEVELS.find((level) => level.id === 7).stations.find((s) => s.requirePocket);
 assert(mustPocket, 'level 7 still names a pocket');
 rec = recordAttempt(mustPocket, freshStation(), 'contact', 'intermediate');
 assert(rec.success === true && rec.pocketed === false && rec.points === 3, 'intermediate contact passes a level 7 station without the pocket');
@@ -83,7 +83,8 @@ for (let i = 0; i < 4; i++) state = kickTap(state, 'contact');
 assert(state.kickingCourse.levels[1].passed === true, 'four beginner hits pass level 1');
 assert(isLevelOpen(state.kickingCourse, 2) === true, 'passing level 1 opens level 2');
 assert(isLevelOpen(state.kickingCourse, 3) === false, 'level 3 stays locked after only level 1');
-assert(isExamOpen(state.kickingCourse) === false, 'the exam stays locked until 8 levels pass');
+assert(isExamOpen(state.kickingCourse) === false, 'the exam stays locked until every level is passed');
+assert(isLevelOpen(state.kickingCourse, 9) === false, 'a new one-rail level stays locked after only level 1');
 state = setDifficulty(state, 'pro');
 assert(kickingOf(state).difficulty === 'pro', 'switching to pro is remembered');
 state = startLevel(state, 2);
@@ -92,14 +93,29 @@ state = kickTap(state, 'contact');
 assert(state.kickingCourse.current.stations[0].success === false && state.kickingCourse.current.stations[0].done === false, 'pro does not pass level 2 on contact');
 for (let i = 0; i < 4; i++) state = kickTap(state, 'pocket');
 assert(state.kickingCourse.levels[2].passed === true, 'pro pockets pass the level');
+const legacy = { levels: {} };
+for (let i = 1; i <= 8; i++) legacy.levels[String(i)] = { passed: true, bestScore: 12 };
+assert(passedLevelCount(legacy) === 8, 'an old save still counts the original eight levels');
+assert(isExamOpen(legacy) === false, 'the exam stays locked until the new levels are passed too');
+assert(!legacy.levels[9] && !legacy.levels['9'], 'a new level is not marked passed');
+assert(isLevelOpen(legacy, 1) && isLevelOpen(legacy, 3) && isLevelOpen(legacy, 8), 'levels the player already passed stay open');
+assert(isLevelOpen(legacy, 9) === true, 'the first new level opens when levels 1 and 2 are already passed');
+assert(isLevelOpen(legacy, 10) === false, 'the next new level stays locked');
 state = setDifficulty(state, 'intermediate');
-for (let n = 3; n <= 8; n++) {
-  state = startLevel(state, n);
+for (const level of LEVELS) {
+  if (level.id === 1 || level.id === 2) continue;
+  state = startLevel(state, level.id);
   for (let i = 0; i < 4; i++) state = kickTap(state, 'contact');
 }
-assert(passedLevelCount(state.kickingCourse) === 8, 'eight levels can be passed on contact at intermediate');
-assert(isExamOpen(state.kickingCourse) === true, 'the exam unlocks after 8 levels');
+assert(passedLevelCount(state.kickingCourse) === LEVELS.length, 'every level can be passed on contact at intermediate');
+assert(isExamOpen(state.kickingCourse) === true, 'the exam unlocks only after every level');
 assert(kickingOf(state).difficulty === 'intermediate', 'the saved difficulty is still intermediate');
+for (const [n, ids] of [[1, [1, 2, 9, 10, 11]], [2, [3, 12, 13, 14, 15]], [3, [4, 16, 17, 18, 19]]]) {
+  const rows = ids.map((id) => LEVELS.find((level) => level.id === id));
+  assert(rows.every((level) => level && level.stations.every((s) => s.rails.length === n)), n + '-rail group is five levels');
+}
+const first = LEVELS.find((level) => level.id === 1).stations[0];
+assert(first.cue.x === 12.5 && first.cue.y === 25 && first.ob.x === 75 && first.ob.y === 12.5 && first.rails.join() === 'bottom', 'level 1 station 1 did not move');
 
 const half = JSON.stringify(LEVELS).includes('6.25') || JSON.stringify(LEVELS).includes('18.75') || JSON.stringify(LEVELS).includes('1.125');
 assert(!half, 'no half-diamond or radius offsets on ball positions');
