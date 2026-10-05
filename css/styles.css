@@ -1933,3 +1933,12 @@ header{
 .pkfbPage .card:not(.stageRow) > p:first-child{margin-top:0}
 .pkfbPage .card:not(.stageRow) > p:last-child{margin-bottom:0}
 .pkfbPage .pkfbPrompt b,.pkfbPage .pkfbSol b,.pkfbPage .pkfbShoot b{font-size:13px;letter-spacing:.04em;color:var(--gold)}
+
+
+/* PKF Cue Ball Control Course — reuse banking crop/viewer math (height-based), pkfcb prefix */
+.pkfcbPage .pkfcbFig{margin:8px 0 10px}
+.pkfcbPage .pkfbFigLabel,.pkfcbPage .pkfcbFigLabel{margin:10px 0 6px;font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--gold)}
+.pkfcbActs{display:grid;gap:8px;margin:10px 0}
+.pkfcbPlan{display:grid;gap:10px;margin:8px 0}
+.pkfcbPlanStep b{display:block;margin-bottom:6px}
+.pkfcbHiddenFig{padding:12px;text-align:center}
