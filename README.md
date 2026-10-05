@@ -28,6 +28,7 @@ Shot Simulator simplification. Playing-surface sizes (ball stays 2.25 in): 7 ft 
 - Cache `pool-iq-v14-2`, app version 14.
 - v14-1: 8-ball runout plays the group (not the 1-ball), shows a breakout for a tied-up ball, 3D is a low view from behind the cue ball, and full screen is the table plus EXIT.
 - v14-2: 3D view is a shaded table from behind the cue ball (wood rails, lit cloth, round balls, cue).
+- v14-85: Off the Rail is a kicking course on Drill Sets & Exams. Eight levels, then Off the Rail Exam. Balls sit on diamond crossings. Shoot on your table and tap the result. Not on the All list. No Career XP. Cache `pool-iq-v14-85`.
 - v14-82: Kick Safe is a Table Games scorekeeper after Cribbage. Defensive 9-ball: fouls score, pocketed balls are spotted, race to 3, 5, 7, or 10. Solo kick practice is separate from 1 vs 1 history. No Career XP. Cache `pool-iq-v14-83`.
 - v14-81: Runout Drill System levels 1–13 are sharp racks. Same balls, same triangle spots as the original diagrams. Real ball colors and readable numbers. Transparent background. Levels 14–16 unchanged. No scoring, text, lock, or XP change. Cache `pool-iq-v14-81`.
 - v14-80: A finished Drill Set or Exam is one gold medal. Same leaves, disc, and ribbon. Metal, rim, or the small center mark changes so exams can be told apart. The name under the medal is the exam (Exam I, Exam II, RDS, Safety Master). Home uses the same medal, smaller, on the existing completed line. No Career XP change. Cache `pool-iq-v14-80`.

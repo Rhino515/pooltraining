@@ -16,6 +16,7 @@ import { BU_EXAM_NAME, BU_ORDER, examOf } from './buExam.js';
 import { SKILLS_EXAMS, skillsExamOf } from './buExam2.js';
 import * as moreExams from './buMore.js';
 import { SAFETY_NAME, SAFETY_ORDER, safetyOf } from './safetyMaster.js';
+import { offRailProgress } from './kickingCourse.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
@@ -35,7 +36,9 @@ const SHORT = {
   safety: 'Exam VI',
   draw: 'Exam VII',
   follow: 'Exam VIII',
-  safetyMaster: 'Safety Master'
+  safetyMaster: 'Safety Master',
+  offRail: 'Off the Rail',
+  offRailExam: 'Off the Rail Exam'
 };
 
 const STYLES = {
@@ -49,6 +52,8 @@ const STYLES = {
   safety: { disc: '#ffe7a8', rim: '#a88840', rimW: 1.4, inner: '#fffaf0', innerW: 1.1, leaf: '#f0d48a', ribbon: '#e2b14a', ribbon2: '#c9922a', ink: '#8a6418', mark: 'bar' },
   draw: { disc: '#e8c36a', rim: '#3d2c0c', rimW: 2.4, inner: '#fff6d4', innerW: 0.7, leaf: '#d4a84b', ribbon: '#a97822', ribbon2: '#7a5814', ink: '#3d2c0c', mark: 'star' },
   follow: { disc: '#f0d090', rim: '#9a7428', rimW: 1.3, inner: '#7a5814', innerW: 1.4, leaf: '#e2c07a', ribbon: '#c9a04a', ribbon2: '#a88840', ink: '#6e5420', mark: 'ring' },
+  offRail: { disc: '#f6c453', rim: '#7a5814', rimW: 1.5, inner: '#fff6d4', innerW: 0.9, leaf: '#e2b14a', ribbon: '#c9922a', ribbon2: '#a97822', ink: '#7a5814', mark: 'rail' },
+  offRailExam: { disc: '#f6c453', rim: '#7a5814', rimW: 1.5, inner: '#fff6d4', innerW: 0.9, leaf: '#e2b14a', ribbon: '#c9922a', ribbon2: '#a97822', ink: '#7a5814', mark: 'flag' },
   safetyMaster: { disc: '#f6c453', rim: '#fff1c8', rimW: 2.5, inner: '#a97822', innerW: 0.9, leaf: '#e8c56a', ribbon: '#c9922a', ribbon2: '#e2b14a', ink: '#7a5814', mark: 'dot' }
 };
 
@@ -57,6 +62,8 @@ function centerMark(kind, ink) {
   if (kind === 'ring') return `<circle cx="32" cy="28" r="3.4" fill="none" stroke="${ink}" stroke-width="1.5"/>`;
   if (kind === 'dot') return `<circle cx="32" cy="28" r="2.6" fill="${ink}"/>`;
   if (kind === 'bar') return `<rect x="27" y="26.6" width="10" height="2.7" rx="1.2" fill="${ink}"/>`;
+  if (kind === 'rail') return `<path d="M26.2 30.8h11.6M32 30.8 27.6 25.2" fill="none" stroke="${ink}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`;
+  if (kind === 'flag') return `<path d="M28.2 24.2h7.2v4.6h-4.2v6.4h-3z" fill="${ink}"/>`;
   return '';
 }
 
@@ -177,6 +184,7 @@ export function readSetProgress(state) {
     scores: safety.scores
   });
   if (course) rows.push(course);
+  for (const row of offRailProgress(state)) rows.push(row);
   return rows;
 }
 

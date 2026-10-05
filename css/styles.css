@@ -1833,3 +1833,22 @@ header{
 [data-table-game="kicksafe"] .ksConfirm{margin-top:8px;padding:10px 12px;border:1px solid #24507f;border-radius:12px;background:#071422}
 [data-table-game="kicksafe"] .ksConfirm p{margin:0 0 8px}
 [data-table-game="kicksafe"] .resultBar .rb.wide{flex:1 1 100%}
+
+/* Off the Rail. Drill Sets & Exams only. Does not restyle other exams. */
+.kickPage .kickTitle h1{font-size:22px}
+.kickPage .kickMeta{margin:4px 0 8px;font-weight:700;line-height:1.35}
+.kickPage .kickFacts{margin:8px 0;font-size:14px;line-height:1.4}
+.kickPage .kickSolve{display:flex;align-items:center;gap:10px;margin:6px 0}
+.kickDots{display:inline-flex;gap:6px;align-items:center}
+.kickDots i{width:14px;height:14px;border-radius:50%;border:2px solid #8aa4b8;display:block;box-sizing:border-box}
+.kickDots i.miss{background:#e23b4a;border-color:#e23b4a}
+.kickDots i.make{background:#1fa85a;border-color:#1fa85a}
+.kickStations{display:flex;gap:6px;margin:8px 0}
+.kickStations .kickStation{flex:1;min-height:44px;padding:6px 2px;border-radius:12px;border:1px solid #2a4a6c;background:#102033;color:#dcecff;font-weight:800;font-size:11px}
+.kickStations .kickStation.is-now{outline:2px solid var(--gold);color:var(--gold)}
+.kickStations .kickStation.is-pass{color:#7dffa8}
+.kickStations .kickStation.is-lock{opacity:.45}
+.kickPage .kickActs{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.kickPage .kickTip .cb-diagram{width:96px;height:96px;display:block}
+.kickPage .kickHist p{margin:4px 0}
+.buEntry.is-locked{opacity:.72}
