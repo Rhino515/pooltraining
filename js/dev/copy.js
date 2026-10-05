@@ -15,7 +15,7 @@
 import { lsSet } from '../storage.js';
 import { SUPABASE_URL, SUPABASE_KEY } from '../cloud/config.js';
 import { getClient, currentUser } from '../cloud/client.js';
-import { ownerAccountSignedIn, isOwnerEmail } from './dev.js';
+import { ownerAccountSignedIn, devModeOn, isOwnerEmail } from './dev.js';
 import { openSheet, closeSheet, toast } from '../ui/sheet.js';
 
 export const COPY_KEY = 'poolIQDevCopyV1';
@@ -61,8 +61,8 @@ export function otherAccountSignedIn() {
 }
 /** Published words replace shipped words for every visitor. */
 export function copyApplies() { return true; }
-/** Edit controls exist only for the signed-in owner account. */
-export function copyWritable() { return ownerAccountSignedIn(); }
+/** Edit controls exist only for the signed-in owner account with Dev Mode ON. */
+export function copyWritable() { return ownerAccountSignedIn() && devModeOn(); }
 
 function shippedText(node) {
   if (node.__shipped == null) node.__shipped = node.textContent;
@@ -275,7 +275,7 @@ export function consumeCopyClick(e) {
 }
 
 async function writeRow(key, text) {
-  if (!copyWritable()) return { error: 'Sign in as the owner account to edit. Nothing was changed.' };
+  if (!copyWritable()) return { error: 'Turn on Dev Mode on the owner account to edit. Nothing was changed.' };
   const user = currentUser();
   if (!user?.id) return { error: 'Sign in as the owner account to edit. Nothing was changed.' };
   const k = String(key || '');
@@ -306,7 +306,7 @@ export function publishCopyText(key, text) { return writeRow(key, text); }
 export function saveCopyText(key, text) { return writeRow(key, text); }
 
 export async function clearCopyKey(key) {
-  if (!copyWritable()) return { error: 'Sign in as the owner account to edit. Nothing was changed.' };
+  if (!copyWritable()) return { error: 'Turn on Dev Mode on the owner account to edit. Nothing was changed.' };
   const user = currentUser();
   if (!user?.id) return { error: 'Sign in as the owner account to edit. Nothing was changed.' };
   const k = String(key || '');
@@ -330,7 +330,7 @@ export async function clearCopyKey(key) {
   return { ok: true };
 }
 export async function resetAllCopy() {
-  if (!copyWritable()) return { error: 'Sign in as the owner account to edit. Nothing was changed.' };
+  if (!copyWritable()) return { error: 'Turn on Dev Mode on the owner account to edit. Nothing was changed.' };
   const user = currentUser();
   if (!user?.id) return { error: 'Sign in as the owner account to edit. Nothing was changed.' };
   try {

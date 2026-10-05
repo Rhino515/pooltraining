@@ -799,7 +799,7 @@ let state = storage.defaultState();
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
   const missing = walk(path.join(root, 'js')).filter((f) => f.endsWith('.js')).map((f) => './' + path.relative(root, f)).filter((f) => !sw.includes(`'${f}'`));
-  assert(/'pool-iq-v14-91'/.test(sw), 'service worker cache is pool-iq-v14-91');
+  assert(/'pool-iq-v14-92'/.test(sw), 'service worker cache is pool-iq-v14-92');
   assertAll('service worker precaches every JS module (incl. simulator + Create Drill)', missing.map((m) => `missing ${m}`));
   const wordN = { one: 1, two: 2, three: 3, four: 4 };
   const probs = [];
@@ -2076,7 +2076,7 @@ let state = storage.defaultState();
   const dash = src('js/dashboard.js');
   const friends = src('js/ui/friends.js');
   const vendor = src('js/vendor/supabase.js');
-  assert(/'pool-iq-v14-91'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw) && !/'pool-iq-v14-5c'/.test(sw), 'v14: service worker cache is pool-iq-v14-91');
+  assert(/'pool-iq-v14-92'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw) && !/'pool-iq-v14-5c'/.test(sw), 'v14: service worker cache is pool-iq-v14-92');
   assert(sw.includes(`'./js/vendor/supabase.js'`) && sw.includes(`'./js/cloud/controller.js'`) && sw.includes(`'./js/ui/account.js'`), 'v13: sw precaches the bundled supabase-js and the cloud modules');
   assert(/supabase-js\/2\.117\.2/.test(vendor) && /createClient/.test(vendor) && !/cdn\.jsdelivr|unpkg\.com|esm\.sh/.test(idx + sw), 'v13: official supabase-js v2 UMD build is bundled locally (no CDN)');
   assert(/nqfwlpfyccbqetcyjijf/.test(cfg) && /sb_publishable_/.test(cfg) && !/sb_secret_|service_role|sbp_[0-9a-f]{10}/.test(cfg + sql + docs), 'v13: config carries the project ref + publishable key only (no secrets anywhere)');
@@ -2285,7 +2285,7 @@ let state = storage.defaultState();
   assert(!fixSrc.includes('drill_overrides') && !saveFn.includes('.delete('), 'v14-26: the editor never deletes the published row');
   assert(oeSrc.includes('publishedDoc(ch.id)') && !oeSrc.slice(oeSrc.indexOf('export function applyDrillEdit'), oeSrc.indexOf('export function editCount')).includes('getDrillEdit'), 'v14-26: the live drill is the published row, not the phone copy');
   assert(pubSrc.includes('andrewaphay') === false && pubSrc.includes('ownerAccountSignedIn'), 'v14-26: the client refuses publish unless the owner account is signed in');
-  assert(swSrc.includes('pool-iq-v14-91') && swSrc.includes('skipWaiting') && swSrc.includes('clients.claim'), 'v14-28: new cache skipWaiting and clients.claim');
+  assert(swSrc.includes('pool-iq-v14-92') && swSrc.includes('skipWaiting') && swSrc.includes('clients.claim'), 'v14-28: new cache skipWaiting and clients.claim');
   assert(fixSrc.includes('id="fixImport"') && fixSrc.includes('accept=".pooliq,.json,application/json,application/octet-stream,text/plain,*/*"') && !fixSrc.includes('text/json'), 'v14-27: IMPORT DRILL accept lets Android select .pooliq and .json');
   assert(appSrc.includes('controllerchange') && appSrc.includes('pooliq-sw-reloaded') && appSrc.includes('location.reload()'), 'v14-26: an open app reloads once when the new worker activates');
   const PUB = await import(js('drills/published.js'));
@@ -2453,6 +2453,61 @@ let state = storage.defaultState();
   assert(devSrc.includes('dev-copy-open') && devSrc.includes('Hold any words') && !devSrc.includes('type="password"'), 'v14-35: hold or Edit opens the publisher, with no password field');
   assert(dashSrc.includes('ownerAccountSignedIn()') && dashSrc.includes('data-card="dev"'), 'v14-35: the settings Dev Mode card is owner-only');
   CL.setCurrentUserForTests(null);
+}
+
+// ---------------------------------------------------------------- v14-92: Dev Mode ON/OFF switch (owner account only)
+{
+  const DEV = await import(js('dev/dev.js'));
+  const DU = await import(js('ui/dev.js'));
+  const DASH = await import(js('dashboard.js'));
+  const CP = await import(js('dev/copy.js'));
+  const CL = await import(js('cloud/client.js'));
+  const G = await import(js('dev/gate.js'));
+  const OE = await import(js('drills/ownerEdits.js'));
+  const KC = await import(js('content/kickingCourse.js'));
+  const TS = await import(js('content/trickShotCourse.js'));
+  const TP = await import(js('ui/trickPlay.js'));
+  const KP = await import(js('ui/kickingPlay.js'));
+  G.setDevBypass(() => DEV.isUnlocked());
+  const st0 = storage.defaultState();
+  const screen = (make, args) => { let s = st0; const ctx = { getState: () => s, commit: (n) => (s = n), root: { innerHTML: '' } }; make(ctx, args).render(); return { html: ctx.root.innerHTML, state: s }; };
+  CL.setCurrentUserForTests(null);
+  assert(DEV.setDevModeOn(true).error && !DEV.isUnlocked() && !G.devBypass() && DU.devSwitchHTML() === '', 'v14-92: signed out cannot turn Dev Mode on and sees no switch');
+  CL.setCurrentUserForTests({ id: 'friend-1', email: 'friend@example.com' });
+  const friendSet = DEV.setDevModeOn(true);
+  assert(friendSet.error && !DEV.isUnlocked() && !G.devBypass() && !OE.drillEditorAllowed() && !CP.copyWritable(), 'v14-92: another account cannot turn Dev Mode on (no editor, no copy edit, no lock bypass)');
+  assert(!DASH.renderSettings(st0, {}).includes('data-dev-switch') && DU.renderDev({}).includes('data-dev-state="locked"'), 'v14-92: another account never sees the Dev Mode switch');
+  assert(screen(TP.createTrickScreen, []).html.includes('disabled data-trick-level="2"') && !screen(TP.createTrickScreen, []).html.includes('data-dev-open'), 'v14-92: another account keeps Trick Shot locks');
+  CL.setCurrentUserForTests({ id: 'owner-1', email: 'andrewaphay@gmail.com' });
+  DEV.saveDev({ ...DEV.loadDev(), on: undefined });
+  assert(DEV.devModeOn() && DEV.isUnlocked() && DASH.renderSettings(st0, {}).includes('data-dev-switch="on"'), 'v14-92: owner Dev Mode defaults to ON and the switch is in Settings → DEV MODE');
+  // OFF
+  assert(DEV.setDevModeOn(false).on === false && !DEV.isUnlocked() && !OE.drillEditorAllowed() && !CP.copyWritable() && !G.devBypass(), 'v14-92: owner OFF: no drill editor, no text editing, no lock bypass');
+  const offSettings = DASH.renderSettings(st0, {});
+  assert(offSettings.includes('data-dev-switch="off"') && !offSettings.includes('data-href="#dev"') && DU.renderDev({}).includes('data-dev-state="off"') && DU.renderDev({}).includes('data-dev-switch="off"'), 'v14-92: owner OFF: the switch stays reachable, the dev tools are hidden');
+  const tOff = screen(TP.createTrickScreen, []).html;
+  const kOff = screen(KP.createKickingScreen, []).html;
+  assert(tOff.includes('disabled data-trick-level="2"') && tOff.includes('data-trick-exam-locked="1"') && !tOff.includes('data-dev-open') && kOff.includes('disabled data-offrail-level="2"'), 'v14-92: owner OFF: Trick Shot and Off the Rail locks hold');
+  assert(screen(TP.createTrickScreen, ['2']).html.includes('data-trick-home="1"') && screen(KP.createKickingScreen, ['2']).html.includes('data-offrail-home="1"'), 'v14-92: owner OFF: a locked level link goes back to the list');
+  assert(!KC.offRailBannersHTML(st0).includes('data-dev-open') && !TS.trickBannersHTML(st0).includes('data-dev-open'), 'v14-92: owner OFF: the exam banners stay locked');
+  // ON
+  assert(DEV.setDevModeOn(true).on === true && DEV.isUnlocked() && OE.drillEditorAllowed() && CP.copyWritable() && G.devBypass(), 'v14-92: owner ON: editor, text editing and lock bypass are on');
+  const tOn = screen(TP.createTrickScreen, []).html;
+  const kOn = screen(KP.createKickingScreen, []).html;
+  assert(!tOn.includes('disabled data-trick-level') && tOn.includes('data-dev-open="1"') && !kOn.includes('disabled data-offrail-level'), 'v14-92: owner ON: every Trick Shot and Off the Rail level opens');
+  assert(KC.offRailBannersHTML(st0).includes('data-dev-open="1"') && TS.trickBannersHTML(st0).includes('data-dev-open="1"'), 'v14-92: owner ON: the locked exams open from Drill Sets');
+  const tPrev = screen(TP.createTrickScreen, ['3']);
+  assert(tPrev.html.includes('data-dev-preview="1"') && TS.readCourse(tPrev.state).current?.dev && TS.readCourse(tPrev.state).current?.mode === 'practice', 'v14-92: a locked Trick Shot level opens as a DEV PREVIEW');
+  let ts = tPrev.state;
+  for (let i = 0; i < 40 && TS.readCourse(ts).current?.phase === 'play'; i++) ts = TS.trickTap(ts, 'make', false);
+  assert(TS.readCourse(ts).current?.phase === 'results' && !TS.levelPassed(ts, 3) && !TS.levelUnlocked(ts, 4) && !Object.keys(TS.readCourse(ts).levels).length, 'v14-92: finishing a Trick Shot DEV PREVIEW saves nothing and unlocks nothing');
+  const kPrev = screen(KP.createKickingScreen, ['2']);
+  const kcur = KC.kickingOf(kPrev.state).current;
+  assert(kPrev.html.includes('data-dev-preview="1"') && kcur?.dev && kcur.mode === 'practice' && !KC.isLevelOpen(KC.kickingOf(kPrev.state), 2), 'v14-92: a locked Off the Rail level opens as a DEV PREVIEW (practice: nothing saved)');
+  assert(KC.startLevel(st0, 2) === st0 && TS.startLevel(st0, 2) === st0, 'v14-92: the normal unlock rules are unchanged');
+  DEV.setDevModeOn(true);
+  CL.setCurrentUserForTests(null);
+  assert(!G.devBypass(), 'v14-92: signing out ends the bypass');
 }
 
 console.log('\n--- Summary ---');

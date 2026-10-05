@@ -1,8 +1,17 @@
 # DEV MODE (v11)
 
-DEV MODE is on when **andrewaphay@gmail.com** is signed in. Open it from **Settings → DEV MODE**. There is no passcode and no unlock step.
+Only **andrewaphay@gmail.com** can use DEV MODE. There is no passcode.
 
-Other accounts and signed-out use stay locked. They do not see the Settings entry or editor controls.
+Other accounts and signed-out use stay locked. They do not see the Settings entry, the switch, or editor controls.
+
+## ON / OFF switch (v14-92)
+
+**Settings → DEV MODE** has an **ON / OFF** switch (also at the top of the `#dev` screen). It shows only while the owner account is signed in. It is saved on this device in `poolIQDevV1` (`on`). It starts **ON**.
+
+- **ON**: every edit button shows (drill EDIT, on-screen words Edit, owner Delete, DEV TOOLS). Every locked drill, level and stage opens: Drill Sets (Off the Rail levels and exam, Trick Shot levels and exam, Rack Dropping levels), Ball Pocketing levels, Career Drills stages and Endless, and My Content pack stages. A locked item opens as a **DEV PREVIEW**: it plays normally but saves nothing (no score, no stats, no XP, no unlock). Items you have already unlocked play normally and save normally.
+- **OFF**: no edit buttons anywhere. Locks work exactly as for every player until you pass them.
+
+The gate is `isUnlocked()` in `js/dev/dev.js`: owner email **and** the switch ON. Course screens ask `devBypass()` in `js/dev/gate.js` (wired to `isUnlocked()` by `app.js`). Boss battles / promotion tests stay locked (they promote your Career rank). Career XP, scoring and unlock rules are unchanged.
 
 ## No passcode
 

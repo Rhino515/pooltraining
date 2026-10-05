@@ -2,8 +2,11 @@
  * DEV MODE (Settings → DEV MODE). A CONVENIENCE LOCK ON THIS DEVICE — NOT SERVER SECURITY: anyone with the phone
  * and browser dev tools can read or change local data. It only keeps test tools out of everyday use.
  *
- *   • no passcode. The signed-in owner account (andrewaphay@gmail.com) is already the dev.
- *     Any other account, and signed-out use, stays locked. There is no unlock step.
+ *   • no passcode. Only the signed-in owner account (andrewaphay@gmail.com) can turn Dev Mode on.
+ *     Any other account, and signed-out use, stays locked and never sees the switch.
+ *   • the owner has an ON/OFF switch (Settings → DEV MODE). ON: edit buttons show and locked
+ *     drills/levels/stages open as previews (js/dev/gate.js). OFF: the app behaves exactly as for
+ *     any player. The switch is saved in poolIQDevV1 (`on`); it defaults to ON.
  *   • content overrides (js/dev/overrides.js), exported/re-imported as a .pooliq pack (stage ids ov--<game>--<stage>)
  *   • seeded test progression (flagged state.devSeed, excluded from public stats) and "restore my real progress"
  * Every dev action takes a vault snapshot first (done by app.js / ui/dev.js).
@@ -69,9 +72,19 @@ export function isOwnerEmail(email) {
 export function ownerAccountSignedIn() {
   return isOwnerEmail(currentUser()?.email);
 }
-/** True only while the owner account is signed in. A passcode cannot unlock this. */
+/** The owner's Dev Mode switch (saved on this device). Missing = ON, the behaviour before the switch existed. */
+export function devModeOn() {
+  return loadDev().on !== false;
+}
+/** Turn Dev Mode on or off. Only the signed-in owner account can change it. */
+export function setDevModeOn(on) {
+  if (!ownerAccountSignedIn()) return { error: 'Dev Mode is only for the owner account. Nothing was changed.' };
+  saveDev({ ...loadDev(), on: !!on });
+  return { on: !!on };
+}
+/** True only while the owner account is signed in AND the Dev Mode switch is ON. A passcode cannot unlock this. */
 export function isUnlocked() {
-  return ownerAccountSignedIn();
+  return ownerAccountSignedIn() && devModeOn();
 }
 /** Activity keeps the auto-lock timer fresh */
 export function touch(now = Date.now()) { if (isUnlocked(now)) session.last = now; }

@@ -6,6 +6,7 @@
 import { renderStageTable } from '../games/stageTable.js';
 import { getDrillById, displayDrillTitle } from '../drills.js';
 import { drillEditorAllowed, drillLink } from '../drills/ownerEdits.js';
+import { devBypass } from '../dev/gate.js';
 import { awardSession } from '../progression/sessions.js';
 import {
   applyShot, stopEarly, undoRun, present, statusLine, shotButtons, buMeta, newRun, withExamScore, examInstructions, BU_CREDIT
@@ -355,7 +356,9 @@ function createMorePlay(ctx, { id, exam = false } = {}) {
     let actions = '';
     if (meta.kind === 'rack') {
       const prog = rdsProgress(moreExamOf(ctx.getState(), 'rds'));
-      const locked = exam && meta.n > prog.unlocked;
+      const realLocked = exam && meta.n > prog.unlocked;
+      const locked = realLocked && !devBypass(); // Dev Mode ON: a locked RDS level opens as a DEV PREVIEW
+      if (realLocked && !locked) actions = '<p class="card devBanner" data-dev-preview="1">DEV PREVIEW · this level is still locked. Nothing is saved.</p>';
       if (locked) {
         actions = `<p class="buScoreLine">Locked. Pass Level ${meta.n - 1} first.</p>
           <button type="button" class="bigBtn" data-action="go" data-href="${list}">BACK TO THE SET</button>`;
@@ -363,13 +366,13 @@ function createMorePlay(ctx, { id, exam = false } = {}) {
         const o = rdsOutcome(run.runs, meta.n);
         const go = o.next !== meta.n;
         const label = o.move === 'up' ? 'NEXT HIGHER LEVEL' : 'NEXT LOWER LEVEL';
-        actions = `<p class="buScoreLine" data-rds-result="1">${esc(o.line)}</p>
+        actions += `<p class="buScoreLine" data-rds-result="1">${esc(o.line)}</p>
           ${go ? `<button type="button" class="bigBtn" data-action="go" data-href="#play/drills/bu-rds${o.next}/exam">${label}</button>` : ''}
           <button type="button" class="bigBtn alt" data-action="bu-again">RUN 3 MORE</button>
           <button type="button" class="bigBtn alt" data-action="go" data-href="${list}">THE SET</button>`;
       } else {
         const labels = meta.buttons;
-        actions = `<div class="buBar">
+        actions += `<div class="buBar">
           <button type="button" class="bigBtn" data-action="bu-hit" data-ok="1">${esc(labels[0])}</button>
           <button type="button" class="bigBtn alt" data-action="bu-hit" data-ok="0">${esc(labels[1])}</button>
         </div>
@@ -419,7 +422,7 @@ function createMorePlay(ctx, { id, exam = false } = {}) {
   function onAction(action, el) {
     if (action === 'bu-hit') {
       if (run.done) return true;
-      if (meta.kind === 'rack' && exam && meta.n > rdsProgress(moreExamOf(ctx.getState(), 'rds')).unlocked) return true;
+      if (meta.kind === 'rack' && exam && meta.n > rdsProgress(moreExamOf(ctx.getState(), 'rds')).unlocked && !devBypass()) return true;
       run = moreApply(id, run, { ok: el?.dataset?.ok === '1' });
       persist();
       render();

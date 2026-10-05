@@ -27,7 +27,9 @@ import { setProgressBoxHTML, completedSetsLineHTML } from './content/setProgress
 import { safetyBannerHTML } from './content/safetyMaster.js';
 import { offRailBannersHTML } from './content/kickingCourse.js';
 import { trickBannersHTML } from './content/trickShotCourse.js';
-import { ownerAccountSignedIn } from './dev/dev.js';
+import { ownerAccountSignedIn, isUnlocked as devOn } from './dev/dev.js';
+import { devBypass } from './dev/gate.js';
+import { devSwitchHTML } from './ui/dev.js';
 import { homeAuthHTML } from './ui/account.js';
 export { homeAuthHTML };
 
@@ -232,17 +234,20 @@ export function renderGameLobby(state, gameId) {
   };
   const rows = specs.map((s, i) => {
     const rec = gs.stages?.[s.id];
-    const open = E.isStageUnlocked(state, gameId, s.id);
+    const real = E.isStageUnlocked(state, gameId, s.id);
+    const devOpen = !real && devBypass(); // Dev Mode ON: a locked stage opens as a DEV PREVIEW
+    const open = real || devOpen;
     // v12: the first open, not-yet-passed stage gets the gold "current level" ring
-    const current = open && !rec?.passed && !currentSet;
+    const current = real && !rec?.passed && !currentSet;
     if (current) currentSet = true;
-    return `<button type="button" class="stageRow card ${open ? '' : 'locked'} ${rec?.passed ? 'passed' : ''}${current ? ' current' : ''}" data-action="${open ? 'go' : 'locked-stage'}" data-href="#play/${gameId}/${s.id}" data-stage="${s.id}" data-open="${open ? 1 : 0}">
+    return `<button type="button" class="stageRow card ${open ? '' : 'locked'} ${rec?.passed ? 'passed' : ''}${current ? ' current' : ''}" data-action="${open ? 'go' : 'locked-stage'}" data-href="#play/${gameId}/${s.id}" data-stage="${s.id}" data-open="${real ? 1 : 0}"${devOpen ? ' data-dev-open="1"' : ''}>
       ${(() => { const t = thumb(s.id); return `<span class="srLead${t ? ' hasThumb' : ''}">${t}<span class="srNum">${i + 1}</span></span>`; })()}
       <span class="srMain"><b>${esc(displayDrillTitle(s.name))}</b><small>${esc((s.instructions || '').slice(0, 90))}${(s.instructions || '').length > 90 ? '…' : ''}</small></span>
-      <span class="srSide">${open ? `${stars(rec?.bestStars || 0)}<small>${rec ? `Best ${rec.bestScore}` : 'New'}</small>${rec ? starsHTML(masteryOf(state, stageItem(gameId, s, i).key)) : ''}` : '<span class="lock">🔒</span>'}</span>
+      <span class="srSide">${devOpen ? '<span class="lock">🔓</span><small>DEV PREVIEW</small>' : open ? `${stars(rec?.bestStars || 0)}<small>${rec ? `Best ${rec.bestScore}` : 'New'}</small>${rec ? starsHTML(masteryOf(state, stageItem(gameId, s, i).key)) : ''}` : '<span class="lock">🔒</span>'}</span>
     </button>`;
   });
-  const endless = g.endless ? (E.isEndlessUnlocked(state, gameId) ? `<button type="button" class="stageRow card endless" data-action="go" data-href="#play/${gameId}/endless" data-stage="endless"><span class="srNum">∞</span><span class="srMain"><b>Endless Mode</b><small>Random bank layouts, rising difficulty, 3 lives.</small></span><span class="srSide"><small>Best ${gs.pb?.endlessBest || 0}</small></span></button>` : `<div class="stageRow card locked"><span class="srNum">∞</span><span class="srMain"><b>Endless Mode</b><small>Pass the final stage to unlock.</small></span><span class="srSide lock">🔒</span></div>`) : '';
+  const endlessReal = g.endless && E.isEndlessUnlocked(state, gameId);
+  const endless = g.endless ? (endlessReal || devBypass() ? `<button type="button" class="stageRow card endless" data-action="go" data-href="#play/${gameId}/endless" data-stage="endless"${endlessReal ? '' : ' data-dev-open="1"'}><span class="srNum">∞</span><span class="srMain"><b>Endless Mode</b><small>Random bank layouts, rising difficulty, 3 lives.</small></span><span class="srSide">${endlessReal ? `<small>Best ${gs.pb?.endlessBest || 0}</small>` : '<span class="lock">🔓</span><small>DEV PREVIEW</small>'}</span></button>` : `<div class="stageRow card locked"><span class="srNum">∞</span><span class="srMain"><b>Endless Mode</b><small>Pass the final stage to unlock.</small></span><span class="srSide lock">🔒</span></div>`) : '';
   const hist = (gs.sessions || []).slice(-6).reverse().map((h) => `<div class="historyRow"><span>${esc(displayDrillTitle(specs.find((s) => s.id === h.stageId)?.name || (h.stageId === 'endless' ? 'Endless' : h.stageId)))}</span><span class="${h.passed ? 'green' : 'muted'}">${h.passed ? 'PASS' : '—'} ${h.score}</span><span class="muted">${new Date(h.date).toLocaleDateString()}</span></div>`).join('');
   const cal = gameId === 'speed' ? calibrationCard(state) + threeLaneCard(state) : '';
   return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#drills">‹ Drills</button><span class="eyebrow">${g.icon} ${esc(g.name.toUpperCase())}</span><h1>${esc(g.name)}</h1><p>${esc(g.tagline)}</p></div>
@@ -385,7 +390,8 @@ function ballPocketCategory(state, bpViewLevel) {
   const viewing = BALL_POCKET_LEVELS.includes(Number(bpViewLevel)) ? Number(bpViewLevel) : status.current;
   const list = ballPocketDrills().filter((d) => d.level === viewing && !isDrillHidden(d.id));
   const done = list.filter((d) => state.games?.drills?.stages?.[d.id]?.passed).length;
-  const locked = viewing > status.current;
+  const locked = viewing > status.current; // the real lock; Dev Mode ON opens these drills as previews (drillCard)
+  const devOpen = locked && devBypass();
   const text = BALL_POCKET_TEXT[viewing] || '';
   const next = status.complete ? 'Every level is at bronze or better.' : (status.done >= status.total ? '' : `Bronze or better on every Level ${status.current} drill opens Level ${Math.min(5, status.current + 1)}.`);
   const chips = BALL_POCKET_LEVELS.map((lv) => `<button type="button" class="chip${lv === viewing ? ' active' : ''}" data-action="bp-level" data-v="${lv}">${lv === status.current ? 'Level ' : ''}${lv}${lv === status.current ? ' · now' : ''}</button>`).join('');
@@ -403,7 +409,7 @@ function ballPocketCategory(state, bpViewLevel) {
       <div class="bpBadgeRow">${BALL_POCKET_LEVELS.map((lv) => `<span class="bpMini${lv === status.current ? ' on' : ''}${lv < status.current || status.complete ? ' earned' : ''}" data-bp-badge="${lv}">${ballPocketBadgeSVG(lv)}</span>`).join('')}</div>
       <div class="bpLevels">${chips}</div>
     </div>
-    <h3 class="bpLevel">${esc(list[0]?.levelLabel || `LEVEL ${viewing}`)}${locked ? ' · locked' : ''}</h3>
+    <h3 class="bpLevel">${esc(list[0]?.levelLabel || `LEVEL ${viewing}`)}${locked ? (devOpen ? ' · locked · Dev Mode preview' : ' · locked') : ''}</h3>
     <p class="bpCopy">${esc(text)}</p>
     <p class="muted small">${done} of ${list.length} on this level at bronze or better.${locked ? ' Finish the current level to train these.' : ''}</p>
     <div class="grid">${list.map((d) => drillCard(state, d, { locked })).join('')}</div>
@@ -411,11 +417,12 @@ function ballPocketCategory(state, bpViewLevel) {
 }
 function drillCard(state, d, opts = {}) {
   const rec = state.games?.drills?.stages?.[d.id];
-  const open = isDrillUnlocked(d, state) && !opts.locked;
+  const real = isDrillUnlocked(d, state) && !opts.locked;
+  const open = real || devBypass(); // Dev Mode ON: locked drills open (Ball Pocketing level locks play as a DEV PREVIEW)
   const meta = `${d.custom ? '<span class="tag mine">MY DRILL</span> ' : ''}${d.contentUid ? `<span class="tag imp" data-badge="${d.imported ? 'imported' : 'custom'}">${d.imported ? 'IMPORTED' : 'MY CONTENT'}</span> ` : ''}<span class="tag">${esc(displayDrillTitle(d.category))}</span>${d.difficulty ? ` <span class="tag">Level ${d.difficulty}</span>` : ''}`;
   const ms = rec ? masteryOf(state, drillItem(d).key) : 0;
   const pb = rec ? `<small class="pbLine">${starsHTML(ms)} Best ${rec.bestScore || 0} pts${rec.bestStars ? ` · ${'★'.repeat(rec.bestStars)}` : ''} · ${rec.tries || 0} session${rec.tries === 1 ? '' : 's'}${rec.passed ? ' · passed ✓' : ''}</small>` : '';
-  const del = ownerAccountSignedIn() ? `<button type="button" class="miniAct danger" data-action="drill-del" data-id="${esc(d.id)}">Delete</button>` : '';
+  const del = devOn() ? `<button type="button" class="miniAct danger" data-action="drill-del" data-id="${esc(d.id)}">Delete</button>` : '';
   const tools = d.custom ? `<div class="drillBtns"><button type="button" class="miniAct" data-action="drill-edit" data-id="${esc(d.id)}">Edit</button><button type="button" class="miniAct" data-action="drill-dup" data-id="${esc(d.id)}">Duplicate</button><button type="button" class="miniAct" data-action="drill-history" data-id="${esc(d.id)}">History</button><button type="button" class="miniAct" data-action="drill-export" data-id="${esc(d.id)}">Export</button>${del}</div>` : d.contentUid ? `<div class="drillBtns"><button type="button" class="miniAct" data-action="go" data-href="#cview/${esc(d.contentUid)}">My Content</button><button type="button" class="miniAct" data-action="go" data-href="#cedit/${esc(d.contentUid)}">Edit</button><button type="button" class="miniAct" data-action="drill-history" data-id="${esc(d.id)}">History</button></div>` : '';
   const diagram = d.pdfTable
     ? `<img class="table-diagram mini drill-diagram" src="${esc(d.pdfTable)}" alt="${esc(displayDrillTitle(d.name))}" />`
@@ -445,7 +452,7 @@ export function renderSettings(state, info = {}) {
     </div>
     <div class="card settingsCard" data-card="profile"><div class="eyebrow">PLAYER PROFILE</div><p class="muted small">Your name and photo (shown on Profile and in friend matches). ${info.signedIn ? 'Saved on this device, in your backups, and synced to your online account (friends see them on the leaderboard).' : 'Stored only on this device and in your backups — until you sign in to an online account.'}</p><button type="button" class="bigBtn alt" data-action="go" data-href="#me">EDIT PROFILE</button></div>
     ${installCardHTML(info)}
-    ${ownerAccountSignedIn() ? '<div class="card settingsCard devCard" data-card="dev"><div class="eyebrow">DEV MODE</div><p class="muted small">You are signed in as the owner, so these tools are already on. There is no passcode.</p><button type="button" class="bigBtn alt" data-action="go" data-href="#dev">DEV MODE</button></div>' : ''}
+    ${ownerAccountSignedIn() ? `<div class="card settingsCard devCard" data-card="dev"><div class="eyebrow">DEV MODE</div><p class="muted small">Only this owner account can use Dev Mode. There is no passcode.</p>${devSwitchHTML()}${devOn() ? '<button type="button" class="bigBtn alt" data-action="go" data-href="#dev">DEV TOOLS</button>' : ''}</div>` : ''}
     <div class="card settingsCard dangerCard"><div class="eyebrow">DANGER ZONE</div><p class="muted small">Clears stages, Ghost matches, bosses, calibration and rank. A snapshot is taken first, so it can be undone from “Restore previous snapshot”.</p><button type="button" class="bigBtn danger" data-action="reset-all">RESET ALL PROGRESS</button></div>`;
 }
 

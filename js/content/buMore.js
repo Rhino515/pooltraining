@@ -8,6 +8,7 @@
 import { challengeFromPkfDoc } from './pkfBuiltins.js';
 import { validatePooliq } from './schema.js';
 import { restartAskHTML } from './buExam2.js';
+import { devBypass } from '../dev/gate.js';
 
 export const MORE_CREDIT = 'Billiard University / Dr. Dave — billiarduniversity.org';
 
@@ -646,11 +647,13 @@ export function moreExamPageHTML(state, which) {
   if (prog) for (const row of prog.sets) latest[row.level] = row;
   const rows = drills.map((d, i) => {
     if (which === 'rds') {
-      const open = d.n <= prog.unlocked;
+      const real = d.n <= prog.unlocked;
+      const open = real || devBypass(); // Dev Mode ON: locked levels open as a DEV PREVIEW (withMoreScore saves nothing for them)
       const row = latest[d.n];
       const bits = [RDS_RATINGS[d.n - 1]];
       if (row) bits.push(`${row.runs} out of 3 · ${rdsMoveWord(row.move)}`);
       else if (!open) bits.push('Locked');
+      else if (!real) bits.push('Locked · Dev preview');
       const cls = `stageRow card${prog.passed.has(d.n) ? ' passed' : ''}${d.n === prog.current ? ' current' : ''}${open ? '' : ' locked'}`;
       const inner = `<span class="srNum">${i + 1}</span><span class="srMain"><b>${esc(d.name)}</b><small>${esc(bits.join(' · '))}</small></span>`;
       if (!open) return `<div class="${cls}" data-rds-locked="${d.n}">${inner}</div>`;

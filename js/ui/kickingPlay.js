@@ -8,8 +8,9 @@ import {
   startLevel, startExam, kickTap, kickUndo, kickView, kickPractice, kickRetry,
   courseStats, diagramHTML, howToHTML, ballName, diamondPhrase, freshStation, stationMax,
   difficultyOf, attemptsFor, pocketRequired, designatedPocket, difficultyNote, setDifficulty, DIFFICULTIES,
-  levelById, nextLevelId
+  levelById, nextLevelId, previewLevel, previewExam
 } from '../content/kickingCourse.js';
+import { devBypass } from '../dev/gate.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
@@ -62,7 +63,8 @@ function playHTML(state, showSolution, howOpen) {
   const cur = kc.current;
   const exam = cur.mode === 'exam' || cur.parent === 'exam';
   const stations = exam ? EXAM_STATIONS : levelById(cur.level).stations;
-  const view = Math.min(cur.view ?? cur.cursor, cur.cursor);
+  const peek = devBypass(); // Dev Mode ON: every shot in the run can be looked at
+  const view = peek ? Math.min(cur.view ?? cur.cursor, cur.order.length - 1) : Math.min(cur.view ?? cur.cursor, cur.cursor);
   const si = cur.order[view];
   const station = stations[si];
   const diff = difficultyOf(kc.difficulty).id;
@@ -72,7 +74,7 @@ function playHTML(state, showSolution, howOpen) {
   const live = view === cur.cursor && !rec.done && cur.phase === 'play';
   const { score, max } = running(cur, stations);
   const shotNo = view + 1;
-  const title = exam ? EXAM_TITLE : (cur.mode === 'practice' ? 'Practice' : levelById(cur.level).name);
+  const title = exam ? EXAM_TITLE : (cur.mode === 'practice' && !cur.dev ? 'Practice' : levelById(cur.level).name);
   const used = marks.filter((m) => m !== 'empty').length;
   const attemptN = rec.done ? (rec.madeOn || used) : (used + 1);
   const rails = station.rails.map((r, i) => `${i + 1}. ${r === 'top' ? 'top long rail' : r === 'bottom' ? 'bottom long rail' : r === 'left' ? 'head short rail' : 'foot short rail'}`).join(' · ');
@@ -82,10 +84,11 @@ function playHTML(state, showSolution, howOpen) {
     const now = i === cur.cursor && cur.phase === 'play';
     const cls = locked ? 'is-lock' : now ? 'is-now' : done && cur.stations[idx]?.success ? 'is-pass' : 'is-seen';
     const mark = locked ? '<span class="kickLock" aria-hidden="true">🔒</span>' : (done && cur.stations[idx]?.success ? '✓' : now ? '●' : '○');
-    return `<button type="button" class="kickStation ${cls}" data-action="kick-view" data-i="${i}" ${locked ? 'disabled' : ''}>SHOT ${i + 1} ${mark}</button>`;
+    return `<button type="button" class="kickStation ${cls}" data-action="kick-view" data-i="${i}" ${locked && !peek ? 'disabled' : ''}>SHOT ${i + 1} ${mark}</button>`;
   }).join('');
-  return `<div class="playScreen kickPage" data-offrail-play="1" data-offrail-mode="${esc(cur.mode)}" data-level="${cur.level || 0}">
+  return `<div class="playScreen kickPage" data-offrail-play="1" data-offrail-mode="${esc(cur.mode)}" data-level="${cur.level || 0}"${cur.dev ? ' data-dev-preview="1"' : ''}>
     <div class="title kickTitle"><button type="button" class="linkish back" data-action="go" data-href="${exam ? '#courses' : '#kicking'}">‹ Back</button><span class="eyebrow">${esc(COURSE_TITLE.toUpperCase())}</span><h1>${esc(title)}</h1></div>
+    ${devPreviewNote(cur)}
     ${difficultyHTML(diff)}
     <p class="kickMeta">Shot ${shotNo} of ${cur.order.length} · Score ${score} / ${max} · Attempt ${attemptN} of ${attempts}<br>Pass requirement: ${KICK_SCORE.passPercent}%</p>
     <div class="kickTable" data-kick-table>${diagramHTML(station, { solution: showSolution, difficulty: diff })}</div>
@@ -96,6 +99,10 @@ function playHTML(state, showSolution, howOpen) {
     ${live ? `<div class="kickActs">${buttonsHTML(station, diff)}<button type="button" class="bigBtn alt" data-action="kick-undo">Undo</button></div>` : (view !== cur.cursor ? `<button type="button" class="bigBtn alt" data-action="kick-view" data-i="${cur.cursor}">Back to shot ${cur.cursor + 1}</button>` : '')}
     <p class="muted small">Shoot this on your table. The app does not hit the balls.</p>
   </div>`;
+}
+
+function devPreviewNote(cur) {
+  return cur?.dev ? '<p class="card devBanner" data-dev-preview="1">DEV PREVIEW · this is still locked. Nothing is saved: no score, no stats, no unlock.</p>' : '';
 }
 
 function resultsHTML(state) {
@@ -119,7 +126,7 @@ function resultsHTML(state) {
   const practiceBtn = !practice && !passed && sum.failed.length
     ? `<button type="button" class="bigBtn alt" data-action="kick-practice">Practice these</button>`
     : '';
-  const practiceNote = practice ? '<p class="muted">Practice only. Your saved score was not changed.</p>' : '';
+  const practiceNote = cur.dev ? devPreviewNote(cur) : practice ? '<p class="muted">Practice only. Your saved score was not changed.</p>' : '';
   const history = exam && kc.exam.history?.length
     ? `<div class="kickHist"><b>History</b>${kc.exam.history.map((h) => `<p>${esc(new Date(h.at).toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }))} PT · ${h.score} / ${h.max} · ${h.passed ? 'pass' : 'not passed'}</p>`).join('')}</div>`
     : '';
@@ -150,10 +157,11 @@ function resultsHTML(state) {
 function listHTML(state) {
   const kc = kickingOf(state);
   const rows = LEVELS.map((level) => {
-    const open = isLevelOpen(kc, level.n);
+    const real = isLevelOpen(kc, level.n);
+    const open = real || devBypass(); // Dev Mode ON: locked levels open as a DEV PREVIEW
     const rec = levelRecord(kc, level.n);
-    const tag = rec?.passed ? 'Passed' : rec ? `Best ${rec.bestScore} / ${rec.bestMax}` : open ? 'Open' : 'Locked';
-    const mark = !open ? '🔒' : rec?.passed ? '✓' : '●';
+    const tag = rec?.passed ? 'Passed' : rec ? `Best ${rec.bestScore} / ${rec.bestMax}` : real ? 'Open' : open ? 'Locked · Dev preview' : 'Locked';
+    const mark = !real ? (open ? '🔓' : '🔒') : rec?.passed ? '✓' : '●';
     return `<button type="button" class="stageRow card${open ? '' : ' locked'}" data-action="go" data-href="#kicking/${level.n}" ${open ? '' : 'disabled'} data-offrail-level="${level.n}"><span class="srNum">${mark}</span><span class="srMain"><b>${esc(level.name)}</b><small>${esc(level.blurb)} · ${esc(tag)}</small></span></button>`;
   }).join('');
   const passed = passedLevelCount(kc);
@@ -206,15 +214,17 @@ export function createKickingScreen(ctx, args) {
     if (kind === 'list') { ctx.root.innerHTML = listHTML(state0); return; }
     if (kind === 'stats') { ctx.root.innerHTML = statsHTML(state0); return; }
     if (kind === 'exam') {
-      if (!isExamOpen(kickingOf(state0))) { ctx.root.innerHTML = lockedExamHTML(state0); return; }
-      const next = startExam(state0);
+      const examReal = isExamOpen(kickingOf(state0));
+      if (!examReal && !devBypass()) { ctx.root.innerHTML = lockedExamHTML(state0); return; }
+      const next = examReal ? startExam(state0) : previewExam(state0);
       const state = next === state0 ? state0 : ctx.commit(next);
       const cur = kickingOf(state).current;
       ctx.root.innerHTML = cur?.phase === 'results' ? resultsHTML(state) : playHTML(state, showSolution, howOpen);
       return;
     }
-    if (!isLevelOpen(kickingOf(state0), level)) { ctx.root.innerHTML = listHTML(state0); return; }
-    const next = startLevel(state0, level);
+    const levelReal = isLevelOpen(kickingOf(state0), level);
+    if (!levelReal && (!devBypass() || !levelById(level))) { ctx.root.innerHTML = listHTML(state0); return; }
+    const next = levelReal ? startLevel(state0, level) : previewLevel(state0, level);
     const state = next === state0 ? state0 : ctx.commit(next);
     const cur = kickingOf(state).current;
     ctx.root.innerHTML = cur?.phase === 'results' ? resultsHTML(state) : playHTML(state, showSolution, howOpen);
@@ -250,7 +260,7 @@ export function createKickingScreen(ctx, args) {
       return true;
     }
     if (action === 'kick-view') {
-      ctx.commit(kickView(ctx.getState(), Number(el.dataset.i)));
+      ctx.commit(kickView(ctx.getState(), Number(el.dataset.i), { peek: devBypass() }));
       render();
       return true;
     }

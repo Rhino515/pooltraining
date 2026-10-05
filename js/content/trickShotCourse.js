@@ -8,6 +8,7 @@
  */
 import { renderTableDiagram } from '../tableDiagram.js';
 import { cueBallSVG } from '../games/cueBallDiagram.js';
+import { devBypass } from '../dev/gate.js';
 
 export const COURSE_TITLE = 'Trick Shot Course';
 export const EXAM_TITLE = 'Trick Shot Exam';
@@ -707,7 +708,8 @@ export function beginTrick(state, spec) {
     phase: 'play',
     shots: spec.order.map(() => ({ makes: [], attempts: [] })),
     summary: null,
-    undoSave: null
+    undoSave: null,
+    ...(spec.dev ? { dev: true } : {})
   };
   return withCourse(state, course);
 }
@@ -715,14 +717,30 @@ export function startLevel(state, levelId) {
   const id = Number(levelId);
   if (!levelUnlocked(state, id)) return state;
   const cur = readCourse(state).current;
-  if (cur && Number(cur.level) === id && (cur.mode === 'level' || (cur.mode === 'practice' && cur.parent === 'level'))) return state;
+  if (cur && !cur.dev && Number(cur.level) === id && (cur.mode === 'level' || (cur.mode === 'practice' && cur.parent === 'level'))) return state;
   return beginTrick(state, { mode: 'level', level: id, order: [0, 1, 2, 3] });
 }
 export function startExam(state) {
   if (!examUnlocked(state)) return state;
   const cur = readCourse(state).current;
-  if (cur && (cur.mode === 'exam' || (cur.mode === 'practice' && cur.parent === 'exam'))) return state;
+  if (cur && !cur.dev && (cur.mode === 'exam' || (cur.mode === 'practice' && cur.parent === 'exam'))) return state;
   return beginTrick(state, { mode: 'exam', level: 0, order: EXAM_SHOTS.map((_, i) => i) });
+}
+/**
+ * DEV PREVIEW (Dev Mode ON, js/dev/gate.js): open a level or the exam that is still locked.
+ * It runs as practice, so finalizeTrick() saves nothing — no level record, no exam result.
+ */
+export function previewLevel(state, levelId, restart = false) {
+  const id = Number(levelId);
+  if (!LEVELS.some((l) => l.id === id)) return state;
+  const cur = readCourse(state).current;
+  if (!restart && cur && cur.dev && cur.parent === 'level' && Number(cur.level) === id) return state;
+  return beginTrick(state, { mode: 'practice', level: id, order: [0, 1, 2, 3], parent: 'level', dev: true });
+}
+export function previewExam(state, restart = false) {
+  const cur = readCourse(state).current;
+  if (!restart && cur && cur.dev && cur.parent === 'exam') return state;
+  return beginTrick(state, { mode: 'practice', level: 0, order: EXAM_SHOTS.map((_, i) => i), parent: 'exam', dev: true });
 }
 function finalizeTrick(state, course) {
   const cur = course.current;
@@ -781,12 +799,13 @@ export function trickUndo(state) {
   if (last === 'make') slot.makes.pop();
   return withCourse(state, course);
 }
-export function trickView(state, index) {
+export function trickView(state, index, { peek = false } = {}) {
   const course = readCourse(state);
   const cur = course.current;
   if (!cur || cur.phase !== 'play') return state;
   const i = Number(index);
-  if (i < 0 || i > cur.cursor) return state;
+  // peek (Dev Mode ON) may look at a later shot; it never records anything
+  if (i < 0 || i >= cur.shots.length || (!peek && i > cur.cursor)) return state;
   cur.view = i;
   return withCourse(state, course);
 }
@@ -805,6 +824,7 @@ export function trickReplay(state) {
   if (!cur) return state;
   const exam = cur.mode === 'exam' || cur.parent === 'exam';
   const level = cur.level;
+  if (cur.dev) return exam ? previewExam(state, true) : previewLevel(state, level, true);
   course.current = null;
   const cleared = withCourse(state, course);
   return exam ? startExam(cleared) : startLevel(cleared, level);
@@ -879,7 +899,9 @@ export function trickBannersHTML(state) {
   const course = `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#trick" data-trick="course"><span class="simPromoText"><span class="eyebrow">DRILL SET</span><b>${esc(COURSE_TITLE)}</b><small>${PASS_RULE} ${n} levels, then the exam.</small></span><span class="simPromoGo">›</span></button>`;
   const exam = open
     ? `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#trick/exam" data-trick="exam"><span class="simPromoText"><span class="eyebrow">EXAM</span><b>${esc(EXAM_TITLE)}</b><small>8 shots, one skill each. Make each shot 3 times.</small></span><span class="simPromoGo">›</span></button>`
-    : `<div class="card simPromo buEntry is-locked" data-trick="exam" data-trick-locked="1"><span class="simPromoText"><span class="eyebrow">EXAM</span><b>${esc(EXAM_TITLE)}</b><small>Locked until all ${n} levels are passed.</small></span></div>`;
+    : devBypass()
+      ? `<button type="button" class="card simPromo buEntry is-locked" data-action="go" data-href="#trick/exam" data-trick="exam" data-trick-locked="1" data-dev-open="1"><span class="simPromoText"><span class="eyebrow">EXAM · DEV PREVIEW</span><b>${esc(EXAM_TITLE)}</b><small>Locked until all ${n} levels are passed. Dev Mode opens it as a preview; nothing is saved.</small></span><span class="simPromoGo">›</span></button>`
+      : `<div class="card simPromo buEntry is-locked" data-trick="exam" data-trick-locked="1"><span class="simPromoText"><span class="eyebrow">EXAM</span><b>${esc(EXAM_TITLE)}</b><small>Locked until all ${n} levels are passed.</small></span></div>`;
   return course + exam;
 }
 

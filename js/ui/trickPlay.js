@@ -7,8 +7,14 @@ import {
   COURSE_TITLE, EXAM_TITLE, PASS_RULE, LEVELS, TRICK_SCORE,
   levelUnlocked, levelPassed, levelRecord, examUnlocked, readCourse,
   startLevel, startExam, trickTap, trickUndo, trickView, trickPractice, trickReplay,
-  shotsInRun, runMax, scoreRun, diagramHTML, cueGraphicHTML, howToHTML, solutionText, starsHTML
+  shotsInRun, runMax, scoreRun, diagramHTML, cueGraphicHTML, howToHTML, solutionText, starsHTML,
+  previewLevel, previewExam
 } from '../content/trickShotCourse.js';
+import { devBypass } from '../dev/gate.js';
+
+function devPreviewNote(cur) {
+  return cur?.dev ? '<p class="card devBanner" data-dev-preview="1">DEV PREVIEW · this is still locked. Nothing is saved: no score, no unlock.</p>' : '';
+}
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
@@ -22,12 +28,13 @@ function playHTML(state, showSolution) {
   const cur = course.current;
   const exam = cur.mode === 'exam' || cur.parent === 'exam';
   const shots = shotsInRun(cur);
-  const view = Math.min(cur.view ?? cur.cursor, cur.cursor);
+  const peek = devBypass(); // Dev Mode ON: every shot in the run can be looked at
+  const view = peek ? Math.min(cur.view ?? cur.cursor, cur.shots.length - 1) : Math.min(cur.view ?? cur.cursor, cur.cursor);
   const shot = shots[view];
   const slot = cur.shots[view];
   const live = view === cur.cursor && !((slot?.makes?.length || 0) >= TRICK_SCORE.makesRequired) && cur.phase === 'play';
   const running = scoreRun(cur);
-  const title = exam ? EXAM_TITLE : (cur.mode === 'practice' ? 'Practice' : LEVELS.find((l) => l.id === Number(cur.level))?.title);
+  const title = exam ? EXAM_TITLE : (cur.mode === 'practice' && !cur.dev ? 'Practice' : LEVELS.find((l) => l.id === Number(cur.level))?.title);
   const row = cur.order.map((idx, i) => {
     const done = (cur.shots[i]?.makes?.length || 0) >= TRICK_SCORE.makesRequired;
     const locked = i > cur.cursor;
@@ -35,7 +42,7 @@ function playHTML(state, showSolution) {
     const cls = locked ? 'is-lock' : now ? 'is-now' : done ? 'is-pass' : 'is-seen';
     const mark = locked ? '<span class="kickLock" aria-hidden="true">🔒</span>' : done ? '✓' : now ? '●' : '○';
     const name = shots[i]?.name || '';
-    return `<button type="button" class="kickStation ${cls}" data-action="trick-view" data-i="${i}" aria-label="${esc(name)}" ${locked ? 'disabled' : ''}>${i + 1} ${mark}</button>`;
+    return `<button type="button" class="kickStation ${cls}" data-action="trick-view" data-i="${i}" aria-label="${esc(name)}" ${locked && !peek ? 'disabled' : ''}>${i + 1} ${mark}</button>`;
   }).join('');
   const makes = slot?.makes?.length || 0;
   const bonus = shot.bonus && shot.objective !== 'pocket-and-zone'
@@ -47,8 +54,9 @@ function playHTML(state, showSolution) {
       ${bonus}
       <button type="button" class="bigBtn alt" data-action="trick-undo">Undo</button>
     </div>` : (view !== cur.cursor ? `<button type="button" class="bigBtn alt" data-action="trick-view" data-i="${cur.cursor}">Back to ${esc(shots[cur.cursor]?.name || 'the current shot')}</button>` : '');
-  return `<div class="playScreen kickPage" data-trick-play="1" data-trick-mode="${esc(cur.mode)}" data-level="${cur.level || 0}" data-trick-shot="${esc(shot.name)}">
+  return `<div class="playScreen kickPage" data-trick-play="1" data-trick-mode="${esc(cur.mode)}" data-level="${cur.level || 0}" data-trick-shot="${esc(shot.name)}"${cur.dev ? ' data-dev-preview="1"' : ''}>
     <div class="title kickTitle"><button type="button" class="linkish back" data-action="go" data-href="${exam ? '#trick' : '#trick'}">‹ Back</button><span class="eyebrow">${esc(COURSE_TITLE.toUpperCase())}</span><h1>${esc(shot.name)}</h1><p>${esc(title)} ${starsHTML(shot.stars)}</p></div>
+    ${devPreviewNote(cur)}
     <p class="trickPass">${esc(PASS_RULE)}</p>
     <p class="kickMeta">Score ${running.score} / ${runMax(cur)} · Makes ${makes} / ${TRICK_SCORE.makesRequired}</p>
     <div class="kickTable" data-trick-table>${diagramHTML(shot, { solution: showSolution })}</div>
@@ -89,7 +97,7 @@ function resultsHTML(state) {
       ${sum.later ? `<p>Makes after three misses ${sum.later}</p>` : ''}
       <p>Shots that had misses: ${misses}. None of them failed the level.</p>
       <p>Best score ${best}</p>
-      ${practice ? '<p class="muted">Practice only. Your saved score was not changed.</p>' : ''}
+      ${cur.dev ? devPreviewNote(cur) : practice ? '<p class="muted">Practice only. Your saved score was not changed.</p>' : ''}
       ${next}
       ${practiceBtn}
       <button type="button" class="bigBtn" data-action="trick-replay">REPLAY</button>
@@ -100,15 +108,18 @@ function resultsHTML(state) {
 function listHTML(state) {
   const passed = LEVELS.filter((l) => levelPassed(state, l.id)).length;
   const rows = LEVELS.map((level) => {
-    const open = levelUnlocked(state, level.id);
+    const real = levelUnlocked(state, level.id);
+    const open = real || devBypass(); // Dev Mode ON: locked levels open as a DEV PREVIEW
     const rec = levelRecord(state, level.id);
-    const tag = rec?.passed ? `Passed · best ${rec.best}` : open ? 'Open' : 'Locked';
-    const mark = !open ? '🔒' : rec?.passed ? '✓' : '●';
+    const tag = rec?.passed ? `Passed · best ${rec.best}` : real ? 'Open' : open ? 'Locked · Dev preview' : 'Locked';
+    const mark = !real ? (open ? '🔓' : '🔒') : rec?.passed ? '✓' : '●';
     return `<button type="button" class="stageRow card${open ? '' : ' locked'}" data-action="go" data-href="#trick/${level.id}" ${open ? '' : 'disabled'} data-trick-level="${level.id}"><span class="srNum">${mark}</span><span class="srMain"><b>${esc(level.title)}</b> ${starsHTML(level.stars)}<small>${esc(level.blurb)} · ${esc(tag)}</small></span></button>`;
   }).join('');
   const examOpen = examUnlocked(state);
   const exam = examOpen
     ? `<button type="button" class="stageRow card" data-action="go" data-href="#trick/exam" data-trick-exam="1"><span class="srNum">●</span><span class="srMain"><b>${esc(EXAM_TITLE)}</b><small>8 shots. Make each one 3 times.</small></span></button>`
+    : devBypass()
+    ? `<button type="button" class="stageRow card" data-action="go" data-href="#trick/exam" data-trick-exam="1" data-trick-exam-locked="1" data-dev-open="1"><span class="srNum">🔓</span><span class="srMain"><b>${esc(EXAM_TITLE)}</b><small>Locked until all ${LEVELS.length} levels are passed · Dev preview</small></span></button>`
     : `<button type="button" class="stageRow card locked" disabled data-trick-exam="1" data-trick-exam-locked="1"><span class="srNum">🔒</span><span class="srMain"><b>${esc(EXAM_TITLE)}</b><small>Locked until all ${LEVELS.length} levels are passed.</small></span></button>`;
   return `<div class="playScreen kickPage" data-trick-home="1">
     <div class="title"><button type="button" class="linkish back" data-action="go" data-href="#courses">‹ Drill Sets & Exams</button><span class="eyebrow">DRILL SET</span><h1>${esc(COURSE_TITLE)}</h1><p>${PASS_RULE} ${LEVELS.length} levels, then the exam.</p></div>
@@ -164,15 +175,17 @@ export function createTrickScreen(ctx, args) {
     if (kind === 'list') { ctx.root.innerHTML = listHTML(state0); return; }
     if (kind === 'stats') { ctx.root.innerHTML = statsHTML(state0); return; }
     if (kind === 'exam') {
-      if (!examUnlocked(state0)) { ctx.root.innerHTML = lockedExamHTML(); return; }
-      const next = startExam(state0);
+      const examReal = examUnlocked(state0);
+      if (!examReal && !devBypass()) { ctx.root.innerHTML = lockedExamHTML(); return; }
+      const next = examReal ? startExam(state0) : previewExam(state0);
       const state = next === state0 ? state0 : ctx.commit(next);
       const cur = readCourse(state).current;
       ctx.root.innerHTML = cur?.phase === 'results' ? resultsHTML(state) : playHTML(state, showSolution);
       return;
     }
-    if (!levelUnlocked(state0, level)) { ctx.root.innerHTML = listHTML(state0); return; }
-    const next = startLevel(state0, level);
+    const levelReal = levelUnlocked(state0, level);
+    if (!levelReal && (!devBypass() || !LEVELS.some((l) => l.id === level))) { ctx.root.innerHTML = listHTML(state0); return; }
+    const next = levelReal ? startLevel(state0, level) : previewLevel(state0, level);
     const state = next === state0 ? state0 : ctx.commit(next);
     const cur = readCourse(state).current;
     ctx.root.innerHTML = cur?.phase === 'results' ? resultsHTML(state) : playHTML(state, showSolution);
@@ -196,7 +209,7 @@ export function createTrickScreen(ctx, args) {
       return true;
     }
     if (action === 'trick-view') {
-      ctx.commit(trickView(ctx.getState(), Number(el.dataset.i)));
+      ctx.commit(trickView(ctx.getState(), Number(el.dataset.i), { peek: devBypass() }));
       render();
       return true;
     }

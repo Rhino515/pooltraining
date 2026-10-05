@@ -26,7 +26,28 @@ export const devUnlocked = () => D.isUnlocked();
 function head(sub) {
   return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="${sub ? '#dev' : '#settings'}">‹ ${sub ? 'DEV MODE' : 'Settings'}</button><span class="eyebrow devEyebrow">DEV MODE${sub ? ` · ${esc(sub)}` : ''}</span><h1>${sub ? esc(sub) : 'Dev Mode'}</h1></div>`;
 }
+/**
+ * The Dev Mode ON/OFF switch. Rendered only for the signed-in owner account (andrewaphay@gmail.com);
+ * every other account and signed-out use get an empty string, so the switch never shows for them.
+ * The action is "devmode-set" (not "dev-…") so it still works while Dev Mode is OFF.
+ */
+export function devSwitchHTML() {
+  if (!D.ownerAccountSignedIn()) return '';
+  const on = D.devModeOn();
+  return `<div class="devSwitch" data-dev-switch="${on ? 'on' : 'off'}">
+      <div class="chips" role="group" aria-label="Dev Mode">
+        <button type="button" class="chip${on ? ' active' : ''}" data-action="devmode-set" data-v="on" aria-pressed="${on ? 'true' : 'false'}">ON</button>
+        <button type="button" class="chip${on ? '' : ' active'}" data-action="devmode-set" data-v="off" aria-pressed="${on ? 'false' : 'true'}">OFF</button>
+      </div>
+      <p class="muted small">${on
+        ? 'ON: edit buttons show, and every locked drill, level and stage opens as a DEV PREVIEW. Previews do not save results, so XP and unlocks do not change.'
+        : 'OFF: no edit buttons. Locked drills, levels and stages stay locked until you pass them.'}</p>
+    </div>`;
+}
 function gate() {
+  if (D.ownerAccountSignedIn()) {
+    return `${head()}<div class="card devCard devGate" data-dev-state="off"><div class="eyebrow">DEV MODE IS OFF</div>${devSwitchHTML()}</div>`;
+  }
   return `${head()}<div class="card devCard devGate" data-dev-state="locked"><div class="eyebrow">LOCKED</div><p class="muted small">Dev tools are only on the owner account. There is no passcode and no unlock step.</p></div>`;
 }
 
@@ -35,7 +56,7 @@ export function renderDev(state) {
   const ov = Object.values(O.loadOverrides().items);
   const items = S.loadContent();
   return `${head()}
-    <div class="card devCard" data-dev-state="unlocked"><div class="eyebrow">OWNER</div><p class="muted small" data-owner-account>This account is the dev. There is no passcode.</p></div>
+    <div class="card devCard" data-dev-state="unlocked"><div class="eyebrow">DEV MODE IS ON</div><p class="muted small" data-owner-account>This account is the dev. There is no passcode.</p>${devSwitchHTML()}</div>
     ${state.devSeed ? `<div class="card devBanner" data-dev-seed>TEST STATE ACTIVE · ${esc(state.devSeed.label)}<button type="button" class="bigBtn" data-action="dev-restore-real">RESTORE MY REAL PROGRESS</button><small class="muted">Anything played while the test state is active is discarded when you restore.</small></div>` : ''}
     <h2>Edit built-in content</h2>
     <div class="card devCard"><p class="muted small">Edits stay on this phone. Shipped files do not change. RESET brings the original back. Open any built-in drill or stage: rename the title and description, and drag balls when the table has them.</p>

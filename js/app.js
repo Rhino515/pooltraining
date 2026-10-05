@@ -3,7 +3,7 @@
  * Routes: #home #career #drills #learn #analyze #arcade (shown as "Table Games"; #tablegames alias) #profile (#stats alias) #settings
  *         #ghost[/balls/race] #ghostmatch #game/<id> #play/<game>/<stage> #boss/<id> #bossplay/<id>
  *         #sim[/s=<code>|/target] (Shot Simulator) #drillnew[/fromsim] #drilledit/<id> (Create Drill)
- *         #courses (course list) #bpset (Ball Pocketing PDF drills) #kicking (Off the Rail) #trick (Trick Shot Course) #drillfix/<id> (owner drill editor — only while DEV MODE is unlocked)
+ *         #courses (course list) #bpset (Ball Pocketing PDF drills) #kicking (Off the Rail) #trick (Trick Shot Course) #drillfix/<id> (owner drill editor — only while DEV MODE is ON)
  *         #content (My Content) #cimport (import error) #cview/<ref> #cplay/<ref>[/<stage>] #cedit/<uid>[/<loc>]  (.pooliq content, ui/content.js)
  */
 import { loadState, saveState, resetState, archiveUnknownDrills, onDataWrite, lsSet, idbAdapter } from './storage.js';
@@ -33,7 +33,7 @@ import { loadPublishedDrills, publishedSignature } from './drills/published.js';
 import { loadHiddenDrills, hiddenSignature, isDrillHidden } from './drills/hidden.js';
 import { createTableMatch } from './ui/tableMatch.js';
 import { timerAction, mountTimers } from './ui/shotTimer.js';
-import { ownerAccountSignedIn } from './dev/dev.js';
+import { setDevBypass, devBypass } from './dev/gate.js';
 import { customDrills, refreshCustomDrills } from './drills.js';
 import * as CD from './customDrills.js';
 import { openSheet, closeSheet, toast, clearToast } from './ui/sheet.js';
@@ -161,7 +161,11 @@ function renderRoute() {
     const drill = gameId === 'drills' ? getDrillById(stageId) : null;
     const fromSet = args[2] === 'set';
     const pocketLocked = !fromSet && !!(drill && drill.category === 'Ball Pocketing' && !isBuId(drill.id) && !isSkillsId(drill.id) && drill.level > ballPocketStatus(state).current);
-    const ok = gameId === 'drills' ? !!drill && !pocketLocked : stageId === 'endless' ? isEndlessUnlocked(state, gameId) : !!getStage(gameId, stageId) && isStageUnlocked(state, gameId, stageId);
+    const exists = gameId === 'drills' ? !!drill : stageId === 'endless' ? !!getGame(gameId)?.endless : !!getStage(gameId, stageId);
+    const open = gameId === 'drills' ? !!drill && !pocketLocked : stageId === 'endless' ? isEndlessUnlocked(state, gameId) : !!getStage(gameId, stageId) && isStageUnlocked(state, gameId, stageId);
+    // Dev Mode ON (owner account + switch ON): a locked drill/stage opens as a DEV PREVIEW that saves nothing
+    const devPreview = !open && exists && devBypass();
+    const ok = open || devPreview;
     if (!ok) {
       const gone = gameId === 'drills' && isDrillHidden(stageId);
       toast(gone ? 'That drill is no longer in the app' : gameId !== 'drills' && getGame(gameId) && !isGameUnlocked(state, gameId) ? 'That game is still locked' : 'That stage is locked — pass the previous stage first');
@@ -169,7 +173,7 @@ function renderRoute() {
     } else {
       if (gameId === 'drills' && isSafetyId(stageId)) screen = createSafetyPlay(ctx, { id: stageId, course: args[2] === 'safety' });
       else if (gameId === 'drills' && (isBuId(stageId) || isSkillsId(stageId) || isMoreId(stageId))) screen = createBuPlay(ctx, { id: stageId, exam: args[2] === 'exam' });
-      else screen = createPlayScreen(ctx, { gameId, stageId, fromSet });
+      else screen = createPlayScreen(ctx, { gameId, stageId, fromSet, devPreview });
       screen.render();
       playing = true;
     }
@@ -397,6 +401,14 @@ function handleAction(action, el, e) {
   if (action.startsWith('c-') && C.contentAction(action, el, e, ctx)) return;
   if (action.startsWith('fr-') && FU.friendsAction(action, el, ctx)) return;
   if (action.startsWith('me-') && MU.meAction(action, el, ctx, { downloadFile })) return;
+  if (action === 'devmode-set') {
+    // The owner's Dev Mode switch. setDevModeOn refuses every other account.
+    const out = D.setDevModeOn(el?.dataset?.v === 'on');
+    if (out.error) { toast(out.error); return; }
+    toast(out.on ? 'Dev Mode ON · edit buttons and locked items are open' : 'Dev Mode OFF · normal play, normal locks');
+    renderRoute();
+    return;
+  }
   if (action.startsWith('dev-') && DU.devAction(action, el, devEnv)) return;
   if ((action.startsWith('ac-') || action.startsWith('cloud-') || action.startsWith('lb-')) && cloud.action(action, el)) return;
   switch (action) {
@@ -427,13 +439,13 @@ function handleAction(action, el, e) {
       break;
     }
     case 'drill-del': {
-      if (!ownerAccountSignedIn()) { toast('Only the owner account can delete. Nothing was changed.'); break; }
+      if (!D.isUnlocked()) { toast('Turn on Dev Mode on the owner account to delete. Nothing was changed.'); break; }
       const d = customDrills().find((x) => x.id === el.dataset.id);
       if (d) openSheet(`<h2 class="sheetTitle">Delete “${escHTML(displayDrillTitle(d.name))}”?</h2><p class="muted">This removes the drill from this phone. It does not delete a file from the app. Your past results stay in your history. Export it first if you might want it back.</p><button type="button" class="bigBtn danger" data-action="drill-del-do" data-id="${escHTML(d.id)}">DELETE DRILL</button><button type="button" class="bigBtn alt" data-action="sheet-close">CANCEL</button>`, { id: 'confirm' });
       break;
     }
     case 'drill-del-do':
-      if (!ownerAccountSignedIn()) { toast('Only the owner account can delete. Nothing was changed.'); break; }
+      if (!D.isUnlocked()) { toast('Turn on Dev Mode on the owner account to delete. Nothing was changed.'); break; }
       CD.deleteCustomDrill(el.dataset.id);
       refreshCustomDrills();
       if (state.activeSession?.gameId === 'drills' && state.activeSession.stageId === el.dataset.id) commit({ ...state, activeSession: null }, { silent: true });
@@ -915,6 +927,7 @@ const devEnv = {
   }
 };
 C.setDevCheck(() => D.isUnlocked());
+setDevBypass(() => D.isUnlocked());
 document.addEventListener('pointerdown', () => D.touch(), { passive: true });
 
 // ------------------------------------------------------------------------------ boot

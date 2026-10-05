@@ -9,6 +9,7 @@
  */
 import { renderTableDiagram } from '../tableDiagram.js';
 import { cueBallSVG } from '../games/cueBallDiagram.js';
+import { devBypass } from '../dev/gate.js';
 
 export const COURSE_TITLE = 'Off the Rail';
 export const EXAM_TITLE = 'Off the Rail Exam';
@@ -696,7 +697,8 @@ export function beginRun(state, spec) {
     stations,
     phase: 'play',
     parent: spec.parent || null,
-    difficulty: kc.difficulty
+    difficulty: kc.difficulty,
+    ...(spec.dev ? { dev: true } : {})
   };
   return withKicking(state, kc);
 }
@@ -705,7 +707,7 @@ export function startLevel(state, level) {
   const kc = kickingOf(state);
   if (!isLevelOpen(kc, level)) return state;
   const cur = kc.current;
-  if (cur && cur.level === level && (cur.mode === 'level' || (cur.mode === 'practice' && cur.parent !== 'exam'))) return state;
+  if (cur && !cur.dev && cur.level === level && (cur.mode === 'level' || (cur.mode === 'practice' && cur.parent !== 'exam'))) return state;
   return beginRun(state, { mode: 'level', level, order: [0, 1, 2, 3] });
 }
 
@@ -713,8 +715,26 @@ export function startExam(state) {
   const kc = kickingOf(state);
   if (!isExamOpen(kc)) return state;
   const cur = kc.current;
-  if (cur && (cur.mode === 'exam' || cur.parent === 'exam')) return state;
+  if (cur && !cur.dev && (cur.mode === 'exam' || cur.parent === 'exam')) return state;
   return beginRun(state, { mode: 'exam', order: EXAM_STATIONS.map((_, i) => i) });
+}
+
+/**
+ * DEV PREVIEW (Dev Mode ON, js/dev/gate.js): open a level or the exam that is still locked.
+ * It runs as practice, so finalize() saves nothing — no level record, no exam result, no stats.
+ * restart = true starts a fresh preview even when one is already in progress.
+ */
+export function previewLevel(state, level, restart = false) {
+  const id = Number(level);
+  if (!levelById(id)) return state;
+  const cur = kickingOf(state).current;
+  if (!restart && cur && cur.dev && cur.parent === 'level' && cur.level === id) return state;
+  return beginRun(state, { mode: 'practice', level: id, order: [0, 1, 2, 3], parent: 'level', dev: true });
+}
+export function previewExam(state, restart = false) {
+  const cur = kickingOf(state).current;
+  if (!restart && cur && cur.dev && cur.parent === 'exam') return state;
+  return beginRun(state, { mode: 'practice', order: EXAM_STATIONS.map((_, i) => i), parent: 'exam', dev: true });
 }
 
 export function kickTap(state, outcome) {
@@ -764,11 +784,12 @@ export function kickUndo(state) {
   return withKicking(state, kc);
 }
 
-export function kickView(state, orderIndex) {
+export function kickView(state, orderIndex, { peek = false } = {}) {
   const kc = kickingOf(state);
   const cur = kc.current;
   if (!cur || cur.phase !== 'play') return state;
-  if (orderIndex < 0 || orderIndex > cur.cursor) return state;
+  // peek (Dev Mode ON) may look at a later shot; it never records anything
+  if (orderIndex < 0 || orderIndex >= cur.order.length || (!peek && orderIndex > cur.cursor)) return state;
   cur.view = orderIndex;
   return withKicking(state, kc);
 }
@@ -786,6 +807,7 @@ export function kickRetry(state) {
   const kc = kickingOf(state);
   const cur = kc.current;
   if (!cur) return state;
+  if (cur.dev) return cur.parent === 'exam' ? previewExam(state, true) : previewLevel(state, cur.level, true);
   if (cur.mode === 'exam' || cur.parent === 'exam') return startExam(state);
   const level = cur.level;
   return beginRun(state, { mode: 'level', level, order: [0, 1, 2, 3] });
@@ -854,7 +876,9 @@ export function offRailBannersHTML(state) {
   const course = `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#kicking" data-offrail="course"><span class="simPromoText"><span class="eyebrow">DRILL SET</span><b>${esc(COURSE_TITLE)}</b><small>${n} levels. Shoot the kick on your table. Not on the All list. Not a Career rank.</small></span><span class="simPromoGo">›</span></button>`;
   const exam = open
     ? `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#kicking/exam" data-offrail="exam"><span class="simPromoText"><span class="eyebrow">EXAM</span><b>${esc(EXAM_TITLE)}</b><small>${n} shots, one from each level. Pass at 80%.</small></span><span class="simPromoGo">›</span></button>`
-    : `<div class="card simPromo buEntry is-locked" data-offrail="exam" data-offrail-locked="1"><span class="simPromoText"><span class="eyebrow">EXAM</span><b>${esc(EXAM_TITLE)}</b><small>Locked until all ${n} levels are passed.</small></span></div>`;
+    : devBypass()
+      ? `<button type="button" class="card simPromo buEntry is-locked" data-action="go" data-href="#kicking/exam" data-offrail="exam" data-offrail-locked="1" data-dev-open="1"><span class="simPromoText"><span class="eyebrow">EXAM · DEV PREVIEW</span><b>${esc(EXAM_TITLE)}</b><small>Locked until all ${n} levels are passed. Dev Mode opens it as a preview; nothing is saved.</small></span><span class="simPromoGo">›</span></button>`
+      : `<div class="card simPromo buEntry is-locked" data-offrail="exam" data-offrail-locked="1"><span class="simPromoText"><span class="eyebrow">EXAM</span><b>${esc(EXAM_TITLE)}</b><small>Locked until all ${n} levels are passed.</small></span></div>`;
   return course + exam;
 }
 

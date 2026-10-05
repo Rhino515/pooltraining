@@ -27,7 +27,7 @@ import { createPlayScreen } from './play.js';
 import { shareOrDownload } from './share.js';
 import * as CD from '../customDrills.js';
 import { customDrills, refreshCustomDrills, contentDrillId, displayDrillTitle } from '../drills.js';
-import { ownerAccountSignedIn } from '../dev/dev.js';
+import { isUnlocked as devOn } from '../dev/dev.js';
 
 export const ACCEPT = '.pooliq,.json,application/json,application/octet-stream,text/plain';
 export const EXAMPLES = [
@@ -173,7 +173,7 @@ export function contentHubHTML() {
   };
   const customCard = (d) => `<div class="cItem card" data-custom-drill="${esc(d.id)}" data-type="drill">
       <div class="cTop"><div class="cMini">${renderStageTable(d, { className: 'table-diagram micro', showAim: false })}</div><div class="cMain"><div class="cBadges"><span class="tag mine" data-badge="custom">CUSTOM</span><span class="tag">Drill</span><span class="tag">${esc(displayDrillTitle(d.category))}</span></div><h3>${esc(displayDrillTitle(d.name))}</h3><small class="muted">Made with Create Drill · counts in your training history</small></div></div>
-      <div class="cActs"><button type="button" class="miniAct go" data-action="go" data-href="#play/drills/${esc(d.id)}">PLAY</button><button type="button" class="miniAct" data-action="drill-edit" data-id="${esc(d.id)}">EDIT</button><button type="button" class="miniAct" data-action="c-export-custom" data-id="${esc(d.id)}">EXPORT</button>${ownerAccountSignedIn() ? `<button type="button" class="miniAct danger" data-action="drill-del" data-id="${esc(d.id)}">DELETE</button>` : ''}</div></div>`;
+      <div class="cActs"><button type="button" class="miniAct go" data-action="go" data-href="#play/drills/${esc(d.id)}">PLAY</button><button type="button" class="miniAct" data-action="drill-edit" data-id="${esc(d.id)}">EDIT</button><button type="button" class="miniAct" data-action="c-export-custom" data-id="${esc(d.id)}">EXPORT</button>${devOn() ? `<button type="button" class="miniAct danger" data-action="drill-del" data-id="${esc(d.id)}">DELETE</button>` : ''}</div></div>`;
   const sec = (key, title, list, empty) => `<section class="cSec" data-section="${key}"><h2 class="cSecTitle">${title} <small>${list.length}</small></h2>${list.length ? list.join('') : `<p class="muted small cEmpty">${empty}</p>`}</section>`;
   const drillsL = [...items.filter((i) => i.contentType === 'drill').map(card), ...customs.map(customCard)];
   const packsL = items.filter((i) => i.contentType === 'pack').map(card);
@@ -813,7 +813,7 @@ function runnerFor(ctx, env, item, key) {
   return null;
 }
 
-/** DEV MODE (unlocked): pack stage locks are bypassed for testing — set by app.js */
+/** DEV MODE ON (owner account + switch ON): pack stage locks are bypassed as previews — set by app.js */
 let devCheck = () => false;
 export function setDevCheck(fn) { if (typeof fn === 'function') devCheck = fn; }
 
@@ -824,10 +824,14 @@ export function createContentPlay(ctx, ref, stageArg) {
   const d = r.doc;
   let item = d;
   let stageIdx = null;
+  let devPreview = false;
   if (d.contentType === 'pack') {
     stageIdx = clamp(Math.floor(Number(stageArg) || 0), 0, d.stages.length - 1);
     item = d.stages[stageIdx];
-    if (!r.sandbox && !(typeof ctx.devUnlocked === 'function' && ctx.devUnlocked()) && S.packStageStates(d, S.progressFor(r.uid))[stageIdx] === 'locked') return { error: 'Locked — pass the previous stage first', redirect: `#cview/${r.uid}` };
+    if (!r.sandbox && S.packStageStates(d, S.progressFor(r.uid))[stageIdx] === 'locked') {
+      if (!(typeof ctx.devUnlocked === 'function' && ctx.devUnlocked())) return { error: 'Locked — pass the previous stage first', redirect: `#cview/${r.uid}` };
+      devPreview = true; // Dev Mode ON opened a locked stage: play it, save nothing
+    }
   }
   const exitHref = `#cview/${ref}`;
   const env = {
@@ -843,6 +847,7 @@ export function createContentPlay(ctx, ref, stageArg) {
         buttons.push({ label: 'BACK TO PREVIEW', action: 'go', href: exitHref, alt: true });
         return { note: SANDBOX_NOTE, buttons };
       }
+      if (devPreview) return { note: 'DEV PREVIEW · this stage is still locked. Nothing was saved.', buttons: [{ label: 'PACK PROGRESS', action: 'go', href: exitHref, alt: true }] };
       const out = S.recordResult(r.uid, { stageId: stageIdx != null ? item.id : null, passed: !!res.passed, score: res.score, summary: res.summary });
       const best = stageIdx != null ? out.progress.stages[item.id]?.best : out.progress.best;
       const buttons = [];

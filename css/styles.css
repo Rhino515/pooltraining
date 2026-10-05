@@ -848,6 +848,8 @@ body.playing main{padding:0}
 .devBanner{padding:12px 14px;margin-bottom:12px;border-color:#6a5420;color:var(--gold);font-size:12px;font-weight:800}
 .devBanner .miniAct{margin-left:8px}
 .devCard{padding:16px;margin-bottom:14px}
+.devSwitch{margin:8px 0 10px}
+.devSwitch .chips{margin-bottom:6px}
 .devEyebrow{color:var(--gold)}
 .devGames{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
 .devGames .chip{min-height:40px}

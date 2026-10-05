@@ -60,6 +60,9 @@ export function createPlayScreen(ctx, key) {
   resetUI();
   const C = key.content || null;
   const fromSet = !!key.fromSet;
+  // Dev Mode ON opened a locked drill/stage (app.js). A DEV PREVIEW plays normally but saves nothing:
+  // no stage record, no XP, no Ball Pocketing medal, no unlocks.
+  const devPreview = !C && !key.bossId && !!key.devPreview;
   let state = ctx.getState();
   let session = C ? E.newSession('drills', C.challenge.id) : getSessionFor(state, key);
   if (!session) {
@@ -74,6 +77,7 @@ export function createPlayScreen(ctx, key) {
     session = next;
     if (C) return;
     state = ctx.getState();
+    if (devPreview) { ctx.commit({ ...state, activeSession: session }, { silent: true }); return; }
     const settled = E.awardBallPocketWindow(state, session);
     session = settled.session;
     state = settled.state;
@@ -107,7 +111,7 @@ export function createPlayScreen(ctx, key) {
       ? (session.gameId === 'drills' && !stage.custom && !stage.contentUid ? `#drillfix/${esc(stage.id)}` : (!session.bossId && !session.endless && session.gameId && session.gameId !== 'drills' ? `#devedit/${esc(session.gameId)}/${esc(stage.id)}` : ''))
       : '';
     const edit = editHref ? `<button type="button" class="phEdit" data-owner-edit="1" data-action="go" data-href="${editHref}">EDIT</button>` : '';
-    return `<div class="playHead"><button type="button" class="phBack" data-action="play-exit" aria-label="Exit">‹</button><div class="phTitle"><small>${esc(title)}</small><b>${esc(sub)}</b></div><div class="phStatus">${edit}${status}</div></div>`;
+    return `<div class="playHead"><button type="button" class="phBack" data-action="play-exit" aria-label="Exit">‹</button><div class="phTitle"><small>${devPreview ? '<span data-dev-preview="1">DEV PREVIEW · </span>' : ''}${esc(title)}</small><b>${esc(sub)}</b></div><div class="phStatus">${edit}${status}</div></div>`;
   }
   function drillLinkHTML() {
     if (!drillEditorAllowed() || session.gameId !== 'drills' || !stage) return '';
@@ -366,10 +370,11 @@ export function createPlayScreen(ctx, key) {
     if (C) return finishContent();
     state = ctx.getState();
     const csBefore = careerStatus(state);
-    const out = E.finishSession(state, session);
-    const r = out.result;
+    const out = E.finishSession(devPreview ? JSON.parse(JSON.stringify(state)) : state, session);
+    const r = devPreview ? { ...out.result, award: null, newPB: false, unlockedNext: false, endlessUnlocked: false, gamesUnlocked: [] } : out.result;
     ui.lastResult = r;
-    ctx.commit(out.state);
+    if (devPreview) ctx.commit({ ...state, activeSession: null }, { silent: true });
+    else ctx.commit(out.state);
     const after = ctx.getState();
     const csAfter = careerStatus(after);
     const levelUp = csAfter.rankIndex === csBefore.rankIndex && !csAfter.champion && csAfter.ball > csBefore.ball ? `<p class="levelUp" data-level-up="${csAfter.ball}">⬆ LEVEL UP · <b>${esc(csAfter.title)}</b></p>` : '';
@@ -388,7 +393,7 @@ export function createPlayScreen(ctx, key) {
         ${!r.passed ? `<div class="weakBox" data-weak="${esc(r.weakSkills.join('|'))}"><b>Skill areas that cost you:</b> ${r.weakSkills.map((w) => `<span class="chip">${esc(w)}</span>`).join(' ')}</div>` : ''}
         <div class="resultBtns"><button type="button" class="bigBtn" data-action="retry">${r.passed ? 'PLAY AGAIN' : 'RETRY BOSS'}</button><button type="button" class="bigBtn alt" data-action="go" data-href="#career">CAREER</button></div></div>`;
     } else {
-      const unlocked = r.unlockedNext ? `<p class="unlock" data-unlocked="1">🔓 Next stage unlocked</p>` : r.endlessUnlocked ? '<p class="unlock" data-unlocked="1">🔓 ENDLESS MODE unlocked</p>' : !r.passed && !session.endless ? '<p class="muted" data-unlocked="0">Not passed — the next stage stays locked.</p>' : '';
+      const unlocked = devPreview ? '<p class="muted" data-dev-preview="1">DEV PREVIEW · this is still locked. Nothing was saved: no score, no XP, no unlock.</p>' : r.unlockedNext ? `<p class="unlock" data-unlocked="1">🔓 Next stage unlocked</p>` : r.endlessUnlocked ? '<p class="unlock" data-unlocked="1">🔓 ENDLESS MODE unlocked</p>' : !r.passed && !session.endless ? '<p class="muted" data-unlocked="0">Not passed — the next stage stays locked.</p>' : '';
       const gamesU = (r.gamesUnlocked || []).map((g) => `<p class="unlock">🎮 ${esc(getGame(g).name)} unlocked</p>`).join('');
       body = `<div class="resultPanel ${r.passed || session.endless ? 'pass' : 'fail'}" data-result="${r.passed ? 'pass' : 'fail'}">
         <div class="eyebrow">${esc(game.name)} · ${esc(session.endless ? 'Endless' : displayDrillTitle(stage.name))}</div>
