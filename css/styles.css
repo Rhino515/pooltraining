@@ -1837,6 +1837,20 @@ header{
 [data-table-game="kicksafe"] .ksConfirm p{margin:0 0 8px}
 [data-table-game="kicksafe"] .resultBar .rb.wide{flex:1 1 100%}
 
+/* v14-94: shared kick/course shell (PKF / Trick / Off the Rail). Playing mode hides the
+   app header, so pad like .playHead so Back clears the iPhone status bar / notch. */
+.kickPage{
+  padding-top:calc(6px + env(safe-area-inset-top, 0px));
+}
+.kickPage > .title .linkish.back{
+  min-height:44px;
+  display:inline-flex;
+  align-items:center;
+  padding:10px 8px 10px 0;
+  margin:0;
+  box-sizing:border-box;
+}
+
 /* Off the Rail. Drill Sets & Exams only. Does not restyle other exams. */
 .kickPage .kickTitle h1{font-size:22px}
 .kickPage .kickMeta{margin:4px 0 8px;font-weight:700;line-height:1.35}
