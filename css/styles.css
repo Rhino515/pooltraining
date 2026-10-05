@@ -1852,3 +1852,7 @@ header{
 .kickPage .kickTip .cb-diagram{width:96px;height:96px;display:block}
 .kickPage .kickHist p{margin:4px 0}
 .buEntry.is-locked{opacity:.72}
+
+.kickPage .kickDiff{display:flex;gap:6px;margin:8px 0 4px}
+.kickPage .kickDiff .chip{flex:1;min-height:44px}
+.kickPage .kickDiffNote{margin:0 0 8px;font-size:13px;line-height:1.35}

@@ -15,11 +15,37 @@ export const EXAM_TITLE = 'Off the Rail Exam';
 export const STORAGE_KEY = 'kickingCourse';
 
 export const KICK_SCORE = {
-  attemptPoints: { 1: 3, 2: 2, 3: 1, 0: 0 },
+  attemptPoints: { 1: 3, 2: 2, 3: 1, 4: 1, 5: 1, 0: 0 },
   pocketBonus: 2,
   attempts: 3,
   passPercent: 80
 };
+
+/** Last choice is state.kickingCourse.difficulty. Intermediate is the original 3-attempt hit rule. */
+export const DIFFICULTIES = {
+  beginner: { id: 'beginner', label: 'Beginner', attempts: 5, pocketRequired: false },
+  intermediate: { id: 'intermediate', label: 'Intermediate', attempts: 3, pocketRequired: false },
+  pro: { id: 'pro', label: 'Pro', attempts: 3, pocketRequired: true }
+};
+
+export function difficultyOf(id) {
+  return DIFFICULTIES[id] || DIFFICULTIES.intermediate;
+}
+
+export function attemptsFor(id) {
+  return difficultyOf(id).attempts;
+}
+
+export function pocketRequired(id) {
+  return difficultyOf(id).pocketRequired;
+}
+
+export function difficultyNote(id) {
+  const d = difficultyOf(id);
+  if (d.id === 'beginner') return 'Beginner: 5 attempts. Success is hitting the required rails, then the object ball. Pocketing is not required. A pocket adds +2.';
+  if (d.id === 'pro') return 'Pro: 3 attempts. The object ball must go in the designated pocket. A hit that misses the pocket is a miss.';
+  return 'Intermediate: 3 attempts. Success is hitting the object ball. Pocketing is not required. A pocket adds +2.';
+}
 
 const DIAMOND_X = [12.5, 25, 37.5, 50, 62.5, 75, 87.5];
 const DIAMOND_Y = [12.5, 25, 37.5];
@@ -302,57 +328,94 @@ export const EXAM_STATIONS = examStations();
 
 export function levelByNumber(n) { return LEVELS[n - 1] || null; }
 
-export function stationMax(station) {
-  return (KICK_SCORE.attemptPoints[1] || 0) + (station.allowPocket ? KICK_SCORE.pocketBonus : 0);
+export function stationMax() {
+  return (KICK_SCORE.attemptPoints[1] || 0) + KICK_SCORE.pocketBonus;
 }
 
-export function emptyMarks() { return ['empty', 'empty', 'empty']; }
-
-export function freshStation() {
-  return { marks: emptyMarks(), log: [], done: false, success: false, pocketed: false, madeOn: 0, points: 0 };
+export function emptyMarks(n = KICK_SCORE.attempts) {
+  return Array.from({ length: n }, () => 'empty');
 }
 
-function judge(station, outcome) {
+export function freshStation(attempts = KICK_SCORE.attempts) {
+  return { marks: emptyMarks(attempts), log: [], done: false, success: false, pocketed: false, madeOn: 0, points: 0 };
+}
+
+/** Pocket the object ball is sent toward. A station that already names a pocket keeps it. */
+export function designatedPocket(station) {
+  if (station?.pocket && POCKETS[station.pocket]) return station.pocket;
+  const hit = station?.hits?.[station.hits.length - 1];
+  const ob = station?.ob;
+  if (!hit || !ob) return 'BM';
+  const vx = ob.x - hit.x;
+  const vy = ob.y - hit.y;
+  const vlen = Math.hypot(vx, vy) || 1;
+  let best = 'BM';
+  let bestScore = -Infinity;
+  for (const [name, pt] of Object.entries(POCKETS)) {
+    const dx = pt[0] - ob.x;
+    const dy = pt[1] - ob.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const forward = (vx * dx + vy * dy) / (vlen * len);
+    const score = forward * 3 - len / 80;
+    if (score > bestScore) { bestScore = score; best = name; }
+  }
+  return best;
+}
+
+function judge(station, outcome, difficulty) {
   if (outcome === 'miss') return { success: false, pocketed: false };
-  if (station.requirePocket) {
+  if (pocketRequired(difficulty)) {
     if (outcome === 'pocket') return { success: true, pocketed: true };
     return { success: false, pocketed: false };
   }
-  if (station.confirm) {
-    if (outcome === 'result') return { success: true, pocketed: false };
-    if (outcome === 'pocket' && station.allowPocket) return { success: true, pocketed: true };
-    return { success: false, pocketed: false };
-  }
-  if (outcome === 'pocket' && station.allowPocket) return { success: true, pocketed: true };
-  if (outcome === 'contact') return { success: true, pocketed: false };
+  if (outcome === 'pocket') return { success: true, pocketed: true };
+  if (outcome === 'contact' || outcome === 'result') return { success: true, pocketed: false };
   return { success: false, pocketed: false };
 }
 
-export function recordAttempt(station, prev, outcome) {
+function fitMarks(prev, attempts) {
   const cur = prev && prev.marks
     ? { ...prev, marks: prev.marks.slice(), log: (prev.log || []).slice() }
-    : freshStation();
+    : freshStation(attempts);
+  let marks = cur.marks.slice();
+  while (marks.length > attempts && marks[marks.length - 1] === 'empty') marks.pop();
+  while (marks.length < attempts) marks.push('empty');
+  if (marks.length > attempts) marks = marks.slice(0, attempts);
+  cur.marks = marks;
+  const used = marks.filter((m) => m !== 'empty').length;
+  if (!cur.done && used >= attempts && !marks.includes('empty')) {
+    cur.done = true;
+    cur.success = false;
+    cur.points = 0;
+    cur.madeOn = 0;
+  }
+  return cur;
+}
+
+export function recordAttempt(station, prev, outcome, difficulty = 'intermediate') {
+  const attempts = attemptsFor(difficulty);
+  const cur = fitMarks(prev, attempts);
   if (cur.done) return cur;
   const slot = cur.marks.findIndex((m) => m === 'empty');
-  if (slot < 0) return { ...cur, done: true };
-  const judged = judge(station, outcome);
+  if (slot < 0) return { ...cur, done: true, success: false, points: 0 };
+  const judged = judge(station, outcome, difficulty);
   cur.marks[slot] = judged.success ? 'make' : 'miss';
   cur.log.push(outcome);
   const used = slot + 1;
-  const done = judged.success || used >= KICK_SCORE.attempts;
+  const done = judged.success || used >= attempts;
   cur.done = done;
   cur.success = done && judged.success;
   cur.pocketed = !!(cur.success && judged.pocketed);
   cur.madeOn = cur.success ? used : 0;
   cur.points = cur.success
-    ? (KICK_SCORE.attemptPoints[used] || 0) + (cur.pocketed ? KICK_SCORE.pocketBonus : 0)
+    ? (KICK_SCORE.attemptPoints[used] ?? 1) + (cur.pocketed ? KICK_SCORE.pocketBonus : 0)
     : 0;
   return cur;
 }
 
-export function replayLog(station, log) {
-  let s = freshStation();
-  for (const outcome of log || []) s = recordAttempt(station, s, outcome);
+export function replayLog(station, log, difficulty = 'intermediate') {
+  let s = freshStation(attemptsFor(difficulty));
+  for (const outcome of log || []) s = recordAttempt(station, s, outcome, difficulty);
   return s;
 }
 
@@ -365,7 +428,8 @@ function blank() {
   return {
     levels: {},
     exam: { passed: false, bestScore: 0, bestMax: 0, attempts: 0, history: [], last: null },
-    stats: { first: 0, second: 0, third: 0, failed: 0, attempts: 0, contacts: 0, pockets: 0 },
+    stats: { first: 0, second: 0, third: 0, later: 0, failed: 0, attempts: 0, contacts: 0, pockets: 0 },
+    difficulty: 'intermediate',
     current: null
   };
 }
@@ -379,8 +443,26 @@ export function kickingOf(state) {
   kc.exam = { ...kc.exam, ...(copy.exam || {}) };
   kc.exam.history = Array.isArray(kc.exam.history) ? kc.exam.history : [];
   kc.stats = { ...kc.stats, ...(copy.stats || {}) };
+  kc.difficulty = difficultyOf(copy.difficulty).id;
   kc.current = copy.current || null;
   return kc;
+}
+
+export function setDifficulty(state, id) {
+  if (!DIFFICULTIES[id]) return state;
+  const kc = kickingOf(state);
+  kc.difficulty = id;
+  const attempts = attemptsFor(id);
+  const cur = kc.current;
+  if (cur && cur.phase === 'play') {
+    cur.difficulty = id;
+    for (const si of cur.order) {
+      const rec = cur.stations[si];
+      if (!rec || rec.done) continue;
+      cur.stations[si] = fitMarks(rec, attempts);
+    }
+  }
+  return withKicking(state, kc);
 }
 
 export function withKicking(state, kc) {
@@ -420,6 +502,8 @@ function runScore(cur, stations) {
   let first = 0;
   let second = 0;
   let third = 0;
+  let fourth = 0;
+  let fifth = 0;
   let failed = [];
   let pockets = 0;
   let bonus = 0;
@@ -433,6 +517,8 @@ function runScore(cur, stations) {
       if (rec.madeOn === 1) first += 1;
       else if (rec.madeOn === 2) second += 1;
       else if (rec.madeOn === 3) third += 1;
+      else if (rec.madeOn === 4) fourth += 1;
+      else if (rec.madeOn === 5) fifth += 1;
       if (rec.pocketed) {
         pockets += 1;
         bonus += KICK_SCORE.pocketBonus;
@@ -442,7 +528,7 @@ function runScore(cur, stations) {
   const total = cur.order.length;
   const passed = passesPercent(successes, total);
   const rate = total ? Math.round((successes / total) * 100) : 0;
-  return { score, max, successes, total, first, second, third, failed, pockets, bonus, passed, rate };
+  return { score, max, successes, total, first, second, third, fourth, fifth, failed, pockets, bonus, passed, rate };
 }
 
 function addStats(stats, cur, stations) {
@@ -454,6 +540,7 @@ function addStats(stats, cur, stations) {
       if (rec.madeOn === 1) stats.first += 1;
       else if (rec.madeOn === 2) stats.second += 1;
       else if (rec.madeOn === 3) stats.third += 1;
+      else if (rec.madeOn >= 4) stats.later = (stats.later || 0) + 1;
       stats.contacts += 1;
       if (rec.pocketed) stats.pockets += 1;
     } else stats.failed += 1;
@@ -510,7 +597,8 @@ export function beginRun(state, spec) {
   const kc = kickingOf(state);
   const order = spec.order.slice();
   const stations = {};
-  for (const i of order) stations[i] = freshStation();
+  const attempts = attemptsFor(kc.difficulty);
+  for (const i of order) stations[i] = freshStation(attempts);
   kc.current = {
     mode: spec.mode,
     level: spec.level || 0,
@@ -519,7 +607,8 @@ export function beginRun(state, spec) {
     view: 0,
     stations,
     phase: 'play',
-    parent: spec.parent || null
+    parent: spec.parent || null,
+    difficulty: kc.difficulty
   };
   return withKicking(state, kc);
 }
@@ -546,7 +635,7 @@ export function kickTap(state, outcome) {
   if (!cur || cur.phase !== 'play') return state;
   const stations = stationsFor(cur);
   const si = cur.order[cur.cursor];
-  const rec = recordAttempt(stations[si], cur.stations[si] || freshStation(), outcome);
+  const rec = recordAttempt(stations[si], cur.stations[si] || freshStation(attemptsFor(kc.difficulty)), outcome, kc.difficulty);
   cur.stations[si] = rec;
   if (rec.done) {
     if (cur.cursor + 1 >= cur.order.length) return withKicking(state, finalize(kc));
@@ -583,7 +672,7 @@ export function kickUndo(state) {
     rec = cur.stations[si] || freshStation();
   }
   const log = (rec.log || []).slice(0, -1);
-  cur.stations[si] = replayLog(stations[si], log);
+  cur.stations[si] = replayLog(stations[si], log, kc.difficulty);
   return withKicking(state, kc);
 }
 
@@ -616,8 +705,9 @@ export function kickRetry(state) {
 
 export function courseStats(kc) {
   const stats = kc.stats || blank().stats;
-  const doneStations = stats.first + stats.second + stats.third + stats.failed;
-  const successPct = doneStations ? Math.round(((stats.first + stats.second + stats.third) / doneStations) * 100) : 0;
+  const makes = stats.first + stats.second + stats.third + (stats.later || 0);
+  const doneStations = makes + stats.failed;
+  const successPct = doneStations ? Math.round((makes / doneStations) * 100) : 0;
   let best = 0;
   let levelStationsHit = 0;
   for (let i = 1; i <= 8; i++) {
@@ -695,7 +785,7 @@ export function auditStations() {
 
 auditStations();
 
-export function diagramHTML(station, { solution = false } = {}) {
+export function diagramHTML(station, { solution = false, difficulty = 'intermediate' } = {}) {
   const balls = [
     { id: 'cue', x: station.cue.x, y: station.cue.y },
     { id: station.ball, x: station.ob.x, y: station.ob.y }
@@ -705,7 +795,7 @@ export function diagramHTML(station, { solution = false } = {}) {
     balls,
     grid: true,
     headString: false,
-    targetPocket: station.pocket || null
+    targetPocket: pocketRequired(difficulty) ? designatedPocket(station) : (station.pocket || null)
   };
   if (solution) {
     const pts = [station.cue, ...station.hits, station.ob];
@@ -722,7 +812,7 @@ export function diagramHTML(station, { solution = false } = {}) {
   return renderTableDiagram(spec, { className: 'table-diagram' });
 }
 
-export function howToHTML(station, open) {
+export function howToHTML(station, open, difficulty = 'intermediate') {
   const tw = tipWords(station.tip);
   const englishLine = !station.tip.vTips && !station.tip.hTips
     ? 'ENGLISH: NONE'
@@ -741,7 +831,9 @@ export function howToHTML(station, open) {
     `<li><b>Cue-ball route.</b> ${esc(station.route)}, then the ${ballName(station.ball)}.</li>`,
     `<li><b>Object-ball contact.</b> The cue ball hits the ${ballName(station.ball)} after those rails.</li>`
   ];
-  if (station.pocket) items.push(`<li><b>Target pocket.</b> ${esc(station.pocket)}${station.requirePocket ? '. The pocket is required.' : ''}.</li>`);
+  const pro = pocketRequired(difficulty);
+  const pocket = pro ? designatedPocket(station) : station.pocket;
+  if (pocket) items.push(`<li><b>Target pocket.</b> ${esc(pocket)}${pro ? '. The pocket is required. A hit that misses the pocket is a miss.' : '. Pocketing is a bonus, not required.'}</li>`);
   items.push(`<li>${esc(station.why)}</li>`);
   const sign = open ? '−' : '+';
   return `<div class="stepHead"><span class="stepTitle">How to shoot it</span><button type="button" class="stepToggle" data-action="kick-how" aria-expanded="${open ? 'true' : 'false'}" aria-label="${open ? 'Hide how to shoot it' : 'Show how to shoot it'}">${sign}</button></div>
