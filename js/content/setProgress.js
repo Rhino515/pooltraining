@@ -18,6 +18,7 @@ import { SKILLS_EXAMS, skillsExamOf } from './buExam2.js';
 import * as moreExams from './buMore.js';
 import { SAFETY_NAME, SAFETY_ORDER, safetyOf } from './safetyMaster.js';
 import { offRailProgress } from './kickingCourse.js';
+import { trickProgressRows } from './trickShotCourse.js';
 import { ballPocketCourseRow } from './ballPocket.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -41,6 +42,8 @@ const SHORT = {
   safetyMaster: 'Safety Master',
   offRail: 'Off the Rail',
   offRailExam: 'Off the Rail Exam',
+  trick: 'Trick Shot',
+  trickExam: 'Trick Shot Exam',
   ballPocket: 'Ball Pocketing'
 };
 
@@ -57,6 +60,8 @@ const STYLES = {
   follow: { disc: '#f0d090', rim: '#9a7428', rimW: 1.3, inner: '#7a5814', innerW: 1.4, leaf: '#e2c07a', ribbon: '#c9a04a', ribbon2: '#a88840', ink: '#6e5420', mark: 'ring' },
   offRail: { disc: '#f6c453', rim: '#7a5814', rimW: 1.5, inner: '#fff6d4', innerW: 0.9, leaf: '#e2b14a', ribbon: '#c9922a', ribbon2: '#a97822', ink: '#7a5814', mark: 'rail' },
   offRailExam: { disc: '#f6c453', rim: '#7a5814', rimW: 1.5, inner: '#fff6d4', innerW: 0.9, leaf: '#e2b14a', ribbon: '#c9922a', ribbon2: '#a97822', ink: '#7a5814', mark: 'flag' },
+  trick: { disc: '#f6c453', rim: '#7a5814', rimW: 1.5, inner: '#fff6d4', innerW: 0.9, leaf: '#e2b14a', ribbon: '#c9922a', ribbon2: '#a97822', ink: '#7a5814', mark: 'trio' },
+  trickExam: { disc: '#f6c453', rim: '#7a5814', rimW: 1.5, inner: '#fff6d4', innerW: 0.9, leaf: '#e2b14a', ribbon: '#c9922a', ribbon2: '#a97822', ink: '#7a5814', mark: 'zmark' },
   safetyMaster: { disc: '#f6c453', rim: '#fff1c8', rimW: 2.5, inner: '#a97822', innerW: 0.9, leaf: '#e8c56a', ribbon: '#c9922a', ribbon2: '#e2b14a', ink: '#7a5814', mark: 'dot' },
   ballPocket: { disc: '#f6c453', rim: '#fff1c8', rimW: 2.5, inner: '#a97822', innerW: 0.9, leaf: '#e8c56a', ribbon: '#c9922a', ribbon2: '#e2b14a', ink: '#7a5814', mark: 'dot' }
 };
@@ -68,6 +73,8 @@ function centerMark(kind, ink) {
   if (kind === 'bar') return `<rect x="27" y="26.6" width="10" height="2.7" rx="1.2" fill="${ink}"/>`;
   if (kind === 'rail') return `<path d="M26.2 30.8h11.6M32 30.8 27.6 25.2" fill="none" stroke="${ink}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`;
   if (kind === 'flag') return `<path d="M28.2 24.2h7.2v4.6h-4.2v6.4h-3z" fill="${ink}"/>`;
+  if (kind === 'trio') return `<circle cx="26.5" cy="28" r="1.7" fill="${ink}"/><circle cx="32" cy="28" r="1.7" fill="${ink}"/><circle cx="37.5" cy="28" r="1.7" fill="${ink}"/>`;
+  if (kind === 'zmark') return `<path d="M26.4 24.6h7.2L26.4 31.4h7.2" fill="none" stroke="${ink}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`;
   return '';
 }
 
@@ -191,6 +198,7 @@ export function readSetProgress(state) {
   const pocket = ballPocketCourseRow(state);
   if (pocket) rows.push(pocket);
   for (const row of offRailProgress(state)) rows.push(row);
+  for (const row of trickProgressRows(state)) rows.push(row);
   return rows;
 }
 

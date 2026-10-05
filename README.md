@@ -28,6 +28,7 @@ Shot Simulator simplification. Playing-surface sizes (ball stays 2.25 in): 7 ft 
 - Cache `pool-iq-v14-2`, app version 14.
 - v14-1: 8-ball runout plays the group (not the 1-ball), shows a breakout for a tied-up ball, 3D is a low view from behind the cue ball, and full screen is the table plus EXIT.
 - v14-2: 3D view is a shaded table from behind the cue ball (wood rails, lit cloth, round balls, cue).
+- v14-90: Trick Shot Course on Drill Sets & Exams. Nine levels, then Trick Shot Exam. Make each shot 3 times to move on. Misses do not fail the level. Score is still 3, 2, 1, or 0. Not on the All list. No Career XP. Cache `pool-iq-v14-90`.
 - v14-89: Off the Rail has five one-rail, five two-rail, and five three-rail levels, then english, blocked kicks, kick and pocket, and kick position. Old level ids stay put, so a saved pass is not moved onto a new level. The exam stays Off the Rail Exam and stays locked until every level is passed. Cache `pool-iq-v14-89`.
 - v14-86: Off the Rail remembers a difficulty. Beginner is 5 attempts and a hit. Intermediate is 3 attempts and a hit. Pro is 3 attempts and the object ball must be pocketed. Pass stays 80%. No Career XP. Cache `pool-iq-v14-86`.
 - v14-85: Off the Rail is a kicking course on Drill Sets & Exams. Eight levels, then Off the Rail Exam. Balls sit on diamond crossings. Shoot on your table and tap the result. Not on the All list. No Career XP. Cache `pool-iq-v14-85`.

@@ -1857,3 +1857,9 @@ header{
 .kickPage .kickDiff{display:flex;gap:6px;margin:8px 0 4px}
 .kickPage .kickDiff .chip{flex:1;min-height:44px}
 .kickPage .kickDiffNote{margin:0 0 8px;font-size:13px;line-height:1.35}
+
+.trickStars{color:#e2b14a;letter-spacing:.08em}
+.trickCue{margin:8px 0}
+.trickCue .cb-diagram{width:120px;height:120px;display:block}
+.trickPass{margin:4px 0 8px}
+.trickBonus{display:flex;gap:8px;align-items:center;font-size:14px}

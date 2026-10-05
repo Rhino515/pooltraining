@@ -3,7 +3,7 @@
  * Routes: #home #career #drills #learn #analyze #arcade (shown as "Table Games"; #tablegames alias) #profile (#stats alias) #settings
  *         #ghost[/balls/race] #ghostmatch #game/<id> #play/<game>/<stage> #boss/<id> #bossplay/<id>
  *         #sim[/s=<code>|/target] (Shot Simulator) #drillnew[/fromsim] #drilledit/<id> (Create Drill)
- *         #courses (course list) #bpset (Ball Pocketing PDF drills) #kicking (Off the Rail) #drillfix/<id> (owner drill editor — only while DEV MODE is unlocked)
+ *         #courses (course list) #bpset (Ball Pocketing PDF drills) #kicking (Off the Rail) #trick (Trick Shot Course) #drillfix/<id> (owner drill editor — only while DEV MODE is unlocked)
  *         #content (My Content) #cimport (import error) #cview/<ref> #cplay/<ref>[/<stage>] #cedit/<uid>[/<loc>]  (.pooliq content, ui/content.js)
  */
 import { loadState, saveState, resetState, archiveUnknownDrills, onDataWrite, lsSet, idbAdapter } from './storage.js';
@@ -18,6 +18,7 @@ import { isSkillsId } from './content/buExam2.js';
 import { isMoreId, finishRdsRun } from './content/buMore.js';
 import { isSafetyId, safetyPageHTML } from './content/safetyMaster.js';
 import { createKickingScreen } from './ui/kickingPlay.js';
+import { createTrickScreen } from './ui/trickPlay.js';
 import { renderHome, renderCareerPage, renderDrillsPage, renderCoursesPage, renderArcade, renderGameLobby, renderBossPage, renderProfile, renderSettings, renderLearn, homeAuthHTML } from './dashboard.js';
 import { renderAnalyzePage, bindAnalyzeHandlers } from './analyze.js';
 import { renderGhostLobby, renderGhostMatch, newGhostSession, newEightSession, applyRack, applyUndo, applyBreak, setBreakMade, useBallInHand, rulesSheetHTML, maxUnlockedBalls, matchOver } from './ghost.js';
@@ -125,7 +126,7 @@ function parseHash() {
   return { name: name || 'home', args };
 }
 
-const NAV_FOR = { kicking: 'drills', account: 'profile', leaderboard: 'profile', gate: 'career', promo: 'career', champion: 'career', training: 'career', skill: 'profile', skills: 'profile', me: 'profile', drillrank: 'drills', friends: 'arcade', friend: 'arcade', h2h: 'arcade', fmatch: 'arcade', fsession: 'arcade', tourney: 'arcade', tnew: 'arcade', dev: 'profile', devgame: 'profile', devdrills: 'profile', devedit: 'profile', devkeys: 'profile', content: 'drills', cimport: 'drills', cview: 'drills', cplay: 'drills', cedit: 'drills', sim: 'sim', drillnew: 'drills', drilledit: 'drills', drillfix: 'drills', buexam: 'drills', safety: 'drills', courses: 'drills', bpset: 'drills', home: 'home', career: 'career', drills: 'drills', learn: 'learn', analyze: 'sim', arcade: 'arcade', tablegames: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', tgame: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
+const NAV_FOR = { kicking: 'drills', trick: 'drills', account: 'profile', leaderboard: 'profile', gate: 'career', promo: 'career', champion: 'career', training: 'career', skill: 'profile', skills: 'profile', me: 'profile', drillrank: 'drills', friends: 'arcade', friend: 'arcade', h2h: 'arcade', fmatch: 'arcade', fsession: 'arcade', tourney: 'arcade', tnew: 'arcade', dev: 'profile', devgame: 'profile', devdrills: 'profile', devedit: 'profile', devkeys: 'profile', content: 'drills', cimport: 'drills', cview: 'drills', cplay: 'drills', cedit: 'drills', sim: 'sim', drillnew: 'drills', drilledit: 'drills', drillfix: 'drills', buexam: 'drills', safety: 'drills', courses: 'drills', bpset: 'drills', home: 'home', career: 'career', drills: 'drills', learn: 'learn', analyze: 'sim', arcade: 'arcade', tablegames: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', tgame: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
 
 function setChrome(playing, navName) {
   document.body.classList.toggle('playing', playing);
@@ -284,6 +285,10 @@ function renderRoute() {
   else if (name === 'safety') v.innerHTML = safetyPageHTML(state);
   else if (name === 'kicking') {
     screen = createKickingScreen(ctx, args);
+    screen.render();
+    playing = true;
+  } else if (name === 'trick') {
+    screen = createTrickScreen(ctx, args);
     screen.render();
     playing = true;
   } else if (name === 'bpset') v.innerHTML = ballPocketPageHTML(state);

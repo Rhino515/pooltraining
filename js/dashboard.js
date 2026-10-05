@@ -26,6 +26,7 @@ import { examBannerHTML, accomplishmentHTML } from './content/buExam.js';
 import { setProgressBoxHTML, completedSetsLineHTML } from './content/setProgress.js';
 import { safetyBannerHTML } from './content/safetyMaster.js';
 import { offRailBannersHTML } from './content/kickingCourse.js';
+import { trickBannersHTML } from './content/trickShotCourse.js';
 import { ownerAccountSignedIn } from './dev/dev.js';
 import { homeAuthHTML } from './ui/account.js';
 export { homeAuthHTML };
@@ -330,7 +331,8 @@ export function renderCoursesPage(state) {
     ${examBannerHTML()}
     ${safetyBannerHTML()}
     ${ballPocketBannerHTML()}
-    ${offRailBannersHTML(state)}`;
+    ${offRailBannersHTML(state)}
+    ${trickBannersHTML(state)}`;
 }
 
 export function renderDrillsPage(state, filter = 'All', bpViewLevel = null) {
