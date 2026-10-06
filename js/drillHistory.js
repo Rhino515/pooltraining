@@ -29,14 +29,17 @@ export function stageLastAt(rec, progRec) {
   return msOf(rec.lastDate) || msOf(lastHist) || msOf(rec.firstPassDate) || msOf(progRec?.lastAt) || 0;
 }
 
+/** Today stays "Today"; every other day is a short numeric date (M/D, or M/D/YY if not this year). */
 function shortWhen(ms) {
   if (!ms) return '';
-  const days = (Date.now() - ms) / 86400000;
-  if (days < 0.5) return 'Today';
-  if (days < 1.5) return 'Yesterday';
-  if (days < 7) return `${Math.floor(days)}d ago`;
-  if (days < 40) return `${Math.floor(days / 7)}w ago`;
-  return new Date(ms).toLocaleDateString([], { month: 'short', day: 'numeric', year: days > 400 ? 'numeric' : undefined });
+  const d = new Date(ms);
+  if (!Number.isFinite(d.getTime())) return '';
+  const now = new Date();
+  if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()) return 'Today';
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  if (d.getFullYear() === now.getFullYear()) return `${m}/${day}`;
+  return `${m}/${day}/${String(d.getFullYear()).slice(-2)}`;
 }
 
 function statusOf(rec) {
