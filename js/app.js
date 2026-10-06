@@ -74,6 +74,7 @@ import { clearStageCache } from './games/registry.js';
 // v13: optional online accounts (Supabase) — sign-in, profile sync, cloud save, friends leaderboard
 import { createCloud } from './cloud/controller.js';
 import { renderAuthCallback } from './ui/account.js';
+import { initDiagramZoom } from './ui/diagramZoom.js';
 
 /** The hash the app was opened with (a Supabase email link lands as #access_token=… / #error_description=…) */
 const BOOT_HASH = typeof location !== 'undefined' ? location.hash : '';
@@ -997,6 +998,7 @@ async function boot() {
   loadGhostPreset();
   initInstall(() => { if ((route.name === 'home' || route.name === 'settings') && !document.querySelector('#sheet.show')) renderRoute(); });
   window.addEventListener('hashchange', renderRoute);
+  initDiagramZoom(); // v14-123: tap a table diagram to view it full screen
   cloud.init(BOOT_HASH); // loads the account library only if signed in before or opened from an email link
   renderRoute();
   document.documentElement.dataset.ready = '1';
