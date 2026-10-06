@@ -15,6 +15,48 @@ function page(title, body, href = '#learn', label = 'Learn') {
   return `<div class="title learnPage" data-page-learn><div>${back(href, label)}</div><h1>${esc(title)}</h1>${body}</div>`;
 }
 
+/**
+ * v14-109: Learn page titles always fit the phone width. CSS sizes them with clamp()+vw;
+ * this shrinks a title (only when needed) so its longest word never clips or makes the page scroll sideways.
+ * Runs in a MutationObserver callback (a microtask), so the title is fitted before the browser paints it.
+ */
+export const LEARN_TITLE_SEL = '.title.learnPage > h1';
+const FIT_MIN_PX = 18;
+export function fitLearnTitle(h) {
+  if (!h || !h.isConnected) return;
+  h.style.fontSize = '';
+  h.style.overflowWrap = '';
+  const cw = h.clientWidth;
+  if (!cw) return;
+  if (h.scrollWidth <= cw) return;
+  let size = parseFloat(getComputedStyle(h).fontSize) || 40;
+  size = Math.max(FIT_MIN_PX, Math.floor(size * cw / h.scrollWidth));
+  h.style.fontSize = `${size}px`;
+  while (h.scrollWidth > h.clientWidth && size > FIT_MIN_PX) {
+    size -= 1;
+    h.style.fontSize = `${size}px`;
+  }
+  if (h.scrollWidth > h.clientWidth) h.style.overflowWrap = 'anywhere';
+}
+export function fitLearnTitles(root = typeof document !== 'undefined' ? document : null) {
+  if (!root) return;
+  root.querySelectorAll(LEARN_TITLE_SEL).forEach(fitLearnTitle);
+}
+if (typeof document !== 'undefined' && typeof MutationObserver !== 'undefined' && !globalThis.__poolIQLearnTitleFit) {
+  globalThis.__poolIQLearnTitleFit = true;
+  const start = () => {
+    new MutationObserver((muts) => {
+      if (muts.some((m) => m.addedNodes.length)) fitLearnTitles();
+    }).observe(document.body, { childList: true, subtree: true });
+    let raf = 0;
+    addEventListener('resize', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => fitLearnTitles()); });
+    document.fonts?.ready?.then(() => fitLearnTitles());
+    fitLearnTitles();
+  };
+  if (document.body) start();
+  else addEventListener('DOMContentLoaded', start, { once: true });
+}
+
 function src(name, url) {
   return `<p class="learnSrc"><b>Source:</b> ${esc(name)}<br><a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(url)}</a></p>`;
 }

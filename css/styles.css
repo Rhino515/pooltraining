@@ -1586,6 +1586,8 @@ body.fix-full #app{height:100dvh;padding:0}
 .learnCard{position:relative;display:block;width:100%;min-height:156px;padding:0;border-radius:18px;overflow:hidden;text-align:left;color:#fff;cursor:pointer;background:#071018;border:1.5px solid #e2b45a;box-shadow:0 12px 28px #0008}
 .learnCard.blue{border-color:#2f8fe8}
 .title.learnPage > h1{font-variant-caps:normal;text-transform:uppercase;letter-spacing:.04em}
+/* v14-109: Learn page titles always fit the phone (320–430px): clamp()+vw here, js/learn.js fitLearnTitle shrinks a long word further only when it would clip */
+.title.learnPage > h1{font-size:clamp(26px,11.5vw,60px);max-width:100%;overflow-wrap:normal}
 .learnCard .lcBg{position:absolute;inset:0;background-size:cover;background-position:68% center}
 .learnCard .lcShade{position:absolute;inset:0;background:linear-gradient(100deg,#050b14f2 0%,#050b14ea 30%,#050b14c0 46%,#050b1466 62%,#050b1420 78%,#050b1400 90%)}
 .learnCard .lcIn{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,1fr) 40px;gap:8px;align-items:center;min-height:156px;padding:16px 12px 16px 16px}
