@@ -474,11 +474,13 @@ function bodyPage(body) {
         <li>A team night is five individual matches. Each one is 30 minutes. There is no match race. UPScore sets a starting score. Points from the five matches are added for the team result.</li>
         <li>Players lag for the first break. Breaks then alternate. Players rack their own balls.</li>
         <li>Clocks, section 6: a 30-minute match clock and a 30-second shot clock. One 30-second extension per rack. The extension must be indicated before it is used. The match clock starts when the cue ball is struck on the first break. The shot clock starts when all balls have stopped and the table is free.</li>
+        <li>6-Ball Shootout, section 9: a timed tiebreak used at Grand Finals Qualifiers, Grand Finals and the NSL. Pocket six object balls. The fastest time wins. Each foul adds five seconds. After a scratch, ball in hand anywhere. The back middle ball is racked on the foot spot.</li>
         <li>Handicap chart, section 5.4: the higher-rated player starts negative. Rows are a rating difference of 40, 80, 120, and 180. The column is the lower player’s UPScore: 400 and below, 401–520, or 521 and above. A difference over 180 still uses the 180 row. A difference under 40 is not on the chart.</li>
       </ul>
       ${list(rows)}
       <p class="muted small">Coaching, roster limits, and the full object-ball rules are in the manual and are not copied here.</p>
-      <button type="button" class="bigBtn" data-action="go" data-href="#tgame/upusa">OPEN THE TABLE GAME</button>`, '#learn/play', 'How to Play & Rules');
+      <button type="button" class="bigBtn" data-action="go" data-href="#tgame/upusa">OPEN THE TABLE GAME</button>
+      <button type="button" class="bigBtn alt" data-action="go" data-href="#tgame/shootout">OPEN 6-BALL SHOOTOUT</button>`, '#learn/play', 'How to Play & Rules');
   }
   return page('Rules', '<p class="muted">That rules page is not in this list.</p>', '#learn/play', 'How to Play & Rules');
 }

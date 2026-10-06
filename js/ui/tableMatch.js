@@ -17,6 +17,7 @@ import { readRulePrefs, writeRulePrefs, stepsAreOpen, toggleStepsOpen, stepToggl
 import { HOW } from '../learn.js';
 import { readGameSettings, writeGameSettings, settingsPanelHTML, settingsAction, createClock, clockActive, clockPanelHTML, clockAction, clockReconfigure, clockNewRack, clockTick, normalizeClock } from './gameSettings.js';
 import { createGameEditor, createCustomPlay, readCustomGame } from './customGame.js';
+import { createShootout } from './shootout.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const pad = (n) => String(n).padStart(2, '0');
@@ -138,6 +139,7 @@ export function createTableMatch(ctx, kind, rest = []) {
     if (g && g.preset === 'straight' && g.scoring === 'points' && g.count === 15) return straightScreen(ctx, { custom: g });
     return createCustomPlay(ctx, kind);
   }
+  if (kind === 'shootout') return createShootout(ctx, rest);
   if (kind === 'loop') return withKit(ctx, 'loop', createLoopMatch(ctx));
   if (kind === 'straight') return straightScreen(ctx);
   if (kind === 'onepocket') return onePocketScreen(ctx);
@@ -628,6 +630,7 @@ function upusaScreen(ctx) {
             <button type="button" class="chip${ui.breaker === 'b' ? ' active' : ''}" data-action="up-break" data-v="b">LAG WINNER: OPPONENT BREAKS</button>
           </div>` : ''}
         ${pts ? `<div class="resultPanel ${pts.draw ? '' : 'pass'} inline"><h1>${pts.draw ? 'DRAW' : fa > fb ? 'YOU WIN THE MATCH' : 'OPPONENT WINS THE MATCH'}</h1><p>Team points from §5.6: you ${pts.a}, opponent ${pts.b}. ${pts.draw ? 'A draw gives each team that player’s final score.' : 'Winner gets 5 plus the final score, unless that score is 0. Loser gets the final score. Cap 20.'}</p></div>` : ''}
+        ${pts && pts.draw && ui.ended ? '<div class="card soFromUpl" data-upl-shootout><p class="muted small">Tied when the match clock ran out. The manual settles a tied singles match with a 6-Ball Shootout (§9.3), at Grand Finals Qualifiers, Grand Finals and the NSL, not in regular session play (§9.1).</p><button type="button" class="bigBtn" data-action="go" data-href="#tgame/shootout/upl">PLAY 6-BALL SHOOTOUT</button></div>' : ''}
         <p class="muted small">Included: lag choice, alternate breaks, rack score, match clock and shot clock (league defaults 30 minutes and 30 seconds${isDefault ? '' : `; this match ${cfg.matchMin} minutes and ${cfg.shotSec} seconds`}), extensions (league default one 30-second extension per player per rack${isDefault ? '' : `; this match ${cfg.extN} × ${cfg.extSec} seconds`}), handicap chart, team points for this one match. Left out: a five-match team night, coin-toss lineups, roster limits, coaching, and the object-ball rules. Source: UPL League Manual v5.0, league.ultimatepoolusa.com/docs/uplmanual.pdf.</p>
       </div>
       <div class="resultBar n2">

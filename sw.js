@@ -1,4 +1,4 @@
-const CACHE = 'pool-iq-v14-119';
+const CACHE = 'pool-iq-v14-120';
 const ASSETS = [
   './',
   './index.html',
@@ -354,6 +354,7 @@ const ASSETS = [
   './icons/tg-cribbage.png',
   './icons/tg-kicksafe.png',
   './icons/tg-create.png',
+  './icons/tg-shootout.png',
   './fonts/poppins-regular.woff2',
   './fonts/poppins-medium.woff2',
   './fonts/poppins-semibold.woff2',
@@ -510,6 +511,7 @@ const ASSETS = [
   './js/ui/gameSettings.js',
   './js/ui/rackLayout.js',
   './js/ui/customGame.js',
+  './js/ui/shootout.js',
   './js/ui/stepFold.js',
   './js/ui/simulator.js',
   './js/ui/tipPicker.js',

@@ -2170,3 +2170,39 @@ header{
 .cgBall.is-low{box-shadow:0 0 0 3px var(--cyan),0 0 14px var(--cyan)}
 .cgBall.is-game{border-color:var(--gold)}
 .cgBall.is-down{opacity:.22}
+/* v14-120 6-Ball Shootout (UPL §9) */
+.soCard{padding:14px;margin:0 0 10px}
+.soCard .chips{margin:8px 0}
+.soRackArt{border-radius:14px;overflow:hidden;background:#06101b}
+.soRackArt svg{display:block;width:100%;height:auto;overflow:hidden}
+.soRackArt.small{max-width:220px;margin:10px auto 0}
+.soField{display:block;margin-top:8px}
+.soField span{display:block;color:var(--cyan);font-size:11px;letter-spacing:2px;font-weight:800}
+.soField .cgNameInput{margin:4px 0 0}
+.soTeam{margin-top:6px;padding-top:4px;border-top:1px solid #142233}
+.soPair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cgNameInput.small{font-size:14px;padding:9px;margin:6px 0 0}
+.soWho{text-align:center;margin:4px 0 8px}
+.soWho small{display:block;color:var(--cyan);letter-spacing:2px;font-size:11px;font-weight:800}
+.soWho b{display:block;font-size:24px;margin:2px 0}
+.soWatch{text-align:center;background:#0b1522;border:2px solid #1f3044;border-radius:22px;padding:14px 10px;margin:6px 0 10px}
+.soWatch>b{display:block;font-size:68px;line-height:1.05;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:1px}
+.soWatch span{display:block;color:var(--muted);font-size:12px;letter-spacing:1px;margin-top:6px}
+.soWatch span b{color:var(--text)}
+.soWatch .soFinal{color:var(--gold);font-weight:800;font-size:14px}
+.soWatch .soFinal b{color:var(--gold);font-variant-numeric:tabular-nums}
+.soWatch.is-running{border-color:var(--blue);box-shadow:0 0 22px #0a9dff44}
+.soWatch.is-running>b{color:var(--cyan)}
+.soWatch.is-done{border-color:#18c587}
+.soBar .soBig{min-height:76px}
+.soBar .soBig b{font-size:24px}
+.soPrev b{color:var(--text)}
+.soTable{width:100%;border-collapse:collapse;margin:8px 0;font-size:13px;font-variant-numeric:tabular-nums}
+.soTable th,.soTable td{padding:8px 4px;border-bottom:1px solid #1a2738;text-align:right}
+.soTable th:first-child{text-align:left}
+.soTable thead th{color:var(--muted);font-size:10px;letter-spacing:1px}
+.soTable tr.win th,.soTable tr.win td b{color:var(--green)}
+.soRulesCard>summary{list-style:none;cursor:pointer}
+.soRulesCard>summary::-webkit-details-marker{display:none}
+.soFromUpl{padding:12px 14px;margin:8px 0}
+.soScreen .rb.alt,[data-table-game="custom"] .rb.alt{background:#15304c;border:1px solid #1f5f99;color:#dff6ff}
