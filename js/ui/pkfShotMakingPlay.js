@@ -292,7 +292,7 @@ function listHTML(state) {
   const mig = course.migratedFromCueBall?.lessons
     ? `<p class="card muted small" data-pkfsm-migrated="1">Your Center Ball progress from the PKF Cue Ball Control Course was carried over here (${course.migratedFromCueBall.lessons} lessons).${course.unlockAll ? ' You had passed Center Ball there, so every section is open.' : ''}</p>` : '';
   return `<div class="playScreen kickPage pkfbPage pkfsmPage" data-pkfsm-home="1">
-    <div class="title"><button type="button" class="linkish back" data-action="go" data-href="#courses">‹ Drill Sets & Exams</button><span class="eyebrow">DRILL SET</span><h1>${esc(COURSE_TITLE)}</h1><p>PKF Chapter Three, Center Ball (pages 23–43), on the original pages. Sections unlock in order at ${Math.round(KNOWLEDGE_PASS * 100)}% knowledge (app setting).</p></div>
+    <div class="title"><button type="button" class="linkish back" data-action="go" data-href="#learn/fundamentals">‹ Fundamentals</button><span class="eyebrow">COURSE</span><h1>${esc(COURSE_TITLE)}</h1><p>PKF Chapter Three, Center Ball (pages 23–43), on the original pages. Sections unlock in order at ${Math.round(KNOWLEDGE_PASS * 100)}% knowledge (app setting).</p></div>
     ${mig}
     <details class="ruleMore"><summary>How each lesson works</summary><ol class="gameSteps">
       <li>LEARN from the original PKF page.</li>

@@ -264,7 +264,7 @@ function listHTML(state) {
     : `<button type="button" class="stageRow card locked" disabled data-pkfcb-exam="1" data-pkfcb-exam-locked="1"><span class="srNum">🔒</span><span class="srMain"><b>${esc(EXAM_TITLE)}</b><small>Locked until all sections are passed.</small></span></button>`;
   const st = course.stats;
   return `<div class="playScreen kickPage pkfbPage pkfcbPage" data-pkfcb-home="1">
-    <div class="title"><button type="button" class="linkish back" data-action="go" data-href="#courses">‹ Drill Sets & Exams</button><span class="eyebrow">DRILL SET</span><h1>${esc(COURSE_TITLE)}</h1><p>Cue ball control from PKF Pattern Play — original pages. Sections unlock at ${Math.round(KNOWLEDGE_PASS * 100)}% knowledge.</p></div>
+    <div class="title"><button type="button" class="linkish back" data-action="go" data-href="#learn/fundamentals">‹ Fundamentals</button><span class="eyebrow">COURSE</span><h1>${esc(COURSE_TITLE)}</h1><p>Cue ball control from PKF Pattern Play — original pages. Sections unlock at ${Math.round(KNOWLEDGE_PASS * 100)}% knowledge.</p></div>
     <div class="card pkfcbPrereq" data-pkfcb-prereq-course="1"><span class="eyebrow">PREREQUISITE COURSE</span><p><b>${esc(PREREQ_COURSE.title)}</b></p><p class="muted small">Center ball, finding center, high and low action, and the stop shot (PKF Chapter Three) are taught there. This course starts at Sliding Cue Ball.</p><button type="button" class="chip" data-action="go" data-href="${esc(PREREQ_COURSE.href)}">OPEN COURSE</button></div>
     <details class="ruleMore"><summary>How each lesson works</summary><ol class="gameSteps">
       <li>LEARN from the original PKF page.</li>
@@ -289,7 +289,7 @@ function skippedListHTML(course) {
 
 function lockedExamHTML() {
   return `<div class="playScreen kickPage pkfbPage pkfcbPage" data-pkfcb-exam-locked="1">
-    <div class="title"><button type="button" class="linkish back" data-action="go" data-href="#courses">‹ Drill Sets & Exams</button><span class="eyebrow">EXAM</span><h1>${esc(EXAM_TITLE)}</h1></div>
+    <div class="title"><button type="button" class="linkish back" data-action="go" data-href="#learn/fundamentals">‹ Fundamentals</button><span class="eyebrow">EXAM</span><h1>${esc(EXAM_TITLE)}</h1></div>
     <div class="card"><p>Locked until all sections are passed.</p><button type="button" class="bigBtn" data-action="go" data-href="#pkfcb">Back to ${esc(COURSE_TITLE)}</button></div>
   </div>`;
 }

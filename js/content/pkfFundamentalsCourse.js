@@ -1129,7 +1129,7 @@ export function pkfFundProgressRows(state) {
 export function pkfFundBannersHTML(state, { dev = false } = {}) {
   const real = examUnlocked(state || {});
   const open = real || dev;
-  const course = `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#pkffund" data-pkffund="course"><span class="simPromoText"><span class="eyebrow">DRILL SET</span><b>${esc(COURSE_TITLE)}</b><small>${SECTIONS.length} sections from PKF Fundamentals: shooting line, stance, grip, stroke, the stroke drill, then every stance and bridge PKF shows.</small></span><span class="simPromoGo">›</span></button>`;
+  const course = `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#pkffund" data-pkffund="course"><span class="simPromoText"><span class="eyebrow">COURSE</span><b>${esc(COURSE_TITLE)}</b><small>${SECTIONS.length} sections from PKF Fundamentals: shooting line, stance, grip, stroke, the stroke drill, then every stance and bridge PKF shows.</small></span><span class="simPromoGo">›</span></button>`;
   const exam = open
     ? `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#pkffund/exam" data-pkffund="exam"${real ? '' : ' data-dev-open="1"'}><span class="simPromoText"><span class="eyebrow">EXAM</span><b>${esc(EXAM_TITLE)}</b><small>Knowledge checks + physical checkpoints. Pass at ${Math.round(EXAM_PASS * 100)}% knowledge.${real ? '' : ' Dev preview.'}</small></span><span class="simPromoGo">›</span></button>`
     : `<div class="card simPromo buEntry is-locked" data-pkffund="exam" data-pkffund-locked="1"><span class="simPromoText"><span class="eyebrow">EXAM</span><b>${esc(EXAM_TITLE)}</b><small>Locked until all sections are passed.</small></span></div>`;

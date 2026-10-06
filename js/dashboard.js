@@ -65,8 +65,8 @@ function homeExtrasHTML(x = {}) {
   return out;
 }
 
-export function renderLearn(args = []) {
-  return learnHTML(args);
+export function renderLearn(args = [], state = null) {
+  return learnHTML(args, { pkfHTML: state ? pkfCurriculumHTML(state) : '' });
 }
 
 
@@ -338,9 +338,20 @@ function coursesCardHTML() {
   return `<button type="button" class="coursesCard" data-action="go" data-href="#courses" data-courses="1"><img src="./images/courses/efren-reyes.jpg" alt="" width="1400" height="530"/><span class="coursesLabel">Drill Sets & Exams</span></button>`;
 }
 
-/** Small "where to start" pointer above the collapsed groups (static, no stored state). */
-function startHereHTML() {
-  return `<div class="card dsStart" data-ds-start="pkffund"><span class="dsStartText"><span class="eyebrow">NEW HERE?</span><b>Start with PKF Fundamentals</b><small>It’s the first course in the PKF curriculum.</small></span><button type="button" class="chip dsStartGo" data-action="go" data-href="#pkffund">OPEN</button></div>`;
+/**
+ * PKF curriculum (courses, each followed by its exam) for Learn > Fundamentals.
+ * Same banners as before (COURSE / EXAM label, locked state, progress); routes, storage and XP unchanged.
+ */
+export function pkfCurriculumHTML(state) {
+  const dev = devBypass();
+  // Curriculum order: Fundamentals, Shot Making, Cue Ball Control, Pattern Play, Advanced Play & Safety, Kicking, Banking.
+  return pkfFundBannersHTML(state, { dev })
+    + pkfShotMakingBannersHTML(state, { dev })
+    + pkfCueBallBannersHTML(state, { dev })
+    + pkfPatternPlayBannersHTML(state, { dev })
+    + pkfAdvancedPlaySafetyBannersHTML(state, { dev })
+    + pkfBannersHTML(state)
+    + pkfBankBannersHTML(state, { dev });
 }
 
 /**
@@ -359,23 +370,13 @@ function courseGroupHTML(key, title, note, tiles) {
 }
 
 export function renderCoursesPage(state) {
-  const dev = devBypass();
   // BU: Exam I, Exam II (Bachelors, Masters, Doctorate), then Exam III, RDS (Exam IV), Exams V–VIII.
   const bu = examBannerHTML();
-  // PKF in curriculum order: Fundamentals, Shot Making, Cue Ball Control, Pattern Play, Advanced Play & Safety, Kicking, Banking.
-  const pkf = pkfFundBannersHTML(state, { dev })
-    + pkfShotMakingBannersHTML(state, { dev })
-    + pkfCueBallBannersHTML(state, { dev })
-    + pkfPatternPlayBannersHTML(state, { dev })
-    + pkfAdvancedPlaySafetyBannersHTML(state, { dev })
-    + pkfBannersHTML(state)
-    + pkfBankBannersHTML(state, { dev });
+  // v14-113: the PKF courses and exams live in Learn > Fundamentals (pkfCurriculumHTML), not here.
   const other = safetyBannerHTML() + ballPocketBannerHTML() + offRailBannersHTML(state) + trickBannersHTML(state);
   return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#drills">‹ Drills</button><span class="eyebrow">DRILL LIBRARY</span><h1>Drill Sets & Exams</h1></div>
-    ${startHereHTML()}
     <div class="dsGroups">
     ${courseGroupHTML('bu', 'BU EXAMS', { lead: 'For intermediate players', sub: 'Billiard University · Dr. Dave' }, bu)}
-    ${courseGroupHTML('pkf', 'PKF', { lead: 'Recommended for starters', sub: 'The complete path from beginner to expert' }, pkf)}
     ${courseGroupHTML('other', 'OTHER DRILL SETS &amp; EXAMS', '', other)}
     </div>`;
 }

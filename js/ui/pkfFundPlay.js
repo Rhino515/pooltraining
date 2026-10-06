@@ -300,7 +300,7 @@ function listHTML(state) {
   }).join('');
   const replay = completed ? `<details class="card ruleMore pkffReplay" data-pkff-replay="1"><summary>Replay a completed lesson</summary>${completed}</details>` : '';
   return `<div class="playScreen kickPage pkfbPage pkffPage" data-pkff-home="1">
-    <div class="title"><button type="button" class="linkish back" data-action="go" data-href="#courses">‹ Drill Sets & Exams</button><span class="eyebrow">DRILL SET</span><h1>${esc(COURSE_TITLE)}</h1><p>From PKF Fundamentals. Every lesson uses the original PKF pages. Sections unlock at ${Math.round(KNOWLEDGE_PASS * 100)}% on knowledge checks.</p></div>
+    <div class="title"><button type="button" class="linkish back" data-action="go" data-href="#learn/fundamentals">‹ Fundamentals</button><span class="eyebrow">COURSE</span><h1>${esc(COURSE_TITLE)}</h1><p>From PKF Fundamentals. Every lesson uses the original PKF pages. Sections unlock at ${Math.round(KNOWLEDGE_PASS * 100)}% on knowledge checks.</p></div>
     <details class="ruleMore"><summary>How each lesson works</summary><ol class="gameSteps">
       <li>LEARN and SEE on the original PKF page. Tap a figure to enlarge, pinch to zoom, or view the full page.</li>
       <li>UNDERSTAND what PKF is teaching and why.</li>

@@ -323,10 +323,10 @@ st = finish(st, { fail: true });
 
 // ---------------------------------------------------------------- isolation + copy hygiene
 {
-  const hashes = {
-    'js/content/pkfCueBallCourse.js': '96b632756e2f220253ccdcc6c3b901f4ee982c5d6c6234478d61a5bedc5610ee',
+  const hashes = { // v14-113: Cue Ball Control course card says COURSE and Back goes to Learn > Fundamentals
+    'js/content/pkfCueBallCourse.js': '711d29c3d432bb9a35c92c2669f86e4bb64725a700fc018ebc6ce1b3138e007b',
     'js/content/pkfCueBallAssets.js': 'a51bb07963bc3c2aac7f8a7e51e194689373570370dd35f164c95e0cfc5c5be5',
-    'js/ui/pkfCueBallPlay.js': 'dcc15f65dec5e2c88a3d74c6b74a54f38f65798198a019abbb272a10e5c0f05a'
+    'js/ui/pkfCueBallPlay.js': '4adc83547a9f1b521b516c5214f795a675f2e100d90a1f9d75d6f80d015c631d'
   };
   assert(Object.entries(hashes).every(([f, h]) => sha(fs.readFileSync(path.join(root, f))) === h), 'PKF Cue Ball Control files untouched');
   assert(CB.LESSONS.length === 41 && CB.EXAM_ITEMS.length === 10, 'Cue Ball Control lessons / exam unchanged');

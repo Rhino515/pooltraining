@@ -1,5 +1,5 @@
 /**
- * PKF Banking Systems Course — learning course on Drill Sets & Exams.
+ * PKF Banking Systems Course — learning course in Learn > Fundamentals (PKF list).
  * Source (only authority): PKF Pattern Play / Cue Ball Control, Chapter Eight, printed pages 241–244
  * (PDF 267–270). The banking material is embedded in the kicking chapter: path-number context (241–242),
  * the ten-ball "find the path" drill (242–243), Zero-X Banking (243), end-rail banks + speed and the
@@ -606,7 +606,7 @@ export function pkfBankBannersHTML(state, { dev = false } = {}) {
   const real = examUnlocked(state || {});
   const open = real || dev;
   const n = playableSectionCount();
-  const course = `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#pkfbank" data-pkfbank="course"><span class="simPromoText"><span class="eyebrow">DRILL SET</span><b>${esc(COURSE_TITLE)}</b><small>${n} sections from the PKF banking pages. Find the path, lock your answer, see the PKF page, then bank it on your table.</small></span><span class="simPromoGo">›</span></button>`;
+  const course = `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#pkfbank" data-pkfbank="course"><span class="simPromoText"><span class="eyebrow">COURSE</span><b>${esc(COURSE_TITLE)}</b><small>${n} sections from the PKF banking pages. Find the path, lock your answer, see the PKF page, then bank it on your table.</small></span><span class="simPromoGo">›</span></button>`;
   const exam = open
     ? `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#pkfbank/exam" data-pkfbank="exam"${real ? '' : ' data-dev-open="1"'}><span class="simPromoText"><span class="eyebrow">EXAM</span><b>${esc(EXAM_TITLE)}</b><small>Knowledge + table execution. Pass at ${Math.round(EXAM_PASS * 100)}%.${real ? '' : ' Dev preview.'}</small></span><span class="simPromoGo">›</span></button>`
     : `<div class="card simPromo buEntry is-locked" data-pkfbank="exam" data-pkfbank-locked="1"><span class="simPromoText"><span class="eyebrow">EXAM</span><b>${esc(EXAM_TITLE)}</b><small>Locked until all sections are passed.</small></span></div>`;

@@ -184,7 +184,7 @@ function listHTML(state) {
     ? `<button type="button" class="stageRow card" data-action="go" data-href="#pkfkick/exam" data-pkfkick-exam="1"><span class="srNum">${examReal ? '●' : '🔓'}</span><span class="srMain"><b>${esc(EXAM_TITLE)}</b><small>${EXAM_ITEMS.length} items. Pass at ${Math.round(EXAM_PASS * 100)}%.${examReal ? '' : ' Dev preview.'}</small></span></button>`
     : `<button type="button" class="stageRow card locked" disabled data-pkfkick-exam="1" data-pkfkick-exam-locked="1"><span class="srNum">🔒</span><span class="srMain"><b>${esc(EXAM_TITLE)}</b><small>Locked until all sections are passed.</small></span></button>`;
   return `<div class="playScreen kickPage pkfPage" data-pkfkick-home="1">
-    <div class="title"><button type="button" class="linkish back" data-action="go" data-href="#courses">‹ Drill Sets & Exams</button><span class="eyebrow">DRILL SET</span><h1>${esc(COURSE_TITLE)}</h1><p>Learn → understand → solve → lock answer → reveal the PKF page → shoot on your table. Sections unlock after ${Math.round(KNOWLEDGE_PASS * 100)}% knowledge. Completed sections stay open.</p></div>
+    <div class="title"><button type="button" class="linkish back" data-action="go" data-href="#learn/fundamentals">‹ Fundamentals</button><span class="eyebrow">COURSE</span><h1>${esc(COURSE_TITLE)}</h1><p>Learn → understand → solve → lock answer → reveal the PKF page → shoot on your table. Sections unlock after ${Math.round(KNOWLEDGE_PASS * 100)}% knowledge. Completed sections stay open.</p></div>
     <div class="card"><p>${passed} of ${total} sections passed · Shots ${pkf.stats.executionMake}/${pkf.stats.executionMake + pkf.stats.executionMiss} · <span data-pkf-skipped-stat="${pkf.stats.tableSkipped || 0}">Table steps skipped ${pkf.stats.tableSkipped || 0}</span></p></div>
     ${skippedListHTML(pkf)}
     <div class="stageList" data-pkfkick-sections="1">${rows}${examBtn}</div>
@@ -200,7 +200,7 @@ function skippedListHTML(pkf) {
 
 function lockedExamHTML() {
   return `<div class="playScreen kickPage pkfPage" data-pkfkick-exam-locked="1">
-    <div class="title"><button type="button" class="linkish back" data-action="go" data-href="#courses">‹ Drill Sets & Exams</button><span class="eyebrow">EXAM</span><h1>${esc(EXAM_TITLE)}</h1></div>
+    <div class="title"><button type="button" class="linkish back" data-action="go" data-href="#learn/fundamentals">‹ Fundamentals</button><span class="eyebrow">EXAM</span><h1>${esc(EXAM_TITLE)}</h1></div>
     <div class="card"><p>Locked until all sections are passed.</p><button type="button" class="bigBtn" data-action="go" data-href="#pkfkick">Back to ${esc(COURSE_TITLE)}</button></div>
   </div>`;
 }

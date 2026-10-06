@@ -352,7 +352,7 @@ function listHTML(state) {
   const practiceBtn = p.needsPractice ? `<button type="button" class="bigBtn alt" data-action="go" data-href="#pkfpattern/practice" data-pkfpp-practice="1">PRACTICE FAILED RUNOUTS (${p.needsPractice})</button>` : '';
   const positionBtn = p.positionReview ? `<button type="button" class="bigBtn alt" data-action="go" data-href="#pkfpattern/position" data-pkfpp-position-review="1">REVIEW POSITION ERRORS (${p.positionReview})</button>` : '';
   return `<div class="playScreen kickPage pkfbPage pkfppPage" data-pkfpp-home="1">
-    <div class="title"><button type="button" class="linkish back" data-action="go" data-href="#courses">‹ Drill Sets & Exams</button><span class="eyebrow">DRILL SET</span><h1>${esc(COURSE_TITLE)}</h1><p>PKF Half Table Patterns and Full Table Patterns (printed pages 58–136), on the original pages. Sections unlock in order at ${Math.round(KNOWLEDGE_PASS * 100)}% pattern knowledge (app setting).</p></div>
+    <div class="title"><button type="button" class="linkish back" data-action="go" data-href="#learn/fundamentals">‹ Fundamentals</button><span class="eyebrow">COURSE</span><h1>${esc(COURSE_TITLE)}</h1><p>PKF Half Table Patterns and Full Table Patterns (printed pages 58–136), on the original pages. Sections unlock in order at ${Math.round(KNOWLEDGE_PASS * 100)}% pattern knowledge (app setting).</p></div>
     <details class="ruleMore"><summary>How each lesson works</summary><ol class="gameSteps">
       <li>LEARN THE PATTERN from PKF’s original layout and page.</li>
       <li>Read the table: what’s next, where the cue ball should go, the sequence, the route, the action, the problem ball. Then LOCK. Nothing is revealed before you lock.</li>

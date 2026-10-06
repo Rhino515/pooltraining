@@ -196,7 +196,7 @@ G.setDevBypass?.(() => false);
 {
   const L0 = screen({}, []);
   assert(/data-pkff-home/.test(L0.html()) && /FUNDAMENTALS/.test(L0.html()) && /BRIDGES \/ STANCES/.test(L0.html()), 'list shows both areas');
-  assert(/data-pkff-exam-locked="1"/.test(L0.html()) && /data-href="#courses"/.test(L0.html()), 'list: exam locked, back to Drill Sets');
+  assert(/data-pkff-exam-locked="1"/.test(L0.html()) && /data-href="#learn\/fundamentals"/.test(L0.html()), 'list: exam locked, back to Learn > Fundamentals (v14-113)');
   assert(/REVIEW FUNDAMENTALS/.test(L0.html()) && /NEEDS PRACTICE/.test(L0.html()) && /data-pkff-progress/.test(L0.html()), 'list: progress + review + needs-practice');
   const P = screen({}, ['shooting-line']);
   assert(/data-type="LEARN"/.test(P.html()) && /WHAT PKF SHOWS/.test(P.html()) && /VIEW FULL PKF PAGE/.test(P.html()), 'LEARN screen with original page + full page button');

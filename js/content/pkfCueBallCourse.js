@@ -1,5 +1,5 @@
 /**
- * PKF Cue Ball Control Course — Drill Sets & Exams.
+ * PKF Cue Ball Control Course — Learn > Fundamentals (PKF list).
  * Source: PKF Pattern Play / Cue Ball Control, Chapters Four–Six (Sliding Cue Ball, Half Table Pattern Play,
  * Full Table Patterns). Original JPEGs only.
  * Chapter Three (Center Ball) moved to the PKF Shot Making & Center Ball Course (pkfShotMakingCourse.js);
@@ -525,7 +525,7 @@ export function pkfCueBallBannersHTML(state, { dev = false } = {}) {
   const real = examUnlocked(state || {});
   const open = real || dev;
   const n = playableSectionCount();
-  const course = `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#pkfcb" data-pkfcb="course"><span class="simPromoText"><span class="eyebrow">DRILL SET</span><b>${esc(COURSE_TITLE)}</b><small>${n} sections: sliding cue ball, half-table and full-table patterns. Builds on the Shot Making & Center Ball Course. Lock answers, then shoot for position on your table.</small></span><span class="simPromoGo">›</span></button>`;
+  const course = `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#pkfcb" data-pkfcb="course"><span class="simPromoText"><span class="eyebrow">COURSE</span><b>${esc(COURSE_TITLE)}</b><small>${n} sections: sliding cue ball, half-table and full-table patterns. Builds on the Shot Making & Center Ball Course. Lock answers, then shoot for position on your table.</small></span><span class="simPromoGo">›</span></button>`;
   const exam = open
     ? `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#pkfcb/exam" data-pkfcb="exam"${real ? '' : ' data-dev-open="1"'}><span class="simPromoText"><span class="eyebrow">EXAM</span><b>${esc(EXAM_TITLE)}</b><small>Knowledge + table execution. Pass at ${Math.round(EXAM_PASS * 100)}%.${real ? '' : ' Dev preview.'}</small></span><span class="simPromoGo">›</span></button>`
     : `<div class="card simPromo buEntry is-locked" data-pkfcb="exam" data-pkfcb-locked="1"><span class="simPromoText"><span class="eyebrow">EXAM</span><b>${esc(EXAM_TITLE)}</b><small>Locked until all sections are passed.</small></span></div>`;

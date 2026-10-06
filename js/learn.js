@@ -329,6 +329,12 @@ function pkfFundCard() {
   return `<div class="card dsStart" data-learn-pkf="pkffund"><span class="dsStartText"><span class="eyebrow">LEARN THE WHOLE GAME</span><b>Start with PKF Fundamentals</b><small>Build your game step by step, from the basics to an advanced player.</small></span><button type="button" class="chip dsStartGo" data-action="go" data-href="#pkffund">OPEN</button></div>`;
 }
 
+/** v14-113: the PKF curriculum list (moved here from Drill Sets & Exams). pkfHTML comes from dashboard.pkfCurriculumHTML(state). */
+function pkfListHTML(pkfHTML) {
+  if (!pkfHTML) return '';
+  return `<section class="learnPkf" data-learn-pkf-list><div class="learnPkfHead"><b>PKF</b><span class="dsGroupLead">Recommended for starters</span><small>The complete path from beginner to expert</small></div><div class="learnPkfBody">${pkfHTML}</div></section>`;
+}
+
 function stanceVideo() {
   return `<iframe class="stanceVideo" src="${STANCE_EMBED}" title="Stance and Stroke" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe><p class="learnSrc"><a href="${STANCE_WATCH}" target="_blank" rel="noopener noreferrer">Open in YouTube</a></p>`;
 }
@@ -473,7 +479,7 @@ function bodyPage(body) {
   return page('Rules', '<p class="muted">That rules page is not in this list.</p>', '#learn/play', 'How to Play & Rules');
 }
 
-export function learnHTML(args = []) {
+export function learnHTML(args = [], opts = {}) {
   const a = args[0] || '';
   const b = args[1] || '';
   const c = args[2] || '';
@@ -481,7 +487,7 @@ export function learnHTML(args = []) {
   if (!a) return landing();
   if (a === 'fundamentals' && b === 'bridges') return bridgesPage('#learn/fundamentals', 'Fundamentals');
   if (a === 'fundamentals' && b === 'stance') return stancePage();
-  if (a === 'fundamentals') return page('Fundamentals', pkfFundCard() + bridgesCard('#learn/fundamentals/bridges') + stanceCard('#learn/fundamentals/stance'));
+  if (a === 'fundamentals') return page('Fundamentals', pkfFundCard() + pkfListHTML(opts.pkfHTML) + bridgesCard('#learn/fundamentals/bridges') + stanceCard('#learn/fundamentals/stance'));
   if (a === 'play' && b === 'game' && c && d) return howPage(d, c, `#learn/play/game/${c}`, gameName(c));
   if (a === 'play' && b === 'game' && c) return gameSets(c);
   if (a === 'rules' && b && c) return howPage(b, c, `#learn/rules/${b}`, BODIES[b] || 'Rules');

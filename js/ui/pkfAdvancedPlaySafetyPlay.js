@@ -333,7 +333,7 @@ function listHTML(state) {
   const lists = REVIEW_LISTS.filter((r) => p.lists[r.kind]).map((r) => `<button type="button" class="bigBtn alt" data-action="go" data-href="#pkfadv/${r.kind}" data-pkfadv-list="${r.kind}">${esc(r.label)} (${p.lists[r.kind]})</button>`).join('');
   const complete = p.complete ? '<button type="button" class="bigBtn" data-action="go" data-href="#pkfadv/complete" data-pkfadv-complete-btn="1">COURSE COMPLETE · SEE SUMMARY</button>' : '';
   return `<div class="playScreen kickPage pkfbPage pkfadvPage" data-pkfadv-home="1">
-    <div class="title"><button type="button" class="linkish back" data-action="go" data-href="#courses">‹ Drill Sets & Exams</button><span class="eyebrow">DRILL SET</span><h1>${esc(COURSE_TITLE)}</h1><p>PKF Chapter Seven: Tips &amp; Tricks (printed pages 137–200), on the original pages. Sections unlock in order at ${Math.round(KNOWLEDGE_PASS * 100)}% strategy knowledge (app setting).</p></div>
+    <div class="title"><button type="button" class="linkish back" data-action="go" data-href="#learn/fundamentals">‹ Fundamentals</button><span class="eyebrow">COURSE</span><h1>${esc(COURSE_TITLE)}</h1><p>PKF Chapter Seven: Tips &amp; Tricks (printed pages 137–200), on the original pages. Sections unlock in order at ${Math.round(KNOWLEDGE_PASS * 100)}% strategy knowledge (app setting).</p></div>
     <details class="ruleMore"><summary>How each lesson works</summary><ol class="gameSteps">
       <li>LEARN from PKF’s original figure and page.</li>
       <li>Read the table and decide: the situation, what you’d do, the safety, the two-way shot, the problem, the result. Then LOCK. Nothing is revealed before you lock.</li>

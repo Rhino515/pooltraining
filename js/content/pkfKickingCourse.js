@@ -1,5 +1,5 @@
 /**
- * PKF Kicking Systems Course — learning course on Drill Sets & Exams.
+ * PKF Kicking Systems Course — learning course in Learn > Fundamentals (PKF list).
  * Source: Pattern Play / Cue Ball Control, Chapter Eight (PDF pages 227–281).
  * Storage key: state.pkfKickingSystems only. No Career XP. Not on All. Not a Table Game.
  * Original PKF JPEGs only — no redrawn diagrams, no invented diamond numbers.
@@ -524,7 +524,7 @@ export function pkfProgressRows(state) {
 export function pkfBannersHTML(state) {
   const open = examUnlocked(state || {});
   const n = playableSectionCount();
-  const course = `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#pkfkick" data-pkfkick="course"><span class="simPromoText"><span class="eyebrow">DRILL SET</span><b>${esc(COURSE_TITLE)}</b><small>${n} sections. Learn PKF kicking systems from the book diagrams. Knowledge first, then shoot on your table.</small></span><span class="simPromoGo">›</span></button>`;
+  const course = `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#pkfkick" data-pkfkick="course"><span class="simPromoText"><span class="eyebrow">COURSE</span><b>${esc(COURSE_TITLE)}</b><small>${n} sections. Learn PKF kicking systems from the book diagrams. Knowledge first, then shoot on your table.</small></span><span class="simPromoGo">›</span></button>`;
   const exam = open
     ? `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#pkfkick/exam" data-pkfkick="exam"><span class="simPromoText"><span class="eyebrow">EXAM</span><b>${esc(EXAM_TITLE)}</b><small>Knowledge + table execution. Pass at ${Math.round(EXAM_PASS * 100)}%.</small></span><span class="simPromoGo">›</span></button>`
     : `<div class="card simPromo buEntry is-locked" data-pkfkick="exam" data-pkfkick-locked="1"><span class="simPromoText"><span class="eyebrow">EXAM</span><b>${esc(EXAM_TITLE)}</b><small>Locked until all sections are passed.</small></span></div>`;

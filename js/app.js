@@ -134,7 +134,7 @@ function parseHash() {
   return { name: name || 'home', args };
 }
 
-const NAV_FOR = { kicking: 'drills', trick: 'drills', pkfkick: 'drills', pkfbank: 'drills', pkfcb: 'drills', pkffund: 'drills', pkfsmcb: 'drills', pkfpattern: 'drills', pkfadv: 'drills', account: 'profile', leaderboard: 'profile', gate: 'career', promo: 'career', champion: 'career', training: 'career', skill: 'profile', skills: 'profile', me: 'profile', drillrank: 'drills', friends: 'arcade', friend: 'arcade', h2h: 'arcade', fmatch: 'arcade', fsession: 'arcade', tourney: 'arcade', tnew: 'arcade', dev: 'profile', devgame: 'profile', devdrills: 'profile', devedit: 'profile', devkeys: 'profile', content: 'drills', cimport: 'drills', cview: 'drills', cplay: 'drills', cedit: 'drills', sim: 'sim', drillnew: 'drills', drilledit: 'drills', drillfix: 'drills', buexam: 'drills', safety: 'drills', courses: 'drills', bpset: 'drills', home: 'home', career: 'career', drills: 'drills', learn: 'learn', analyze: 'sim', arcade: 'arcade', tablegames: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', tgame: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
+const NAV_FOR = { kicking: 'drills', trick: 'drills', pkfkick: 'learn', pkfbank: 'learn', pkfcb: 'learn', pkffund: 'learn', pkfsmcb: 'learn', pkfpattern: 'learn', pkfadv: 'learn', account: 'profile', leaderboard: 'profile', gate: 'career', promo: 'career', champion: 'career', training: 'career', skill: 'profile', skills: 'profile', me: 'profile', drillrank: 'drills', friends: 'arcade', friend: 'arcade', h2h: 'arcade', fmatch: 'arcade', fsession: 'arcade', tourney: 'arcade', tnew: 'arcade', dev: 'profile', devgame: 'profile', devdrills: 'profile', devedit: 'profile', devkeys: 'profile', content: 'drills', cimport: 'drills', cview: 'drills', cplay: 'drills', cedit: 'drills', sim: 'sim', drillnew: 'drills', drilledit: 'drills', drillfix: 'drills', buexam: 'drills', safety: 'drills', courses: 'drills', bpset: 'drills', home: 'home', career: 'career', drills: 'drills', learn: 'learn', analyze: 'sim', arcade: 'arcade', tablegames: 'arcade', game: 'arcade', ghost: 'arcade', ghostmatch: 'arcade', tgame: 'arcade', profile: 'profile', stats: 'profile', settings: 'profile', boss: 'career' };
 
 function setChrome(playing, navName) {
   document.body.classList.toggle('playing', playing);
@@ -345,7 +345,7 @@ function renderRoute() {
     screen = createTableMatch(ctx, args[0]);
     screen.render();
     playing = true;
-  } else if (name === 'learn') v.innerHTML = renderLearn(args);
+  } else if (name === 'learn') v.innerHTML = renderLearn(args, state);
   else if (name === 'analyze') {
     v.innerHTML = renderAnalyzePage();
     bindAnalyzeHandlers(v);
