@@ -24,6 +24,7 @@ import { pkfBankProgressRows } from './pkfBankingCourse.js';
 import { pkfCueBallProgressRows } from './pkfCueBallCourse.js';
 import { pkfFundProgressRows } from './pkfFundamentalsCourse.js';
 import { pkfShotMakingProgressRows } from './pkfShotMakingCourse.js';
+import { pkfPatternPlayProgressRows } from './pkfPatternPlayCourse.js';
 import { ballPocketCourseRow } from './ballPocket.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -59,7 +60,9 @@ const SHORT = {
   pkfFund: 'PKF Fundamentals',
   pkfFundExam: 'PKF Fund Exam',
   pkfShotMaking: 'PKF Shot Making',
-  pkfShotMakingExam: 'PKF SM Exam'
+  pkfShotMakingExam: 'PKF SM Exam',
+  pkfPatternPlay: 'PKF Pattern Play',
+  pkfPatternPlayExam: 'PKF PP Exam'
 };
 
 const STYLES = {
@@ -87,6 +90,8 @@ const STYLES = {
   pkfFundExam: { disc: '#f6c453', rim: '#7a5814', rimW: 1.5, inner: '#fff6d4', innerW: 0.9, leaf: '#e2b14a', ribbon: '#c9922a', ribbon2: '#a97822', ink: '#7a5814', mark: 'pkffx' },
   pkfShotMaking: { disc: '#f6c453', rim: '#7a5814', rimW: 1.5, inner: '#fff6d4', innerW: 0.9, leaf: '#e2b14a', ribbon: '#c9922a', ribbon2: '#a97822', ink: '#7a5814', mark: 'pkfs' },
   pkfShotMakingExam: { disc: '#f6c453', rim: '#7a5814', rimW: 1.5, inner: '#fff6d4', innerW: 0.9, leaf: '#e2b14a', ribbon: '#c9922a', ribbon2: '#a97822', ink: '#7a5814', mark: 'pkfsx' },
+  pkfPatternPlay: { disc: '#f6c453', rim: '#7a5814', rimW: 1.5, inner: '#fff6d4', innerW: 0.9, leaf: '#e2b14a', ribbon: '#c9922a', ribbon2: '#a97822', ink: '#7a5814', mark: 'pkfp' },
+  pkfPatternPlayExam: { disc: '#f6c453', rim: '#7a5814', rimW: 1.5, inner: '#fff6d4', innerW: 0.9, leaf: '#e2b14a', ribbon: '#c9922a', ribbon2: '#a97822', ink: '#7a5814', mark: 'pkfpx' },
   safetyMaster: { disc: '#f6c453', rim: '#fff1c8', rimW: 2.5, inner: '#a97822', innerW: 0.9, leaf: '#e8c56a', ribbon: '#c9922a', ribbon2: '#e2b14a', ink: '#7a5814', mark: 'dot' },
   ballPocket: { disc: '#f6c453', rim: '#fff1c8', rimW: 2.5, inner: '#a97822', innerW: 0.9, leaf: '#e8c56a', ribbon: '#c9922a', ribbon2: '#e2b14a', ink: '#7a5814', mark: 'dot' }
 };
@@ -107,6 +112,8 @@ function centerMark(kind, ink) {
   if (kind === 'pkffx') return `<path d="M32 23.4v8.2M27.2 31.6h9.6" fill="none" stroke="${ink}" stroke-width="1.7" stroke-linecap="round"/><circle cx="32" cy="23.6" r="1.6" fill="${ink}"/>`;
   if (kind === 'pkfs') return `<circle cx="32" cy="28" r="4.2" fill="none" stroke="${ink}" stroke-width="1.6"/><circle cx="32" cy="28" r="1.4" fill="${ink}"/>`;
   if (kind === 'pkfsx') return `<circle cx="32" cy="28" r="4.2" fill="none" stroke="${ink}" stroke-width="1.6"/><circle cx="32" cy="28" r="1.4" fill="${ink}"/><path d="M32 21.6v2.2M32 32.2v2.2" stroke="${ink}" stroke-width="1.4" stroke-linecap="round"/>`;
+  if (kind === 'pkfp') return `<circle cx="27.4" cy="31" r="1.6" fill="${ink}"/><circle cx="32" cy="25" r="1.6" fill="${ink}"/><circle cx="36.6" cy="31" r="1.6" fill="${ink}"/><path d="M28.4 29.6 31 26.4M33 26.4l2.6 3.2" fill="none" stroke="${ink}" stroke-width="1.1" stroke-linecap="round"/>`;
+  if (kind === 'pkfpx') return `<circle cx="27.4" cy="31" r="1.6" fill="${ink}"/><circle cx="32" cy="25" r="1.6" fill="${ink}"/><circle cx="36.6" cy="31" r="1.6" fill="${ink}"/><path d="M28.4 29.6 31 26.4M33 26.4l2.6 3.2M29.2 31h5.6" fill="none" stroke="${ink}" stroke-width="1.1" stroke-linecap="round"/>`;
   if (kind === 'pkfx') return `<path d="M27 24.8h10M32 24.8v8.4" fill="none" stroke="${ink}" stroke-width="1.7" stroke-linecap="round"/>`;
   return '';
 }
@@ -237,6 +244,7 @@ export function readSetProgress(state) {
   for (const row of pkfCueBallProgressRows(state)) rows.push(row);
   for (const row of pkfFundProgressRows(state)) rows.push(row);
   for (const row of pkfShotMakingProgressRows(state)) rows.push(row);
+  for (const row of pkfPatternPlayProgressRows(state)) rows.push(row);
   return rows;
 }
 

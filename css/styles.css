@@ -2024,3 +2024,33 @@ header{
 .dsGroup:not([open]) .dsGroupChev{transform:rotate(-45deg)}
 .dsGroupBody{padding:0 0 0 2px}
 .dsGroupBody>.simPromo{margin-top:10px}
+/* PKF Pattern Play Course (#pkfpattern) */
+.pkfppPage .pkfbFigLabel{margin:10px 2px 6px;font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--gold)}
+.pkfppPage .pkfppHiddenFig{padding:12px;text-align:center}
+.pkfppPage .pkfppActs{display:grid;gap:8px;margin:10px 0}
+.pkfppPage .pkfppActs .bigBtn{white-space:normal;line-height:1.2}
+.pkfppPage .pkfppSteps,.pkfppPage .pkfppShots{margin:6px 0 8px;padding-left:20px;display:grid;gap:4px}
+.pkfppPage .pkfppSetup p,.pkfppPage .pkfppRun p{margin:6px 0}
+.pkfppPage .pkfppGaps{color:#8ea4ba}
+.pkfppPage .pkfVerdict{margin:10px 2px}
+.pkfppPage .pkfppLine{display:flex;flex-wrap:wrap;gap:6px}
+.pkfppPage .pkfppShot{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.03em;background:rgba(255,255,255,.06)}
+.pkfppPage .pkfppShot.ok{color:#5fd68f}
+.pkfppPage .pkfppShot.bad{color:#ff7682}
+.pkfppPage .pkfppAttempts p{margin:4px 0;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.pkfppPage .pkfppBuild{margin:8px 0}
+.pkfppPage .pkfppSlots{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+.pkfppPage .pkfppSlot{display:flex;flex-direction:column;align-items:center;min-width:56px;padding:6px 8px;border-radius:10px;border:1px dashed rgba(255,255,255,.25)}
+.pkfppPage .pkfppSlot.on{border-style:solid;border-color:var(--gold)}
+.pkfppPage .pkfppSlot small{font-size:9px;color:#8ea4ba;letter-spacing:.05em}
+.pkfppPage .pkfppSlot b{font-size:18px}
+.pkfppPage .pkfppBalls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:8px}
+.pkfppPage .pkfppStats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.pkfppPage .pkfppStat{display:flex;flex-direction:column;gap:2px;padding:8px;border-radius:10px;background:rgba(255,255,255,.04)}
+.pkfppPage .pkfppStat b{font-size:15px}
+.pkfppPage .pkfppStat small{font-size:10px;line-height:1.2;color:#8ea4ba}
+.pkfppPage .pkfppResults p{margin:4px 0}
+.pkfppPage .pkfppChips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.pkfppPage > .bigBtn{margin:6px 0}
+.pkfppLite .pkfLiteBar{flex-wrap:wrap}
+.pkfppPage .kickDots i{padding:0}
