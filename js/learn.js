@@ -282,6 +282,11 @@ function stanceCard(href) {
   return `<button type="button" class="coursesCard" data-action="go" data-href="${href}"><img src="./images/learn/stance/card.jpg" alt="" width="1400" height="530"/><span class="coursesLabel">Stance and Stroke</span></button>`;
 }
 
+/** PKF pointer at the top of Learn > Fundamentals. Reuses the Drill Sets "NEW HERE?" card markup/CSS (.dsStart). */
+function pkfFundCard() {
+  return `<div class="card dsStart" data-learn-pkf="pkffund"><span class="dsStartText"><span class="eyebrow">LEARN THE WHOLE GAME</span><b>Start with PKF Fundamentals</b><small>Build your game step by step, from the basics to an advanced player.</small></span><button type="button" class="chip dsStartGo" data-action="go" data-href="#pkffund">OPEN</button></div>`;
+}
+
 function stanceVideo() {
   return `<iframe class="stanceVideo" src="${STANCE_EMBED}" title="Stance and Stroke" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe><p class="learnSrc"><a href="${STANCE_WATCH}" target="_blank" rel="noopener noreferrer">Open in YouTube</a></p>`;
 }
@@ -434,7 +439,7 @@ export function learnHTML(args = []) {
   if (!a) return landing();
   if (a === 'fundamentals' && b === 'bridges') return bridgesPage('#learn/fundamentals', 'Fundamentals');
   if (a === 'fundamentals' && b === 'stance') return stancePage();
-  if (a === 'fundamentals') return page('Fundamentals', bridgesCard('#learn/fundamentals/bridges') + stanceCard('#learn/fundamentals/stance'));
+  if (a === 'fundamentals') return page('Fundamentals', pkfFundCard() + bridgesCard('#learn/fundamentals/bridges') + stanceCard('#learn/fundamentals/stance'));
   if (a === 'play' && b === 'game' && c && d) return howPage(d, c, `#learn/play/game/${c}`, gameName(c));
   if (a === 'play' && b === 'game' && c) return gameSets(c);
   if (a === 'rules' && b && c) return howPage(b, c, `#learn/rules/${b}`, BODIES[b] || 'Rules');
