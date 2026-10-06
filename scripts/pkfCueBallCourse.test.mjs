@@ -11,8 +11,9 @@ import {
   selectChoice, selectPlanStep, showHint, lockAnswer, markExecution, acknowledgeLearn, nextLesson,
   retryCurrent, reviewMissed, reviewMissedPositions,
   playableSectionCount, lessonTypeCounts, assistCounts, auditCourse, pkfCueBallProgressRows, pkfCueBallBannersHTML,
-  ASSET_MAP, REGIONS, assetOf
+  ASSET_MAP, REGIONS, assetOf, skipTableStep, skippedIds, passedSectionCount, lessonById
 } from '../js/content/pkfCueBallCourse.js';
+import { readSetProgress, setProgressBoxHTML, completedSetsLineHTML } from '../js/content/setProgress.js';
 import { PAGES, regionHTML, regionOf, citeText, figureHTML, revealFigureHTML } from '../js/content/pkfCueBallAssets.js';
 import { defaultState } from '../js/storage.js';
 
@@ -260,6 +261,69 @@ function lessonSrc(id) { return LESSONS.find((l) => l.id === id)?.src; }
   const p9 = assetOf('ft-plan-9');
   assert(p9.key === 'f141-6-133' && p9.crop.y + p9.crop.h < 0.3 && !p9.fullSafe, '9-ball Plan shows figure 6-133 only (solution text/diagram cropped out pre-LOCK)');
   assert(REGIONS['f77-5-1'] && REGIONS['f107-6-1'] && REGIONS['f141-6-133'], 'figure-only regions registered');
+}
+
+// ---------------------------------------------------------------- table-step skip + Drill XP
+{
+  const runAll = (st, onShoot) => {
+    let guard = 400;
+    while (guard--) {
+      const cur = courseOf(st).current;
+      if (!cur || cur.phase === 'results') return st;
+      const id = cur.order[cur.cursor];
+      const lesson = lessonById(id);
+      const it = cur.items[id];
+      if (it.done) { st = nextLesson(st); continue; }
+      if (lesson.plan && !it.locked) { for (const s of lesson.plan.steps) st = selectPlanStep(st, s.id, s.answer); st = lockAnswer(st); continue; }
+      if (lesson.answer != null && !it.locked) { st = lockAnswer(selectChoice(st, lesson.answer)); continue; }
+      if (lesson.shoot) { st = onShoot(st, lesson); continue; }
+      st = acknowledgeLearn(st);
+    }
+    return st;
+  };
+  const drill = (st) => st?.prog?.drillXp || 0;
+  let st = {};
+  for (const sec of SECTIONS) {
+    if (sec.stub) continue;
+    st = startSection(st, sec.id);
+    st = runAll(st, (x) => skipTableStep(x));
+    const sum = courseOf(st).current.summary;
+    assert(sum.skipped.every((id) => sum.missedPos.includes(id)), `Cue Ball ${sec.id}: skipped steps go to PRACTICE MISSED POSITIONS`);
+  }
+  const c = courseOf(st);
+  assert(passedSectionCount(c) === playableSectionCount(), 'Cue Ball: course completes with every table step skipped');
+  assert(drill(st) === 0 && !st.prog?.lifetimeXp, 'Cue Ball: knowledge + skipped steps award 0 XP');
+  assert(c.stats.tableSkipped > 0 && c.stats.executionMake === 0 && c.stats.executionMiss === 0, `Cue Ball: ${c.stats.tableSkipped} skips, no make/miss counted`);
+  assert(skippedIds(c).length > 0, 'Cue Ball: persistent skipped list');
+  const row = readSetProgress(st).find((r) => r.id === 'pkfCueBall');
+  assert(row && row.finished, 'Cue Ball emblem row finished');
+  assert(setProgressBoxHTML(st).includes('data-set-emblem="pkfCueBall"') && completedSetsLineHTML(st).includes('data-set-emblem="pkfCueBall"'), 'Cue Ball emblem shows on dashboard');
+  assert(examUnlocked(st), 'Cue Ball: exam unlocks with skipped table steps');
+  st = startExam(st);
+  st = runAll(st, (x) => skipTableStep(x));
+  const c2 = courseOf(st);
+  const h = c2.exam.history.at(-1);
+  assert(c2.exam.passed === true && h.execution === null && h.skipped >= 3, `Cue Ball: exam passes on knowledge, ${h.skipped} physical items skipped`);
+  // practice positions: skipped run must not count as passed
+  st = reviewMissedPositions(st);
+  st = runAll(st, (x) => skipTableStep(x));
+  assert(courseOf(st).current.summary.passed === false, 'Cue Ball: skipping in PRACTICE MISSED POSITIONS is not a pass');
+  // recorded steps: 1st-try success 135, 2nd-try success 75, failed after 3 = 0
+  let s2 = startSection({}, SECTIONS[0].id);
+  let k = 0;
+  const amounts = [];
+  s2 = runAll(s2, (x) => {
+    const before = drill(x);
+    let y;
+    if (k === 0) y = markExecution(x, 'makePos');
+    else if (k === 1) y = markExecution(markExecution(x, 'miss'), 'makePos');
+    else y = markExecution(markExecution(markExecution(x, 'miss'), 'miss'), 'miss');
+    k += 1;
+    amounts.push(drill(y) - before);
+    return y;
+  });
+  assert(amounts[0] === 135 && (amounts.length < 2 || amounts[1] === 75) && amounts.slice(2).every((a) => a === 0), `Cue Ball: Drill XP per recorded step ${amounts.join('/')}`);
+  assert(!s2.prog?.lifetimeXp && !s2.prog?.careerXp && !Object.keys(s2.prog?.items || {}).length, 'Cue Ball: no Lifetime/Career XP or rank records');
 }
 
 if (failed) { console.error(`\n${failed} FAILED`); process.exit(1); }

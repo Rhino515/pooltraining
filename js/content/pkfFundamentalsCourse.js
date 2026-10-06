@@ -7,6 +7,7 @@
  * See docs/PKF_FUNDAMENTALS_SOURCE_MAP.md.
  */
 import { ASSET_MAP, REGIONS, figureHTML, revealFigureHTML, assetOf, regionOf } from './pkfFundAssets.js';
+import { awardRecordedStep, markSkipped, clearSkipped } from './pkfTableStep.js';
 
 export const COURSE_TITLE = 'PKF Fundamentals Course';
 export const EXAM_TITLE = 'PKF Fundamentals Exam';
@@ -665,9 +666,11 @@ export function blank() {
     practice: {},
     needsPractice: {},
     review: {},
+    skipped: {},
+    tableXp: {},
     current: null,
     exam: { attempts: 0, passed: false, bestKnowledge: 0, bestOverall: 0, history: [], lastMissed: [] },
-    stats: { knowledgeCorrect: 0, knowledgeWrong: 0, firstTotal: 0, firstCorrect: 0, practiceSessions: 0 }
+    stats: { knowledgeCorrect: 0, knowledgeWrong: 0, firstTotal: 0, firstCorrect: 0, practiceSessions: 0, tableSkipped: 0, tableDrillXp: 0 }
   };
 }
 
@@ -685,6 +688,8 @@ export function courseOf(state) {
     practice: { ...obj(raw.practice) },
     needsPractice: { ...obj(raw.needsPractice) },
     review: { ...obj(raw.review) },
+    skipped: { ...obj(raw.skipped) },
+    tableXp: { ...obj(raw.tableXp) },
     exam: { ...b.exam, ...obj(raw.exam) },
     stats: { ...b.stats, ...obj(raw.stats) },
     current: raw.current || null
@@ -712,7 +717,7 @@ export function examUnlocked(state, { dev = false } = {}) {
 }
 
 function emptyItem() {
-  return { locked: false, choice: null, seq: [], correct: null, done: false, hint: false, rating: null, checks: [], variants: [] };
+  return { locked: false, choice: null, seq: [], correct: null, done: false, skipped: false, hint: false, rating: null, checks: [], variants: [] };
 }
 
 function freshRun(ids, extra) {
@@ -917,8 +922,35 @@ export function rate(state, rating) {
   course.lessons[x.id] = { ...(course.lessons[x.id] || {}), done: true };
   if (r[2]) course.needsPractice[skillId] = true;
   else delete course.needsPractice[skillId];
+  course.skipped = clearSkipped(course.skipped, x.id);
+  // A completed self-evaluation = the table work was performed and recorded → Drill XP (one drill session,
+  // objective achieved). Honest NEEDS PRACTICE ratings never fail you, so every rating counts as performed.
+  const out = awardRecordedStep(put(state, course), STORAGE_KEY, COURSE_TITLE, x.lesson, { ratio: 1, passed: true });
+  x.it.xp = out.drill;
+  return out.state;
+}
+
+/** SKIP TABLE STEP (PRACTICE lessons and physical exam checkpoints): not attempted, 0 Drill XP, never blocks.
+ *  The skill goes on the NEEDS PRACTICE list. */
+export function skipTableStep(state) {
+  const course = courseOf(state);
+  const x = liveItem(course);
+  if (!x || !x.it || x.it.done || x.lesson?.type !== 'PRACTICE') return state;
+  x.it.skipped = true;
+  x.it.rating = null;
+  x.it.done = true;
+  x.it.locked = true;
+  if (x.cur.dev) return put(state, course);
+  const skillId = x.lesson.practiceLesson || x.id;
+  course.stats.tableSkipped += 1;
+  course.skipped = markSkipped(course.skipped, x.id);
+  course.needsPractice[skillId] = true;
+  course.lessons[x.id] = { ...(course.lessons[x.id] || {}), done: true, skipped: true };
   return put(state, course);
 }
+
+/** Persistent list of skipped table steps (come back later). */
+export function skippedIds(course) { return Object.keys(course.skipped || {}).filter((id) => lessonById(id)?.type === 'PRACTICE'); }
 
 export function toggleNeedsPractice(state, lessonId) {
   const course = courseOf(state);
@@ -953,6 +985,7 @@ export function summarize(cur) {
   const missed = [];
   const mastered = [];
   const notYet = [];
+  const skipped = [];
   for (const id of cur.order) {
     const lesson = lessonById(id);
     const it = cur.items[id];
@@ -960,6 +993,8 @@ export function summarize(cur) {
     if (isKnowledge(lesson)) {
       kTot += 1;
       if (it.correct) { kOk += 1; mastered.push(id); } else missed.push(id);
+    } else if (lesson.type === 'PRACTICE' && it.skipped) {
+      skipped.push(id);
     } else if (lesson.type === 'PRACTICE') {
       xTot += 1;
       const r = ratingSet(lesson).find((o) => o[0] === it.rating);
@@ -969,7 +1004,7 @@ export function summarize(cur) {
   const kRate = kTot ? kOk / kTot : 1;
   const overall = (kTot + xTot) ? (kOk + xDone) / (kTot + xTot) : 0;
   const recommend = [...new Set(missed.map((id) => lessonById(id)?.section).filter(Boolean))];
-  return { kOk, kTot, kRate, xDone, xTot, overall, missed, mastered, notYet, recommend };
+  return { kOk, kTot, kRate, xDone, xTot, overall, missed, mastered, notYet, skipped, recommend };
 }
 
 export function finishRun(state) {
@@ -1000,7 +1035,8 @@ export function finishRun(state) {
     course.exam.history = [...(course.exam.history || []), {
       at: new Date().toISOString(),
       knowledge: Math.round(s.kRate * 100),
-      physical: `${s.xDone}/${s.xTot}`,
+      physical: s.xTot ? `${s.xDone}/${s.xTot}` : (s.skipped.length ? 'skipped' : '0/0'),
+      skipped: s.skipped.length,
       overall: Math.round(s.overall * 100),
       passed,
       missed: s.missed.length
@@ -1066,6 +1102,7 @@ export function progressSummary(state) {
     stanceStrokeTotal: all.filter((l) => stanceStroke.includes(l.section)).length,
     practiceSessions: course.stats.practiceSessions,
     needsPractice: needsPracticeIds(course).length,
+    tableSkipped: course.stats.tableSkipped || 0,
     review: reviewIds(course).length,
     examAttempts: course.exam.attempts,
     examBest: course.exam.bestKnowledge,

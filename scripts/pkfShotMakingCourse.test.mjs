@@ -10,6 +10,9 @@ import { PAGES, REGIONS, regionOf, captionText, mappingRow } from '../js/content
 import * as CB from '../js/content/pkfCueBallCourse.js';
 import * as FUND from '../js/content/pkfFundamentalsCourse.js';
 import { defaultState } from '../js/storage.js';
+import { readSetProgress, setProgressBoxHTML, completedSetsLineHTML } from '../js/content/setProgress.js';
+import { createPkfShotMakingScreen } from '../js/ui/pkfShotMakingPlay.js';
+import * as GATE from '../js/dev/gate.js';
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 let failed = 0;
@@ -249,6 +252,84 @@ st = finish(st, { fail: true });
 assert(!JSON.stringify(ALL).match(/Career XP|storage key|not on All|45°/i), 'no internal notes or invented numbers in lesson copy');
 assert(!SM.pkfShotMakingBannersHTML({}).includes('href="#pkfsmcb/exam"') && SM.pkfShotMakingBannersHTML({}, { dev: true }).includes('data-dev-open="1"'), 'exam banner lock / dev preview');
 assert(LESSONS.filter(SM.isPhysical).filter((l) => l.physical.kind === 'check').every((l) => l.physical.gaps?.some((g) => /pocket/i.test(g)) || /rail/.test(l.id)), 'check drills flag pocketing as not specified');
+
+// ---------------------------------------------------------------- table-step skip + Drill XP
+{
+  GATE.setDevBypass?.(() => false);
+  const drill = (x) => x?.prog?.drillXp || 0;
+  const run = (s, onPhys) => {
+    for (let guard = 0; guard < 400; guard++) {
+      const cur = SM.courseOf(s).current;
+      if (!cur || cur.phase !== 'play') return s;
+      const id = cur.order[cur.cursor];
+      const l = SM.lessonById(id);
+      const it = cur.items[id];
+      if (!it.done) {
+        if (SM.isKnowledge(l)) s = SM.lockAnswer(SM.selectChoice(s, l.answer));
+        else if (SM.isPhysical(l)) s = onPhys(s, l);
+        else s = SM.acknowledgeLearn(s);
+      }
+      s = SM.nextLesson(s);
+    }
+    return s;
+  };
+  let s = {};
+  let firstSkipFromSetup = true;
+  for (const sec of SECTIONS) {
+    s = SM.startSection(s, sec.id);
+    // skip from SET UP on some steps, from the shooting screen on others
+    s = run(s, (x) => { firstSkipFromSetup = !firstSkipFromSetup; return SM.skipTableStep(firstSkipFromSetup ? x : SM.beginShooting(x)); });
+    const sum = SM.courseOf(s).current.summary;
+    assert(sum.skipped.every((id) => !sum.missedShots.includes(id)), `SM ${sec.id}: skipped steps are not counted as missed shots`);
+  }
+  const c = SM.courseOf(s);
+  const physIds = LESSONS.filter((l) => SM.isPhysical(l)).map((l) => l.id);
+  assert(SM.passedSectionCount(c) === SECTIONS.length, 'SM: course completes with every table step skipped');
+  assert(drill(s) === 0 && !s.prog?.lifetimeXp, 'SM: knowledge + skipped steps award 0 XP');
+  assert(c.stats.tableSkipped === physIds.length && c.stats.attempts === 0 && c.stats.exercisesOk === 0 && c.stats.failed === 0, `SM: ${c.stats.tableSkipped} skips, no attempts/success/failed counted`);
+  assert(physIds.every((id) => c.needsPractice[id]), 'SM: skipped steps go to PRACTICE MISSED SHOTS');
+  const row = readSetProgress(s).find((r) => r.id === 'pkfShotMaking');
+  assert(row && row.finished, 'SM emblem row finished');
+  assert(setProgressBoxHTML(s).includes('data-set-emblem="pkfShotMaking"') && completedSetsLineHTML(s).includes('data-set-emblem="pkfShotMaking"'), 'SM emblem shows on dashboard');
+  assert(SM.examUnlocked(s), 'SM: exam unlocks with skipped steps');
+  s = SM.startExam(s);
+  s = run(s, (x) => SM.skipTableStep(x));
+  const c2 = SM.courseOf(s);
+  const h = c2.exam.history.at(-1);
+  assert(c2.exam.passed && h.execution === null && h.skipped === EXAM_ITEMS.filter((e) => SM.isPhysical(e)).length, `SM: exam passes on knowledge with ${h.skipped} physical items skipped`);
+  let st2 = s;
+  const ctx = { getState: () => st2, commit: (n) => { st2 = n; return st2; }, go: () => {}, root: { innerHTML: '', querySelector: () => null } };
+  const R = createPkfShotMakingScreen(ctx, ['exam']); R.render();
+  assert(new RegExp(`data-pkf-skipped-count="${h.skipped}"`).test(ctx.root.innerHTML) && /skipped \(not attempted\)/.test(ctx.root.innerHTML), 'SM: exam results show skipped count');
+  // PRACTICE MISSED SHOTS from results includes the skipped items
+  s = SM.reviewMissed(s, 'practice');
+  assert(SM.courseOf(s).current?.mode === 'practice' && SM.courseOf(s).current.order.length === h.skipped, 'SM: PRACTICE MISSED SHOTS replays skipped items');
+  // recorded steps: first-try success 135, 2nd-try 75, failed 0; single mode awards nothing
+  let s3 = SM.startSection({ ...s, [SM.STORAGE_KEY]: { ...SM.courseOf(s), current: null } }, 'finding-center');
+  const amounts = [];
+  let k = 0;
+  s3 = run(s3, (x, l) => {
+    const b = drill(x);
+    const rows = SM.PHYS[l.physical.kind];
+    let y = SM.beginShooting(x);
+    if (k === 0) y = SM.markAttempt(y, rows[0][0]);
+    else if (k === 1) { y = SM.markAttempt(y, rows[rows.length - 1][0]); y = SM.markAttempt(y, rows[0][0]); }
+    else for (let i = 0; i < 3; i++) y = SM.markAttempt(y, rows[rows.length - 1][0]);
+    k += 1;
+    amounts.push(drill(y) - b);
+    return y;
+  });
+  assert(amounts[0] === 135 && (amounts.length < 2 || amounts[1] === 75) && amounts.slice(2).every((a) => a === 0), `SM: Drill XP per recorded step ${amounts.join('/')}`);
+  const xpAfter = SM.courseOf(s3).current.items;
+  assert(Object.values(xpAfter).some((it) => it.xp === 135), 'SM: +XP is stored on the step for the result screen');
+  assert(!s3.prog?.lifetimeXp && !s3.prog?.careerXp && !Object.keys(s3.prog?.items || {}).length, 'SM: no Lifetime/Career XP or rank records');
+  const one = physIds[0];
+  let s4 = SM.startSingle(s3, one);
+  const d4 = drill(s4);
+  s4 = SM.beginShooting(s4);
+  s4 = SM.markAttempt(s4, SM.PHYS[SM.lessonById(one).physical.kind][0][0]);
+  assert(SM.courseOf(s4).current?.mode !== 'single' || drill(s4) === d4, 'SM: single-lesson review (not graded) awards no Drill XP');
+}
 
 if (failed) { console.error(`\n${failed} pkfShotMakingCourse TEST(S) FAILED`); process.exit(1); }
 console.log('\nALL pkfShotMakingCourse TESTS PASSED');

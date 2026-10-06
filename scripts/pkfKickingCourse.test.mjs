@@ -8,8 +8,10 @@ import {
   pkfOf, sectionUnlocked, examUnlocked, startSection, startExam, previewSection, previewExam,
   selectChoice, lockAnswer, markExecution, acknowledgeLearn, nextLesson,
   passedSectionCount, playableSectionCount, lessonTypeCounts, auditCourse,
-  ASSET_MAP
+  ASSET_MAP, skipTableStep, skippedIds, reviewSkipped, retryCurrent
 } from '../js/content/pkfKickingCourse.js';
+import { readSetProgress, setProgressBoxHTML, completedSetsLineHTML } from '../js/content/setProgress.js';
+import { SKIP_LABEL } from '../js/content/pkfTableStep.js';
 import { defaultState } from '../js/storage.js';
 
 let failed = 0;
@@ -160,6 +162,76 @@ assert(sectionUnlocked({}, 'diamond-table', { dev: true }) === true, 'dev flag o
   }
   assert(pkfOf(st).current?.phase === 'results', 'preview finished');
   assert(!pkfOf(st).sections['two-rail']?.passed, 'DEV PREVIEW does not save section pass');
+}
+
+// ── Table-step skip + Drill XP ──
+function runAll(st, onShoot) {
+  let guard = 400;
+  while (guard--) {
+    const cur = pkfOf(st).current;
+    if (!cur || cur.phase === 'results') return st;
+    const id = cur.order[cur.cursor];
+    const lesson = LESSONS.find((l) => l.id === id) || EXAM_ITEMS.find((e) => e.id === id);
+    const it = cur.items[id];
+    if (it.done) { st = nextLesson(st); continue; }
+    if (lesson.answer != null) { st = selectChoice(st, lesson.answer); st = lockAnswer(st); if (pkfOf(st).current.items[id].done) { st = nextLesson(st); continue; } }
+    if (lesson.shoot) { st = onShoot(st); st = nextLesson(st); continue; }
+    st = acknowledgeLearn(st); st = nextLesson(st);
+  }
+  return st;
+}
+const drill = (st) => st?.prog?.drillXp || 0;
+assert(SKIP_LABEL === 'SKIP TABLE STEP', 'skip label');
+{
+  // knowledge-only work awards nothing
+  let st = startSection({}, 'visual-guide' === SECTIONS[0].id ? 'visual-guide' : SECTIONS[0].id);
+  st = runAll(st, (x) => skipTableStep(x));
+  assert(drill(st) === 0 && !(st.prog?.lifetimeXp), 'knowledge + skipped table step award 0 XP');
+  assert(pkfOf(st).sections['multiple-rail']?.passed === true, 'section passes with its table step skipped');
+  assert(skippedIds(pkfOf(st)).includes('mrs-shoot-3030'), 'skipped step goes to the practice list');
+  assert(pkfOf(st).stats.tableSkipped === 1, 'skipped stat counted');
+  const sum = pkfOf(st).current.summary;
+  assert(sum.xTot === 0 && sum.skipped.length === 1, 'skipped step excluded from execution totals');
+  // practice run for skipped steps; recording a make awards Drill XP and clears the list
+  st = reviewSkipped(st);
+  assert(pkfOf(st).current?.parent === 'review-skip', 'practice skipped run started');
+  const before = JSON.stringify(pkfOf(st).sections);
+  st = runAll(st, (x) => markExecution(x, 'make'));
+  assert(drill(st) === 135, `first-try MAKE on a table step = 135 Drill XP (got ${drill(st)})`);
+  assert(!(st.prog?.lifetimeXp) && !(st.prog?.careerXp), 'no Lifetime / Career XP from table steps');
+  assert(!Object.keys(st.prog?.items || {}).length, 'no Drill Rank mastery records created');
+  assert(skippedIds(pkfOf(st)).length === 0, 'recording clears the skipped list');
+  assert(JSON.stringify(pkfOf(st).sections) === before, 'practice run does not change saved section results');
+  // repeat on a mastered step: small repeat amount; MISS = 0
+  st = startSection(st, 'multiple-rail');
+  st = retryCurrent(st);
+  st = runAll(st, (x) => markExecution(x, 'make'));
+  assert(drill(st) === 135 + 8, `mastered repeat = 8 Drill XP (got ${drill(st) - 135})`);
+  const d0 = drill(st);
+  st = retryCurrent(st);
+  st = runAll(st, (x) => markExecution(x, 'miss'));
+  assert(drill(st) === d0, 'MISS awards 0 Drill XP');
+}
+{
+  // whole course + exam with every table step skipped
+  let st = {};
+  for (const sec of SECTIONS) {
+    if (sec.stub) continue;
+    st = startSection(st, sec.id);
+    st = runAll(st, (x) => skipTableStep(x));
+  }
+  assert(passedSectionCount(pkfOf(st)) === playableSectionCount(), 'course completes with every table step skipped');
+  assert(examUnlocked(st) === true, 'exam unlocks with skipped table steps');
+  const row = readSetProgress(st).find((r) => r.id === 'pkfKick');
+  assert(row && row.finished, 'Kick course emblem row finished');
+  assert(setProgressBoxHTML(st).includes('data-set-emblem="pkfKick"') && completedSetsLineHTML(st).includes('data-set-emblem="pkfKick"'), 'Kick emblem shows on dashboard progress box');
+  st = startExam(st);
+  st = runAll(st, (x) => skipTableStep(x));
+  const pkf = pkfOf(st);
+  const h = pkf.exam.history[0];
+  assert(pkf.exam.passed === true, 'exam passes on knowledge with physical items skipped');
+  assert(h.execution === null && h.skipped >= 1, `exam history records skipped (${h.skipped})`);
+  assert(drill(st) === 0, 'whole skipped course awards 0 Drill XP');
 }
 
 console.log('\nType counts', counts);

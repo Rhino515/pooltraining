@@ -7,6 +7,7 @@
  * Storage key: state.pkfCueBallControl. No Career XP. Not on All / Table Games / Learn.
  */
 import { ASSET_MAP, REGIONS, figureHTML, revealFigureHTML, assetOf } from './pkfCueBallAssets.js';
+import { awardRecordedStep, markSkipped, clearSkipped } from './pkfTableStep.js';
 
 export const COURSE_TITLE = 'PKF Cue Ball Control Course';
 export const EXAM_TITLE = 'PKF Cue Ball Control Exam';
@@ -128,8 +129,10 @@ export function blank() {
   return {
     sections: {},
     current: null,
+    skipped: {},
+    tableXp: {},
     exam: { attempts: 0, passed: false, bestKnowledge: 0, bestExecution: 0, bestPosition: 0, bestPattern: 0, bestOverall: 0, history: [], weak: {} },
-    stats: { knowledgeCorrect: 0, knowledgeWrong: 0, executionMake: 0, executionMiss: 0, positionOk: 0, positionMiss: 0, firstTry: 0, secondTry: 0, thirdTry: 0, failed: 0 }
+    stats: { knowledgeCorrect: 0, knowledgeWrong: 0, executionMake: 0, executionMiss: 0, positionOk: 0, positionMiss: 0, firstTry: 0, secondTry: 0, thirdTry: 0, failed: 0, tableSkipped: 0, tableDrillXp: 0 }
   };
 }
 
@@ -140,6 +143,8 @@ export function courseOf(state) {
     ...blank(),
     ...raw,
     sections: raw.sections && typeof raw.sections === 'object' ? raw.sections : {},
+    skipped: raw.skipped && typeof raw.skipped === 'object' ? { ...raw.skipped } : {},
+    tableXp: raw.tableXp && typeof raw.tableXp === 'object' ? { ...raw.tableXp } : {},
     exam: { ...blank().exam, ...(raw.exam || {}) },
     stats: { ...blank().stats, ...(raw.stats || {}) },
     // A run saved before Center Ball moved out may name lessons this course no longer has: treat it as no run.
@@ -176,7 +181,7 @@ export function knowledgeLessons(sectionId) {
 }
 
 function emptyItem() {
-  return { locked: false, choice: null, correct: null, revealed: false, execution: null, attempts: [], done: false, hint: false, planChoices: {} };
+  return { locked: false, choice: null, correct: null, revealed: false, execution: null, attempts: [], skipped: false, done: false, hint: false, planChoices: {} };
 }
 
 function freshRun(ids, extra) {
@@ -293,7 +298,7 @@ export function markExecution(state, result) {
   const course = courseOf(state);
   const x = liveItem(course);
   if (!x || !x.it || x.it.done) return state;
-  const { cur, lesson, it } = x;
+  const { cur, id, lesson, it } = x;
   if (!lesson?.shoot) return state;
   if (lesson.answer != null && !it.locked) return state;
   const needPos = !!lesson.position;
@@ -323,10 +328,37 @@ export function markExecution(state, result) {
         course.stats.failed += 1;
         if (needPos && it.attempts.some((a) => a === 'makeMissPos')) course.stats.positionMiss += 1;
       }
+      course.skipped = clearSkipped(course.skipped, id);
+      // Recorded table step → Drill XP: one drill session, ratio = successes / attempts (1, 1/2, 1/3 or 0).
+      const r = awardRecordedStep(put(state, course), STORAGE_KEY, COURSE_TITLE, lesson, { ratio: success ? 1 / it.attempts.length : 0, passed: success });
+      it.xp = r.drill;
+      return r.state;
     }
   }
   return put(state, course);
 }
+
+/** SKIP TABLE STEP: not attempted. 0 Drill XP, never a make or position, never blocks the lesson. Goes to PRACTICE MISSED POSITIONS. */
+export function skipTableStep(state) {
+  const course = courseOf(state);
+  const x = liveItem(course);
+  if (!x || !x.it || x.it.done) return state;
+  const { cur, id, lesson, it } = x;
+  if (!lesson?.shoot) return state;
+  if (lesson.answer != null && !it.locked) return state;
+  it.skipped = true;
+  it.execution = null;
+  it.revealed = true;
+  it.done = true;
+  if (!cur.dev) {
+    course.stats.tableSkipped += 1;
+    course.skipped = markSkipped(course.skipped, id);
+  }
+  return put(state, course);
+}
+
+/** Persistent list of skipped table steps (come back later). */
+export function skippedIds(course) { return Object.keys(course.skipped || {}).filter((id) => lessonById(id)?.shoot); }
 
 export function acknowledgeLearn(state) {
   const course = courseOf(state);
@@ -365,6 +397,7 @@ function finishRun(state) {
   let kOk = 0, kTot = 0, xOk = 0, xTot = 0, pOk = 0, pTot = 0, planOk = 0, planTot = 0;
   const missed = [];
   const missedPos = [];
+  const skipped = [];
   const weak = { ...(course.exam.weak || {}) };
   for (const id of cur.order) {
     const lesson = lessonById(id);
@@ -379,6 +412,7 @@ function finishRun(state) {
         if (cur.mode === 'exam') weak[lesson.title || id] = (weak[lesson.title || id] || 0) + 1;
       }
     }
+    if (lesson.shoot && it.skipped) { skipped.push(id); missedPos.push(id); }
     if (lesson.shoot && it.execution) {
       xTot += 1;
       if (it.execution === 'make') xOk += 1;
@@ -398,7 +432,7 @@ function finishRun(state) {
   const sectionPass = kTot ? kRate >= KNOWLEDGE_PASS : true;
   const examPass = overall >= EXAM_PASS;
   cur.phase = 'results';
-  cur.summary = { kOk, kTot, xOk, xTot, pOk, pTot, planOk, planTot, kRate, xRate, pRate, planRate, overall, missed, missedPos, review, passed: review ? (cur.parent === 'review-pos' ? xOk === xTot : kOk === kTot) : (cur.mode === 'section' ? sectionPass : examPass) };
+  cur.summary = { kOk, kTot, xOk, xTot, pOk, pTot, planOk, planTot, kRate, xRate, pRate, planRate, overall, missed, missedPos, skipped, review, passed: review ? (cur.parent === 'review-pos' ? (xOk === xTot && !skipped.length) : kOk === kTot) : (cur.mode === 'section' ? sectionPass : examPass) };
   if (cur.dev || review) return put(state, course);
   if (cur.mode === 'section') {
     const prev = course.sections[cur.sectionId] || { knowledgeCorrect: 0, knowledgeTotal: 0, executionMake: 0, executionMiss: 0, positionOk: 0, positionMiss: 0, passed: false, bestKnowledge: 0, attempts: 0, missed: [], missedPos: [] };
@@ -412,6 +446,7 @@ function finishRun(state) {
     prev.bestKnowledge = Math.max(prev.bestKnowledge || 0, kRate);
     prev.missed = missed;
     prev.missedPos = missedPos;
+    prev.skipped = skipped;
     if (sectionPass) prev.passed = true;
     course.sections[cur.sectionId] = prev;
   } else {
@@ -426,7 +461,8 @@ function finishRun(state) {
     course.exam.history = [...(course.exam.history || []), {
       at: new Date().toISOString(),
       knowledge: Math.round(kRate * 100),
-      execution: Math.round(xRate * 100),
+      execution: xTot ? Math.round(xRate * 100) : null,
+      skipped: skipped.length,
       position: Math.round(pRate * 100),
       pattern: Math.round(planRate * 100),
       overall: Math.round(overall * 100),
@@ -489,7 +525,7 @@ export function pkfCueBallBannersHTML(state, { dev = false } = {}) {
   const real = examUnlocked(state || {});
   const open = real || dev;
   const n = playableSectionCount();
-  const course = `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#pkfcb" data-pkfcb="course"><span class="simPromoText"><span class="eyebrow">DRILL SET</span><b>${esc(COURSE_TITLE)}</b><small>${n} sections from PKF Pattern Play: sliding cue ball, half-table and full-table patterns. Builds on the PKF Shot Making & Center Ball Course. Lock answers, then shoot for position on your table.</small></span><span class="simPromoGo">›</span></button>`;
+  const course = `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#pkfcb" data-pkfcb="course"><span class="simPromoText"><span class="eyebrow">DRILL SET</span><b>${esc(COURSE_TITLE)}</b><small>${n} sections: sliding cue ball, half-table and full-table patterns. Builds on the Shot Making & Center Ball Course. Lock answers, then shoot for position on your table.</small></span><span class="simPromoGo">›</span></button>`;
   const exam = open
     ? `<button type="button" class="card simPromo buEntry" data-action="go" data-href="#pkfcb/exam" data-pkfcb="exam"${real ? '' : ' data-dev-open="1"'}><span class="simPromoText"><span class="eyebrow">EXAM</span><b>${esc(EXAM_TITLE)}</b><small>Knowledge + table execution. Pass at ${Math.round(EXAM_PASS * 100)}%.${real ? '' : ' Dev preview.'}</small></span><span class="simPromoGo">›</span></button>`
     : `<div class="card simPromo buEntry is-locked" data-pkfcb="exam" data-pkfcb-locked="1"><span class="simPromoText"><span class="eyebrow">EXAM</span><b>${esc(EXAM_TITLE)}</b><small>Locked until all sections are passed.</small></span></div>`;

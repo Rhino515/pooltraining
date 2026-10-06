@@ -5,6 +5,7 @@
  * Original PKF JPEGs only — no redrawn diagrams, no invented diamond numbers.
  */
 import { ASSET_MAP, figureHTML, assetOf } from './pkfKickAssets.js';
+import { awardRecordedStep, markSkipped, clearSkipped } from './pkfTableStep.js';
 
 export const COURSE_TITLE = 'PKF Kicking Systems Course';
 export const EXAM_TITLE = 'PKF Kicking Systems Exam';
@@ -136,8 +137,10 @@ export function blank() {
   return {
     sections: {},
     current: null,
+    skipped: {},
+    tableXp: {},
     exam: { attempts: 0, passed: false, bestKnowledge: 0, bestExecution: 0, bestOverall: 0, history: [], weak: {} },
-    stats: { knowledgeCorrect: 0, knowledgeWrong: 0, executionMake: 0, executionMiss: 0 }
+    stats: { knowledgeCorrect: 0, knowledgeWrong: 0, executionMake: 0, executionMiss: 0, tableSkipped: 0, tableDrillXp: 0 }
   };
 }
 
@@ -148,6 +151,8 @@ export function pkfOf(state) {
     ...blank(),
     ...raw,
     sections: raw.sections && typeof raw.sections === 'object' ? raw.sections : {},
+    skipped: raw.skipped && typeof raw.skipped === 'object' ? { ...raw.skipped } : {},
+    tableXp: raw.tableXp && typeof raw.tableXp === 'object' ? { ...raw.tableXp } : {},
     exam: { ...blank().exam, ...(raw.exam || {}) },
     stats: { ...blank().stats, ...(raw.stats || {}) },
     current: raw.current || null
@@ -191,7 +196,7 @@ export function knowledgeLessons(sectionId) {
 }
 
 function emptyItem() {
-  return { locked: false, choice: null, correct: null, revealed: false, execution: null, done: false };
+  return { locked: false, choice: null, correct: null, revealed: false, execution: null, skipped: false, done: false };
 }
 
 export function startSection(state, sectionId) {
@@ -304,12 +309,38 @@ export function markExecution(state, result) {
   const ok = result === 'make' || result === 'success';
   it.execution = ok ? 'make' : 'miss';
   it.done = true;
+  if (cur.dev) return put(state, pkf);
+  if (ok) pkf.stats.executionMake += 1;
+  else pkf.stats.executionMiss += 1;
+  pkf.skipped = clearSkipped(pkf.skipped, id);
+  // Recorded table step → Drill XP (same per-drill session formula; a miss earns what a failed drill earns).
+  const r = awardRecordedStep(put(state, pkf), STORAGE_KEY, COURSE_TITLE, lesson, { ratio: ok ? 1 : 0, passed: ok });
+  it.xp = r.drill;
+  return r.state;
+}
+
+/** SKIP TABLE STEP: not attempted. 0 Drill XP, never a make, never blocks the lesson. */
+export function skipTableStep(state) {
+  const pkf = pkfOf(state);
+  const cur = pkf.current;
+  if (!cur || cur.phase !== 'play') return state;
+  const id = cur.order[cur.cursor];
+  const lesson = lessonById(id);
+  const it = cur.items[id];
+  if (!it || it.done || !lesson?.shoot) return state;
+  if (lesson.answer != null && !it.locked) return state;
+  it.skipped = true;
+  it.execution = null;
+  it.done = true;
   if (!cur.dev) {
-    if (ok) pkf.stats.executionMake += 1;
-    else pkf.stats.executionMiss += 1;
+    pkf.stats.tableSkipped += 1;
+    pkf.skipped = markSkipped(pkf.skipped, id);
   }
   return put(state, pkf);
 }
+
+/** Persistent list of skipped table steps (come back later). */
+export function skippedIds(pkf) { return Object.keys(pkf.skipped || {}).filter((id) => lessonById(id)?.shoot); }
 
 export function acknowledgeLearn(state) {
   const pkf = pkfOf(state);
@@ -354,6 +385,7 @@ function finishRun(state) {
   if (!cur) return state;
   let kOk = 0, kTot = 0, xOk = 0, xTot = 0;
   const missed = [];
+  const skipped = [];
   const weak = { ...(pkf.exam.weak || {}) };
   for (const id of cur.order) {
     const lesson = lessonById(id);
@@ -368,6 +400,7 @@ function finishRun(state) {
         weak[topic] = (weak[topic] || 0) + 1;
       }
     }
+    if (lesson.shoot && it.skipped) skipped.push(id);
     if (lesson.shoot || it.execution) {
       if (it.execution) {
         xTot += 1;
@@ -381,9 +414,9 @@ function finishRun(state) {
   cur.phase = 'results';
   const sectionPass = kTot ? kRate >= KNOWLEDGE_PASS : true;
   const examPass = overall >= EXAM_PASS;
-  cur.summary = { kOk, kTot, xOk, xTot, kRate, xRate, overall, missed, passed: cur.mode === 'section' ? sectionPass : examPass };
-  // DEV PREVIEW: show results but do not write section/exam progress or stats.
-  if (cur.dev) return put(state, pkf);
+  cur.summary = { kOk, kTot, xOk, xTot, kRate, xRate, overall, missed, skipped, passed: cur.mode === 'section' ? sectionPass : examPass };
+  // DEV PREVIEW and PRACTICE SKIPPED STEPS runs: show results but do not write section/exam progress.
+  if (cur.dev || cur.parent === 'review-skip') return put(state, pkf);
   if (cur.mode === 'section') {
     const passed = sectionPass;
     const prev = pkf.sections[cur.sectionId] || { knowledgeCorrect: 0, knowledgeTotal: 0, executionMake: 0, executionMiss: 0, passed: false, bestKnowledge: 0, attempts: 0, missed: [], lesson: {} };
@@ -394,6 +427,7 @@ function finishRun(state) {
     prev.executionMiss = (prev.executionMiss || 0) + (xTot - xOk);
     prev.bestKnowledge = Math.max(prev.bestKnowledge || 0, kRate);
     prev.missed = missed;
+    prev.skipped = skipped;
     if (passed) prev.passed = true;
     pkf.sections[cur.sectionId] = prev;
   } else {
@@ -407,7 +441,8 @@ function finishRun(state) {
     pkf.exam.history = [...(pkf.exam.history || []), {
       at: new Date().toISOString(),
       knowledge: Math.round(kRate * 100),
-      execution: Math.round(xRate * 100),
+      execution: xTot ? Math.round(xRate * 100) : null,
+      skipped: skipped.length,
       overall: Math.round(overall * 100),
       passed
     }].slice(-20);
@@ -423,8 +458,11 @@ export function retryCurrent(state) {
     if (cur.mode === 'exam' || cur.parent === 'exam') return previewExam(state, true);
     return previewSection(state, cur.sectionId, true);
   }
-  if (cur.mode === 'exam') return startExam(state);
-  return startSection(state, cur.sectionId);
+  // Clear the finished run so start* builds a fresh one (start* keeps an existing run of the same kind).
+  pkf.current = null;
+  const cleared = put(state, pkf);
+  if (cur.mode === 'exam') return startExam(cleared);
+  return startSection(cleared, cur.sectionId);
 }
 
 export function reviewMissed(state) {
@@ -444,6 +482,18 @@ export function reviewMissed(state) {
     items,
     parent: 'review'
   };
+  return put(state, pkf);
+}
+
+/** PRACTICE SKIPPED TABLE STEPS: replay the steps skipped in this run (saves no section/exam result). */
+export function reviewSkipped(state) {
+  const pkf = pkfOf(state);
+  const cur = pkf.current;
+  const ids = cur?.phase === 'results' ? (cur.summary?.skipped || []) : skippedIds(pkf);
+  if (!ids.length) return state;
+  const items = {};
+  for (const id of ids) items[id] = emptyItem();
+  pkf.current = { mode: cur?.mode === 'exam' ? 'exam' : 'section', sectionId: cur?.sectionId || lessonById(ids[0])?.section, cursor: 0, view: 0, phase: 'play', order: [...ids], items, parent: 'review-skip', dev: !!cur?.dev };
   return put(state, pkf);
 }
 

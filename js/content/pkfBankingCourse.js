@@ -8,6 +8,7 @@
  * Storage key: state.pkfBankingSystems only. Original PKF JPEGs only — no redrawn diagrams, no invented numbers.
  */
 import { ASSET_MAP, REGIONS, figureHTML, revealFigureHTML, assetOf } from './pkfBankAssets.js';
+import { awardRecordedStep, markSkipped, clearSkipped } from './pkfTableStep.js';
 
 export const COURSE_TITLE = 'PKF Banking Systems Course';
 export const EXAM_TITLE = 'PKF Banking Systems Exam';
@@ -262,8 +263,10 @@ export function blank() {
   return {
     sections: {},
     current: null,
+    skipped: {},
+    tableXp: {},
     exam: { attempts: 0, passed: false, bestKnowledge: 0, bestExecution: 0, bestOverall: 0, history: [], weak: {} },
-    stats: { knowledgeCorrect: 0, knowledgeWrong: 0, executionMake: 0, executionMiss: 0 }
+    stats: { knowledgeCorrect: 0, knowledgeWrong: 0, executionMake: 0, executionMiss: 0, tableSkipped: 0, tableDrillXp: 0 }
   };
 }
 
@@ -274,6 +277,8 @@ export function bankOf(state) {
     ...blank(),
     ...raw,
     sections: raw.sections && typeof raw.sections === 'object' ? raw.sections : {},
+    skipped: raw.skipped && typeof raw.skipped === 'object' ? { ...raw.skipped } : {},
+    tableXp: raw.tableXp && typeof raw.tableXp === 'object' ? { ...raw.tableXp } : {},
     exam: { ...blank().exam, ...(raw.exam || {}) },
     stats: { ...blank().stats, ...(raw.stats || {}) },
     current: raw.current || null
@@ -310,7 +315,7 @@ export function knowledgeLessons(sectionId) {
 }
 
 function emptyItem() {
-  return { locked: false, choice: null, correct: null, revealed: false, execution: null, done: false, hint: false };
+  return { locked: false, choice: null, correct: null, revealed: false, execution: null, skipped: false, done: false, hint: false };
 }
 
 function freshRun(ids, extra) {
@@ -408,19 +413,44 @@ export function markExecution(state, result) {
   const bank = bankOf(state);
   const x = liveItem(bank);
   if (!x || !x.it || x.it.done) return state;
-  const { cur, lesson, it } = x;
+  const { cur, id, lesson, it } = x;
   if (!lesson?.shoot) return state;
   if (lesson.answer != null && !it.locked) return state;
   const ok = result === 'make' || result === 'success';
   it.execution = ok ? 'make' : 'miss';
   it.revealed = true;
   it.done = true;
+  if (cur.dev) return put(state, bank);
+  if (ok) bank.stats.executionMake += 1;
+  else bank.stats.executionMiss += 1;
+  bank.skipped = clearSkipped(bank.skipped, id);
+  // Recorded table step → Drill XP (same per-drill session formula; a miss earns what a failed drill earns).
+  const r = awardRecordedStep(put(state, bank), STORAGE_KEY, COURSE_TITLE, lesson, { ratio: ok ? 1 : 0, passed: ok });
+  it.xp = r.drill;
+  return r.state;
+}
+
+/** SKIP TABLE STEP: not attempted. 0 Drill XP, never a make, never blocks the lesson. */
+export function skipTableStep(state) {
+  const bank = bankOf(state);
+  const x = liveItem(bank);
+  if (!x || !x.it || x.it.done) return state;
+  const { cur, id, lesson, it } = x;
+  if (!lesson?.shoot) return state;
+  if (lesson.answer != null && !it.locked) return state;
+  it.skipped = true;
+  it.execution = null;
+  it.revealed = true;
+  it.done = true;
   if (!cur.dev) {
-    if (ok) bank.stats.executionMake += 1;
-    else bank.stats.executionMiss += 1;
+    bank.stats.tableSkipped += 1;
+    bank.skipped = markSkipped(bank.skipped, id);
   }
   return put(state, bank);
 }
+
+/** Persistent list of skipped table steps (come back later). */
+export function skippedIds(bank) { return Object.keys(bank.skipped || {}).filter((id) => lessonById(id)?.shoot); }
 
 export function acknowledgeLearn(state) {
   const bank = bankOf(state);
@@ -458,6 +488,7 @@ function finishRun(state) {
   if (!cur) return state;
   let kOk = 0, kTot = 0, xOk = 0, xTot = 0;
   const missed = [];
+  const skipped = [];
   const weak = { ...(bank.exam.weak || {}) };
   for (const id of cur.order) {
     const lesson = lessonById(id);
@@ -471,6 +502,7 @@ function finishRun(state) {
         if (cur.mode === 'exam') weak[lesson.title || id] = (weak[lesson.title || id] || 0) + 1;
       }
     }
+    if (lesson.shoot && it.skipped) skipped.push(id);
     if (lesson.shoot && it.execution) {
       xTot += 1;
       if (it.execution === 'make') xOk += 1;
@@ -479,12 +511,12 @@ function finishRun(state) {
   const kRate = kTot ? kOk / kTot : 1;
   const xRate = xTot ? xOk / xTot : 1;
   const overall = (kTot + xTot) ? (kOk + xOk) / (kTot + xTot) : 0;
-  const review = cur.parent === 'review';
+  const review = cur.parent === 'review' || cur.parent === 'review-skip';
   const sectionPass = kTot ? kRate >= KNOWLEDGE_PASS : true;
   const examPass = overall >= EXAM_PASS;
   cur.phase = 'results';
-  cur.summary = { kOk, kTot, xOk, xTot, kRate, xRate, overall, missed, review, passed: review ? kOk === kTot : (cur.mode === 'section' ? sectionPass : examPass) };
-  // DEV PREVIEW and REVIEW MISSED CONCEPTS runs never write progress.
+  cur.summary = { kOk, kTot, xOk, xTot, kRate, xRate, overall, missed, skipped, review, passed: review ? kOk === kTot : (cur.mode === 'section' ? sectionPass : examPass) };
+  // DEV PREVIEW, REVIEW MISSED CONCEPTS and PRACTICE SKIPPED TABLE STEPS runs never write section/exam progress.
   if (cur.dev || review) return put(state, bank);
   if (cur.mode === 'section') {
     const prev = bank.sections[cur.sectionId] || { knowledgeCorrect: 0, knowledgeTotal: 0, executionMake: 0, executionMiss: 0, passed: false, bestKnowledge: 0, attempts: 0, missed: [] };
@@ -495,6 +527,7 @@ function finishRun(state) {
     prev.executionMiss = (prev.executionMiss || 0) + (xTot - xOk);
     prev.bestKnowledge = Math.max(prev.bestKnowledge || 0, kRate);
     prev.missed = missed;
+    prev.skipped = skipped;
     if (sectionPass) prev.passed = true;
     bank.sections[cur.sectionId] = prev;
   } else {
@@ -507,7 +540,8 @@ function finishRun(state) {
     bank.exam.history = [...(bank.exam.history || []), {
       at: new Date().toISOString(),
       knowledge: Math.round(kRate * 100),
-      execution: Math.round(xRate * 100),
+      execution: xTot ? Math.round(xRate * 100) : null,
+      skipped: skipped.length,
       overall: Math.round(overall * 100),
       passed: examPass
     }].slice(-20);
@@ -536,6 +570,16 @@ export function reviewMissed(state) {
   const cur = bank.current;
   if (!cur?.summary?.missed?.length) return state;
   bank.current = freshRun(cur.summary.missed, { mode: cur.mode, sectionId: cur.sectionId, parent: 'review', dev: !!cur.dev });
+  return put(state, bank);
+}
+
+/** PRACTICE SKIPPED TABLE STEPS: replay the steps skipped in this run (saves no section/exam result). */
+export function reviewSkipped(state) {
+  const bank = bankOf(state);
+  const cur = bank.current;
+  const ids = cur?.phase === 'results' ? (cur.summary?.skipped || []) : skippedIds(bank);
+  if (!ids.length) return state;
+  bank.current = freshRun(ids, { mode: cur?.mode === 'exam' ? 'exam' : 'section', sectionId: cur?.sectionId || lessonById(ids[0])?.section, parent: 'review-skip', dev: !!cur?.dev });
   return put(state, bank);
 }
 

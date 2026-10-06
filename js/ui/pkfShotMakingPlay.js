@@ -9,8 +9,10 @@ import {
   COURSE_TITLE, EXAM_TITLE, SECTIONS, EXAM_ITEMS, LESSONS, KNOWLEDGE_PASS, EXAM_PASS, ASSIST, ATTEMPTS_MAX, LTYPE, PHYS, NOT_SPECIFIED,
   courseOf, migrateFromCueBall, sectionUnlocked, examUnlocked, sectionRecord, sectionById, lessonsFor, lessonById, isKnowledge, isPhysical, tagInfo,
   progressSummary, startSection, startExam, previewSection, previewExam, startReview, startSingle, selectChoice, showHint, lockAnswer, showSolution,
-  acknowledgeLearn, beginShooting, markAttempt, nextLesson, viewLesson, retryCurrent, reviewMissed, figureHTML, solutionFigureHTML, assetOf
+  acknowledgeLearn, beginShooting, markAttempt, nextLesson, viewLesson, retryCurrent, reviewMissed, figureHTML, solutionFigureHTML, assetOf,
+  skipTableStep
 } from '../content/pkfShotMakingCourse.js';
+import { skipButtonHTML, skippedVerdictHTML, xpLineHTML } from '../content/pkfTableStep.js';
 import { devBypass } from '../dev/gate.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -151,16 +153,16 @@ function playHTML(state) {
   } else if (phys && !it.done && !it.shooting) {
     stage = 'SET UP';
     fig = figureHTML(lesson.id, { locked: true, alt: lesson.title });
-    body = `${setupCard(lesson)}${live ? '<button type="button" class="bigBtn" data-action="pkfsm-shoot">NOW SHOOT IT</button>' : ''}`;
+    body = `${setupCard(lesson)}${live ? `<button type="button" class="bigBtn" data-action="pkfsm-shoot">NOW SHOOT IT</button>${skipButtonHTML('pkfsm-skip')}` : ''}`;
   } else if (phys && !it.done) {
     stage = 'SHOOT';
     fig = figureHTML(lesson.id, { locked: true, alt: lesson.title });
-    body = `<div class="card pkfsmObjective"><b>NOW SHOOT IT</b><p>${esc(lesson.physical.objective)}</p></div>${live ? shootButtons(lesson, it) : dotsHTML(lesson, it.attempts)}`;
+    body = `<div class="card pkfsmObjective"><b>NOW SHOOT IT</b><p>${esc(lesson.physical.objective)}</p></div>${live ? `${shootButtons(lesson, it)}${skipButtonHTML('pkfsm-skip')}` : dotsHTML(lesson, it.attempts)}`;
   } else if (phys) {
     stage = 'RESULT';
     fig = figureHTML(lesson.id, { locked: true, alt: lesson.title });
     const ok = it.execution === 'success';
-    body = `<p class="${ok ? 'green' : 'warn'} pkfVerdict" data-pkfsm-exec="${esc(it.execution)}"><b>${ok ? 'SKILL OBJECTIVE ACHIEVED' : `NEEDS PRACTICE · not achieved in ${ATTEMPTS_MAX} attempts`}</b></p>
+    body = `${it.skipped ? `${skippedVerdictHTML()}${cur.dev || cur.mode === 'single' ? '' : '<p class="muted small">Added to PRACTICE MISSED SHOTS.</p>'}` : `<p class="${ok ? 'green' : 'warn'} pkfVerdict" data-pkfsm-exec="${esc(it.execution)}"><b>${ok ? 'SKILL OBJECTIVE ACHIEVED' : `NEEDS PRACTICE · not achieved in ${ATTEMPTS_MAX} attempts`}</b></p>${xpLineHTML(it)}`}
       ${dotsHTML(lesson, it.attempts)}
       <p class="muted small">${(it.attempts || []).map((t, i) => `Attempt ${i + 1}: ${esc(PHYS[lesson.physical.kind].find((r) => r[0] === t)?.[1] || t)}`).join(' · ')}</p>
       ${solutionCard(lesson)}
@@ -207,13 +209,15 @@ function resultsHTML(state) {
     </div>`;
   }
   const reviewBtn = sum.missed?.length ? '<button type="button" class="bigBtn alt" data-action="pkfsm-review-missed">REVIEW MISSED CONCEPTS</button>' : '';
-  const practiceBtn = sum.missedShots?.length ? '<button type="button" class="bigBtn alt" data-action="pkfsm-practice-missed">PRACTICE MISSED SHOTS</button>' : '';
+  const nSkip = sum.skipped?.length || 0;
+  const skipList = nSkip ? `<div class="kickHist" data-pkf-skipped-list="${nSkip}"><b>Skipped table steps (in PRACTICE MISSED SHOTS)</b>${sum.skipped.map((id) => `<p>${esc(lessonById(id)?.title || id)}</p>`).join('')}</div>` : '';
+  const practiceBtn = (sum.missedShots?.length || nSkip) ? '<button type="button" class="bigBtn alt" data-action="pkfsm-practice-missed">PRACTICE MISSED SHOTS</button>' : '';
   const missedList = sum.missed?.length ? `<div class="kickHist"><b>Missed concepts</b>${sum.missed.map((id) => `<p>${esc(lessonById(id)?.title || id)}</p>`).join('')}</div>` : '';
   const missedShots = sum.missedShots?.length ? `<div class="kickHist"><b>Shots needing practice</b>${sum.missedShots.map((id) => `<p>${esc(lessonById(id)?.title || id)}</p>`).join('')}</div>` : '';
   let examBlock = '';
   if (exam) {
     const rec = (sum.recommend || []).map((s) => `<button type="button" class="chip" data-action="go" data-href="#pkfsmcb/${esc(s)}">${esc(areaName(s))}</button>`).join(' ');
-    const hist = (course.exam.history || []).slice().reverse().map((h) => `<p>${esc(ptTime(h.at))} · Knowledge ${h.knowledge ?? '—'}% · Execution ${h.execution ?? '—'}% · Overall ${h.overall}% · ${h.passed ? 'PASS' : 'RETRY'}</p>`).join('');
+    const hist = (course.exam.history || []).slice().reverse().map((h) => `<p>${esc(ptTime(h.at))} · Knowledge ${h.knowledge ?? '—'}% · Execution ${h.execution == null ? (h.skipped ? 'skipped' : '—') : `${h.execution}%`}${h.skipped ? ` · ${h.skipped} skipped` : ''} · Overall ${h.overall}% · ${h.passed ? 'PASS' : 'RETRY'}</p>`).join('');
     examBlock = `<p data-pkfsm-overall="1"><b>Overall ${pc(sum.overall)}</b> · pass at ${Math.round(EXAM_PASS * 100)}% (app setting)</p>
       <p>Strongest Area: ${esc(sum.strongest ? areaName(sum.strongest) : '—')}</p>
       <p>Weakest Area: ${esc(sum.weakest ? areaName(sum.weakest) : '—')}</p>
@@ -227,13 +231,15 @@ function resultsHTML(state) {
     <div class="card pkfsmResults">
       <p><b>${graded ? (sum.passed ? 'PASS' : 'RETRY') : 'PRACTICE'}</b></p>
       <p>Knowledge Score ${frac(sum.kOk || 0, sum.kTot || 0)}</p>
-      <p>Execution Score ${frac(sum.xOk || 0, sum.xTot || 0)}</p>
+      <p data-pkf-exec-line="1">Execution Score ${sum.xTot || !nSkip ? frac(sum.xOk || 0, sum.xTot || 0) : 'skipped (not attempted)'}</p>
+      <p data-pkf-skipped-count="${nSkip}">Table Steps Skipped ${nSkip}</p>
       <p>Shot-Making Accuracy ${sum.madeTot ? frac(sum.made, sum.madeTot) : '—'}</p>
       <p>Skill-Objective Accuracy ${sum.objTot ? frac(sum.objOk, sum.objTot) : '—'}</p>
       ${examBlock}
-      ${graded && !exam ? `<p class="muted small">Pass requirement: ${Math.round(KNOWLEDGE_PASS * 100)}% knowledge (app setting). Missed shots don’t fail a section; they go to PRACTICE MISSED SHOTS.</p>` : ''}
+      ${graded && !exam ? `<p class="muted small">Pass requirement: ${Math.round(KNOWLEDGE_PASS * 100)}% knowledge (app setting). Missed or skipped shots don’t fail a section; they go to PRACTICE MISSED SHOTS.</p>` : ''}
+      ${exam && graded ? '<p class="muted small">Skipped table items are left out of the exam score.</p>' : ''}
       ${!graded ? '<p class="muted small">Review and practice runs never change a section pass.</p>' : ''}
-      ${missedList}${missedShots}
+      ${missedList}${missedShots}${skipList}
       ${reviewBtn}${practiceBtn}
       <button type="button" class="bigBtn" data-action="pkfsm-retry">${sum.passed && graded ? 'REPLAY' : 'RETRY'}</button>
       <button type="button" class="bigBtn alt" data-action="go" data-href="#pkfsmcb">Course home</button>
@@ -255,6 +261,7 @@ function statsHTML(p) {
     ${row('Failed Exercises', String(p.failed), 'failed')}
     ${row('Sections Completed', `${p.sectionsPassed} / ${p.sectionsTotal}`, 'sections')}
     ${row('Exercises Needing Practice', String(p.needsPractice), 'practice')}
+    ${row('Table Steps Skipped', String(p.tableSkipped || 0), 'skipped')}
     ${row('Exam Attempts', String(p.examAttempts), 'exam-attempts')}
     ${row('Best Exam Score', p.examAttempts ? pc(p.examBest) : '—', 'exam-best')}
   </div>`;
@@ -411,6 +418,7 @@ export function createPkfShotMakingScreen(ctx, args) {
     'pkfsm-ack': (s) => acknowledgeLearn(s),
     'pkfsm-shoot': (s) => beginShooting(s),
     'pkfsm-attempt': (s, el) => markAttempt(s, el.dataset.v),
+    'pkfsm-skip': (s) => skipTableStep(s),
     'pkfsm-next': (s) => nextLesson(s),
     'pkfsm-view': (s, el) => viewLesson(s, Number(el.dataset.i)),
     'pkfsm-retry': (s) => retryCurrent(s),

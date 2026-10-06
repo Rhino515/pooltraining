@@ -10,8 +10,9 @@ import {
   bankOf, sectionUnlocked, examUnlocked, startSection, startExam, previewSection, previewExam,
   selectChoice, showHint, lockAnswer, markExecution, acknowledgeLearn, nextLesson, retryCurrent, reviewMissed,
   playableSectionCount, lessonTypeCounts, assistCounts, auditCourse, pkfBankProgressRows, pkfBankBannersHTML,
-  ASSET_MAP, REGIONS, assetOf
+  ASSET_MAP, REGIONS, assetOf, skipTableStep, skippedIds, reviewSkipped, passedSectionCount, lessonById
 } from '../js/content/pkfBankingCourse.js';
+import { readSetProgress, setProgressBoxHTML, completedSetsLineHTML } from '../js/content/setProgress.js';
 import { PAGES } from '../js/content/pkfBankAssets.js';
 import { defaultState } from '../js/storage.js';
 
@@ -181,6 +182,54 @@ state = finish(state, { miss: true });
   ex = finish(ex);
   assert(bankOf(ex).exam.attempts === 0 && !bankOf(ex).exam.passed, 'DEV PREVIEW exam saves nothing');
   assert(!pkfBankProgressRows(ex).length, 'DEV PREVIEW adds no progress row');
+}
+
+// ---------------------------------------------------------------- table-step skip + Drill XP
+{
+  const runAll = (st, onShoot) => {
+    let guard = 400;
+    while (guard--) {
+      const cur = bankOf(st).current;
+      if (!cur || cur.phase === 'results') return st;
+      const id = cur.order[cur.cursor];
+      const lesson = lessonById(id);
+      const it = cur.items[id];
+      if (it.done) { st = nextLesson(st); continue; }
+      if (lesson.answer != null && !it.locked) { st = selectChoice(st, lesson.answer); st = lockAnswer(st); continue; }
+      if (lesson.shoot) { st = onShoot(st); continue; }
+      st = acknowledgeLearn(st);
+    }
+    return st;
+  };
+  const drill = (st) => st?.prog?.drillXp || 0;
+  let st = {};
+  for (const sec of SECTIONS) {
+    if (sec.stub) continue;
+    st = startSection(st, sec.id);
+    st = runAll(st, (x) => skipTableStep(x));
+  }
+  const bank = bankOf(st);
+  assert(passedSectionCount(bank) === playableSectionCount(), 'Bank: course completes with every table step skipped');
+  assert(drill(st) === 0 && !st.prog?.lifetimeXp, 'Bank: knowledge + skipped steps award 0 XP');
+  assert(bank.stats.tableSkipped > 0 && skippedIds(bank).length === bank.stats.tableSkipped, `Bank: skipped steps listed (${bank.stats.tableSkipped})`);
+  assert(examUnlocked(st), 'Bank: exam unlocks with skipped table steps');
+  const row = readSetProgress(st).find((r) => r.id === 'pkfBank');
+  assert(row && row.finished, 'Bank emblem row finished');
+  assert(setProgressBoxHTML(st).includes('data-set-emblem="pkfBank"') && completedSetsLineHTML(st).includes('data-set-emblem="pkfBank"'), 'Bank emblem shows on dashboard');
+  st = startExam(st);
+  st = runAll(st, (x) => skipTableStep(x));
+  const b2 = bankOf(st);
+  const h = b2.exam.history.at(-1);
+  assert(b2.exam.passed === true, 'Bank: exam passes on knowledge with physical items skipped');
+  assert(h.execution === null && h.skipped === b2.current.summary.skipped.length, `Bank: exam history records ${h.skipped} skipped`);
+  // practice the skipped exam steps: first-try MAKE = 135 each, list cleared, exam record unchanged
+  const n = b2.current.summary.skipped.length;
+  const examBefore = JSON.stringify(b2.exam);
+  st = reviewSkipped(st);
+  st = runAll(st, (x) => markExecution(x, 'make'));
+  assert(n === 0 || drill(st) === 135 * n, `Bank: first-try MAKE = 135 Drill XP per step (got ${drill(st)} for ${n})`);
+  assert(JSON.stringify(bankOf(st).exam) === examBefore, 'Bank: practice run leaves the exam record alone');
+  assert(!st.prog?.lifetimeXp && !st.prog?.careerXp && !Object.keys(st.prog?.items || {}).length, 'Bank: no Lifetime/Career XP or rank records');
 }
 
 console.log('\nType counts', counts, 'Assist', assists);

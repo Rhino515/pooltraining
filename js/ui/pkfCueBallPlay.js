@@ -9,9 +9,11 @@ import {
   passedSectionCount, playableSectionCount, lessonsFor, lessonById,
   startSection, startExam, previewSection, previewExam, selectChoice, selectPlanStep, showHint, lockAnswer,
   markExecution, acknowledgeLearn, nextLesson, viewLesson, retryCurrent, reviewMissed, reviewMissedPositions,
+  skipTableStep, skippedIds,
   figureHTML, revealFigureHTML, assetOf, PREREQ_COURSE
 } from '../content/pkfCueBallCourse.js';
 import { devBypass } from '../dev/gate.js';
+import { skipButtonHTML, skippedVerdictHTML, xpLineHTML } from '../content/pkfTableStep.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
@@ -77,6 +79,10 @@ function dotsHTML(attempts) {
 }
 
 function shootButtons(lesson, it) {
+  return `${shootButtonsCore(lesson, it)}${skipButtonHTML('pkfcb-skip')}`;
+}
+
+function shootButtonsCore(lesson, it) {
   const needPos = !!lesson.position;
   const left = ATTEMPTS_MAX - (it?.attempts?.length || 0);
   if (needPos) {
@@ -159,7 +165,7 @@ function playHTML(state) {
   } else if (isShoot && it.done) {
     stage = 'SHOOT';
     const ok = it.execution === 'make';
-    body = `<p class="${ok ? 'green' : 'warn'} pkfVerdict" data-pkfcb-exec="${esc(it.execution)}"><b>${ok ? 'SUCCESS recorded' : 'FAILED after attempts'}</b></p>
+    body = `${it.skipped ? skippedVerdictHTML() : `<p class="${ok ? 'green' : 'warn'} pkfVerdict" data-pkfcb-exec="${esc(it.execution)}"><b>${ok ? 'SUCCESS recorded' : 'FAILED after attempts'}</b></p>${xpLineHTML(it)}`}
       ${dotsHTML(it.attempts)}
       ${solutionCard(lesson)}${revealFigureHTML(lesson.id)}
       ${live ? '<button type="button" class="bigBtn" data-action="pkfcb-next">NEXT</button>' : ''}`;
@@ -203,21 +209,28 @@ function resultsHTML(state) {
   const weak = weakEntries.length
     ? `<div class="kickHist"><b>Weakest area</b><p>${esc(weakest)}</p><b>Strongest / review</b><p>${esc(weakEntries.slice().reverse()[0]?.[0] || 'Keep reviewing missed concepts')}</p>${weakEntries.map(([k, v]) => `<p>${esc(k)} · ${v}</p>`).join('')}</div>` : '';
   const history = exam && !sum.review && course.exam.history?.length
-    ? `<div class="kickHist"><b>Attempt history</b>${course.exam.history.map((h) => `<p>${esc(new Date(h.at).toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }))} PT · Knowledge ${h.knowledge}% · Execution ${h.execution}% · Position ${h.position ?? '—'}% · Pattern ${h.pattern ?? '—'}% · ${h.overall}% · ${h.passed ? 'pass' : 'retry'}</p>`).join('')}</div>` : '';
+    ? `<div class="kickHist"><b>Attempt history</b>${course.exam.history.map((h) => `<p>${esc(new Date(h.at).toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }))} PT · Knowledge ${h.knowledge}% · Execution ${h.execution == null ? 'skipped' : `${h.execution}%`}${h.skipped ? ` · ${h.skipped} skipped` : ''} · Position ${h.position ?? '—'}% · Pattern ${h.pattern ?? '—'}% · ${h.overall}% · ${h.passed ? 'pass' : 'retry'}</p>`).join('')}</div>` : '';
   const missedList = sum.missed?.length
     ? `<div class="kickHist"><b>Missed concepts</b>${sum.missed.map((id) => `<p>${esc(lessonById(id)?.title || id)}</p>`).join('')}</div>` : '';
+  const nSkip = sum.skipped?.length || 0;
+  const skipList = nSkip
+    ? `<div class="kickHist" data-pkf-skipped-list="${nSkip}"><b>Skipped table steps (in PRACTICE MISSED POSITIONS)</b>${sum.skipped.map((id) => `<p>${esc(lessonById(id)?.title || id)}</p>`).join('')}</div>` : '';
+  const execLine = sum.xTot
+    ? `Execution Score ${sum.xOk || 0} / ${sum.xTot} (${Math.round((sum.xRate || 0) * 100)}%)`
+    : (nSkip ? 'Execution Score: skipped (not attempted)' : 'Execution Score 0 / 0');
   return `<div class="playScreen kickPage pkfbPage pkfcbPage" data-pkfcb-results="1" data-passed="${sum.passed ? 1 : 0}">
     <div class="title"><button type="button" class="linkish back" data-action="go" data-href="#pkfcb">‹ Back</button><span class="eyebrow">${esc(head.toUpperCase())}</span><h1>${esc(title)}</h1></div>
     ${devPreviewNote(cur)}
     <div class="card">
       <p><b>${sum.review ? 'PRACTICE' : (sum.passed ? 'PASS' : 'RETRY')}</b></p>
       <p>Knowledge Score ${sum.kOk || 0} / ${sum.kTot || 0} (${Math.round((sum.kRate || 0) * 100)}%)</p>
-      <p>Execution Score ${sum.xOk || 0} / ${sum.xTot || 0}${sum.xTot ? ` (${Math.round((sum.xRate || 0) * 100)}%)` : ''}</p>
+      <p data-pkf-exec-line="1">${execLine}</p>
+      <p data-pkf-skipped-count="${nSkip}">Table steps skipped: ${nSkip}</p>
       <p>Position Accuracy ${sum.pOk || 0} / ${sum.pTot || 0}${sum.pTot ? ` (${Math.round((sum.pRate || 0) * 100)}%)` : ''}</p>
       <p>Pattern Planning Score ${sum.planOk || 0} / ${sum.planTot || 0}${sum.planTot ? ` (${Math.round((sum.planRate || 0) * 100)}%)` : ''}</p>
       ${exam ? `<p>Overall ${Math.round((sum.overall || 0) * 100)}%</p><p>Best Score ${Math.round((course.exam.bestOverall || 0) * 100)}%</p>` : ''}
-      ${sum.review ? '<p class="muted small">Practice runs do not change your saved result.</p>' : `<p>Pass requirement: ${exam ? `${Math.round(EXAM_PASS * 100)}% overall` : `${Math.round(KNOWLEDGE_PASS * 100)}% knowledge`} (missed shots do not fail a section)</p>`}
-      ${missedList}
+      ${sum.review ? '<p class="muted small">Practice runs do not change your saved result.</p>' : `<p>Pass requirement: ${exam ? `${Math.round(EXAM_PASS * 100)}% overall; skipped table items are left out` : `${Math.round(KNOWLEDGE_PASS * 100)}% knowledge`} (missed or skipped shots do not fail a section)</p>`}
+      ${missedList}${skipList}
       ${reviewBtn}${posBtn}
       <button type="button" class="bigBtn" data-action="pkfcb-retry">${sum.passed && !sum.review ? 'REPLAY' : 'RETRY'}</button>
       ${weak}${history}
@@ -261,9 +274,17 @@ function listHTML(state) {
       <li>NOW SHOOT IT on your table — up to three attempts; position drills need make + position.</li>
       <li>Pass every section on knowledge, then take the exam.</li>
     </ol></details>
-    <div class="card pkfbTally"><p>${passed} of ${total} sections passed · Knowledge ${st.knowledgeCorrect}/${st.knowledgeCorrect + st.knowledgeWrong} · Shots ${st.executionMake}/${st.executionMake + st.executionMiss} · Positions ${st.positionOk}/${st.positionOk + st.positionMiss}</p></div>
+    <div class="card pkfbTally"><p>${passed} of ${total} sections passed · Knowledge ${st.knowledgeCorrect}/${st.knowledgeCorrect + st.knowledgeWrong} · Shots ${st.executionMake}/${st.executionMake + st.executionMiss} · Positions ${st.positionOk}/${st.positionOk + st.positionMiss} · <span data-pkf-skipped-stat="${st.tableSkipped || 0}">Table steps skipped ${st.tableSkipped || 0}</span></p></div>
+    ${skippedListHTML(course)}
     <div class="stageList" data-pkfcb-sections="1">${rows}${examBtn}</div>
   </div>`;
+}
+
+/** Skipped table steps waiting to be practiced (persistent; cleared when the step is shot and recorded). */
+function skippedListHTML(course) {
+  const ids = skippedIds(course);
+  if (!ids.length) return '';
+  return `<div class="card kickHist" data-pkf-skipped-home="${ids.length}"><b>SKIPPED TABLE STEPS · practice later (${ids.length})</b>${ids.map((id) => { const l = lessonById(id); const sec = SECTIONS.find((s) => s.id === l?.section); return `<p>${esc(l?.title || id)}${sec ? ` · ${esc(sec.title)}` : ' · Exam'}</p>`; }).join('')}<p class="muted small">Replay the section (or the exam) and shoot them, or use PRACTICE MISSED POSITIONS on a results screen.</p></div>`;
 }
 
 function lockedExamHTML() {
@@ -343,6 +364,7 @@ export function createPkfCueBallScreen(ctx, args) {
     'pkfcb-lock': (s) => lockAnswer(s),
     'pkfcb-ack': (s) => acknowledgeLearn(s),
     'pkfcb-exec': (s, el) => markExecution(s, el.dataset.v),
+    'pkfcb-skip': (s) => skipTableStep(s),
     'pkfcb-next': (s) => nextLesson(s),
     'pkfcb-view': (s, el) => viewLesson(s, Number(el.dataset.i)),
     'pkfcb-retry': (s) => retryCurrent(s),

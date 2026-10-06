@@ -10,6 +10,7 @@ import { PAGES, REGIONS, ASSET_MAP, assetOf, figureHTML } from '../js/content/pk
 import { defaultState } from '../js/storage.js';
 import { createPkfFundScreen } from '../js/ui/pkfFundPlay.js';
 import * as G from '../js/dev/gate.js';
+import { readSetProgress, setProgressBoxHTML, completedSetsLineHTML } from '../js/content/setProgress.js';
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 let failed = 0;
@@ -225,6 +226,54 @@ G.setDevBypass?.(() => false);
   G.setDevBypass?.(() => false);
   const R = screen(full, ['exam']);
   assert(/data-pkff-results="1"/.test(R.html()) && /Knowledge Score/.test(R.html()) && /Concepts Mastered/.test(R.html()) && /Physical Practice Completed/.test(R.html()) && /Best Score/.test(R.html()) && /Attempt History/.test(R.html()) && /Recommended Review/.test(R.html()), 'exam results fields');
+}
+
+// ---- table-step skip + Drill XP ----
+{
+  const drill = (st) => st?.prog?.drillXp || 0;
+  const step = (st, onPractice) => {
+    const cur = C.courseOf(st).current;
+    const l = C.lessonById(cur.order[cur.cursor]);
+    if (l.type === 'PRACTICE') return C.nextLesson(onPractice(st, l));
+    return answer(st, true);
+  };
+  const run = (st, onPractice) => { let g = 0; while (C.courseOf(st).current?.phase === 'play' && g++ < 300) st = step(st, onPractice); return st; };
+  let st = {};
+  for (const sec of SECTIONS) { st = C.startSection(st, sec.id); st = run(st, (x) => C.skipTableStep(x)); }
+  const c = C.courseOf(st);
+  assert(C.passedSectionCount(c) === SECTIONS.length, 'Fund: course completes with every PRACTICE step skipped');
+  assert(drill(st) === 0 && !st.prog?.lifetimeXp, 'Fund: knowledge + skipped steps award 0 XP');
+  const practiceIds = LESSONS.filter((l) => l.type === 'PRACTICE').map((l) => l.id);
+  assert(c.stats.tableSkipped === practiceIds.length && c.stats.practiceSessions === 0, `Fund: ${c.stats.tableSkipped} skips counted, no practice sessions logged`);
+  assert(practiceIds.every((id) => c.needsPractice[id]), 'Fund: skipped steps land on NEEDS PRACTICE');
+  assert(C.progressSummary(st).lessonsDone === LESSONS.length, 'Fund: skipped steps count as moving through the lesson');
+  const row = readSetProgress(st).find((r) => r.id === 'pkfFund');
+  assert(row && row.finished, 'Fund emblem row finished');
+  assert(setProgressBoxHTML(st).includes('data-set-emblem="pkfFund"') && completedSetsLineHTML(st).includes('data-set-emblem="pkfFund"'), 'Fund emblem shows on dashboard');
+  assert(C.examUnlocked(st), 'Fund: exam unlocks with skipped steps');
+  st = C.startExam(st);
+  st = run(st, (x) => C.skipTableStep(x));
+  const c2 = C.courseOf(st);
+  const h = c2.exam.history.at(-1);
+  assert(c2.exam.passed && h.physical === 'skipped' && h.skipped === 3, 'Fund: exam passes on knowledge with 3 physical checkpoints skipped');
+  const R = screen(st, ['exam']);
+  assert(/data-pkf-skipped-count="3"/.test(R.html()) && /skipped \(not attempted\)/.test(R.html()), 'Fund: exam results show skipped count');
+  const H = screen({ ...st, pkfFundamentals: { ...c2, current: null } }, []);
+  assert(new RegExp(`data-pkf-skipped-stat="${c2.stats.tableSkipped}"`).test(H.html()), 'Fund: course home shows Table steps skipped');
+  // recorded self-evaluation: 135 first time, 8 on a mastered repeat; NEEDS PRACTICE rating still counts as performed
+  let s2 = C.startSection({ pkfFundamentals: { ...c2, current: null } }, 'stroke-drill');
+  const amounts = [];
+  let k = 0;
+  s2 = run(s2, (x, l) => { const b = drill(x); const set = C.ratingSet(l); const y = C.rate(x, set[k++ % 2 ? set.length - 1 : 0][0]); amounts.push(drill(y) - b); return y; });
+  assert(amounts.length > 0 && amounts.every((a) => a === 135), `Fund: each first self-evaluation = 135 Drill XP (${amounts.join('/')})`);
+  assert(!s2.prog?.lifetimeXp && !s2.prog?.careerXp && !Object.keys(s2.prog?.items || {}).length, 'Fund: no Lifetime/Career XP or rank records');
+  // skip button visible on a PRACTICE step
+  const P = screen({ ...s2, pkfFundamentals: { ...C.courseOf(s2), current: null } }, ['stroke-drill']);
+  let g = 0;
+  while (!/data-type="PRACTICE"/.test(P.html()) && g++ < 40) {
+    P.ctx.commit(answer(P.state(), true)); P.sc.render();
+  }
+  assert(/data-pkf-skip="1"/.test(P.html()) && /SKIP TABLE STEP/.test(P.html()), 'Fund: SKIP TABLE STEP shown on a practice step');
 }
 
 if (failed) { console.error(`\n${failed} pkfFundamentalsCourse test(s) FAILED`); process.exit(1); }

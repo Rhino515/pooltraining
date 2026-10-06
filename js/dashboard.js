@@ -337,12 +337,13 @@ function coursesCardHTML() {
 }
 
 /**
- * One labeled group on Drill Sets & Exams. Open by default; the header folds it.
+ * One labeled group on Drill Sets & Exams. Collapsed by default (not persisted); tap the header to expand.
  * Tiles are the same banners as before, unchanged.
  */
 function courseGroupHTML(key, title, note, tiles) {
   const n = (tiles.match(/class="card simPromo/g) || []).length;
-  return `<details class="dsGroup" data-ds-group="${key}" open><summary class="dsGroupHead"><span class="dsGroupText"><b>${title}</b>${note ? `<small>${note}</small>` : ''}</span><span class="dsGroupCount">${n}</span><span class="dsGroupChev" aria-hidden="true"></span></summary><div class="dsGroupBody">${tiles}</div></details>`;
+  // Groups start collapsed on every visit (not persisted); tap a header to expand it.
+  return `<details class="dsGroup" data-ds-group="${key}"><summary class="dsGroupHead"><span class="dsGroupText"><b>${title}</b>${note ? `<small>${note}</small>` : ''}</span><span class="dsGroupCount">${n}</span><span class="dsGroupChev" aria-hidden="true"></span></summary><div class="dsGroupBody">${tiles}</div></details>`;
 }
 
 export function renderCoursesPage(state) {

@@ -12,9 +12,11 @@ import {
   startSection, startExam, previewSection, previewExam, startReview, startSingle, reviewIds, needsPracticeIds,
   selectChoice, seqTap, seqUndo, seqClear, showHint, lockAnswer, acknowledgeLearn, toggleCheck, toggleVariant, rate,
   toggleNeedsPractice, nextLesson, viewLesson, retryCurrent, reviewMissed, progressSummary, lessonCompleted,
+  skipTableStep,
   figureHTML, revealFigureHTML, assetOf
 } from '../content/pkfFundamentalsCourse.js';
 import { devBypass } from '../dev/gate.js';
+import { skipButtonHTML, skippedVerdictHTML, xpLineHTML } from '../content/pkfTableStep.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const pct = (x) => `${Math.round((x || 0) * 100)}%`;
@@ -95,8 +97,10 @@ function practiceHTML(lesson, it, live, cur) {
   const chkHTML = checks.length ? `<div class="card pkffChecks"><b>I NOTICED (PKF’s issues)</b><p class="muted small">Optional. Tap any you noticed.</p><div class="pkffChips">${checks.map((c) => chip('pkff-check', it?.checks, c)).join('')}</div></div>` : '';
   const pick = ratings.find((r) => r[0] === it?.rating);
   const rateHTML = done
-    ? `<p class="${pick && !pick[2] ? 'green' : 'warn'} pkfVerdict" data-pkff-rating="${esc(it.rating)}"><b>${esc(pick?.[1] || '')}</b>${pick?.[2] ? ' · added to NEEDS PRACTICE. Keep working; this never fails you.' : ' · session logged.'}</p>`
-    : (live ? `<div class="card pkffRate" data-pkff-rate="1"><b>SELF-EVALUATE</b>${ratings.map(([k, label, np]) => `<button type="button" class="bigBtn${np ? ' alt' : ''}" data-action="pkff-rate" data-v="${esc(k)}">${esc(label)}</button>`).join('')}</div>` : '');
+    ? (it.skipped
+      ? `${skippedVerdictHTML()}${cur?.dev ? '' : '<p class="muted small">Added to NEEDS PRACTICE.</p>'}`
+      : `<p class="${pick && !pick[2] ? 'green' : 'warn'} pkfVerdict" data-pkff-rating="${esc(it.rating)}"><b>${esc(pick?.[1] || '')}</b>${pick?.[2] ? ' · added to NEEDS PRACTICE. Keep working; this never fails you.' : ' · session logged.'}</p>${xpLineHTML(it)}`)
+    : (live ? `<div class="card pkffRate" data-pkff-rate="1"><b>SELF-EVALUATE</b>${ratings.map(([k, label, np]) => `<button type="button" class="bigBtn${np ? ' alt' : ''}" data-action="pkff-rate" data-v="${esc(k)}">${esc(label)}</button>`).join('')}</div>${skipButtonHTML('pkff-skip')}` : '');
   const note = '<p class="muted small pkffHonest">Your own judgment: the app does not check your mechanics. Struggling here never fails a section.</p>';
   return `${setup}${focus}${varHTML}${chkHTML}${rateHTML}${done ? solutionCard(lesson, 'PKF') : ''}${note}`;
 }
@@ -197,19 +201,21 @@ function resultsHTML(state) {
   const recommend = exam && sum.recommend?.length
     ? `<div class="kickHist" data-pkff-recommend="1"><b>Recommended Review</b>${sum.recommend.map((sid) => `<p>${esc(sectionTitle(sid))} · PKF pages ${esc(SECTIONS.find((s) => s.id === sid)?.pages || '')}</p>`).join('')}</div>` : '';
   const history = exam && graded && course.exam.history?.length
-    ? `<div class="kickHist" data-pkff-history="1"><b>Attempt History</b>${course.exam.history.slice().reverse().map((h) => `<p>${esc(new Date(h.at).toLocaleString('en-US', { timeZone: 'America/Los_Angeles', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))} PT · Knowledge ${h.knowledge}% · Physical ${esc(h.physical)} · Overall ${h.overall}% · ${h.passed ? 'PASS' : 'REVIEW'}</p>`).join('')}</div>` : '';
+    ? `<div class="kickHist" data-pkff-history="1"><b>Attempt History</b>${course.exam.history.slice().reverse().map((h) => `<p>${esc(new Date(h.at).toLocaleString('en-US', { timeZone: 'America/Los_Angeles', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))} PT · Knowledge ${h.knowledge}% · Physical ${esc(h.physical)}${h.skipped ? ` · ${h.skipped} skipped` : ''} · Overall ${h.overall}% · ${h.passed ? 'PASS' : 'REVIEW'}</p>`).join('')}</div>` : '';
   const passLine = exam
-    ? `Pass rule (app): ${Math.round(EXAM_PASS * 100)}% knowledge. Physical checkpoints are self-confirmed and never fail the exam.`
+    ? `Pass rule (app): ${Math.round(EXAM_PASS * 100)}% knowledge. Physical checkpoints are self-confirmed (or skipped) and never fail the exam.`
     : graded ? `Unlock rule (app): ${Math.round(KNOWLEDGE_PASS * 100)}% on knowledge checks. Self-evaluations never block progress.` : 'Review runs don’t change saved section or exam results.';
   const stats = exam
     ? `<p data-pkff-knowledge="${Math.round((sum.kRate || 0) * 100)}"><b>Knowledge Score</b> ${sum.kOk || 0} / ${sum.kTot || 0} (${pct(sum.kRate)})</p>
        <p><b>Concepts Mastered</b> ${sum.mastered?.length || 0} · <b>Concepts to Review</b> ${sum.missed?.length || 0}</p>
-       <p><b>Physical Practice Completed</b> ${sum.xDone || 0} / ${sum.xTot || 0}</p>
+       <p data-pkf-exec-line="1"><b>Physical Practice Completed</b> ${sum.xTot ? `${sum.xDone || 0} / ${sum.xTot}` : (sum.skipped?.length ? 'skipped (not attempted)' : '0 / 0')}</p>
+       <p data-pkf-skipped-count="${sum.skipped?.length || 0}"><b>Table steps skipped</b> ${sum.skipped?.length || 0}</p>
        <p><b>Overall</b> ${pct(sum.overall)}</p>
        <p class="pkffBig ${sum.passed ? 'green' : 'warn'}" data-pkff-exam-verdict="${sum.passed ? 'pass' : 'review'}"><b>${sum.passed ? 'PASS' : 'REVIEW'}</b></p>
        ${graded ? `<p><b>Best Score</b> ${pct(course.exam.bestKnowledge)} knowledge · ${pct(course.exam.bestOverall)} overall</p>` : ''}`
     : `<p><b>Knowledge checks</b> ${sum.kOk || 0} / ${sum.kTot || 0}${sum.kTot ? ` (${pct(sum.kRate)})` : ''}</p>
        ${sum.xTot ? `<p><b>Practice self-evaluations</b> ${sum.xDone} comfortable/completed of ${sum.xTot}</p>` : ''}
+       <p data-pkf-skipped-count="${sum.skipped?.length || 0}"><b>Table steps skipped</b> ${sum.skipped?.length || 0}${sum.skipped?.length ? ' · added to NEEDS PRACTICE' : ''}</p>
        ${graded ? `<p class="${sum.passed ? 'green' : 'warn'}"><b>${sum.passed ? 'PASSED' : 'NOT YET'}</b></p>` : ''}`;
   const reviewBtn = sum.missed?.length ? '<button type="button" class="bigBtn alt" data-action="pkff-review-missed">REVIEW MISSED NOW</button>' : '';
   const retryLabel = !graded ? 'RUN AGAIN' : sum.passed ? 'REPLAY' : 'RETRY';
@@ -249,6 +255,7 @@ function progressCard(state) {
       ${cell('Stance & stroke lessons', `${p.stanceStrokeDone}/${p.stanceStrokeTotal}`)}
       ${cell('Practice sessions', p.practiceSessions)}
       ${cell('Marked Needs Practice', p.needsPractice)}
+      ${cell('Table steps skipped', p.tableSkipped, ` data-pkf-skipped-stat="${p.tableSkipped}"`)}
       ${cell('Exam attempts', p.examAttempts)}
       ${cell('Exam best', p.examAttempts ? pct(p.examBest) : '—')}
     </div>
@@ -415,6 +422,7 @@ export function createPkfFundScreen(ctx, args) {
     'pkff-check': (s, el) => toggleCheck(s, el.dataset.v),
     'pkff-variant': (s, el) => toggleVariant(s, el.dataset.v),
     'pkff-rate': (s, el) => rate(s, el.dataset.v),
+    'pkff-skip': (s) => skipTableStep(s),
     'pkff-np': (s, el) => toggleNeedsPractice(s, el.dataset.v),
     'pkff-next': (s) => nextLesson(s),
     'pkff-view': (s, el) => viewLesson(s, Number(el.dataset.i)),

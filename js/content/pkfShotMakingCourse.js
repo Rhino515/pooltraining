@@ -10,6 +10,7 @@
  * migrateFromCueBall() copies old Center Ball progress across once (old data is left in place).
  */
 import { ASSET_MAP, REGIONS, figureHTML, solutionFigureHTML, assetOf, regionOf, mappingRow } from './pkfShotMakingAssets.js';
+import { awardRecordedStep, markSkipped, clearSkipped } from './pkfTableStep.js';
 
 export const COURSE_TITLE = 'PKF Shot Making & Center Ball Course';
 export const EXAM_TITLE = 'PKF Shot Making & Center Ball Exam';
@@ -690,10 +691,12 @@ export function blank() {
     physical: {},
     review: {},
     needsPractice: {},
+    skipped: {},
+    tableXp: {},
     current: null,
     unlockAll: false,
     exam: { attempts: 0, passed: false, bestKnowledge: 0, bestExecution: 0, bestOverall: 0, history: [], weak: {} },
-    stats: { knowledgeCorrect: 0, knowledgeWrong: 0, firstTotal: 0, firstCorrect: 0, attempts: 0, made: 0, madeTotal: 0, objectiveOk: 0, objectiveTotal: 0, firstTry: 0, secondTry: 0, thirdTry: 0, failed: 0, exercisesOk: 0 }
+    stats: { knowledgeCorrect: 0, knowledgeWrong: 0, firstTotal: 0, firstCorrect: 0, attempts: 0, made: 0, madeTotal: 0, objectiveOk: 0, objectiveTotal: 0, firstTry: 0, secondTry: 0, thirdTry: 0, failed: 0, exercisesOk: 0, tableSkipped: 0, tableDrillXp: 0 }
   };
 }
 function courseOfRaw(raw) {
@@ -707,6 +710,8 @@ function courseOfRaw(raw) {
     physical: { ...obj(raw.physical) },
     review: { ...obj(raw.review) },
     needsPractice: { ...obj(raw.needsPractice) },
+    skipped: { ...obj(raw.skipped) },
+    tableXp: { ...obj(raw.tableXp) },
     exam: { ...b.exam, ...obj(raw.exam), weak: { ...obj(raw.exam?.weak) } },
     stats: { ...b.stats, ...obj(raw.stats) },
     current: raw.current ? JSON.parse(JSON.stringify(raw.current)) : null
@@ -740,7 +745,7 @@ export function examUnlocked(state, { dev = false } = {}) {
 }
 
 function emptyItem() {
-  return { locked: false, choice: null, correct: null, solution: false, hint: false, shooting: false, attempts: [], execution: null, done: false };
+  return { locked: false, choice: null, correct: null, solution: false, hint: false, shooting: false, attempts: [], execution: null, skipped: false, done: false };
 }
 function freshRun(ids, extra) {
   const items = {};
@@ -917,11 +922,39 @@ export function markAttempt(state, tag) {
       p.history = [...(p.history || []), { at: new Date().toISOString(), attempts: [...it.attempts], success, mode: cur.mode }].slice(-30);
       p.best = success ? 'success' : (p.best || 'failed');
       course.physical[id] = p;
-      course.lessons[id] = { ...(course.lessons[id] || {}), done: true };
+      course.lessons[id] = { ...(course.lessons[id] || {}), done: true, skipped: false };
+      course.skipped = clearSkipped(course.skipped, id);
+      // Recorded table step → Drill XP: one drill session, ratio = successful attempts / attempts (1, 1/2, 1/3 or 0).
+      const out = awardRecordedStep(put(state, course), STORAGE_KEY, COURSE_TITLE, lesson, { ratio: success ? 1 / n : 0, passed: success });
+      it.xp = out.drill;
+      return out.state;
     }
   }
   return put(state, course);
 }
+
+/** SKIP TABLE STEP (from SET UP THIS SHOT or while shooting): not attempted. 0 Drill XP, never a make or a
+ *  success, never blocks the lesson. The shot goes on PRACTICE MISSED SHOTS (needs practice). */
+export function skipTableStep(state) {
+  const course = courseOf(state);
+  const x = liveItem(course);
+  if (!x || !x.it || x.it.done || !isPhysical(x.lesson)) return state;
+  const { cur, it, id } = x;
+  it.skipped = true;
+  it.execution = null;
+  it.shooting = false;
+  it.done = true;
+  if (saves(cur)) {
+    course.stats.tableSkipped += 1;
+    course.skipped = markSkipped(course.skipped, id);
+    if (LESSONS.some((l) => l.id === id)) course.needsPractice[id] = true;
+    course.lessons[id] = { ...(course.lessons[id] || {}), done: true, skipped: true };
+  }
+  return put(state, course);
+}
+
+/** Persistent list of skipped table steps (come back later). */
+export function skippedIds(course) { return Object.keys(course.skipped || {}).filter((id) => isPhysical(lessonById(id))); }
 export function nextLesson(state) {
   const course = courseOf(state);
   const x = liveItem(course);
@@ -943,7 +976,7 @@ export function viewLesson(state, i) {
 /** Knowledge, execution, shot-making and skill objective scored separately; per-section accuracy for strongest/weakest. */
 export function summarize(cur) {
   let kOk = 0, kTot = 0, xOk = 0, xTot = 0, made = 0, madeTot = 0, objOk = 0, objTot = 0;
-  const missed = [], missedShots = [];
+  const missed = [], missedShots = [], skipped = [];
   const bySection = {};
   const bump = (sec, ok) => { const b = bySection[sec] || (bySection[sec] = { ok: 0, tot: 0 }); b.tot += 1; if (ok) b.ok += 1; };
   for (const id of cur.order) {
@@ -954,6 +987,8 @@ export function summarize(cur) {
       kTot += 1;
       if (it.correct) kOk += 1; else missed.push(id);
       bump(l.section, !!it.correct);
+    } else if (isPhysical(l) && it.skipped) {
+      skipped.push(id);
     } else if (isPhysical(l)) {
       xTot += 1;
       const ok = it.execution === 'success';
@@ -976,7 +1011,7 @@ export function summarize(cur) {
   const strongest = byBest.length ? byBest[0].sec : null;
   const weakest = byBest.length > 1 && byBest[byBest.length - 1].rate < byBest[0].rate ? byBest[byBest.length - 1].sec : null;
   const recommend = [...new Set([...missed, ...missedShots].map((id) => lessonById(id)?.section).filter(Boolean))];
-  return { kOk, kTot, kRate, xOk, xTot, xRate: rate(xOk, xTot), made, madeTot, shotRate: rate(made, madeTot), objOk, objTot, objRate: rate(objOk, objTot), overall, missed, missedShots, strongest, weakest, recommend };
+  return { kOk, kTot, kRate, xOk, xTot, xRate: rate(xOk, xTot), made, madeTot, shotRate: rate(made, madeTot), objOk, objTot, objRate: rate(objOk, objTot), overall, missed, missedShots, skipped, strongest, weakest, recommend };
 }
 
 export function finishRun(state) {
@@ -999,6 +1034,7 @@ export function finishRun(state) {
     prev.bestKnowledge = Math.max(prev.bestKnowledge || 0, s.kRate);
     prev.missed = s.missed;
     prev.missedShots = s.missedShots;
+    prev.skipped = s.skipped;
     if (passed) prev.passed = true;
     course.sections[cur.sectionId] = prev;
   } else {
@@ -1012,7 +1048,7 @@ export function finishRun(state) {
     course.exam.weak = weak;
     const pc = (v) => (v == null ? null : Math.round(v * 100));
     course.exam.history = [...(course.exam.history || []), {
-      at: new Date().toISOString(), knowledge: pc(s.kRate), execution: pc(s.xRate), shotMaking: pc(s.shotRate), objective: pc(s.objRate), overall: pc(s.overall), passed
+      at: new Date().toISOString(), knowledge: pc(s.kRate), execution: pc(s.xRate), shotMaking: pc(s.shotRate), objective: pc(s.objRate), overall: pc(s.overall), passed, skipped: s.skipped.length
     }].slice(-20);
   }
   return put(state, course);
@@ -1035,7 +1071,8 @@ export function retryCurrent(state) {
 export function reviewMissed(state, kind = 'review') {
   const course = courseOf(state);
   const cur = course.current;
-  const ids = (kind === 'practice' ? cur?.summary?.missedShots : cur?.summary?.missed) || [];
+  // PRACTICE MISSED SHOTS includes table steps skipped in this run.
+  const ids = (kind === 'practice' ? [...(cur?.summary?.missedShots || []), ...(cur?.summary?.skipped || [])] : cur?.summary?.missed) || [];
   const list = ids.filter((id) => LESSONS.some((l) => l.id === id) || cur?.mode === 'exam');
   if (!list.length) return state;
   course.current = freshRun(list, { mode: kind === 'practice' ? 'practice' : 'review', dev: !!cur.dev });
@@ -1075,6 +1112,7 @@ export function progressSummary(state) {
     sectionsPassed: passedSectionCount(course),
     sectionsTotal: SECTIONS.length,
     needsPractice: needsPracticeIds(course).length,
+    tableSkipped: st.tableSkipped || 0,
     review: reviewIds(course).length,
     examAttempts: course.exam.attempts,
     examBest: course.exam.bestOverall,
