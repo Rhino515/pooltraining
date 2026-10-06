@@ -33,6 +33,7 @@ import { pkfCueBallBannersHTML } from './content/pkfCueBallCourse.js';
 import { pkfFundBannersHTML } from './content/pkfFundamentalsCourse.js';
 import { pkfShotMakingBannersHTML } from './content/pkfShotMakingCourse.js';
 import { pkfPatternPlayBannersHTML } from './content/pkfPatternPlayCourse.js';
+import { pkfAdvancedPlaySafetyBannersHTML } from './content/pkfAdvancedPlaySafetyCourse.js';
 import { ownerAccountSignedIn, isUnlocked as devOn } from './dev/dev.js';
 import { devBypass } from './dev/gate.js';
 import { devSwitchHTML } from './ui/dev.js';
@@ -361,11 +362,12 @@ export function renderCoursesPage(state) {
   const dev = devBypass();
   // BU: Exam I, Exam II (Bachelors, Masters, Doctorate), then Exam III, RDS (Exam IV), Exams V–VIII.
   const bu = examBannerHTML();
-  // PKF in curriculum order. Advanced Play and Safety are not built yet.
+  // PKF in curriculum order: Fundamentals, Shot Making, Cue Ball Control, Pattern Play, Advanced Play & Safety, Kicking, Banking.
   const pkf = pkfFundBannersHTML(state, { dev })
     + pkfShotMakingBannersHTML(state, { dev })
     + pkfCueBallBannersHTML(state, { dev })
     + pkfPatternPlayBannersHTML(state, { dev })
+    + pkfAdvancedPlaySafetyBannersHTML(state, { dev })
     + pkfBannersHTML(state)
     + pkfBankBannersHTML(state, { dev });
   const other = safetyBannerHTML() + ballPocketBannerHTML() + offRailBannersHTML(state) + trickBannersHTML(state);

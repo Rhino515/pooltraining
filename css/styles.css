@@ -2056,3 +2056,34 @@ header{
 .pkfppPage > .bigBtn{margin:6px 0}
 .pkfppLite .pkfLiteBar{flex-wrap:wrap}
 .pkfppPage .kickDots i{padding:0}
+/* PKF Advanced Play & Safety Course (#pkfadv) */
+.pkfadvPage .pkfbFigLabel{margin:10px 2px 6px;font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--gold)}
+.pkfadvPage .pkfadvHiddenFig{padding:12px;text-align:center}
+.pkfadvPage .pkfadvActs{display:grid;gap:8px;margin:10px 0}
+.pkfadvPage .pkfadvActs .bigBtn{white-space:normal;line-height:1.2}
+.pkfadvPage .pkfadvSteps{margin:6px 0 8px;padding-left:20px;display:grid;gap:4px}
+.pkfadvPage .pkfadvSetup p,.pkfadvPage .pkfadvShootCard p{margin:6px 0}
+.pkfadvPage .pkfadvKind{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.04em;color:var(--cyan);background:rgba(76,201,255,.1)}
+.pkfadvPage .pkfadvGaps{color:#8ea4ba}
+.pkfadvPage .pkfVerdict{margin:10px 2px}
+.pkfadvPage .pkfadvDecExec{margin:8px 2px;color:var(--gold)}
+.pkfadvPage .pkfadvAttempts p{margin:4px 0}
+.pkfadvPage .pkfadvBuild{margin:8px 0}
+.pkfadvPage .pkfadvSlots{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+.pkfadvPage .pkfadvSlot{display:flex;flex-direction:column;align-items:center;min-width:52px;padding:6px 8px;border-radius:10px;border:1px dashed rgba(255,255,255,.25)}
+.pkfadvPage .pkfadvSlot.on{border-style:solid;border-color:var(--gold)}
+.pkfadvPage .pkfadvSlot.fixed{opacity:.6}
+.pkfadvPage .pkfadvSlot small{font-size:9px;color:#8ea4ba;letter-spacing:.05em}
+.pkfadvPage .pkfadvSlot b{font-size:18px}
+.pkfadvPage .pkfadvBalls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:8px}
+.pkfadvPage .pkfadvStats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.pkfadvPage .pkfadvStat{display:flex;flex-direction:column;gap:2px;padding:8px;border-radius:10px;background:rgba(255,255,255,.04)}
+.pkfadvPage .pkfadvStat b{font-size:15px}
+.pkfadvPage .pkfadvStat small{font-size:10px;line-height:1.2;color:#8ea4ba}
+.pkfadvPage .pkfadvResults p,.pkfadvPage .pkfadvComplete p{margin:5px 0}
+.pkfadvPage .pkfadvComplete p b{float:right}
+.pkfadvPage .pkfadvComplete p::after{content:'';display:block;clear:both}
+.pkfadvPage .pkfadvLists{display:grid;gap:6px;margin:8px 0}
+.pkfadvPage > .bigBtn{margin:6px 0}
+.pkfadvLite .pkfLiteBar{flex-wrap:wrap}
+.pkfadvPage .kickDots i{padding:0}
