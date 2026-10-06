@@ -1981,3 +1981,24 @@ header{
 .pkffLite .pkffLiteBar{flex-wrap:wrap}
 .pkffPage .pkfVerdict{margin:10px 2px}
 .pkffPage .pkfbFigLabel{margin:10px 2px 6px}
+/* PKF Shot Making & Center Ball Course (#pkfsmcb) + Cue Ball Control prerequisite cards */
+.pkfsmPage .pkfsmFig{margin:8px 0 10px}
+.pkfsmPage .pkfbFigLabel{margin:10px 2px 6px;font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--gold)}
+.pkfsmPage .pkfsmHiddenFig{padding:12px;text-align:center}
+.pkfsmPage .pkfsmActs{display:grid;gap:8px;margin:10px 0}
+.pkfsmPage .pkfsmActs .bigBtn{white-space:normal;line-height:1.2}
+.pkfsmPage .pkfsmSteps{margin:6px 0 8px;padding-left:20px;display:grid;gap:4px}
+.pkfsmPage .pkfsmSetup p{margin:6px 0}
+.pkfsmPage .pkfsmGaps{color:#8ea4ba}
+.pkfsmPage .pkfVerdict{margin:10px 2px}
+.pkfsmPage .pkfsmStats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.pkfsmPage .pkfsmStat{display:flex;flex-direction:column;gap:2px;padding:8px;border-radius:10px;background:rgba(255,255,255,.04)}
+.pkfsmPage .pkfsmStat b{font-size:15px}
+.pkfsmPage .pkfsmStat small{font-size:10px;line-height:1.2;color:#8ea4ba}
+.pkfsmPage .pkfsmResults p{margin:4px 0}
+.pkfsmPage > .bigBtn{margin:6px 0}
+.pkfsmLite .pkfLiteBar{flex-wrap:wrap}
+.pkfcbPrereq{display:flex;flex-direction:column;gap:6px;margin:8px 0;border-left:3px solid var(--gold)}
+.pkfcbPrereq .eyebrow{font-size:10px}
+.pkfcbPrereq p{margin:0}
+.pkfcbPrereq .chip{align-self:flex-start}

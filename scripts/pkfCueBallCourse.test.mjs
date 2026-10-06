@@ -28,9 +28,10 @@ assert(audit.lessons === LESSONS.length && audit.exam === EXAM_ITEMS.length, `au
 assert(COURSE_TITLE === 'PKF Cue Ball Control Course' && EXAM_TITLE === 'PKF Cue Ball Control Exam', 'titles');
 assert(STORAGE_KEY === 'pkfCueBallControl' && HASH === 'pkfcb', 'storage key + route');
 assert(!(STORAGE_KEY in defaultState()), 'key is not in defaultState');
-assert(SECTIONS.map((s) => s.id).join() === 'center-ball,sliding-cue-ball,half-table,full-table', 'four sections in source order');
-assert(playableSectionCount() === 4, 'four playable sections');
-assert(LESSONS.filter((l) => l.incomplete).length === 2, 'two INCOMPLETE source-review stubs');
+assert(SECTIONS.map((s) => s.id).join() === 'sliding-cue-ball,half-table,full-table', 'three sections in source order (Center Ball moved to PKF Shot Making & Center Ball)');
+assert(playableSectionCount() === 3, 'three playable sections');
+assert(LESSONS.filter((l) => l.incomplete).length === 1, 'one INCOMPLETE source-review stub');
+assert(![...LESSONS, ...EXAM_ITEMS].some((l) => /^cb-/.test(l.id) || ['ex-k1', 'ex-k2', 'ex-k3', 'ex-x1'].includes(l.id) || l.section === 'center-ball'), 'no Center Ball lessons or exam items remain');
 assert([...LESSONS, ...EXAM_ITEMS].every((l) => ASSET_MAP[l.id] && assetOf(l.id)), 'every lesson + exam has an asset');
 assert(Object.values(PAGES).every((p) => p.src.startsWith('./images/pkf-cb/PKF_CueBall_PDF_')), 'page map points at images/pkf-cb');
 {
@@ -47,35 +48,34 @@ assert(Object.values(PAGES).every((p) => p.src.startsWith('./images/pkf-cb/PKF_C
 
 const counts = lessonTypeCounts();
 const assists = assistCounts();
-assert((counts.LEARN || 0) >= 15, `LEARN ${counts.LEARN}`);
+assert((counts.LEARN || 0) >= 10, `LEARN ${counts.LEARN}`);
 assert((counts[LTYPE.PREDICT] || 0) >= 5 && (counts[LTYPE.ACTION] || 0) >= 5, `PREDICT ${counts[LTYPE.PREDICT]} ACTION ${counts[LTYPE.ACTION]}`);
-assert((counts[LTYPE.SHOOT] || 0) >= 8, `SHOOT ${counts[LTYPE.SHOOT]}`);
+assert((counts[LTYPE.SHOOT] || 0) >= 7, `SHOOT ${counts[LTYPE.SHOOT]}`);
 assert((counts[LTYPE.PLAN] || 0) >= 2, `PLAN ${counts[LTYPE.PLAN]}`);
 assert(assists.GUIDED && assists.ASSISTED && assists.INDEPENDENT, `assist mix G${assists.GUIDED}/A${assists.ASSISTED}/I${assists.INDEPENDENT}`);
-assert(EXAM_ITEMS.filter((e) => e.answer != null || e.plan).length >= 8 && EXAM_ITEMS.filter((e) => e.shoot).length >= 3, 'exam knowledge-heavy + physical');
+assert(EXAM_ITEMS.filter((e) => e.answer != null || e.plan).length >= 7 && EXAM_ITEMS.filter((e) => e.shoot).length >= 3, 'exam knowledge-heavy + physical');
 assert(LESSONS.filter((l) => l.position && l.shoot).length >= 5, 'position drills present');
 assert(!JSON.stringify([LESSONS, EXAM_ITEMS]).match(/not on All|Career XP|storage key/i), 'no internal notes in lesson copy');
 assert(!pkfCueBallBannersHTML({}).match(/not on all|career xp|storage/i), 'no internal notes in banners');
 
 let state = {};
-assert(sectionUnlocked(state, 'center-ball') && !sectionUnlocked(state, 'sliding-cue-ball'), 'first open, second locked');
+assert(sectionUnlocked(state, 'sliding-cue-ball') && !sectionUnlocked(state, 'half-table'), 'first open (Sliding Cue Ball), second locked');
 assert(sectionUnlocked(state, 'full-table', { dev: true }) && examUnlocked(state, { dev: true }), 'dev opens locked');
-assert(courseOf(startSection({}, 'sliding-cue-ball')).current === null, 'locked section does not start');
+assert(courseOf(startSection({}, 'half-table')).current === null, 'locked section does not start');
 assert(courseOf(startExam({})).current === null, 'locked exam does not start');
 assert(!pkfCueBallBannersHTML({}).includes('href="#pkfcb/exam"') && pkfCueBallBannersHTML({}, { dev: true }).includes('data-dev-open="1"'), 'exam banner lock / preview');
 
-// LOCK ANSWER gating on center-ball
-state = startSection({}, 'center-ball');
-state = acknowledgeLearn(state); state = nextLesson(state);
+// LOCK ANSWER gating on the first section (Sliding Cue Ball)
+state = startSection({}, 'sliding-cue-ball');
 state = acknowledgeLearn(state); state = nextLesson(state);
 {
   const cur = courseOf(state).current;
   const id = cur.order[cur.cursor];
   const lesson = LESSONS.find((l) => l.id === id);
-  assert(lesson.id === 'cb-left-deflect' && lesson.answer === 'right', 'landed on left-deflect predict');
+  assert(lesson.id === 'sl-90' && lesson.answer === '90', 'landed on sl-90 predict');
   assert(lockAnswer(state) === state, 'cannot lock without choice');
   assert(acknowledgeLearn(state) === state && markExecution(state, 'makePos') === state, 'cannot skip question');
-  state = selectChoice(state, 'left');
+  state = selectChoice(state, '45');
   state = lockAnswer(state);
   const it = courseOf(state).current.items[id];
   assert(it.locked && it.correct === false && it.revealed && it.done, 'LOCK grades wrong + reveals');
@@ -106,10 +106,9 @@ function skipTo(st, sec, id) {
 }
 
 {
-  const passed = { ...{}, pkfCueBallControl: { sections: { 'center-ball': { passed: true } } } };
   // use open first section shoot
-  let st = startSection({}, 'center-ball');
-  st = skipTo({ ...st, pkfCueBallControl: courseOf(st) }, 'center-ball', 'cb-shoot-high');
+  let st = startSection({}, 'sliding-cue-ball');
+  st = skipTo({ ...st, pkfCueBallControl: courseOf(st) }, 'sliding-cue-ball', 'sl-shoot-gate');
   // rebuild cleanly
   st = {};
   // manually walk to shoot-high by finishing prior correctly via finish helper below
@@ -162,7 +161,7 @@ for (const s of SECTIONS) {
 assert(examUnlocked(state), 'exam unlocks');
 {
   const rows = pkfCueBallProgressRows(state);
-  assert(rows.length === 1 && rows[0].id === 'pkfCueBall' && rows[0].finished && rows[0].done === 4, 'progress row finished');
+  assert(rows.length === 1 && rows[0].id === 'pkfCueBall' && rows[0].finished && rows[0].done === 3, 'progress row finished');
 }
 state = startExam(state);
 state = finish(state, { miss: true });
@@ -182,10 +181,10 @@ state = finish(state, { miss: true });
 
 // Direct markExecution unit
 {
-  let st = startSection({}, 'center-ball');
+  let st = startSection({}, 'sliding-cue-ball');
   const bank = courseOf(st);
-  const shootId = 'cb-shoot-high';
-  bank.current = { mode: 'section', sectionId: 'center-ball', phase: 'play', cursor: 0, view: 0, order: [shootId], items: { [shootId]: { locked: false, choice: null, correct: null, revealed: false, execution: null, attempts: [], done: false, hint: false, planChoices: {} } } };
+  const shootId = 'sl-shoot-gate';
+  bank.current = { mode: 'section', sectionId: 'sliding-cue-ball', phase: 'play', cursor: 0, view: 0, order: [shootId], items: { [shootId]: { locked: false, choice: null, correct: null, revealed: false, execution: null, attempts: [], done: false, hint: false, planChoices: {} } } };
   st = { pkfCueBallControl: bank };
   st = markExecution(st, 'make-miss-pos');
   let it = courseOf(st).current.items[shootId];
@@ -198,7 +197,7 @@ state = finish(state, { miss: true });
 
 // crop math uses height (cy/ch) — spot-check regionHTML helper via asset crop aspect
 {
-  const a = assetOf('cb-intro');
+  const a = assetOf('sl-intro');
   assert(a && a.h === 1080 && a.crop.h > 0 && 'y' in a.crop, 'teaching asset has height-based crop fields');
   const c = a.crop;
   assert(c.y + c.h <= 1.0001, 'crop in bounds');

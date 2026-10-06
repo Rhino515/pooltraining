@@ -31,6 +31,7 @@ import { pkfBannersHTML } from './content/pkfKickingCourse.js';
 import { pkfBankBannersHTML } from './content/pkfBankingCourse.js';
 import { pkfCueBallBannersHTML } from './content/pkfCueBallCourse.js';
 import { pkfFundBannersHTML } from './content/pkfFundamentalsCourse.js';
+import { pkfShotMakingBannersHTML } from './content/pkfShotMakingCourse.js';
 import { ownerAccountSignedIn, isUnlocked as devOn } from './dev/dev.js';
 import { devBypass } from './dev/gate.js';
 import { devSwitchHTML } from './ui/dev.js';
@@ -343,9 +344,10 @@ export function renderCoursesPage(state) {
     ${offRailBannersHTML(state)}
     ${trickBannersHTML(state)}
     ${pkfFundBannersHTML(state, { dev: devBypass() })}
+    ${pkfShotMakingBannersHTML(state, { dev: devBypass() })}
+    ${pkfCueBallBannersHTML(state, { dev: devBypass() })}
     ${pkfBannersHTML(state)}
-    ${pkfBankBannersHTML(state, { dev: devBypass() })}
-    ${pkfCueBallBannersHTML(state, { dev: devBypass() })}`;
+    ${pkfBankBannersHTML(state, { dev: devBypass() })}`;
 }
 
 export function renderDrillsPage(state, filter = 'All', bpViewLevel = null) {

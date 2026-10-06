@@ -1,4 +1,4 @@
-const CACHE = 'pool-iq-v14-99';
+const CACHE = 'pool-iq-v14-100';
 const ASSETS = [
   './',
   './index.html',
@@ -404,6 +404,9 @@ const ASSETS = [
   './js/content/pkfFundAssets.js',
   './js/content/pkfFundamentalsCourse.js',
   './js/ui/pkfFundPlay.js',
+  './js/content/pkfShotMakingAssets.js',
+  './js/content/pkfShotMakingCourse.js',
+  './js/ui/pkfShotMakingPlay.js',
   './js/customDrills.js',
   './js/dashboard.js',
   './js/dev/dev.js',
@@ -765,6 +768,30 @@ const ASSETS = [
   './images/pkf-fund/PKF_Fundamentals_PDF_032.jpg',
   './images/pkf-fund/PKF_Fundamentals_PDF_033.jpg',
   './images/pkf-fund/PKF_Fundamentals_PDF_034.jpg',
+  './images/pkf-smcb/PKF_CenterBall_PDF_035.jpg',
+  './images/pkf-smcb/PKF_CenterBall_PDF_036.jpg',
+  './images/pkf-smcb/PKF_CenterBall_PDF_037.jpg',
+  './images/pkf-smcb/PKF_CenterBall_PDF_038.jpg',
+  './images/pkf-smcb/PKF_CenterBall_PDF_039.jpg',
+  './images/pkf-smcb/PKF_CenterBall_PDF_040.jpg',
+  './images/pkf-smcb/PKF_CenterBall_PDF_041.jpg',
+  './images/pkf-smcb/PKF_CenterBall_PDF_042.jpg',
+  './images/pkf-smcb/PKF_CenterBall_PDF_043.jpg',
+  './images/pkf-smcb/PKF_CenterBall_PDF_044.jpg',
+  './images/pkf-smcb/PKF_CenterBall_PDF_045.jpg',
+  './images/pkf-smcb/PKF_CenterBall_PDF_046.jpg',
+  './images/pkf-smcb/PKF_CenterBall_PDF_047.jpg',
+  './images/pkf-smcb/PKF_CenterBall_PDF_048.jpg',
+  './images/pkf-smcb/PKF_CenterBall_PDF_049.jpg',
+  './images/pkf-smcb/PKF_CenterBall_PDF_050.jpg',
+  './images/pkf-smcb/PKF_CenterBall_PDF_051.jpg',
+  './images/pkf-smcb/PKF_CenterBall_PDF_052.jpg',
+  './images/pkf-smcb/PKF_CenterBall_PDF_053.jpg',
+  './images/pkf-smcb/PKF_CenterBall_PDF_054.jpg',
+  './images/pkf-smcb/PKF_CenterBall_PDF_055.jpg',
+  './images/pkf-smcb/PKF_CenterBall_PDF_056.jpg',
+  './images/pkf-smcb/PKF_CenterBall_PDF_057.jpg',
+  './images/pkf-smcb/PKF_CenterBall_PDF_058.jpg',
 ];
 self.addEventListener('install', (e) => {
   // take over as soon as this cache is published; the page reloads once on controllerchange

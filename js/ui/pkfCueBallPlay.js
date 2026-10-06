@@ -9,7 +9,7 @@ import {
   passedSectionCount, playableSectionCount, lessonsFor, lessonById,
   startSection, startExam, previewSection, previewExam, selectChoice, selectPlanStep, showHint, lockAnswer,
   markExecution, acknowledgeLearn, nextLesson, viewLesson, retryCurrent, reviewMissed, reviewMissedPositions,
-  figureHTML, revealFigureHTML, assetOf
+  figureHTML, revealFigureHTML, assetOf, PREREQ_COURSE
 } from '../content/pkfCueBallCourse.js';
 import { devBypass } from '../dev/gate.js';
 
@@ -93,6 +93,13 @@ function shootButtons(lesson, it) {
     <button type="button" class="bigBtn alt pkf-miss" data-action="pkfcb-exec" data-v="miss">MISS</button></div>`;
 }
 
+/** Center Ball skills are taught in the PKF Shot Making & Center Ball Course; this links to the one lesson. */
+function prereqHTML(lesson) {
+  const p = lesson.prereq;
+  if (!p) return '';
+  return `<div class="card pkfcbPrereq" data-pkfcb-prereq="${esc(p.lessonId)}"><span class="eyebrow">PREREQUISITE SKILL</span><p><b>${esc(p.skill)}</b></p><p class="muted small">${esc(PREREQ_COURSE.title)}</p><button type="button" class="chip" data-action="go" data-href="#pkfsmcb/lesson/${esc(p.lessonId)}">REVIEW SKILL</button></div>`;
+}
+
 function solutionCard(lesson) {
   return `<div class="card pkfSol pkfbSol" data-pkfcb-sol="1"><b>PKF SOLUTION</b><p>${esc(lesson.explain || '')}</p><p class="muted small">${esc(lesson.src || '')}</p></div>`;
 }
@@ -173,6 +180,7 @@ function playHTML(state) {
     ${lesson.incomplete ? '' : flowHTML(stage)}
     ${figureHTML(lesson.id, { alt: lesson.title || 'PKF example', fullBtn: !((isKnow || isPlan) && !it.locked) || !!asset?.fullSafe, hideUntilLock: hideFig })}
     ${isShoot && !it.done ? '' : `<div class="card pkfPrompt pkfbPrompt"><b>${esc(lesson.incomplete ? 'INCOMPLETE' : lesson.type)}${lesson.title ? ` · ${esc(lesson.title)}` : ''}</b><p>${esc(lesson.prompt || '')}</p></div>`}
+    ${prereqHTML(lesson)}
     ${body}
     ${prev}
   </div>`;
@@ -244,6 +252,7 @@ function listHTML(state) {
   const st = course.stats;
   return `<div class="playScreen kickPage pkfbPage pkfcbPage" data-pkfcb-home="1">
     <div class="title"><button type="button" class="linkish back" data-action="go" data-href="#courses">‹ Drill Sets & Exams</button><span class="eyebrow">DRILL SET</span><h1>${esc(COURSE_TITLE)}</h1><p>Cue ball control from PKF Pattern Play — original pages. Sections unlock at ${Math.round(KNOWLEDGE_PASS * 100)}% knowledge.</p></div>
+    <div class="card pkfcbPrereq" data-pkfcb-prereq-course="1"><span class="eyebrow">PREREQUISITE COURSE</span><p><b>${esc(PREREQ_COURSE.title)}</b></p><p class="muted small">Center ball, finding center, high and low action, and the stop shot (PKF Chapter Three) are taught there. This course starts at Sliding Cue Ball.</p><button type="button" class="chip" data-action="go" data-href="${esc(PREREQ_COURSE.href)}">OPEN COURSE</button></div>
     <details class="ruleMore"><summary>How each lesson works</summary><ol class="gameSteps">
       <li>LEARN from the original PKF page.</li>
       <li>PREDICT the cue ball, CHOOSE the action/speed/zone, or PLAN the pattern.</li>

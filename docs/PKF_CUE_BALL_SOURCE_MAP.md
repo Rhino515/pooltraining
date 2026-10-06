@@ -2,6 +2,8 @@
 
 Source: PKF Pattern Play / Cue Ball Control (PKF-Master PDF). Original page JPEGs in `images/pkf-cb/` (byte-identical from `/workspace/pkf-cb-src/`). Crops are CSS viewports only — never redrawn.
 
+> **2026-10-05 split:** the Center Ball rows (printed 23–43, `cb-*`, ex-k1/k2/k3/x1) moved to **PKF Shot Making & Center Ball** (`#pkfsmcb`). See `PKF_SHOTMAKING_CENTERBALL_SOURCE_MAP.md`. Cue Ball Control now starts at Sliding Cue Ball. The Center Ball entries below are kept for history only.
+
 ## Ranges
 
 Printed page = the "Page: N" footer on each JPEG (OCR-checked on all 114 files, 2026-10-05). The pack contains
