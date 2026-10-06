@@ -26,7 +26,6 @@ const ls = () => (typeof localStorage !== 'undefined' ? localStorage : null);
 let items = readStored();
 let status = 'idle';
 let epoch = 0;
-let hintOn = true;
 let skipClick = false;
 let hold = null;
 
@@ -48,8 +47,6 @@ export function textSignature() {
   return Object.keys(items).sort().map((k) => `${k}\t${items[k]?.text || ''}`).join('\n');
 }
 export function copyCount() { return Object.keys(items).length; }
-export function copyEditing() { return hintOn && copyWritable(); }
-export function setCopyEditing(on) { hintOn = !!on; return hintOn; }
 
 function signedInEmail() {
   return String(currentUser()?.email || '').trim().toLowerCase();
@@ -346,10 +343,6 @@ export async function resetAllCopy() {
   return { ok: true };
 }
 
-export function copyBarHTML() {
-  if (!copyEditing()) return '';
-  return `<div class="copyBar" data-copy-ui><span>Hold any words to edit, or tap Edit. Save publishes for everyone.</span><button type="button" class="bigBtn alt" data-action="dev-copy-off">HIDE</button></div>`;
-}
 export function finishRename(ok) {
   closeSheet();
   if (ok) toast('Published for everyone');

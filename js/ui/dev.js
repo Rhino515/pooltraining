@@ -202,7 +202,6 @@ export function devAction(a, el, env) {
     }
     case 'dev-restore-real': env.restoreReal(); return true;
     case 'dev-clear-caches': env.clearCaches(); return true;
-    case 'dev-copy-off': CP.setCopyEditing(false); env.rerender(); return true;
     case 'dev-copy-open':
       CP.openCopyEditor(el.dataset.key, el.dataset.shipped || '', el.dataset.shown || '');
       return true;

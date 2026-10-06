@@ -64,7 +64,7 @@ import * as FU from './ui/friends.js';
 import * as MU from './ui/me.js';
 import * as DU from './ui/dev.js';
 import * as D from './dev/dev.js';
-import { applyCopy, copyBarHTML, copyWritable, loadPublishedText, textSignature, onCopyPointerDown, onCopyPointerMove, onCopyPointerUp, consumeCopyClick } from './dev/copy.js';
+import { applyCopy, copyWritable, loadPublishedText, textSignature, onCopyPointerDown, onCopyPointerMove, onCopyPointerUp, consumeCopyClick } from './dev/copy.js';
 import * as FM from './friends/model.js';
 import * as FT from './friends/tournament.js';
 import * as PR from './profile.js';
@@ -389,12 +389,8 @@ function paintCopy() {
   if (nav) applyCopy(nav);
   const header = document.querySelector('header');
   if (header) applyCopy(header);
-  let bar = document.getElementById('copyEditBar');
-  const html = copyBarHTML();
-  if (html) {
-    if (!bar) { bar = document.createElement('div'); bar.id = 'copyEditBar'; document.body.appendChild(bar); }
-    bar.innerHTML = html;
-  } else if (bar) bar.remove();
+  // v14-121: the Dev Mode edit hint bar is gone for everyone (it covered sheets). Hold-to-edit and Edit still work.
+  document.getElementById('copyEditBar')?.remove();
 }
 function rerender() {
   if (screen) { screen.render(); paintCopy(); }
