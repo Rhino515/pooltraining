@@ -17,6 +17,24 @@ const HOME = '.diagramWrap, .playTable, .kickTable, .smTipWrap, .playScreen';
 // Never take a tap away from: buttons / links / tiles, tap-the-table screens, editors and the simulator.
 const SKIP = 'button, a, label, [data-action], .tapRail, .builderTable, .simTable, .fixFit, .cMini, .playScreen[data-mode="pattern"], .dzOverlay, .pkfLite';
 
+// v14-124: a table image on a menu / list card is part of the card: tapping it opens the drill exactly like the
+// card's Train / PLAY button (that same button is clicked). No zoom and no expand icon there; zoom is in the drill.
+const MENU_CARD = '.drill.card, .threeLaneCard, .cItem.card';
+const MENU_IMG = '.diagramWrap.mini, .cMini';
+const MENU_OPEN = ['.cActs [data-action="go"].go', 'button[data-action="go"][data-href^="#play/"]', '.bigBtn[data-action="go"]'];
+
+/** undefined = not a menu-card image; null = menu image with no usable open button (inert); else the button. */
+export function menuOpenButtonOf(el) {
+  const wrap = el && el.closest ? el.closest(MENU_IMG) : null;
+  const card = wrap && wrap.closest(MENU_CARD);
+  if (!card) return undefined;
+  for (const sel of MENU_OPEN) {
+    const b = card.querySelector(sel);
+    if (b) return b.disabled ? null : b;
+  }
+  return null;
+}
+
 const MAX_SCALE = 6;
 let layer = null;      // open generic overlay state
 let pkfOpen = false;   // a PKF lightbox is on screen
@@ -30,6 +48,7 @@ export function zoomTargetOf(el) {
   const t = el.closest(TARGET);
   if (!t || t.closest(SKIP)) return null;
   if (!t.closest(HOME)) return null;
+  if (menuOpenButtonOf(t) !== undefined) return null; // menu cards open the drill instead
   if (t.tagName.toLowerCase() === 'svg' && !t.closest('.diagramWrap, .playTable, .kickTable')) return null;
   if (t.parentElement && t.parentElement.closest('svg')) return null; // nested svg inside a diagram
   const r = t.getBoundingClientRect();
@@ -322,6 +341,13 @@ export function initDiagramZoom() {
   // Capture phase: runs before the app's delegated click handler, so a diagram tap never starts a drill.
   window.addEventListener('click', (e) => {
     if (layer) return;
+    const menuBtn = menuOpenButtonOf(e.target);
+    if (menuBtn !== undefined) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (menuBtn) menuBtn.click(); // the same action as Train / PLAY
+      return;
+    }
     const t = zoomTargetOf(e.target);
     if (!t) return;
     e.preventDefault();

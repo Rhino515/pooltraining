@@ -2226,7 +2226,6 @@ header{
 .tapRail svg.table-diagram,.builderTable svg.table-diagram,.simTable svg.table-diagram,.playScreen[data-mode="pattern"] svg.table-diagram,[data-action] .table-diagram{cursor:inherit}
 .diagramWrap,.playTable,.kickTable{position:relative}
 .diagramWrap::after,.playTable::after,.kickTable::after{content:'';position:absolute;right:8px;bottom:8px;width:26px;height:26px;border-radius:8px;background:#050b14b3 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f4fbff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 4h5v5M9 20H4v-5M20 4l-6 6M4 20l6-6'/%3E%3C/svg%3E") center/15px no-repeat;border:1px solid #ffffff2e;pointer-events:none;opacity:.85}
-.diagramWrap.mini::after{right:6px;bottom:6px;width:22px;height:22px;background-size:13px}
 .playTable::after{right:14px;bottom:8px}
 .playTable.tapRail::after,.builderTable::after,.playScreen[data-mode="pattern"] .playTable::after,[data-action] .diagramWrap::after,.diagramWrap:not(:has(img,svg))::after,.playTable:not(:has(svg))::after{display:none}
 .dzOverlay{position:fixed;inset:0;z-index:120;background:#000000f0;opacity:0;transition:opacity .16s ease;touch-action:none;overscroll-behavior:contain;-webkit-user-select:none;user-select:none}
@@ -2239,6 +2238,10 @@ header{
 .dzMirror>img,.dzMirror>svg{transform:scaleX(-1)}
 .dzClose{position:absolute;z-index:2;top:calc(env(safe-area-inset-top,0px) + 10px);right:calc(env(safe-area-inset-right,0px) + 10px);width:44px;height:44px;border-radius:50%;border:1px solid #ffffff40;background:#0a1420d9;color:#f4fbff;font-size:20px;line-height:1;font-weight:700;display:grid;place-items:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
 html.dz-locked{overflow:hidden}
+/* v14-124: menu / list cards: the table image opens the drill (no zoom, no expand icon) */
+.diagramWrap.mini::after{display:none}
+.drill.card .diagramWrap.mini,.drill.card .diagramWrap.mini .table-diagram,.threeLaneCard .diagramWrap.mini,.threeLaneCard .diagramWrap.mini .table-diagram,.cItem .cMini,.cItem .cMini .table-diagram{cursor:pointer}
+.drill.card.locked .diagramWrap.mini,.drill.card.locked .diagramWrap.mini .table-diagram{cursor:default}
 .dzOverlay:fullscreen{width:100vw;height:100vh;background:#000}
 .dzOverlay:-webkit-full-screen{width:100vw;height:100vh;background:#000}
 @media (orientation:landscape) and (max-height:520px){.dzStage{top:env(safe-area-inset-top,0px);bottom:env(safe-area-inset-bottom,0px);left:env(safe-area-inset-left,0px);right:env(safe-area-inset-right,0px)}}
