@@ -347,8 +347,13 @@ function startHereHTML() {
  */
 function courseGroupHTML(key, title, note, tiles) {
   const n = (tiles.match(/class="card simPromo/g) || []).length;
+  // note: a plain muted line, or { lead, sub } for a short lead line plus an optional muted line.
+  // Both sit in the summary, so they show while the group is collapsed.
+  const noteHTML = !note ? ''
+    : typeof note === 'string' ? `<small>${note}</small>`
+      : `<span class="dsGroupLead">${note.lead}</span>${note.sub ? `<small>${note.sub}</small>` : ''}`;
   // Groups start collapsed on every visit (not persisted); tap a header to expand it.
-  return `<details class="dsGroup" data-ds-group="${key}"><summary class="dsGroupHead"><span class="dsGroupText"><b>${title}</b>${note ? `<small>${note}</small>` : ''}</span><span class="dsGroupCount">${n}</span><span class="dsGroupChev" aria-hidden="true"></span></summary><div class="dsGroupBody">${tiles}</div></details>`;
+  return `<details class="dsGroup" data-ds-group="${key}"><summary class="dsGroupHead"><span class="dsGroupText"><b>${title}</b>${noteHTML}</span><span class="dsGroupCount">${n}</span><span class="dsGroupChev" aria-hidden="true"></span></summary><div class="dsGroupBody">${tiles}</div></details>`;
 }
 
 export function renderCoursesPage(state) {
@@ -365,8 +370,8 @@ export function renderCoursesPage(state) {
   return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#drills">‹ Drills</button><span class="eyebrow">DRILL LIBRARY</span><h1>Drill Sets & Exams</h1></div>
     ${startHereHTML()}
     <div class="dsGroups">
-    ${courseGroupHTML('bu', 'BU EXAMS', 'Billiard University · Dr. Dave', bu)}
-    ${courseGroupHTML('pkf', 'PKF', 'Courses in curriculum order', pkf)}
+    ${courseGroupHTML('bu', 'BU EXAMS', { lead: 'For intermediate players', sub: 'Billiard University · Dr. Dave' }, bu)}
+    ${courseGroupHTML('pkf', 'PKF', { lead: 'Recommended for starters', sub: 'The complete path from beginner to expert' }, pkf)}
     ${courseGroupHTML('other', 'OTHER DRILL SETS &amp; EXAMS', '', other)}
     </div>`;
 }

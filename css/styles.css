@@ -2016,6 +2016,9 @@ header{
 .dsGroupHead::marker{content:''}
 .dsGroupText b{display:block;font-size:14px;font-weight:800;letter-spacing:1.8px;color:var(--cyan);text-shadow:0 0 12px #4cc9ff55}
 .dsGroupText small{display:block;margin-top:3px;color:var(--muted);font-size:11.5px;letter-spacing:.2px}
+.dsGroupText{min-width:0}
+.dsGroupLead{display:block;margin-top:4px;color:var(--text);font-size:12.5px;font-weight:600;letter-spacing:.2px}
+.dsGroupLead+small{margin-top:2px;font-size:11px}
 .dsGroupCount{min-width:28px;height:24px;padding:0 8px;border-radius:99px;display:grid;place-items:center;font-size:12px;font-weight:800;color:var(--cyan);background:#0f1c2c;border:1px solid #27466a}
 .dsGroupChev{width:10px;height:10px;justify-self:center;border-right:2px solid var(--cyan);border-bottom:2px solid var(--cyan);transform:translateY(-3px) rotate(45deg);transition:transform .18s}
 .dsGroup:not([open]) .dsGroupChev{transform:rotate(-45deg)}
