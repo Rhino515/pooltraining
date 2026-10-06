@@ -204,13 +204,13 @@ export const DRILL_RANK = {
   sources: ['drill', 'custom', 'content'], // built-in drills, Create Drill drills, rank-eligible installed .pooliq content
   ranks: [
     { name: 'BALL BANGER', xp: 0, passed: 0, strong: 0, mastered: 0, categories: 0 },
-    { name: 'Grinder', xp: 2700, passed: 3, strong: 0, mastered: 0, categories: 0 },
-    { name: 'DRILLER', xp: 9000, passed: 6, strong: 2, mastered: 0, categories: 0 },
-    { name: 'STUDENT OF THE GAME', xp: 22500, passed: 10, strong: 4, mastered: 1, categories: 2 },
-    { name: 'Precision Player', xp: 45000, passed: 15, strong: 7, mastered: 3, categories: 3 },
-    { name: 'Drill Sergeant', xp: 81000, passed: 20, strong: 10, mastered: 6, categories: 4 },
-    { name: 'Drill Master', xp: 225000, passed: 28, strong: 15, mastered: 10, categories: 5 },
-    { name: 'Drill Legend', xp: 375000, passed: 36, strong: 22, mastered: 16, categories: 6 }
+    { name: 'Grinder', xp: 2700, passed: 9, strong: 0, mastered: 0, categories: 0 },
+    { name: 'DRILLER', xp: 9000, passed: 18, strong: 6, mastered: 0, categories: 0 },
+    { name: 'STUDENT OF THE GAME', xp: 22500, passed: 30, strong: 12, mastered: 3, categories: 2 },
+    { name: 'Precision Player', xp: 45000, passed: 45, strong: 21, mastered: 9, categories: 3 },
+    { name: 'Drill Sergeant', xp: 81000, passed: 60, strong: 30, mastered: 18, categories: 4 },
+    { name: 'Drill Master', xp: 225000, passed: 84, strong: 45, mastered: 30, categories: 5 },
+    { name: 'Drill Legend', xp: 375000, passed: 108, strong: 66, mastered: 48, categories: 6 }
   ]
 };
 
