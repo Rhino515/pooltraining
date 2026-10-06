@@ -1,4 +1,4 @@
-const CACHE = 'pool-iq-v14-97';
+const CACHE = 'pool-iq-v14-98';
 const ASSETS = [
   './',
   './index.html',
@@ -401,6 +401,9 @@ const ASSETS = [
   './js/content/pkfCueBallAssets.js',
   './js/content/pkfCueBallCourse.js',
   './js/ui/pkfCueBallPlay.js',
+  './js/content/pkfFundAssets.js',
+  './js/content/pkfFundamentalsCourse.js',
+  './js/ui/pkfFundPlay.js',
   './js/customDrills.js',
   './js/dashboard.js',
   './js/dev/dev.js',
@@ -736,6 +739,32 @@ const ASSETS = [
   './images/pkf-cb/PKF_CueBall_PDF_148.jpg',
   './images/pkf-cb/PKF_CueBall_PDF_149.jpg',
   './images/pkf-cb/PKF_CueBall_PDF_150.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_009.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_010.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_011.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_012.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_013.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_014.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_015.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_016.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_017.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_018.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_019.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_020.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_021.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_022.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_023.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_024.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_025.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_026.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_027.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_028.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_029.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_030.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_031.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_032.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_033.jpg',
+  './images/pkf-fund/PKF_Fundamentals_PDF_034.jpg',
 ];
 self.addEventListener('install', (e) => {
   // take over as soon as this cache is published; the page reloads once on controllerchange

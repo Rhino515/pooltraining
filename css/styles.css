@@ -1942,3 +1942,42 @@ header{
 .pkfcbPlan{display:grid;gap:10px;margin:8px 0}
 .pkfcbPlanStep b{display:block;margin-bottom:6px}
 .pkfcbHiddenFig{padding:12px;text-align:center}
+
+/* PKF Fundamentals Course — reuses the banking crop/viewer math (height-based); pkff additions only */
+.pkffPage .pkffFig{margin:8px 0 10px}
+.pkffPage .pkffHiddenFig{padding:12px;text-align:center}
+.pkffPage .pkffWatch b,.pkffPage .pkfbLearn b,.pkffPage .pkffSetup b,.pkffPage .pkffFocus b,.pkffPage .pkffSeq b,.pkffPage .pkffSeqPkf b,.pkffPage .pkffVariants b,.pkffPage .pkffChecks b,.pkffPage .pkffRate b,.pkffPage .pkffProg > b,.pkffPage .pkffListBlock b{font-size:13px;letter-spacing:.04em;color:var(--gold)}
+.pkffPage .pkffWatch,.pkffPage .pkffSetup,.pkffPage .pkffFocus,.pkffPage .pkffSeq,.pkffPage .pkffSeqPkf,.pkffPage .pkffVariants,.pkffPage .pkffChecks{margin:8px 0}
+.pkffPage .pkffFocus ul,.pkffPage .pkffSeqPkf ol,.pkffPage .pkffSeqPicked{margin:6px 0 0;padding-left:20px;line-height:1.4}
+.pkffPage .pkffFocus li,.pkffPage .pkffSeqPkf li,.pkffPage .pkffSeqPicked li{margin:4px 0}
+.pkffPage .pkffSeqPicked li.is-right{color:#3ecf8e}
+.pkffPage .pkffSeqPicked li.is-wrong{color:#ff6b6b}
+.pkffPage .pkffSeqPool .pkfbChoice.used{opacity:.35}
+.pkffPage .pkffRow{display:flex;gap:8px;margin:4px 0 8px}
+.pkffPage .pkffChips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.pkffPage .pkffChip{min-height:38px;white-space:normal;text-align:left;line-height:1.25}
+.pkffPage .pkffChip.on{border-color:var(--gold);color:var(--gold)}
+.pkffPage .pkffRate{display:flex;flex-direction:column;gap:8px;margin:10px 0}
+.pkffPage .pkffHonest{margin:8px 2px}
+.pkffPage .pkffNote{margin-top:8px}
+.pkffPage .pkffNpToggle{margin:6px 0;min-height:40px}
+.pkffPage .pkffStats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+.pkffPage .pkffStat{display:flex;flex-direction:column;gap:2px;padding:8px;border-radius:10px;background:rgba(255,255,255,.04)}
+.pkffPage .pkffStat b{font-size:16px}
+.pkffPage .pkffStat small{font-size:10px;line-height:1.2;color:#8ea4ba}
+.pkffPage .pkffLists{margin:10px 0}
+.pkffPage .pkffListBlock + .pkffListBlock{margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06)}
+.pkffPage .pkffListBlock .bigBtn{margin:6px 0}
+.pkffPage .pkffItems{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.pkffPage .pkffItem{text-align:left;white-space:normal;min-height:40px;line-height:1.25}
+.pkffPage .pkffItem small{display:block;font-size:10px}
+.pkffPage .pkffArea{margin:14px 0 4px}
+.pkffPage .pkffAreaHead{margin:0 2px 2px}
+.pkffPage .pkffAreaNote{margin:0 2px 8px}
+.pkffPage .stageRow .srMain small + small{display:block;margin-top:2px}
+.pkffPage .pkffReplay{margin-top:12px}
+.pkffPage .pkffReplayHead{margin:10px 0 2px;font-weight:700}
+.pkffPage .pkffBig{font-size:20px}
+.pkffLite .pkffLiteBar{flex-wrap:wrap}
+.pkffPage .pkfVerdict{margin:10px 2px}
+.pkffPage .pkfbFigLabel{margin:10px 2px 6px}
