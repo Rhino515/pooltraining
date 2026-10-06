@@ -171,7 +171,7 @@ function playHTML(state) {
     <div class="title kickTitle"><button type="button" class="linkish back" data-action="go" data-href="#pkfcb">‹ Back</button><span class="eyebrow">${esc(eyebrow)}</span><h1>${esc(h1)}</h1><p class="kickMeta">${esc(meta)}</p></div>
     ${devPreviewNote(cur)}
     ${lesson.incomplete ? '' : flowHTML(stage)}
-    ${figureHTML(lesson.id, { alt: lesson.title || 'PKF example', fullBtn: !((isKnow || isPlan) && !it.locked), hideUntilLock: hideFig })}
+    ${figureHTML(lesson.id, { alt: lesson.title || 'PKF example', fullBtn: !((isKnow || isPlan) && !it.locked) || !!asset?.fullSafe, hideUntilLock: hideFig })}
     ${isShoot && !it.done ? '' : `<div class="card pkfPrompt pkfbPrompt"><b>${esc(lesson.incomplete ? 'INCOMPLETE' : lesson.type)}${lesson.title ? ` · ${esc(lesson.title)}` : ''}</b><p>${esc(lesson.prompt || '')}</p></div>`}
     ${body}
     ${prev}

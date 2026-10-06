@@ -13,7 +13,7 @@ import {
   playableSectionCount, lessonTypeCounts, assistCounts, auditCourse, pkfCueBallProgressRows, pkfCueBallBannersHTML,
   ASSET_MAP, REGIONS, assetOf
 } from '../js/content/pkfCueBallCourse.js';
-import { PAGES } from '../js/content/pkfCueBallAssets.js';
+import { PAGES, regionHTML, regionOf, citeText, figureHTML, revealFigureHTML } from '../js/content/pkfCueBallAssets.js';
 import { defaultState } from '../js/storage.js';
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
@@ -202,6 +202,65 @@ state = finish(state, { miss: true });
   assert(a && a.h === 1080 && a.crop.h > 0 && 'y' in a.crop, 'teaching asset has height-based crop fields');
   const c = a.crop;
   assert(c.y + c.h <= 1.0001, 'crop in bounds');
+}
+
+function lessonSrc(id) { return LESSONS.find((l) => l.id === id)?.src; }
+
+// v14-98: captions show the PRINTED page (JPEG footer) once — never the PDF index, never duplicated.
+{
+  assert(PAGES[37].printed === 23 && PAGES[57].printed === 43, 'Center Ball printed = PDF − 14');
+  assert(PAGES[61].printed === 44 && PAGES[72].printed === 55 && PAGES[74].printed === 57, 'Sliding printed = PDF − 17 (after inserts 58–60)');
+  assert(PAGES[77].printed === 58 && PAGES[103].printed === 84, 'Half Table printed = PDF − 19 (figure 5-1 on PDF 77 = page 58)');
+  assert(PAGES[107].printed === 85 && PAGES[150].printed === 128, 'Full Table printed = PDF − 22');
+  assert([58, 59, 60, 75, 76, 104, 105, 106].every((n) => PAGES[n].printed == null), 'divider/blank inserts have no printed page');
+  const all = [...LESSONS, ...EXAM_ITEMS];
+  const bad = [];
+  for (const l of all) {
+    const a = assetOf(l.id);
+    for (const r of [a, a?.reveal].filter(Boolean)) {
+      const html = regionHTML(r);
+      const cite = (html.match(/<p class="pkfbCite[^"]*">([^<]*)<\/p>/) || [])[1] || '';
+      const nums = cite.match(/\d+/g) || [];
+      const want = PAGES[r.page].printed;
+      if (want == null ? nums.length : (cite !== `PKF page ${want} · tap to enlarge`)) bad.push(`${l.id}:${r.key}:${cite}`);
+      if ((cite.match(/page/gi) || []).length > 1) bad.push(`${l.id}:${r.key}:dup:${cite}`);
+    }
+  }
+  assert(!bad.length, `every caption = "PKF page <printed> · tap to enlarge"${bad.length ? ' ' + bad.slice(0, 5).join(' | ') : ''}`);
+  const plan = regionHTML(assetOf('ht-plan-3'));
+  assert(plan.includes('PKF page 58 · tap to enlarge') && !plan.includes('PKF page 63') && !plan.includes('page 72'), 'Half Table Plan caption: PKF page 58, once');
+  assert(citeText(regionOf('t75')) === 'PKF Half Table Patterns divider · tap to enlarge', 'divider caption has no fake page number');
+  // Section ranges and lesson source lines use printed pages.
+  const rng = Object.fromEntries(SECTIONS.map((s) => [s.id, s.pages.split('–').map(Number)]));
+  assert(rng['full-table'][1] === 128 && rng['half-table'].join() === '58,84' && rng['sliding-cue-ball'].join() === '44,57', 'section printed ranges match footers');
+  const srcBad = LESSONS.filter((l) => {
+    const n = (String(l.src).match(/Pages? (\d+)/) || [])[1];
+    if (!n) return false;
+    const [lo, hi] = rng[l.section];
+    return +n < lo || +n > hi;
+  }).map((l) => `${l.id}:${l.src}`);
+  assert(!srcBad.length, `lesson source pages inside their section's printed range ${srcBad.join(' | ')}`);
+  for (const id of ['ht-work-back', 'ft-intro', 'ft-plan-9', 'ft-preshot', 'ht-draw-vs-roll']) {
+    const a = assetOf(id);
+    const n = +(String(lessonSrc(id)).match(/Pages? (\d+)/) || [])[1];
+    assert(n === a.printed || n === a.printed - 1, `${id} source page ${n} matches its PKF figure page ${a.printed}`);
+  }
+}
+
+// v14-98: PLAN figures focus on the diagram (CSS viewport only); full page stays available; answers stay hidden pre-LOCK.
+{
+  const p3 = assetOf('ht-plan-3');
+  assert(p3.key === 'f77-5-1' && p3.page === 77 && p3.figs === 'Figure 5-1', 'Half Table Plan uses the figure 5-1 crop on PDF 77');
+  assert(p3.crop.w < 0.6 && p3.crop.h < 0.3 && p3.crop.y > 0.7 && p3.crop.y + p3.crop.h <= 0.97, 'figure 5-1 crop is the diagram, not the whole page');
+  assert(p3.fullSafe && p3.view.w === 1 && p3.view.h === 1, 'View Full PKF Example shows the whole PDF 77 page (no printed answer on it)');
+  assert(p3.reveal?.page === 78 && !p3.textOnlyUntilLock, 'pattern 1 solution (PDF 78) only after LOCK');
+  const html = figureHTML('ht-plan-3', { fullBtn: true });
+  assert(html.includes('PKF_CueBall_PDF_077.jpg') && html.includes('--cy:0.727') && html.includes('VIEW FULL PKF EXAMPLE') && html.includes('data-cw="1"'), 'crop + full-page button rendered from the original JPEG');
+  const p58 = assetOf('ft-plan-5-8');
+  assert(p58.key === 'f107-6-1' && p58.crop.x + p58.crop.w < 0.51 && !p58.fullSafe, 'Full-table Plan 5→8 shows figure 6-1 only (6-2 solution paths cropped out; no full page pre-LOCK)');
+  const p9 = assetOf('ft-plan-9');
+  assert(p9.key === 'f141-6-133' && p9.crop.y + p9.crop.h < 0.3 && !p9.fullSafe, '9-ball Plan shows figure 6-133 only (solution text/diagram cropped out pre-LOCK)');
+  assert(REGIONS['f77-5-1'] && REGIONS['f107-6-1'] && REGIONS['f141-6-133'], 'figure-only regions registered');
 }
 
 if (failed) { console.error(`\n${failed} FAILED`); process.exit(1); }
