@@ -15,7 +15,7 @@ import { careerHeaderHTML, tierCapsHTML, gateCardHTML, promotionCardHTML, drillR
 import { careerStatus, promotionStatus, drillRankStatus } from './progression/rank.js';
 import { rankBadgeSVG, drillBadgeSVG } from './progression/badge.js';
 import { stageItem, drillItem } from './progression/catalog.js';
-import { RANK_LADDER } from './progression/config.js';
+import { RANK_LADDER, XP as XP_CFG } from './progression/config.js';
 import { getProfile } from './profile.js';
 import { loadFriends, activePlayers } from './friends/model.js';
 import { COACH_LEVELS, COACH_LABEL, coachingLevel } from './games/coaching.js';
@@ -23,7 +23,7 @@ import { TABLE_SIZES, CLOTH_SPEEDS, CALIBRATION_SPEEDS, speedLabel, formatSpeed,
 import { learnHTML } from './learn.js';
 import { isDrillHidden } from './drills/hidden.js';
 import { examBannerHTML, accomplishmentHTML } from './content/buExam.js';
-import { setProgressBoxHTML, pkfProgressBoxHTML, completedSetsLineHTML, pkfCurriculumStatus, pkfCourseProgressHTML, pkfExamProgressHTML } from './content/setProgress.js';
+import { setProgressBoxHTML, pkfProgressBoxHTML, completedSetsLineHTML, pkfCurriculumStatus, pkfCourseProgressHTML, pkfExamProgressHTML, readDrillSetProgress, courseBonusNoteHTML } from './content/setProgress.js';
 import { safetyBannerHTML } from './content/safetyMaster.js';
 import { offRailBannersHTML } from './content/kickingCourse.js';
 import { trickBannersHTML } from './content/trickShotCourse.js';
@@ -386,11 +386,28 @@ function courseGroupHTML(key, title, note, tiles) {
   return `<details class="dsGroup" data-ds-group="${key}"><summary class="dsGroupHead"><span class="dsGroupText"><b>${title}</b>${noteHTML}</span><span class="dsGroupCount">${n}</span><span class="dsGroupChev" aria-hidden="true"></span></summary><div class="dsGroupBody">${tiles}</div></details>`;
 }
 
+/**
+ * v14-116: each Drill Sets & Exams tile gets its one-time course bonus note (earned, or what finishing pays).
+ * Tiles match their progress row by route (data-href); locked tiles get nothing.
+ */
+function withCourseBonusNotes(state, tiles) {
+  const byHref = new Map(readDrillSetProgress(state).map((r) => [r.href, r]));
+  return tiles.split(/(?=<(?:button|div) [^>]*class="card simPromo)/).map((tile) => {
+    if (!/class="card simPromo/.test(tile) || /is-locked/.test(tile.slice(0, 300))) return tile;
+    const href = (tile.match(/^<[^>]*data-href="([^"]+)"/) || [])[1];
+    if (!href) return tile;
+    const row = byHref.get(href);
+    const note = row ? courseBonusNoteHTML(state, row, { todo: true })
+      : `<span class="courseBonusNote is-todo" data-course-bonus-todo="${href}">Course bonus +${XP_CFG.courseCompleteBonus} XP</span>`;
+    return note ? tile.replace(/<\/small><\/span>/, `</small>${note}</span>`) : tile;
+  }).join('');
+}
+
 export function renderCoursesPage(state) {
   // BU: Exam I, Exam II (Bachelors, Masters, Doctorate), then Exam III, RDS (Exam IV), Exams V–VIII.
-  const bu = examBannerHTML();
+  const bu = withCourseBonusNotes(state, examBannerHTML());
   // v14-113: the PKF courses and exams live in Learn > Fundamentals (pkfCurriculumHTML), not here.
-  const other = safetyBannerHTML() + ballPocketBannerHTML() + offRailBannersHTML(state) + trickBannersHTML(state);
+  const other = withCourseBonusNotes(state, safetyBannerHTML() + ballPocketBannerHTML() + offRailBannersHTML(state) + trickBannersHTML(state));
   return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#drills">‹ Drills</button><span class="eyebrow">DRILL LIBRARY</span><h1>Drill Sets & Exams</h1></div>
     <div class="dsGroups">
     ${courseGroupHTML('bu', 'BU EXAMS', { lead: 'For intermediate players', sub: 'Billiard University · Dr. Dave' }, bu)}

@@ -63,6 +63,16 @@ Career keeps the existing rank names and requirements (`js/career.js`). v11 adds
 
 Every award is stored in `prog.events`, newest first, with flags (`FIRST CLEAR`, `PERSONAL BEST`, `PERFECT`, `MASTERED REPEAT`, `BEGINNER XP MAXED`, `BALL UP`, `GATE CLEARED`, `PROMOTED`, `MAX RANK`). The result screens show these awards.
 
+## Course completion bonus (v14-116)
+
+Fully finishing a set or exam in **Drill Sets & Exams** pays a one-time **+300 XP** (`XP.courseCompleteBonus`). This covers every BU EXAMS and OTHER DRILL SETS & EXAMS row. PKF courses in Learn don't get it. "Finished" uses the same test as the set's completion emblem (`row.finished` from `readSetProgress`).
+
+- It goes to Lifetime XP (+300) and Drill XP (+300).
+- It goes to Career Rank XP through the normal bank: it counts toward the Intermediate tier cap (`XP.courseCompleteTier`), fills the rank bucket with overflow carry, and pays nothing at Champion.
+- `withCourseBonus()` in `js/progression/courseBonus.js` runs inside `commit()` and stores a flag in `prog.courseBonus[id]`. Replays, retakes and re-finishing never pay again.
+- It is not retroactive. A set that was already finished before this feature (or that comes back finished from an older backup) is flagged with `xp: 0` and pays nothing.
+- The award shows as a separate `+300 XP · Course bonus` pill and an event flagged `COURSE BONUS`.
+
 ## Mastery (per item)
 
 | Stars | Label | Rule |

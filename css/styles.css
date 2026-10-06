@@ -2105,3 +2105,7 @@ header{
 .xpToast.show{animation:xpFloat 1.5s ease-out forwards}
 @keyframes xpFloat{0%{opacity:0;transform:translate(-50%,8px) scale(.92)}12%{opacity:1;transform:translate(-50%,0) scale(1)}70%{opacity:1;transform:translate(-50%,-8px)}100%{opacity:0;transform:translate(-50%,-16px)}}
 @media (prefers-reduced-motion:reduce){.xpToast.show{animation:xpFade 1.5s linear forwards}@keyframes xpFade{0%,75%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,0)}}}
+/* v14-116: course bonus pill sits just under the +XP pill; note on finished set cards and Profile rows */
+.xpToast.xpBonus{top:calc(env(safe-area-inset-top) + 120px);color:#ffe7a8;border-color:#c9922a;background:linear-gradient(90deg,#2a1d06,#1a1408);box-shadow:0 0 16px #f6c45340,0 6px 18px #0009}
+.courseBonusNote{display:block;width:fit-content;margin-top:6px;padding:2px 8px;border-radius:99px;border:1px solid #c9922a88;background:#2a1d0699;color:#f6c453;font-size:11px;font-weight:800;letter-spacing:.03em}
+.courseBonusNote.is-todo{border-color:#ffffff22;background:transparent;color:#9fb3c8;font-weight:700}

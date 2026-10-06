@@ -186,6 +186,36 @@ export function applyAward(state, act, opts = {}) {
   return { state: { ...state, prog }, award };
 }
 
+/**
+ * v14-116: one-time course completion bonus (a Drill Sets & Exams set or exam fully finished).
+ * Lifetime XP + Drill XP get the full XP.courseCompleteBonus; Career Rank XP goes through the normal bank
+ * (XP.courseCompleteTier cap, rank bucket + overflow carry, nothing at Champion).
+ * The flag lives in prog.courseBonus[id] = { at, xp, rank, drill }, so it is in the saved state and cloud backups.
+ */
+export function applyCourseBonus(state, { id, name, at = Date.now() }) {
+  const prog = ensureProg(state);
+  if (prog.courseBonus && prog.courseBonus[id]) return { state, award: null };
+  const amt = XP.courseCompleteBonus;
+  const rankIndex = Math.max(0, Math.min(RANK_LADDER.names.length - 1, state.rankIndex || 0));
+  const flags = ['COURSE BONUS'];
+  let rank = 0;
+  if (rankIndex >= CHAMPION_INDEX) flags.push('MAX RANK');
+  else {
+    const t = XP.courseCompleteTier;
+    const cap = XP.tierCaps[t];
+    const have = prog.tierXp[t] || 0;
+    let want = amt;
+    if (cap != null && have + want > cap) { want = Math.max(0, cap - have); flags.push(`${t.toUpperCase()} XP MAXED`); }
+    prog.tierXp[t] = have + want;
+    rank = bankRankXp(prog, rankIndex, want);
+  }
+  prog.drillXp += amt;
+  prog.lifetimeXp += amt;
+  prog.courseBonus = { ...(prog.courseBonus || {}), [id]: { at, xp: amt, rank, drill: amt } };
+  prog.events = [{ at, key: `course:${id}`, name: `${name} · Course bonus`, life: amt, rank, drill: amt, flags }, ...prog.events].slice(0, 60);
+  return { state: { ...state, prog }, award: { id, name, lifetime: amt, rank, drill: amt, flags } };
+}
+
 /** Record mastery only (no XP) — e.g. individual Promotion Test shots */
 export function recordOnly(state, act) {
   const prog = ensureProg(state);

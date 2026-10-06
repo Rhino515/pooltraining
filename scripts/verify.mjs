@@ -799,7 +799,7 @@ let state = storage.defaultState();
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
   const missing = walk(path.join(root, 'js')).filter((f) => f.endsWith('.js')).map((f) => './' + path.relative(root, f)).filter((f) => !sw.includes(`'${f}'`));
-  assert(/'pool-iq-v14-115'/.test(sw), 'service worker cache is pool-iq-v14-115');
+  assert(/'pool-iq-v14-116'/.test(sw), 'service worker cache is pool-iq-v14-116');
   assertAll('service worker precaches every JS module (incl. simulator + Create Drill)', missing.map((m) => `missing ${m}`));
   const wordN = { one: 1, two: 2, three: 3, four: 4 };
   const probs = [];
@@ -2077,7 +2077,7 @@ let state = storage.defaultState();
   const dash = src('js/dashboard.js');
   const friends = src('js/ui/friends.js');
   const vendor = src('js/vendor/supabase.js');
-  assert(/'pool-iq-v14-115'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw) && !/'pool-iq-v14-5c'/.test(sw), 'v14: service worker cache is pool-iq-v14-115');
+  assert(/'pool-iq-v14-116'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw) && !/'pool-iq-v14-5c'/.test(sw), 'v14: service worker cache is pool-iq-v14-116');
   assert(sw.includes(`'./js/vendor/supabase.js'`) && sw.includes(`'./js/cloud/controller.js'`) && sw.includes(`'./js/ui/account.js'`), 'v13: sw precaches the bundled supabase-js and the cloud modules');
   assert(/supabase-js\/2\.117\.2/.test(vendor) && /createClient/.test(vendor) && !/cdn\.jsdelivr|unpkg\.com|esm\.sh/.test(idx + sw), 'v13: official supabase-js v2 UMD build is bundled locally (no CDN)');
   assert(/nqfwlpfyccbqetcyjijf/.test(cfg) && /sb_publishable_/.test(cfg) && !/sb_secret_|service_role|sbp_[0-9a-f]{10}/.test(cfg + sql + docs), 'v13: config carries the project ref + publishable key only (no secrets anywhere)');
@@ -2286,7 +2286,7 @@ let state = storage.defaultState();
   assert(!fixSrc.includes('drill_overrides') && !saveFn.includes('.delete('), 'v14-26: the editor never deletes the published row');
   assert(oeSrc.includes('publishedDoc(ch.id)') && !oeSrc.slice(oeSrc.indexOf('export function applyDrillEdit'), oeSrc.indexOf('export function editCount')).includes('getDrillEdit'), 'v14-26: the live drill is the published row, not the phone copy');
   assert(pubSrc.includes('andrewaphay') === false && pubSrc.includes('ownerAccountSignedIn'), 'v14-26: the client refuses publish unless the owner account is signed in');
-  assert(swSrc.includes('pool-iq-v14-115') && swSrc.includes('skipWaiting') && swSrc.includes('clients.claim'), 'v14-28: new cache skipWaiting and clients.claim');
+  assert(swSrc.includes('pool-iq-v14-116') && swSrc.includes('skipWaiting') && swSrc.includes('clients.claim'), 'v14-28: new cache skipWaiting and clients.claim');
   assert(fixSrc.includes('id="fixImport"') && fixSrc.includes('accept=".pooliq,.json,application/json,application/octet-stream,text/plain,*/*"') && !fixSrc.includes('text/json'), 'v14-27: IMPORT DRILL accept lets Android select .pooliq and .json');
   assert(appSrc.includes('controllerchange') && appSrc.includes('pooliq-sw-reloaded') && appSrc.includes('location.reload()'), 'v14-26: an open app reloads once when the new worker activates');
   const PUB = await import(js('drills/published.js'));
@@ -2611,7 +2611,7 @@ let state = storage.defaultState();
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const appSrc = fsMod.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
   assert(['js/content/pkfCueBallAssets.js', 'js/content/pkfCueBallCourse.js', 'js/ui/pkfCueBallPlay.js', 'images/pkf-cb/PKF_CueBall_PDF_037.jpg', 'images/pkf-cb/PKF_CueBall_PDF_150.jpg'].every((f) => swSrc.includes(`'./${f}'`)), 'v14-97: service worker precaches cue-ball course + original JPEGs');
-  assert(/const CACHE = 'pool-iq-v14-115'/.test(swSrc), 'v14-97: CACHE bumped to pool-iq-v14-115');
+  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-97: CACHE bumped to pool-iq-v14-116');
   assert(appSrc.includes("name === 'pkfcb'") && appSrc.includes("pkfcb: 'learn'"), 'v14-97: #pkfcb routes under the Learn tab (v14-113)');
   assert(!('pkfCueBallControl' in st0), 'v14-97: state.pkfCueBallControl is not in defaultState');
   const courses = DASH.renderLearn(['fundamentals'], st0); // v14-113: PKF list moved to Learn > Fundamentals
@@ -2672,7 +2672,7 @@ let state = storage.defaultState();
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const appSrc = fsMod.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
   assert(['js/content/pkfFundAssets.js', 'js/content/pkfFundamentalsCourse.js', 'js/ui/pkfFundPlay.js', 'images/pkf-fund/PKF_Fundamentals_PDF_009.jpg', 'images/pkf-fund/PKF_Fundamentals_PDF_034.jpg'].every((f) => swSrc.includes(`'./${f}'`)), 'v14-98: service worker precaches fundamentals course + original JPEGs');
-  assert(/const CACHE = 'pool-iq-v14-115'/.test(swSrc), 'v14-98: CACHE bumped to pool-iq-v14-115');
+  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-98: CACHE bumped to pool-iq-v14-116');
   assert(appSrc.includes("name === 'pkffund'") && appSrc.includes("pkffund: 'learn'"), 'v14-98: #pkffund routes under the Learn tab (v14-113)');
   assert(!('pkfFundamentals' in st0), 'v14-98: state.pkfFundamentals is not in defaultState');
   const courses = DASH.renderLearn(['fundamentals'], st0); // v14-113: PKF list moved to Learn > Fundamentals
@@ -2712,7 +2712,7 @@ let state = storage.defaultState();
   const CBA = await import(js('content/pkfCueBallAssets.js'));
   const CBP = await import(js('ui/pkfCueBallPlay.js'));
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-115'/.test(swSrc), 'v14-99: CACHE bumped to pool-iq-v14-115');
+  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-99: CACHE bumped to pool-iq-v14-116');
   assert(CBA.PAGES[77].printed === 58 && CBA.PAGES[72].printed === 55 && CBA.PAGES[150].printed === 128 && CBA.PAGES[75].printed == null, 'v14-99: printed pages follow the JPEG "Page:" footers (inserts unnumbered)');
   const ids = [...CB.LESSONS, ...CB.EXAM_ITEMS].map((l) => l.id);
   const cites = ids.flatMap((id) => [CB.figureHTML(id), CB.revealFigureHTML(id)]).join('').match(/<p class="pkfbCite[^>]*>[^<]*<\/p>/g) || [];
@@ -2758,7 +2758,7 @@ let state = storage.defaultState();
   };
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const appSrc = fsMod.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-115'/.test(swSrc), 'v14-100: CACHE bumped to pool-iq-v14-115');
+  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-100: CACHE bumped to pool-iq-v14-116');
   const imgs = Array.from({ length: 24 }, (_, i) => `images/pkf-smcb/PKF_CenterBall_PDF_${String(35 + i).padStart(3, '0')}.jpg`);
   assert(['js/content/pkfShotMakingAssets.js', 'js/content/pkfShotMakingCourse.js', 'js/ui/pkfShotMakingPlay.js', ...imgs].every((f) => swSrc.includes(`'./${f}'`) && fsMod.existsSync(path.join(root, f))), 'v14-100: service worker precaches the course + all 24 original JPEGs');
   assert(appSrc.includes("name === 'pkfsmcb'") && appSrc.includes("pkfsmcb: 'learn'") && appSrc.includes('migrateShotMakingFromCueBall(st0)'), 'v14-100: #pkfsmcb routes under Learn (v14-113); boot runs the one-time migration');
@@ -2822,7 +2822,7 @@ let state = storage.defaultState();
   const DASH = await import(js('dashboard.js'));
   const CL = await import(js('cloud/client.js'));
   const swSrc = (await import('fs')).readFileSync(path.join(root, 'sw.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-115'/.test(swSrc), 'v14-101: CACHE bumped to pool-iq-v14-115');
+  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-101: CACHE bumped to pool-iq-v14-116');
   CL.setCurrentUserForTests(null);
   const html = DASH.renderCoursesPage(storage.defaultState());
   // v14-113: PKF moved to Learn > Fundamentals. Drill Sets & Exams keeps BU EXAMS and OTHER only.
@@ -2848,7 +2848,7 @@ let state = storage.defaultState();
 // ---------------------------------------------------------------- v14-102: PKF SKIP TABLE STEP + Drill XP for recorded table steps
 {
   const swSrc = (await import('fs')).readFileSync(path.join(root, 'sw.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-115'/.test(swSrc), 'v14-102: CACHE bumped to pool-iq-v14-115');
+  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-102: CACHE bumped to pool-iq-v14-116');
   assert(swSrc.includes("'./js/content/pkfTableStep.js'"), 'v14-102: pkfTableStep.js precached');
   const TS = await import(js('content/pkfTableStep.js'));
   assert(TS.SKIP_LABEL === 'SKIP TABLE STEP' && TS.tableStepItem('k', 'C', { id: 'x' }).tier === 'intermediate', 'v14-102: skip label + table step = default (difficulty 3) drill');
@@ -2870,7 +2870,7 @@ let state = storage.defaultState();
 // ---------------------------------------------------------------- v14-105: restore crash fix (VALIDATE had no poolIQRuleSet entry)
 {
   const swSrc = (await import('fs')).readFileSync(path.join(root, 'sw.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-115'/.test(swSrc), 'v14-105: CACHE bumped to pool-iq-v14-115');
+  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-105: CACHE bumped to pool-iq-v14-116');
   const VR = await import(js('vault.js'));
   const SY = await import(js('cloud/sync.js'));
   assertAll('v14-105: every DATA_KEYS entry has a backup validator', VR.DATA_KEYS.filter((k) => !VR.hasValidator(k)));
@@ -2916,7 +2916,7 @@ let state = storage.defaultState();
   };
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const appSrc = fsMod.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-115'/.test(swSrc), 'v14-106: CACHE bumped to pool-iq-v14-115');
+  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-106: CACHE bumped to pool-iq-v14-116');
   const imgs = Array.from({ length: 84 }, (_, i) => `images/pkf-pattern/PKF_PatternPlay_PDF_${String(75 + i).padStart(3, '0')}.jpg`);
   assert(['js/content/pkfPatternPlayAssets.js', 'js/content/pkfPatternPlayCourse.js', 'js/ui/pkfPatternPlayPlay.js', ...imgs].every((f) => swSrc.includes(`'./${f}'`) && fsMod.existsSync(path.join(root, f))), 'v14-106: service worker precaches the course + all 84 original JPEGs');
   assert(appSrc.includes("name === 'pkfpattern'") && appSrc.includes("pkfpattern: 'learn'"), 'v14-106: #pkfpattern routes under Learn (v14-113)');
@@ -2960,7 +2960,7 @@ let state = storage.defaultState();
   const fsMod = await import('fs');
   const DASH = await import(js('dashboard.js'));
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-115'/.test(swSrc), 'v14-107: CACHE bumped to pool-iq-v14-115');
+  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-107: CACHE bumped to pool-iq-v14-116');
   const html = DASH.renderLearn(['fundamentals']);
   const at = html.indexOf('data-learn-pkf="pkffund"');
   const body = html.slice(html.indexOf('</h1>'));
@@ -2977,7 +2977,7 @@ let state = storage.defaultState();
   const LEARN = await import(js('learn.js'));
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const css = fsMod.readFileSync(path.join(root, 'css', 'styles.css'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-115'/.test(swSrc), 'v14-109: CACHE bumped to pool-iq-v14-115');
+  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-109: CACHE bumped to pool-iq-v14-116');
   assert(/\.title\.learnPage > h1\{font-size:clamp\(\d+px,[\d.]+vw,\d+px\);max-width:100%/.test(css), 'v14-109: Learn titles size with clamp()+vw and never exceed the column');
   assert(typeof LEARN.fitLearnTitle === 'function' && typeof LEARN.fitLearnTitles === 'function' && LEARN.LEARN_TITLE_SEL === '.title.learnPage > h1', 'v14-109: learn.js exports the title fit-to-width helper');
   assert(LEARN.learnHTML(['fundamentals']).includes('<div class="title learnPage" data-page-learn>') && LEARN.learnHTML(['fundamentals']).includes('<h1>Fundamentals</h1>'), 'v14-109: Fundamentals title markup unchanged');
@@ -3038,7 +3038,7 @@ let state = storage.defaultState();
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const dash = fsMod.readFileSync(path.join(root, 'js', 'dashboard.js'), 'utf8');
   const fr = fsMod.readFileSync(path.join(root, 'js', 'ui', 'friends.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-115'/.test(swSrc), 'v14-112: CACHE bumped to pool-iq-v14-115');
+  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-112: CACHE bumped to pool-iq-v14-116');
   for (const [k, w, h] of [['8', 338, 323], ['9', 333, 323], ['10', 343, 301]]) {
     const f = `./icons/tg-${k}-v3.png`;
     const file = path.join(root, 'icons', `tg-${k}-v3.png`);
@@ -3084,7 +3084,7 @@ let state = storage.defaultState();
   };
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const appSrc = fsMod.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-115'/.test(swSrc), 'v14-111: CACHE bumped to pool-iq-v14-115');
+  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-111: CACHE bumped to pool-iq-v14-116');
   const imgs = Array.from({ length: 66 }, (_, i) => `images/pkf-advanced/PKF_Advanced_PDF_${159 + i}.jpg`);
   assert(['js/content/pkfAdvancedPlayAssets.js', 'js/content/pkfAdvancedPlaySafetyCourse.js', 'js/ui/pkfAdvancedPlaySafetyPlay.js', ...imgs].every((f) => swSrc.includes(`'./${f}'`) && fsMod.existsSync(path.join(root, f))), 'v14-111: service worker precaches the course + all 66 original JPEGs (PDF 159–224)');
   assert(appSrc.includes("name === 'pkfadv'") && appSrc.includes("pkfadv: 'learn'"), 'v14-111: #pkfadv routes under Learn (v14-113)');
@@ -3130,7 +3130,7 @@ let state = storage.defaultState();
   const CL = await import(js('cloud/client.js'));
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const appSrc = fsMod.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-115'/.test(swSrc), 'v14-113: CACHE bumped to pool-iq-v14-115');
+  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-113: CACHE bumped to pool-iq-v14-116');
   CL.setCurrentUserForTests(null);
   const st = storage.defaultState();
   const ds = DASH.renderCoursesPage(st);
@@ -3171,7 +3171,7 @@ let state = storage.defaultState();
   const FUND = await import(js('content/pkfFundamentalsCourse.js'));
   const SM = await import(js('content/pkfShotMakingCourse.js'));
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-115'/.test(swSrc), 'v14-114: CACHE bumped to pool-iq-v14-115');
+  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-114: CACHE bumped to pool-iq-v14-116');
   CL.setCurrentUserForTests(null);
   const st0 = storage.defaultState();
   // folded group header with a chevron and a course count; never opened by default (Drill Sets groups are not persisted either)
@@ -3215,9 +3215,9 @@ let state = storage.defaultState();
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const appSrc = fsMod.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
   const css = fsMod.readFileSync(path.join(root, 'css', 'styles.css'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-115'/.test(swSrc), 'v14-115: CACHE bumped to pool-iq-v14-115');
+  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-115: CACHE bumped to pool-iq-v14-116');
   assert(swSrc.includes("'./js/ui/xpToast.js'"), 'v14-115: xpToast.js precached');
-  assert(appSrc.includes("import { xpGain, showXpGain } from './ui/xpToast.js';") && /function commit\(next[^)]*\) \{\n  const before = state;\n  state = silent \? next : derive\(next\);\n  saveState\(state\);[\s\S]*?const gain = xpGain\(before, state\);\n  if \(gain > 0\) showXpGain\(gain\);/.test(appSrc), 'v14-115: commit() (every XP award) shows the gain');
+  assert(/import \{ xpGain, showXpGain[^}]*\} from '\.\/ui\/xpToast\.js';/.test(appSrc) && /function commit\(next[^)]*\) \{\n  const before = state;[\s\S]*?saveState\(state\);[\s\S]*?const gain = xpGain\(before, state\);\n  if \(gain - bonus > 0\) showXpGain\(gain - bonus\);/.test(appSrc), 'v14-115: commit() (every XP award) shows the gain');
   assert(!/replaceAndReload[^\n]*showXpGain|showXpGain[^\n]*restore/i.test(appSrc), 'v14-115: restores never call the pill (they reload the page)');
   // gain math: positive only, Lifetime XP first, legacy xp fallback
   const st0 = storage.defaultState();
@@ -3281,6 +3281,133 @@ let state = storage.defaultState();
         return { want, text: el.textContent, show: el.classList.contains('show') };
       });
       assert(c.want > 0 && c.show && c.text === `+${c.want.toLocaleString('en-US')} XP`, `v14-115: a real award through commit() shows its gain ${JSON.stringify(c)}`);
+    } finally {
+      await browser.close();
+      server.close();
+    }
+  }
+}
+
+// ---------------------------------------------------------------- v14-116: one-time +300 XP course bonus for every Drill Sets & Exams set and exam
+{
+  const fsMod = await import('fs');
+  const http = await import('http');
+  const { createRequire } = await import('module');
+  const CFG = await import(js('progression/config.js'));
+  const AW = await import(js('progression/award.js'));
+  const CB = await import(js('progression/courseBonus.js'));
+  const SP = await import(js('content/setProgress.js'));
+  const BUx = await import(js('content/buExam.js'));
+  const SAF = await import(js('content/safetyMaster.js'));
+  const TR = await import(js('content/trickShotCourse.js'));
+  const FUNDx = await import(js('content/pkfFundamentalsCourse.js'));
+  const DASH = await import(js('dashboard.js'));
+  const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
+  const appSrc = fsMod.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
+  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc) && swSrc.includes("'./js/progression/courseBonus.js'"), 'v14-116: CACHE bumped and courseBonus.js precached');
+  assert(CFG.XP.courseCompleteBonus === 300 && CFG.XP.courseCompleteTier === 'intermediate', 'v14-116: XP.courseCompleteBonus = 300 in config.js');
+  assert(/const cb = silent \? \{ state: next, awarded: \[\] \} : withCourseBonus\(before, next\);\n  state = silent \? next : derive\(cb\.state\);/.test(appSrc) && appSrc.includes("showXpBonus(bonus, 'Course bonus')"), 'v14-116: commit() pays the bonus before derive and shows "+300 XP · Course bonus"');
+  const base = () => ({ ...storage.defaultState(), prog: { ...AW.emptyProg(), v: CFG.PROGRESSION_VERSION, rankSeen: 0 } });
+  const ids = BUx.BU_ORDER;
+  const buAll = (st, n = ids.length) => ids.slice(0, n).reduce((s2, id) => BUx.withExamScore(s2, id, 5, BUx.buMeta(id)?.max || 10, {}), st);
+  // BU Exam I: the last drill finishes the set (same test as its emblem)
+  let st0 = buAll(base(), ids.length - 1);
+  let st1 = buAll(st0);
+  assert(!CB.finishedSets(st0).has('fundamentals') && CB.finishedSets(st1).has('fundamentals') && SP.readDrillSetProgress(st1).find((r) => r.id === 'fundamentals').finished, 'v14-116: "finished" is the emblem test (readSetProgress row.finished)');
+  let r = CB.withCourseBonus(st0, st1, 5000);
+  const p = r.state.prog;
+  assert(r.awarded.length === 1 && r.awarded[0].id === 'fundamentals' && r.awarded[0].xp === 300, 'v14-116: finishing BU Exam I awards one +300 bonus');
+  assert(p.lifetimeXp === 300 && p.drillXp === 300 && p.rankXpBy[0] === 300 && p.rankXpTotal === 300 && p.tierXp.intermediate === 300, `v14-116: +300 to Lifetime, Drill and Career Rank XP (${p.lifetimeXp}/${p.drillXp}/${p.rankXpBy[0]})`);
+  assert(p.courseBonus.fundamentals.xp === 300 && p.courseBonus.fundamentals.at === 5000 && p.events[0].key === 'course:fundamentals' && p.events[0].flags.includes('COURSE BONUS'), 'v14-116: one-time flag in prog.courseBonus plus an XP event');
+  // replays, retakes and a second finish never pay again
+  const replay = BUx.withExamScore(r.state, ids[0], 7, BUx.buMeta(ids[0])?.max || 10, {});
+  assert(CB.withCourseBonus(r.state, replay).awarded.length === 0, 'v14-116: replaying a finished set pays nothing');
+  const reset = { ...r.state, buExam: undefined, examI: undefined };
+  const refin = CB.withCourseBonus(reset, buAll(r.state));
+  assert(refin.awarded.length === 0 && refin.state.prog.lifetimeXp === 300, 'v14-116: re-finishing after a retake pays nothing (flag kept)');
+  // finished before the bonus existed (or restored from an older backup): flagged with no XP, no surprise award
+  const old = buAll(base());
+  const retro = CB.withCourseBonus(old, { ...old, touched: 1 });
+  assert(retro.awarded.length === 0 && retro.state.prog.lifetimeXp === 0 && retro.state.prog.courseBonus.fundamentals.xp === 0, 'v14-116: not retroactive (already-finished sets are flagged with 0 XP)');
+  assert(CB.withCourseBonus(old, buAll(retro.state)).awarded.length === 0, 'v14-116: a flagged-at-0 set never pays later');
+  assert(CB.withCourseBonus(null, st1).awarded.length === 0 && CB.withCourseBonus(st0, { ...st1, prog: undefined }).awarded.length === 0, 'v14-116: nothing before boot or for a fresh/reset save');
+  // Champion: no Career Rank XP; tier cap respected
+  const champ = { ...st0, rankIndex: AW.CHAMPION_INDEX };
+  const rc = CB.withCourseBonus(champ, { ...st1, rankIndex: AW.CHAMPION_INDEX }).state.prog;
+  assert(rc.lifetimeXp === 300 && rc.drillXp === 300 && rc.rankXpTotal === 0, 'v14-116: at Champion the bonus pays Lifetime + Drill XP only');
+  const capped = { ...st0, prog: { ...st0.prog, tierXp: { intermediate: CFG.XP.tierCaps.intermediate - 100 } } };
+  const rt = CB.withCourseBonus(capped, { ...st1, prog: capped.prog }).state.prog;
+  assert(rt.rankXpBy[0] === 100 && rt.lifetimeXp === 300 && rt.tierXp.intermediate === CFG.XP.tierCaps.intermediate, 'v14-116: Career Rank part respects the intermediate tier cap');
+  // OTHER group: Safety Master and the Trick Shot exam use their own finish tests; two in one save pay twice
+  const safe0 = SAF.SAFETY_ORDER.slice(0, -1).reduce((s2, id) => SAF.withSafetyScore(s2, id), base());
+  const safe1 = SAF.withSafetyScore(safe0, SAF.SAFETY_ORDER[SAF.SAFETY_ORDER.length - 1]);
+  const both0 = { ...safe0, [TR.STORAGE_KEY]: { levels: {}, exam: { history: [{ score: 1 }] }, current: null } };
+  const both1 = { ...safe1, [TR.STORAGE_KEY]: { levels: {}, exam: { passed: true, history: [{ score: 9 }] }, current: null } };
+  const rb = CB.withCourseBonus(both0, both1);
+  assert(rb.awarded.map((x) => x.id).sort().join() === 'safetyMaster,trickExam' && rb.state.prog.lifetimeXp === 600, `v14-116: Safety Master and the Trick Shot Exam each pay once (${rb.awarded.map((x) => x.id)})`);
+  // PKF is not included (Learn)
+  const pk0 = { ...base(), [FUNDx.STORAGE_KEY]: { ...FUNDx.blank(), sections: Object.fromEntries(FUNDx.SECTIONS.slice(0, -1).map((x) => [x.id, { passed: true }])) } };
+  const pk1 = { ...pk0, [FUNDx.STORAGE_KEY]: { ...FUNDx.blank(), sections: Object.fromEntries(FUNDx.SECTIONS.map((x) => [x.id, { passed: true }])), exam: { ...FUNDx.blank().exam, attempts: 1, passed: true, bestOverall: 0.9 } } };
+  assert(CB.withCourseBonus(pk0, pk1).awarded.length === 0, 'v14-116: PKF courses and exams pay no course bonus');
+  // notes: Drill Sets tiles and Profile rows
+  const page = DASH.renderCoursesPage(r.state);
+  assert(/data-href="#buexam" [^>]*>[\s\S]*?<span class="courseBonusNote" data-course-bonus="fundamentals">✓ Course bonus \+300 XP<\/span>/.test(page), 'v14-116: finished set card says "✓ Course bonus +300 XP"');
+  const fresh = DASH.renderCoursesPage(storage.defaultState());
+  const todo = [...fresh.matchAll(/data-course-bonus-todo="([^"]+)"/g)].map((m) => m[1]);
+  assert(todo.length === 14 && ['#buexam', '#buexam/bachelors', '#buexam/rds', '#buexam/follow', '#safety', '#bpset', '#kicking', '#trick'].every((h) => todo.includes(h)), `v14-116: every unlocked Drill Sets & Exams card shows the bonus it pays (${todo.length})`);
+  assert(SP.setProgressBoxHTML(r.state).includes('data-course-bonus="fundamentals"') && !SP.setProgressBoxHTML(retro.state).includes('data-course-bonus='), 'v14-116: Profile row shows an earned bonus, nothing for pre-bonus finishes');
+  // Real browser: finishing BU Exam I through the app's commit() shows "+300 XP · Course bonus" once and saves the flag
+  let puppeteer = null;
+  for (const d of [process.env.PUPPETEER_DIR, path.join(root, 'node_modules'), path.join(root, '..', 'tooling', 'node_modules'), '/workspace/tooling/node_modules'].filter(Boolean)) {
+    try { puppeteer = createRequire(path.join(d, 'x.js'))('puppeteer-core'); break; } catch {}
+  }
+  const chrome = [process.env.CHROME_PATH, '/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser'].find((x) => x && fsMod.existsSync(x));
+  if (!puppeteer || !chrome) {
+    assert(false, 'v14-116: browser check needs puppeteer-core (PUPPETEER_DIR) and Chrome (CHROME_PATH)');
+  } else {
+    const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.woff2': 'font/woff2' };
+    const server = http.createServer((req, res) => {
+      let f = decodeURIComponent(new URL(req.url, 'http://x').pathname);
+      if (f.endsWith('/')) f += 'index.html';
+      const fp = path.join(root, f);
+      fsMod.readFile(fp, (e, b) => { if (e) { res.writeHead(404); res.end(); } else { res.writeHead(200, { 'Content-Type': TYPES[path.extname(fp)] || 'application/octet-stream' }); res.end(b); } });
+    });
+    await new Promise((r2) => server.listen(0, r2));
+    const browser = await puppeteer.launch({ executablePath: chrome, args: ['--no-sandbox'] });
+    try {
+      const pg = await browser.newPage();
+      await pg.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+      let a = null; let err = '';
+      for (let attempt = 0; attempt < 3 && !a; attempt++) {
+        try {
+          err = '';
+          await pg.goto(`http://127.0.0.1:${server.address().port}/#home`, { waitUntil: 'load', timeout: 30000 });
+          await pg.waitForFunction(() => document.documentElement.dataset.ready === '1', { timeout: 20000 });
+          await new Promise((r2) => setTimeout(r2, 1500));
+          a = await pg.evaluate(async () => {
+            const B = await import('./js/content/buExam.js');
+            const fin = (s, n) => B.BU_ORDER.slice(0, n).reduce((s2, id) => B.withExamScore(s2, id, 5, B.buMeta(id)?.max || 10, {}), s);
+            window.PoolIQ.commit(fin(window.PoolIQ.getState(), B.BU_ORDER.length - 1));
+            await new Promise((res) => setTimeout(res, 1700));
+            const life0 = window.PoolIQ.getState().prog.lifetimeXp;
+            window.PoolIQ.commit(fin(window.PoolIQ.getState(), B.BU_ORDER.length));
+            await new Promise((res) => setTimeout(res, 300));
+            const el = document.getElementById('xpBonusToast');
+            const out = { text: el?.textContent, show: el?.classList.contains('show'), pe: el && getComputedStyle(el).pointerEvents, gained: window.PoolIQ.getState().prog.lifetimeXp - life0, flag: window.PoolIQ.getState().prog.courseBonus?.fundamentals?.xp };
+            await new Promise((res) => setTimeout(res, 1700));
+            const life1 = window.PoolIQ.getState().prog.lifetimeXp;
+            window.PoolIQ.commit(fin(window.PoolIQ.getState(), B.BU_ORDER.length));
+            await new Promise((res) => setTimeout(res, 300));
+            out.again = window.PoolIQ.getState().prog.lifetimeXp - life1;
+            out.againShow = document.getElementById('xpBonusToast').classList.contains('show');
+            out.saved = JSON.stringify(localStorage).includes('courseBonus');
+            return out;
+          });
+        } catch (e) { err = String(e.message || e); }
+      }
+      a = a || { err };
+      assert(a.text === '+300 XP · Course bonus' && a.show && a.pe === 'none' && a.gained === 300 && a.flag === 300, `v14-116: finishing a set in the app shows "+300 XP · Course bonus" ${JSON.stringify(a)}`);
+      assert(a.again === 0 && !a.againShow && a.saved, `v14-116: saving the finished set again pays nothing; the flag is in saved state ${JSON.stringify(a)}`);
     } finally {
       await browser.close();
       server.close();

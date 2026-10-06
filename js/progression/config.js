@@ -48,6 +48,9 @@ export const XP = {
   perfectBonus: 0.25, // × base, for a perfect session (10/10)
   firstClearBonus: 1.0, // × base, the first time an item is passed
   pbBonus: 0.25, // × base, a passed session that beats your best performance
+  /** v14-116: one-time bonus when a Drill Sets & Exams set or exam is fully finished (its emblem). Lifetime + Career Rank + Drill XP, once per set. Not PKF. */
+  courseCompleteBonus: 300,
+  courseCompleteTier: 'intermediate', // the bonus's Career Rank XP counts toward this tier's cap
   passFloor: 0.6, // a PASSED session always counts at least as 6/10
   failCap: 0.69, // a failed session never counts above the 6/10 band
   participationLifetime: 5, // Lifetime XP for any finished session that earned nothing else (Rank XP stays 0)

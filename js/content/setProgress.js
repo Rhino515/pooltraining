@@ -14,6 +14,7 @@
  * still count, and the row appears as soon as those stages exist.
  */
 import { BU_EXAM_NAME, BU_ORDER, examOf } from './buExam.js';
+import { XP } from '../progression/config.js';
 import { SKILLS_EXAMS, skillsExamOf } from './buExam2.js';
 import * as moreExams from './buMore.js';
 import { SAFETY_NAME, SAFETY_ORDER, safetyOf } from './safetyMaster.js';
@@ -280,19 +281,33 @@ export function readDrillSetProgress(state) { return readSetProgress(state).filt
 /** Started PKF courses and exams (Learn > Fundamentals). */
 export function readPkfProgress(state) { return readSetProgress(state).filter(isPkfRow); }
 
-const progRowHTML = (row) => `<button type="button" class="setProgRow${row.finished ? ' is-done' : ''}" data-set="${esc(row.id)}" data-set-done="${row.finished ? 1 : 0}" data-action="go" data-href="${esc(row.href)}"><span class="setName">${esc(row.name)}</span>${row.finished ? setEmblemHTML(row) : ''}${meterHTML(row)}</button>`;
+const progRowHTML = (row, note = '') => `<button type="button" class="setProgRow${row.finished ? ' is-done' : ''}" data-set="${esc(row.id)}" data-set-done="${row.finished ? 1 : 0}" data-action="go" data-href="${esc(row.href)}"><span class="setName">${esc(row.name)}</span>${row.finished ? setEmblemHTML(row) : ''}${meterHTML(row)}${note}</button>`;
+
+/**
+ * v14-116: the one-time course bonus note. Earned (flag with XP) → "✓ Course bonus +300 XP".
+ * Not finished and never flagged → a muted "Course bonus +300 XP" (what finishing pays).
+ * Finished before the bonus existed (flag without XP) → nothing.
+ */
+export function courseBonusNoteHTML(state, row, { todo = false } = {}) {
+  if (!row || isPkfRow(row)) return '';
+  const flag = (state?.prog?.courseBonus || {})[row.id];
+  const amt = XP.courseCompleteBonus;
+  if (flag && flag.xp > 0) return `<span class="courseBonusNote" data-course-bonus="${esc(row.id)}">✓ Course bonus +${flag.xp} XP</span>`;
+  if (!flag && !row.finished && todo) return `<span class="courseBonusNote is-todo" data-course-bonus-todo="${esc(row.id)}">Course bonus +${amt} XP</span>`;
+  return '';
+}
 
 /** Profile box. Always present. Rows only for BU / Other sets or exams already started (PKF is in the Learn · PKF box). */
 export function setProgressBoxHTML(state) {
   const rows = readDrillSetProgress(state);
-  const body = rows.length ? rows.map(progRowHTML).join('') : '<p class="muted small setNone">No set or exam started.</p>';
+  const body = rows.length ? rows.map((r) => progRowHTML(r, courseBonusNoteHTML(state, r))).join('') : '<p class="muted small setNone">No set or exam started.</p>';
   return `<div class="card setProgressCard" data-set-progress><h3>Drill Sets &amp; Exams</h3>${body}</div>`;
 }
 
 /** v14-114: Profile "Learn · PKF" box. Always present. Same rows, meters and emblems as before, for started PKF courses and exams. */
 export function pkfProgressBoxHTML(state) {
   const rows = readPkfProgress(state);
-  const body = rows.length ? rows.map(progRowHTML).join('') : '<p class="muted small setNone">No PKF course started. Find them in Learn › Fundamentals.</p>';
+  const body = rows.length ? rows.map((r) => progRowHTML(r)).join('') : '<p class="muted small setNone">No PKF course started. Find them in Learn › Fundamentals.</p>';
   return `<div class="card setProgressCard pkfProgressCard" data-pkf-progress><h3><span class="eyebrow">LEARN</span> PKF Courses &amp; Exams</h3>${body}</div>`;
 }
 

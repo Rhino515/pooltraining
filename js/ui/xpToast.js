@@ -60,3 +60,30 @@ export function showXpGain(n) {
   hideTimer = setTimeout(() => { el.classList.remove('show'); total = 0; }, XP_TOAST_MS);
   return true;
 }
+
+let bonusEl = null;
+let bonusTimer = null;
+/**
+ * v14-116: a second pill just under the first for a labeled bonus, e.g. "+300 XP · Course bonus".
+ * Same look, float and 1.5s fade; never takes taps.
+ */
+export function showXpBonus(n, label) {
+  const xp = Math.round(Number(n) || 0);
+  if (xp <= 0 || suppressed || typeof document === 'undefined') return false;
+  if (!bonusEl) {
+    bonusEl = document.createElement('div');
+    bonusEl.id = 'xpBonusToast';
+    bonusEl.className = 'xpToast xpBonus';
+    bonusEl.setAttribute('role', 'status');
+    bonusEl.setAttribute('aria-live', 'polite');
+    document.body.appendChild(bonusEl);
+  }
+  bonusEl.textContent = label ? `${xpText(xp)} · ${label}` : xpText(xp);
+  bonusEl.dataset.xp = String(xp);
+  bonusEl.classList.remove('show');
+  void bonusEl.offsetWidth;
+  bonusEl.classList.add('show');
+  clearTimeout(bonusTimer);
+  bonusTimer = setTimeout(() => bonusEl.classList.remove('show'), XP_TOAST_MS);
+  return true;
+}

@@ -1,4 +1,4 @@
-const CACHE = 'pool-iq-v14-115';
+const CACHE = 'pool-iq-v14-116';
 const ASSETS = [
   './',
   './index.html',
@@ -462,6 +462,7 @@ const ASSETS = [
   './js/install.js',
   './js/profile.js',
   './js/progression/award.js',
+  './js/progression/courseBonus.js',
   './js/progression/badge.js',
   './js/progression/catalog.js',
   './js/progression/config.js',

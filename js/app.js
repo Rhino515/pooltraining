@@ -45,7 +45,8 @@ import { setDevBypass, devBypass } from './dev/gate.js';
 import { customDrills, refreshCustomDrills } from './drills.js';
 import * as CD from './customDrills.js';
 import { openSheet, closeSheet, toast, clearToast } from './ui/sheet.js';
-import { xpGain, showXpGain } from './ui/xpToast.js';
+import { xpGain, showXpGain, showXpBonus } from './ui/xpToast.js';
+import { withCourseBonus } from './progression/courseBonus.js';
 import { getGame, getBoss, getStage } from './games/registry.js';
 import { isStageUnlocked, isEndlessUnlocked, isGameUnlocked } from './games/engine.js';
 import { isBossUnlocked } from './career.js';
@@ -108,11 +109,15 @@ const view = () => document.getElementById('view');
 
 function commit(next, { silent = false } = {}) {
   const before = state;
-  state = silent ? next : derive(next);
+  // v14-116: a Drill Sets & Exams set or exam finished in this save pays its one-time course bonus (flag in prog.courseBonus)
+  const cb = silent ? { state: next, awarded: [] } : withCourseBonus(before, next);
+  state = silent ? next : derive(cb.state);
   saveState(state);
   // v14-115: every XP award goes through commit(); show a small "+N XP" pill for positive gains only
+  const bonus = cb.awarded.reduce((a, x) => a + x.xp, 0);
   const gain = xpGain(before, state);
-  if (gain > 0) showXpGain(gain);
+  if (gain - bonus > 0) showXpGain(gain - bonus);
+  if (bonus > 0) showXpBonus(bonus, 'Course bonus');
   return state;
 }
 
