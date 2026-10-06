@@ -35,8 +35,11 @@ export const RANK_DISPLAY = { format: '{rank} · {ball}-Ball', maxFormat: '{rank
 
 // ------------------------------------------------------------------ XP
 export const XP = {
-  /** Base XP for a full-performance session by difficulty tier */
+  /** Base XP for a full-performance session by difficulty tier (Table Games stages, Ghost, Boss Battles) */
   base: { beginner: 40, intermediate: 60, advanced: 90, expert: 130, pro: 180 },
+  /** v14-117: every drill (built-in, Create Drill, installed .pooliq content) uses one flat base, whatever its difficulty */
+  flatDrillBase: 60,
+  flatSources: ['drill', 'custom', 'content'],
   /** Performance curve: performance ratio ≥ at → factor of base (below the first row = 0 Rank XP). 10 attempts: 5/10 none, 6 low, 7 moderate, 8 good, 9 high, 10 full */
   curve: [
     { at: 0.6, factor: 0.25 },

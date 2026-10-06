@@ -45,7 +45,7 @@ Career keeps the existing rank names and requirements (`js/career.js`). v11 adds
 `applyAward()` in `js/progression/award.js` runs once for each finished, recorded session.
 
 1. **Performance ratio** (0–1) comes from the session: shots made / attempts, zone stars, lives left, kick contacts and so on. A passed session counts as at least 0.6 (`passFloor`). A failed session never counts above 0.69 (`failCap`).
-2. **Base XP by tier:** Beginner 40 · Intermediate 60 · Advanced 90 · Expert 130 · Pro 180. Boss Battles are ×2. A ghost match uses `clamp(race/5, 0.6, 1.8)` for Career Rank XP only while that ghost task is the next open Career task (8-Ball Ghost never is). Drill Rank XP does not come from Ghost.
+2. **Base XP:** every **drill** (built-in drills, Create Drill drills and installed `.pooliq` content: sources `drill`, `custom`, `content`) uses one flat base of **60**, whatever its difficulty (`XP.flatDrillBase`, since v14-117). An author's own `baseXP` in a `.pooliq` file still overrides it. Table Games stages, Ghost and Boss Battles keep the base by tier: Beginner 40 · Intermediate 60 · Advanced 90 · Expert 130 · Pro 180. Boss Battles are ×2. Difficulty still decides the tier cap below. A ghost match uses `clamp(race/5, 0.6, 1.8)` for Career Rank XP only while that ghost task is the next open Career task (8-Ball Ghost never is). Drill Rank XP does not come from Ghost.
 3. **Performance curve** (the fraction of base XP you earn):
 
    | Ratio ≥ | 0.6 | 0.7 | 0.8 | 0.9 | 1.0 |
@@ -54,6 +54,7 @@ Career keeps the existing rank names and requirements (`js/career.js`). v11 adds
 
    Below 0.6 you earn 0 Rank XP and 5 Lifetime XP for participation.
 4. **Bonuses** (× base): first clear +1.0, perfect session +0.25, personal best (passed and better than your best) +0.25.
+   Drill examples with the flat 60: first pass at 10/10 = 60 + 15 perfect + 60 first clear = **135**. A 10/10 with no PB and no repeat reduction = 60 + 15 = **75**. A passed 8/10 that is not a PB = 60 × 0.75 = **45**. A 10/10 repeat on an item that is already MASTERED gets the anti-farming cut: 38 Lifetime and 8 Rank XP (Drill XP follows Rank).
 5. **Anti-farming:**
    - Item already STRONG ⭐⭐: ×0.6.
    - Item already MASTERED ⭐⭐⭐: Rank XP ×0.1, Lifetime ×0.5. The award shows a `MASTERED REPEAT` flag.

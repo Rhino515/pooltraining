@@ -117,7 +117,9 @@ export function applyAward(state, act, opts = {}) {
   const perf = adjustedPerf(ratio, passed);
   const prevStars = masteryStars(prevRec);
   const tier = TIERS.includes(item.tier) ? item.tier : 'beginner';
-  const base = (item.baseXP ?? XP.base[tier]) * (XP.sourceMult[item.source] ?? 1);
+  // v14-117: drills (drill / custom / content) use one flat base; games, Ghost and Boss keep the tier base. Author baseXP overrides still win.
+  const flat = XP.flatSources.includes(item.source);
+  const base = (item.baseXP ?? (flat ? XP.flatDrillBase : XP.base[tier])) * (XP.sourceMult[item.source] ?? 1);
   const flags = [];
   let raw = base * curveFactor(perf);
   const perfect = passed && ratio >= 0.999;
@@ -143,7 +145,7 @@ export function applyAward(state, act, opts = {}) {
   if (item.rankXpEligible !== false && !champion && raw > 0) {
     let rTier = tier;
     let rBase = base;
-    if (item.source === 'custom' && tierIndex(tier) > tierIndex(XP.customDrillMaxTier)) { rTier = XP.customDrillMaxTier; rBase = (XP.base[rTier]) * (XP.sourceMult.custom ?? 1); }
+    if (item.source === 'custom' && tierIndex(tier) > tierIndex(XP.customDrillMaxTier)) { rTier = XP.customDrillMaxTier; rBase = (item.baseXP ?? (flat ? XP.flatDrillBase : XP.base[rTier])) * (XP.sourceMult.custom ?? 1); }
     let want = Math.round(raw * (rBase / base) * rankF);
     const cap = XP.tierCaps[rTier];
     const have = prog.tierXp[rTier] || 0;

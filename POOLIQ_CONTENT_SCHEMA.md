@@ -30,7 +30,7 @@ This document is written so a person *or another AI* can produce valid files. Ex
 | `attribution` | no | object | `author` (≤80), `sourceName` (≤120), `sourceURL` (http/https only, ≤500), `notes` (≤600). **Optional. Never claim an author you do not know — leave it out.** |
 | `careerEligible` | no | boolean | drills only — see §12 |
 | `rankXpEligible` | no | boolean | v11 — installed content earns Career Rank XP, mastery, skill levels and Drill Rank (see §12). Default: not eligible |
-| `baseXP` | no | integer 0–500 | v11 — XP for a full-performance session (default: by tier — 40 / 60 / 90 / 130 / 180) |
+| `baseXP` | no | integer 0–500 | v11 — XP for a full-performance session (default: a flat 60 for every drill since v14-117, whatever the difficulty) |
 | `primarySkill` | no | skill id or name | v11 — main skill trained (weight 1) |
 | `secondarySkills` | no | array ≤ 6 of skills | v11 — also trained (weight 0.5 each) |
 | `skills` | no | array ≤ 12 of skills | v11 — skills trained (weight 0.5 each unless `primarySkill`) |

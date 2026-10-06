@@ -799,7 +799,7 @@ let state = storage.defaultState();
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
   const missing = walk(path.join(root, 'js')).filter((f) => f.endsWith('.js')).map((f) => './' + path.relative(root, f)).filter((f) => !sw.includes(`'${f}'`));
-  assert(/'pool-iq-v14-116'/.test(sw), 'service worker cache is pool-iq-v14-116');
+  assert(/'pool-iq-v14-117'/.test(sw), 'service worker cache is pool-iq-v14-117');
   assertAll('service worker precaches every JS module (incl. simulator + Create Drill)', missing.map((m) => `missing ${m}`));
   const wordN = { one: 1, two: 2, three: 3, four: 4 };
   const probs = [];
@@ -1568,7 +1568,7 @@ let state = storage.defaultState();
   // first clear / PB / perfect bonuses
   st = fresh();
   let r = AW.applyAward(st, { item: item(), ratio: 0.8, passed: true, at: T0 });
-  const base = CFG.XP.base.beginner;
+  const base = CFG.XP.flatSources.includes(item().source) ? CFG.XP.flatDrillBase : CFG.XP.base.beginner; // v14-117: drills use the flat base
   assert(r.award.flags.includes('FIRST CLEAR') && r.award.lifetime === Math.round(base * 0.75 + base * CFG.XP.firstClearBonus), `v11: first clear bonus (${r.award.lifetime} XP)`);
   r = AW.applyAward(r.state, { item: item(), ratio: 0.9, passed: true, at: T0 + 1000 });
   assert(r.award.flags.includes('PERSONAL BEST') && r.award.lifetime === Math.round(base * 0.9 + base * CFG.XP.pbBonus), `v11: personal best bonus (${r.award.lifetime} XP)`);
@@ -2077,7 +2077,7 @@ let state = storage.defaultState();
   const dash = src('js/dashboard.js');
   const friends = src('js/ui/friends.js');
   const vendor = src('js/vendor/supabase.js');
-  assert(/'pool-iq-v14-116'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw) && !/'pool-iq-v14-5c'/.test(sw), 'v14: service worker cache is pool-iq-v14-116');
+  assert(/'pool-iq-v14-117'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw) && !/'pool-iq-v14-5c'/.test(sw), 'v14: service worker cache is pool-iq-v14-117');
   assert(sw.includes(`'./js/vendor/supabase.js'`) && sw.includes(`'./js/cloud/controller.js'`) && sw.includes(`'./js/ui/account.js'`), 'v13: sw precaches the bundled supabase-js and the cloud modules');
   assert(/supabase-js\/2\.117\.2/.test(vendor) && /createClient/.test(vendor) && !/cdn\.jsdelivr|unpkg\.com|esm\.sh/.test(idx + sw), 'v13: official supabase-js v2 UMD build is bundled locally (no CDN)');
   assert(/nqfwlpfyccbqetcyjijf/.test(cfg) && /sb_publishable_/.test(cfg) && !/sb_secret_|service_role|sbp_[0-9a-f]{10}/.test(cfg + sql + docs), 'v13: config carries the project ref + publishable key only (no secrets anywhere)');
@@ -2286,7 +2286,7 @@ let state = storage.defaultState();
   assert(!fixSrc.includes('drill_overrides') && !saveFn.includes('.delete('), 'v14-26: the editor never deletes the published row');
   assert(oeSrc.includes('publishedDoc(ch.id)') && !oeSrc.slice(oeSrc.indexOf('export function applyDrillEdit'), oeSrc.indexOf('export function editCount')).includes('getDrillEdit'), 'v14-26: the live drill is the published row, not the phone copy');
   assert(pubSrc.includes('andrewaphay') === false && pubSrc.includes('ownerAccountSignedIn'), 'v14-26: the client refuses publish unless the owner account is signed in');
-  assert(swSrc.includes('pool-iq-v14-116') && swSrc.includes('skipWaiting') && swSrc.includes('clients.claim'), 'v14-28: new cache skipWaiting and clients.claim');
+  assert(swSrc.includes('pool-iq-v14-117') && swSrc.includes('skipWaiting') && swSrc.includes('clients.claim'), 'v14-28: new cache skipWaiting and clients.claim');
   assert(fixSrc.includes('id="fixImport"') && fixSrc.includes('accept=".pooliq,.json,application/json,application/octet-stream,text/plain,*/*"') && !fixSrc.includes('text/json'), 'v14-27: IMPORT DRILL accept lets Android select .pooliq and .json');
   assert(appSrc.includes('controllerchange') && appSrc.includes('pooliq-sw-reloaded') && appSrc.includes('location.reload()'), 'v14-26: an open app reloads once when the new worker activates');
   const PUB = await import(js('drills/published.js'));
@@ -2611,7 +2611,7 @@ let state = storage.defaultState();
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const appSrc = fsMod.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
   assert(['js/content/pkfCueBallAssets.js', 'js/content/pkfCueBallCourse.js', 'js/ui/pkfCueBallPlay.js', 'images/pkf-cb/PKF_CueBall_PDF_037.jpg', 'images/pkf-cb/PKF_CueBall_PDF_150.jpg'].every((f) => swSrc.includes(`'./${f}'`)), 'v14-97: service worker precaches cue-ball course + original JPEGs');
-  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-97: CACHE bumped to pool-iq-v14-116');
+  assert(/const CACHE = 'pool-iq-v14-117'/.test(swSrc), 'v14-97: CACHE bumped to pool-iq-v14-117');
   assert(appSrc.includes("name === 'pkfcb'") && appSrc.includes("pkfcb: 'learn'"), 'v14-97: #pkfcb routes under the Learn tab (v14-113)');
   assert(!('pkfCueBallControl' in st0), 'v14-97: state.pkfCueBallControl is not in defaultState');
   const courses = DASH.renderLearn(['fundamentals'], st0); // v14-113: PKF list moved to Learn > Fundamentals
@@ -2672,7 +2672,7 @@ let state = storage.defaultState();
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const appSrc = fsMod.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
   assert(['js/content/pkfFundAssets.js', 'js/content/pkfFundamentalsCourse.js', 'js/ui/pkfFundPlay.js', 'images/pkf-fund/PKF_Fundamentals_PDF_009.jpg', 'images/pkf-fund/PKF_Fundamentals_PDF_034.jpg'].every((f) => swSrc.includes(`'./${f}'`)), 'v14-98: service worker precaches fundamentals course + original JPEGs');
-  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-98: CACHE bumped to pool-iq-v14-116');
+  assert(/const CACHE = 'pool-iq-v14-117'/.test(swSrc), 'v14-98: CACHE bumped to pool-iq-v14-117');
   assert(appSrc.includes("name === 'pkffund'") && appSrc.includes("pkffund: 'learn'"), 'v14-98: #pkffund routes under the Learn tab (v14-113)');
   assert(!('pkfFundamentals' in st0), 'v14-98: state.pkfFundamentals is not in defaultState');
   const courses = DASH.renderLearn(['fundamentals'], st0); // v14-113: PKF list moved to Learn > Fundamentals
@@ -2712,7 +2712,7 @@ let state = storage.defaultState();
   const CBA = await import(js('content/pkfCueBallAssets.js'));
   const CBP = await import(js('ui/pkfCueBallPlay.js'));
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-99: CACHE bumped to pool-iq-v14-116');
+  assert(/const CACHE = 'pool-iq-v14-117'/.test(swSrc), 'v14-99: CACHE bumped to pool-iq-v14-117');
   assert(CBA.PAGES[77].printed === 58 && CBA.PAGES[72].printed === 55 && CBA.PAGES[150].printed === 128 && CBA.PAGES[75].printed == null, 'v14-99: printed pages follow the JPEG "Page:" footers (inserts unnumbered)');
   const ids = [...CB.LESSONS, ...CB.EXAM_ITEMS].map((l) => l.id);
   const cites = ids.flatMap((id) => [CB.figureHTML(id), CB.revealFigureHTML(id)]).join('').match(/<p class="pkfbCite[^>]*>[^<]*<\/p>/g) || [];
@@ -2758,7 +2758,7 @@ let state = storage.defaultState();
   };
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const appSrc = fsMod.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-100: CACHE bumped to pool-iq-v14-116');
+  assert(/const CACHE = 'pool-iq-v14-117'/.test(swSrc), 'v14-100: CACHE bumped to pool-iq-v14-117');
   const imgs = Array.from({ length: 24 }, (_, i) => `images/pkf-smcb/PKF_CenterBall_PDF_${String(35 + i).padStart(3, '0')}.jpg`);
   assert(['js/content/pkfShotMakingAssets.js', 'js/content/pkfShotMakingCourse.js', 'js/ui/pkfShotMakingPlay.js', ...imgs].every((f) => swSrc.includes(`'./${f}'`) && fsMod.existsSync(path.join(root, f))), 'v14-100: service worker precaches the course + all 24 original JPEGs');
   assert(appSrc.includes("name === 'pkfsmcb'") && appSrc.includes("pkfsmcb: 'learn'") && appSrc.includes('migrateShotMakingFromCueBall(st0)'), 'v14-100: #pkfsmcb routes under Learn (v14-113); boot runs the one-time migration');
@@ -2822,7 +2822,7 @@ let state = storage.defaultState();
   const DASH = await import(js('dashboard.js'));
   const CL = await import(js('cloud/client.js'));
   const swSrc = (await import('fs')).readFileSync(path.join(root, 'sw.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-101: CACHE bumped to pool-iq-v14-116');
+  assert(/const CACHE = 'pool-iq-v14-117'/.test(swSrc), 'v14-101: CACHE bumped to pool-iq-v14-117');
   CL.setCurrentUserForTests(null);
   const html = DASH.renderCoursesPage(storage.defaultState());
   // v14-113: PKF moved to Learn > Fundamentals. Drill Sets & Exams keeps BU EXAMS and OTHER only.
@@ -2848,7 +2848,7 @@ let state = storage.defaultState();
 // ---------------------------------------------------------------- v14-102: PKF SKIP TABLE STEP + Drill XP for recorded table steps
 {
   const swSrc = (await import('fs')).readFileSync(path.join(root, 'sw.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-102: CACHE bumped to pool-iq-v14-116');
+  assert(/const CACHE = 'pool-iq-v14-117'/.test(swSrc), 'v14-102: CACHE bumped to pool-iq-v14-117');
   assert(swSrc.includes("'./js/content/pkfTableStep.js'"), 'v14-102: pkfTableStep.js precached');
   const TS = await import(js('content/pkfTableStep.js'));
   assert(TS.SKIP_LABEL === 'SKIP TABLE STEP' && TS.tableStepItem('k', 'C', { id: 'x' }).tier === 'intermediate', 'v14-102: skip label + table step = default (difficulty 3) drill');
@@ -2870,7 +2870,7 @@ let state = storage.defaultState();
 // ---------------------------------------------------------------- v14-105: restore crash fix (VALIDATE had no poolIQRuleSet entry)
 {
   const swSrc = (await import('fs')).readFileSync(path.join(root, 'sw.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-105: CACHE bumped to pool-iq-v14-116');
+  assert(/const CACHE = 'pool-iq-v14-117'/.test(swSrc), 'v14-105: CACHE bumped to pool-iq-v14-117');
   const VR = await import(js('vault.js'));
   const SY = await import(js('cloud/sync.js'));
   assertAll('v14-105: every DATA_KEYS entry has a backup validator', VR.DATA_KEYS.filter((k) => !VR.hasValidator(k)));
@@ -2916,7 +2916,7 @@ let state = storage.defaultState();
   };
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const appSrc = fsMod.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-106: CACHE bumped to pool-iq-v14-116');
+  assert(/const CACHE = 'pool-iq-v14-117'/.test(swSrc), 'v14-106: CACHE bumped to pool-iq-v14-117');
   const imgs = Array.from({ length: 84 }, (_, i) => `images/pkf-pattern/PKF_PatternPlay_PDF_${String(75 + i).padStart(3, '0')}.jpg`);
   assert(['js/content/pkfPatternPlayAssets.js', 'js/content/pkfPatternPlayCourse.js', 'js/ui/pkfPatternPlayPlay.js', ...imgs].every((f) => swSrc.includes(`'./${f}'`) && fsMod.existsSync(path.join(root, f))), 'v14-106: service worker precaches the course + all 84 original JPEGs');
   assert(appSrc.includes("name === 'pkfpattern'") && appSrc.includes("pkfpattern: 'learn'"), 'v14-106: #pkfpattern routes under Learn (v14-113)');
@@ -2960,7 +2960,7 @@ let state = storage.defaultState();
   const fsMod = await import('fs');
   const DASH = await import(js('dashboard.js'));
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-107: CACHE bumped to pool-iq-v14-116');
+  assert(/const CACHE = 'pool-iq-v14-117'/.test(swSrc), 'v14-107: CACHE bumped to pool-iq-v14-117');
   const html = DASH.renderLearn(['fundamentals']);
   const at = html.indexOf('data-learn-pkf="pkffund"');
   const body = html.slice(html.indexOf('</h1>'));
@@ -2977,7 +2977,7 @@ let state = storage.defaultState();
   const LEARN = await import(js('learn.js'));
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const css = fsMod.readFileSync(path.join(root, 'css', 'styles.css'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-109: CACHE bumped to pool-iq-v14-116');
+  assert(/const CACHE = 'pool-iq-v14-117'/.test(swSrc), 'v14-109: CACHE bumped to pool-iq-v14-117');
   assert(/\.title\.learnPage > h1\{font-size:clamp\(\d+px,[\d.]+vw,\d+px\);max-width:100%/.test(css), 'v14-109: Learn titles size with clamp()+vw and never exceed the column');
   assert(typeof LEARN.fitLearnTitle === 'function' && typeof LEARN.fitLearnTitles === 'function' && LEARN.LEARN_TITLE_SEL === '.title.learnPage > h1', 'v14-109: learn.js exports the title fit-to-width helper');
   assert(LEARN.learnHTML(['fundamentals']).includes('<div class="title learnPage" data-page-learn>') && LEARN.learnHTML(['fundamentals']).includes('<h1>Fundamentals</h1>'), 'v14-109: Fundamentals title markup unchanged');
@@ -3038,7 +3038,7 @@ let state = storage.defaultState();
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const dash = fsMod.readFileSync(path.join(root, 'js', 'dashboard.js'), 'utf8');
   const fr = fsMod.readFileSync(path.join(root, 'js', 'ui', 'friends.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-112: CACHE bumped to pool-iq-v14-116');
+  assert(/const CACHE = 'pool-iq-v14-117'/.test(swSrc), 'v14-112: CACHE bumped to pool-iq-v14-117');
   for (const [k, w, h] of [['8', 338, 323], ['9', 333, 323], ['10', 343, 301]]) {
     const f = `./icons/tg-${k}-v3.png`;
     const file = path.join(root, 'icons', `tg-${k}-v3.png`);
@@ -3084,7 +3084,7 @@ let state = storage.defaultState();
   };
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const appSrc = fsMod.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-111: CACHE bumped to pool-iq-v14-116');
+  assert(/const CACHE = 'pool-iq-v14-117'/.test(swSrc), 'v14-111: CACHE bumped to pool-iq-v14-117');
   const imgs = Array.from({ length: 66 }, (_, i) => `images/pkf-advanced/PKF_Advanced_PDF_${159 + i}.jpg`);
   assert(['js/content/pkfAdvancedPlayAssets.js', 'js/content/pkfAdvancedPlaySafetyCourse.js', 'js/ui/pkfAdvancedPlaySafetyPlay.js', ...imgs].every((f) => swSrc.includes(`'./${f}'`) && fsMod.existsSync(path.join(root, f))), 'v14-111: service worker precaches the course + all 66 original JPEGs (PDF 159–224)');
   assert(appSrc.includes("name === 'pkfadv'") && appSrc.includes("pkfadv: 'learn'"), 'v14-111: #pkfadv routes under Learn (v14-113)');
@@ -3130,7 +3130,7 @@ let state = storage.defaultState();
   const CL = await import(js('cloud/client.js'));
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const appSrc = fsMod.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-113: CACHE bumped to pool-iq-v14-116');
+  assert(/const CACHE = 'pool-iq-v14-117'/.test(swSrc), 'v14-113: CACHE bumped to pool-iq-v14-117');
   CL.setCurrentUserForTests(null);
   const st = storage.defaultState();
   const ds = DASH.renderCoursesPage(st);
@@ -3171,7 +3171,7 @@ let state = storage.defaultState();
   const FUND = await import(js('content/pkfFundamentalsCourse.js'));
   const SM = await import(js('content/pkfShotMakingCourse.js'));
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-114: CACHE bumped to pool-iq-v14-116');
+  assert(/const CACHE = 'pool-iq-v14-117'/.test(swSrc), 'v14-114: CACHE bumped to pool-iq-v14-117');
   CL.setCurrentUserForTests(null);
   const st0 = storage.defaultState();
   // folded group header with a chevron and a course count; never opened by default (Drill Sets groups are not persisted either)
@@ -3215,7 +3215,7 @@ let state = storage.defaultState();
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const appSrc = fsMod.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
   const css = fsMod.readFileSync(path.join(root, 'css', 'styles.css'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc), 'v14-115: CACHE bumped to pool-iq-v14-116');
+  assert(/const CACHE = 'pool-iq-v14-117'/.test(swSrc), 'v14-115: CACHE bumped to pool-iq-v14-117');
   assert(swSrc.includes("'./js/ui/xpToast.js'"), 'v14-115: xpToast.js precached');
   assert(/import \{ xpGain, showXpGain[^}]*\} from '\.\/ui\/xpToast\.js';/.test(appSrc) && /function commit\(next[^)]*\) \{\n  const before = state;[\s\S]*?saveState\(state\);[\s\S]*?const gain = xpGain\(before, state\);\n  if \(gain - bonus > 0\) showXpGain\(gain - bonus\);/.test(appSrc), 'v14-115: commit() (every XP award) shows the gain');
   assert(!/replaceAndReload[^\n]*showXpGain|showXpGain[^\n]*restore/i.test(appSrc), 'v14-115: restores never call the pill (they reload the page)');
@@ -3304,7 +3304,7 @@ let state = storage.defaultState();
   const DASH = await import(js('dashboard.js'));
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const appSrc = fsMod.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-116'/.test(swSrc) && swSrc.includes("'./js/progression/courseBonus.js'"), 'v14-116: CACHE bumped and courseBonus.js precached');
+  assert(/const CACHE = 'pool-iq-v14-117'/.test(swSrc) && swSrc.includes("'./js/progression/courseBonus.js'"), 'v14-116: CACHE bumped and courseBonus.js precached');
   assert(CFG.XP.courseCompleteBonus === 300 && CFG.XP.courseCompleteTier === 'intermediate', 'v14-116: XP.courseCompleteBonus = 300 in config.js');
   assert(/const cb = silent \? \{ state: next, awarded: \[\] \} : withCourseBonus\(before, next\);\n  state = silent \? next : derive\(cb\.state\);/.test(appSrc) && appSrc.includes("showXpBonus(bonus, 'Course bonus')"), 'v14-116: commit() pays the bonus before derive and shows "+300 XP · Course bonus"');
   const base = () => ({ ...storage.defaultState(), prog: { ...AW.emptyProg(), v: CFG.PROGRESSION_VERSION, rankSeen: 0 } });
@@ -3413,6 +3413,51 @@ let state = storage.defaultState();
       server.close();
     }
   }
+}
+
+// ---------------------------------------------------------------- v14-117: every drill uses one flat base XP of 60
+{
+  const fsMod = await import('fs');
+  const CFG = await import(js('progression/config.js'));
+  const AW = await import(js('progression/award.js'));
+  const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
+  assert(/const CACHE = 'pool-iq-v14-117'/.test(swSrc), 'v14-117: CACHE bumped to pool-iq-v14-117');
+  assert(CFG.XP.flatDrillBase === 60 && CFG.XP.flatSources.join() === 'drill,custom,content', 'v14-117: XP.flatDrillBase = 60 for drill, custom and content');
+  assert(JSON.stringify(CFG.XP.base) === JSON.stringify({ beginner: 40, intermediate: 60, advanced: 90, expert: 130, pro: 180 }) && JSON.stringify(CFG.XP.tierCaps) === JSON.stringify({ beginner: 5000, intermediate: 9000, advanced: 14000, expert: 20000, pro: null }), 'v14-117: tier bases (games, Ghost, Boss) and tier caps unchanged');
+  const T0 = Date.UTC(2026, 9, 5, 12);
+  const fresh = () => ({ ...storage.defaultState(), prog: { ...AW.emptyProg(), v: CFG.PROGRESSION_VERSION, rankSeen: 0 } });
+  const it = (o = {}) => ({ key: 'v117:a', name: 'Flat XP', source: 'drill', tier: 'beginner', drillRank: true, rankXpEligible: true, ...o });
+  for (const source of CFG.XP.flatSources) {
+    for (const tier of ['beginner', 'intermediate', 'advanced', 'expert', 'pro']) {
+      const r = AW.applyAward(fresh(), { item: it({ key: `v117:${source}:${tier}`, source, tier }), ratio: 1, passed: true, at: T0 });
+      assert(r.award.lifetime === 135 && r.award.rank === 135 && r.award.drill === 135, `v14-117: ${source} ${tier}: first 10/10 pass = 135 (${r.award.lifetime}/${r.award.rank}/${r.award.drill})`);
+    }
+  }
+  // 8/10 repeat (passed, not a PB) = 45; 10/10 with only the perfect bonus = 75; 10/10 PB after 8/10 = 90
+  let r = AW.applyAward(fresh(), { item: it({ tier: 'expert' }), ratio: 0.8, passed: true, at: T0 });
+  assert(r.award.lifetime === 105, `v14-117: first pass at 8/10 = 45 + 60 first clear = 105 (${r.award.lifetime})`);
+  const r8 = AW.applyAward(r.state, { item: it({ tier: 'expert' }), ratio: 0.8, passed: true, at: T0 + 1000 });
+  assert(r8.award.lifetime === 45 && r8.award.rank === 45, `v14-117: 8/10 repeat = 45 (${r8.award.lifetime})`);
+  const rpb = AW.applyAward(r8.state, { item: it({ tier: 'expert' }), ratio: 1, passed: true, at: T0 + 2000 });
+  assert(rpb.award.lifetime === 90 && rpb.award.flags.includes('PERSONAL BEST'), `v14-117: 10/10 personal best = 90 (${rpb.award.lifetime})`);
+  const hard = { strong: 1.5, mastered: 1.5 }; // an item whose mastery bar is never reached, so no repeat reduction
+  let rn = AW.applyAward(fresh(), { item: it({ key: 'v117:n', mastery: hard }), ratio: 1, passed: true, at: T0 });
+  rn = AW.applyAward(rn.state, { item: it({ key: 'v117:n', mastery: hard }), ratio: 1, passed: true, at: T0 + 1000 });
+  assert(rn.award.lifetime === 75 && rn.award.flags.join() === 'PERFECT', `v14-117: normal 10/10 repeat = 75 (${rn.award.lifetime} ${rn.award.flags})`);
+  const rm = AW.applyAward(rpb.state, { item: it({ tier: 'expert' }), ratio: 1, passed: true, at: T0 + 86400000 }); // next day, so only the mastered cut applies
+  assert(rm.award.flags.includes('MASTERED REPEAT') && rm.award.lifetime === 38 && rm.award.rank === 8, `v14-117: anti-farming still applies to mastered repeats (${rm.award.lifetime}/${rm.award.rank})`);
+  // games, Ghost and Boss keep the tier base; author baseXP still wins; Ball Pocketing medal gate kept
+  const arc = AW.applyAward(fresh(), { item: it({ key: 'v117:arc', source: 'arcade', tier: 'advanced' }), ratio: 1, passed: true, at: T0 });
+  const boss = AW.applyAward(fresh(), { item: it({ key: 'v117:boss', source: 'boss', tier: 'beginner', drillRank: false }), ratio: 1, passed: true, at: T0 });
+  const ghost = AW.applyAward(fresh(), { item: it({ key: 'v117:ghost', source: 'ghost', tier: 'pro', drillRank: false }), ratio: 1, passed: true, at: T0 });
+  assert(arc.award.lifetime === Math.round(90 * 2.25) && boss.award.lifetime === Math.round(80 * 2.25) && ghost.award.lifetime === Math.round(180 * 2.25), `v14-117: Table Games, Boss and Ghost keep the tier base (${arc.award.lifetime}/${boss.award.lifetime}/${ghost.award.lifetime})`);
+  const own = AW.applyAward(fresh(), { item: it({ key: 'v117:own', source: 'content', tier: 'advanced', baseXP: 120 }), ratio: 1, passed: true, at: T0 });
+  assert(own.award.lifetime === 270, `v14-117: a .pooliq author baseXP still overrides (${own.award.lifetime})`);
+  const cust = AW.applyAward(fresh(), { item: it({ key: 'v117:c', source: 'custom', tier: 'pro' }), ratio: 1, passed: true, at: T0 });
+  assert(cust.award.rank === 135 && cust.state.prog.tierXp.intermediate === 135 && !cust.state.prog.tierXp.pro, 'v14-117: Create Drill pro still counts toward the Intermediate cap, at the flat 60');
+  const bp = AW.applyAward(fresh(), { item: it({ key: 'v117:bp', category: 'Ball Pocketing' }), ratio: 1, passed: true, at: T0 });
+  const bpg = AW.applyAward(fresh(), { item: it({ key: 'v117:bpg', category: 'Ball Pocketing' }), ratio: 1, passed: true, at: T0, medal: 'Gold' });
+  assert(bp.award.drill === 0 && bpg.award.drill === 135, 'v14-117: Ball Pocketing medal gate for Drill XP kept');
 }
 
 console.log('\n--- Summary ---');
