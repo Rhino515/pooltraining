@@ -45,6 +45,7 @@ import { setDevBypass, devBypass } from './dev/gate.js';
 import { customDrills, refreshCustomDrills } from './drills.js';
 import * as CD from './customDrills.js';
 import { openSheet, closeSheet, toast, clearToast } from './ui/sheet.js';
+import { xpGain, showXpGain } from './ui/xpToast.js';
 import { getGame, getBoss, getStage } from './games/registry.js';
 import { isStageUnlocked, isEndlessUnlocked, isGameUnlocked } from './games/engine.js';
 import { isBossUnlocked } from './career.js';
@@ -106,8 +107,12 @@ let bpViewLevel = null;
 const view = () => document.getElementById('view');
 
 function commit(next, { silent = false } = {}) {
+  const before = state;
   state = silent ? next : derive(next);
   saveState(state);
+  // v14-115: every XP award goes through commit(); show a small "+N XP" pill for positive gains only
+  const gain = xpGain(before, state);
+  if (gain > 0) showXpGain(gain);
   return state;
 }
 

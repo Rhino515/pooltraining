@@ -2100,3 +2100,8 @@ header{
 .pkfadvPage > .bigBtn{margin:6px 0}
 .pkfadvLite .pkfLiteBar{flex-wrap:wrap}
 .pkfadvPage .kickDots i{padding:0}
+/* v14-115: "+N XP" pill under the header. Floats up and fades out in ~1.5s; never takes taps. */
+.xpToast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 86px);z-index:70;transform:translate(-50%,6px);padding:5px 12px;border-radius:99px;background:linear-gradient(90deg,#0b2036,#0f1c2c);border:1px solid #1f5f99;box-shadow:0 0 16px #0a9dff40,0 6px 18px #0009;color:#f6c453;font-size:13px;font-weight:900;letter-spacing:.04em;white-space:nowrap;text-shadow:0 0 10px #f6c45355;opacity:0;pointer-events:none;user-select:none}
+.xpToast.show{animation:xpFloat 1.5s ease-out forwards}
+@keyframes xpFloat{0%{opacity:0;transform:translate(-50%,8px) scale(.92)}12%{opacity:1;transform:translate(-50%,0) scale(1)}70%{opacity:1;transform:translate(-50%,-8px)}100%{opacity:0;transform:translate(-50%,-16px)}}
+@media (prefers-reduced-motion:reduce){.xpToast.show{animation:xpFade 1.5s linear forwards}@keyframes xpFade{0%,75%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,0)}}}
