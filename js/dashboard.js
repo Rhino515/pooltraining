@@ -336,6 +336,11 @@ function coursesCardHTML() {
   return `<button type="button" class="coursesCard" data-action="go" data-href="#courses" data-courses="1"><img src="./images/courses/efren-reyes.jpg" alt="" width="1400" height="530"/><span class="coursesLabel">Drill Sets & Exams</span></button>`;
 }
 
+/** Small "where to start" pointer above the collapsed groups (static, no stored state). */
+function startHereHTML() {
+  return `<div class="card dsStart" data-ds-start="pkffund"><span class="dsStartText"><span class="eyebrow">NEW HERE?</span><b>Start with PKF Fundamentals</b><small>It’s the first course in the PKF curriculum.</small></span><button type="button" class="chip dsStartGo" data-action="go" data-href="#pkffund">OPEN</button></div>`;
+}
+
 /**
  * One labeled group on Drill Sets & Exams. Collapsed by default (not persisted); tap the header to expand.
  * Tiles are the same banners as before, unchanged.
@@ -358,6 +363,7 @@ export function renderCoursesPage(state) {
     + pkfBankBannersHTML(state, { dev });
   const other = safetyBannerHTML() + ballPocketBannerHTML() + offRailBannersHTML(state) + trickBannersHTML(state);
   return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#drills">‹ Drills</button><span class="eyebrow">DRILL LIBRARY</span><h1>Drill Sets & Exams</h1></div>
+    ${startHereHTML()}
     <div class="dsGroups">
     ${courseGroupHTML('bu', 'BU EXAMS', 'Billiard University · Dr. Dave', bu)}
     ${courseGroupHTML('pkf', 'PKF', 'Courses in curriculum order', pkf)}
