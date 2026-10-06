@@ -28,6 +28,7 @@ import { createPkfPatternPlayScreen } from './ui/pkfPatternPlayPlay.js';
 import { createPkfAdvScreen } from './ui/pkfAdvancedPlaySafetyPlay.js';
 import { migrateFromCueBall as migrateShotMakingFromCueBall } from './content/pkfShotMakingCourse.js';
 import { renderHome, renderCareerPage, renderDrillsPage, renderCoursesPage, renderArcade, renderGameLobby, renderBossPage, renderProfile, renderSettings, renderLearn, homeAuthHTML } from './dashboard.js';
+import { setHistFilter } from './drillHistory.js';
 import { renderAnalyzePage, bindAnalyzeHandlers } from './analyze.js';
 import { renderGhostLobby, renderGhostMatch, newGhostSession, newEightSession, applyRack, applyUndo, applyBreak, setBreakMade, useBallInHand, rulesSheetHTML, maxUnlockedBalls, matchOver } from './ghost.js';
 import { createPlayScreen } from './ui/play.js';
@@ -547,6 +548,10 @@ function handleAction(action, el, e) {
     case 'locked-stage':
       toast('Locked — pass the previous stage first');
       break;
+    case 'hist-filter':
+      setHistFilter(el.dataset.v);
+      if (route.name === 'profile' || route.name === 'stats') renderRoute();
+      return;
     case 'drill-filter':
       drillFilter = el.dataset.v;
       renderRoute();

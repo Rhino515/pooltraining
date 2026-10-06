@@ -39,6 +39,7 @@ import { ownerAccountSignedIn, isUnlocked as devOn } from './dev/dev.js';
 import { devBypass } from './dev/gate.js';
 import { devSwitchHTML } from './ui/dev.js';
 import { homeAuthHTML } from './ui/account.js';
+import { drillHistoryHTML } from './drillHistory.js';
 export { homeAuthHTML };
 
 function nextUpCard(state) {
@@ -324,6 +325,7 @@ export function renderProfile(state) {
     ${careerHeaderHTML(state, { compact: true })}
     ${drillRankCardHTML(state, { compact: true })}
     ${ballPocketRankCardHTML(state)}
+    ${drillHistoryHTML(state)}
     ${pkfProgressBoxHTML(state)}
     ${setProgressBoxHTML(state)}
     ${accomplishmentHTML(state)}
