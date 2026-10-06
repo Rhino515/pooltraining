@@ -197,9 +197,9 @@ const TABLE_MATCHES = [
 const TG_SRC = {
   friends: './icons/tg-friends.png',
   ghost: './icons/tg-ghost.png',
-  '8': './icons/tg-8.png',
-  '9': './icons/tg-9.png',
-  '10': './icons/tg-10.png',
+  '8': './icons/tg-8-v2.png',
+  '9': './icons/tg-9-v2.png',
+  '10': './icons/tg-10-v2.png',
   bank: './icons/tg-bank.png',
   upusa: './icons/tg-upusa.png',
   loop: './icons/tg-loop.png',

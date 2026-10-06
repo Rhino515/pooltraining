@@ -54,9 +54,9 @@ const PVP_TABLE_GAMES = [
   ['kicksafe', 'Kick Safe', 'Defensive 9-ball. Fouls score. Race to 5.']
 ];
 const PVP_TG_SRC = {
-  '8': './icons/tg-8.png',
-  '9': './icons/tg-9.png',
-  '10': './icons/tg-10.png',
+  '8': './icons/tg-8-v2.png',
+  '9': './icons/tg-9-v2.png',
+  '10': './icons/tg-10-v2.png',
   bank: './icons/tg-bank.png',
   upusa: './icons/tg-upusa.png',
   loop: './icons/tg-loop.png',
