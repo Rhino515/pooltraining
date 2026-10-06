@@ -11,6 +11,7 @@ import { rankBadgeSVG, drillBadgeSVG, ballSVG, avatarHTML } from '../progression
 import { displayDrillTitle } from '../drills.js';
 import { bossForRank } from '../games/registry.js';
 import { isBossUnlocked } from '../career.js';
+import { ballPocketStatus } from '../content/ballPocket.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const fmt = (n) => Math.round(Number(n) || 0).toLocaleString('en-US');
@@ -172,11 +173,12 @@ export function awardHTML(award) {
 export function profileHeaderHTML(state, profile, { edit = true } = {}) {
   const cs = careerStatus(state);
   const dr = drillRankStatus(state);
+  const bp = ballPocketStatus(state); // v14-118: Ball Pocketing chip next to the Career and Drill Rank chips
   const name = profile?.displayName || 'Player';
   return `<div class="card profileHead" data-profile-head>
     <button type="button" class="phAvatar" data-action="go" data-href="#me" aria-label="Edit profile">${avatarHTML({ ...profile, name }, 76)}</button>
     <div class="phInfo"><span class="eyebrow">PLAYER PROFILE</span><h1 class="phName" data-player-name>${esc(name)}</h1>
-      <div class="phRanks"><span class="phRank" data-action="go" data-href="#career">${rankBadgeSVG(cs, { size: 28 })}<b>${esc(cs.title)}</b></span><span class="phRank dr" data-action="go" data-href="#drillrank">${drillBadgeSVG(dr.number, { size: 28, max: dr.max })}<b><span class="drRankNo">${dr.number}</span> ${esc(dr.name)}</b></span></div>
+      <div class="phRanks"><span class="phRank" data-action="go" data-href="#career">${rankBadgeSVG(cs, { size: 28 })}<b>${esc(cs.title)}</b></span><span class="phRank dr" data-action="go" data-href="#drillrank">${drillBadgeSVG(dr.number, { size: 28, max: dr.max })}<b><span class="drRankNo">${dr.number}</span> ${esc(dr.name)}</b></span><span class="phRank bp" data-action="go" data-href="#drills/pocket" data-ph-bp="${bp.current}"><img class="phCue" src="./icons/rank-cue-${Math.max(1, Math.min(5, bp.current))}.png" alt="" width="15" height="28"/><b>Ball Pocketing <span class="gold">Lv. ${bp.current}</span></b></span></div>
       ${edit ? `<button type="button" class="linkish" data-action="go" data-href="#me">${profile?.displayName ? 'Edit profile' : 'Add your name & photo'} ›</button>` : ''}
     </div>
   </div>`;

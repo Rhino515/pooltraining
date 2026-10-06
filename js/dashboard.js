@@ -319,6 +319,7 @@ export function renderProfile(state) {
   return `${devSeedBannerHTML(state)}${profileHeaderHTML(state, getProfile())}
     ${careerHeaderHTML(state, { compact: true })}
     ${drillRankCardHTML(state, { compact: true })}
+    ${ballPocketRankCardHTML(state)}
     ${pkfProgressBoxHTML(state)}
     ${setProgressBoxHTML(state)}
     ${accomplishmentHTML(state)}
@@ -453,6 +454,34 @@ function careerDrillsHTML(state) {
 function ballPocketBadgeSVG(level) {
   const lv = Math.max(1, Math.min(5, Number(level) || 1));
   return `<img class="bpCue rankCue" src="./icons/rank-cue-${lv}.png" alt="Ball Pocketing level ${lv}" data-bp-cue="${lv}"/>`;
+}
+
+/**
+ * v14-118: Profile BALL POCKETING RANK card (after Drill Rank). Same layout as the Drill Rank card.
+ * Everything comes from ballPocketStatus and the saved drill stages: level, drills at bronze or better, levels finished, sessions.
+ * Not started still shows Level 1 with an empty bar. Tapping opens the Ball Pocketing page (#drills/pocket).
+ */
+export function ballPocketRankCardHTML(state) {
+  const st = ballPocketStatus(state);
+  const stages = state?.games?.drills?.stages || {};
+  const all = ballPocketDrills().filter((d) => !isDrillHidden(d.id));
+  const passed = (d) => !!stages[d.id]?.passed;
+  const bronze = all.filter(passed).length;
+  const sessions = all.reduce((a, d) => a + (Number(stages[d.id]?.tries) || 0), 0);
+  const levelsDone = BALL_POCKET_LEVELS.filter((lv) => { const rows = all.filter((d) => d.level === lv); return rows.length && rows.every(passed); }).length;
+  const started = sessions > 0 || bronze > 0;
+  const max = BALL_POCKET_LEVELS.length;
+  const pctNow = st.complete ? 100 : st.total ? Math.round((st.done / st.total) * 100) : 0;
+  const next = Math.min(max, st.current + 1);
+  const sub = st.complete ? '<small class="gold">MAX LEVEL · all five levels finished</small>'
+    : `<div class="drBar bpBar" role="progressbar" aria-valuemin="0" aria-valuemax="${st.total}" aria-valuenow="${st.done}"><i style="width:${pctNow}%"></i></div><small class="muted" data-bp-next>${started ? `${st.current < max ? `Next: Level ${next}` : `Finish Level ${max}`} · ${st.done} / ${st.total} at bronze+` : `Not started · 0 / ${st.total} to Level ${next}`}</small>`;
+  return `<div class="card drillRankCard bpRankCard${st.complete ? ' max' : ''}" data-bp-rank-card="${st.current}" data-bp-started="${started ? 1 : 0}" data-action="go" data-href="#drills/pocket">
+    <div class="drBadge bpRankBadge">${ballPocketBadgeSVG(st.current)}</div>
+    <div class="drMain"><span class="eyebrow bpEyebrow">BALL POCKETING RANK ${st.current} / ${max}</span><h3 data-bp-rank-name>Level ${st.current}</h3>
+      ${sub}
+      <div class="drCounts"><span><b data-bp-bronze>${bronze}</b> / ${all.length} drills at bronze+</span><span><b data-bp-levels>${levelsDone}</b> / ${max} levels finished</span><span><b data-bp-sessions>${sessions}</b> session${sessions === 1 ? '' : 's'}</span></div>
+    </div>
+  </div>`;
 }
 
 function ballPocketExtras(state) {
