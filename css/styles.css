@@ -2002,3 +2002,16 @@ header{
 .pkfcbPrereq .eyebrow{font-size:10px}
 .pkfcbPrereq p{margin:0}
 .pkfcbPrereq .chip{align-self:flex-start}
+/* Drill Sets & Exams: three labeled groups (BU EXAMS, PKF, OTHER). Header folds a group; open by default. */
+.dsGroups{display:flex;flex-direction:column;gap:22px;margin-top:6px}
+.dsGroup{margin:0}
+.dsGroupHead{display:grid;grid-template-columns:1fr auto 18px;align-items:center;gap:10px;list-style:none;cursor:pointer;padding:12px 14px 12px 16px;border:1px solid #1f5f99;border-radius:16px;background:linear-gradient(90deg,#0b2036,#08111b 70%);box-shadow:inset 3px 0 0 var(--blue),0 0 22px #0a9dff1f;-webkit-tap-highlight-color:transparent;user-select:none}
+.dsGroupHead::-webkit-details-marker{display:none}
+.dsGroupHead::marker{content:''}
+.dsGroupText b{display:block;font-size:14px;font-weight:800;letter-spacing:1.8px;color:var(--cyan);text-shadow:0 0 12px #4cc9ff55}
+.dsGroupText small{display:block;margin-top:3px;color:var(--muted);font-size:11.5px;letter-spacing:.2px}
+.dsGroupCount{min-width:28px;height:24px;padding:0 8px;border-radius:99px;display:grid;place-items:center;font-size:12px;font-weight:800;color:var(--cyan);background:#0f1c2c;border:1px solid #27466a}
+.dsGroupChev{width:10px;height:10px;justify-self:center;border-right:2px solid var(--cyan);border-bottom:2px solid var(--cyan);transform:translateY(-3px) rotate(45deg);transition:transform .18s}
+.dsGroup:not([open]) .dsGroupChev{transform:rotate(-45deg)}
+.dsGroupBody{padding:0 0 0 2px}
+.dsGroupBody>.simPromo{margin-top:10px}

@@ -336,18 +336,32 @@ function coursesCardHTML() {
   return `<button type="button" class="coursesCard" data-action="go" data-href="#courses" data-courses="1"><img src="./images/courses/efren-reyes.jpg" alt="" width="1400" height="530"/><span class="coursesLabel">Drill Sets & Exams</span></button>`;
 }
 
+/**
+ * One labeled group on Drill Sets & Exams. Open by default; the header folds it.
+ * Tiles are the same banners as before, unchanged.
+ */
+function courseGroupHTML(key, title, note, tiles) {
+  const n = (tiles.match(/class="card simPromo/g) || []).length;
+  return `<details class="dsGroup" data-ds-group="${key}" open><summary class="dsGroupHead"><span class="dsGroupText"><b>${title}</b>${note ? `<small>${note}</small>` : ''}</span><span class="dsGroupCount">${n}</span><span class="dsGroupChev" aria-hidden="true"></span></summary><div class="dsGroupBody">${tiles}</div></details>`;
+}
+
 export function renderCoursesPage(state) {
+  const dev = devBypass();
+  // BU: Exam I, Exam II (Bachelors, Masters, Doctorate), then Exam III, RDS (Exam IV), Exams V–VIII.
+  const bu = examBannerHTML();
+  // PKF in curriculum order. Pattern Play, Advanced Play and Safety are not built yet.
+  const pkf = pkfFundBannersHTML(state, { dev })
+    + pkfShotMakingBannersHTML(state, { dev })
+    + pkfCueBallBannersHTML(state, { dev })
+    + pkfBannersHTML(state)
+    + pkfBankBannersHTML(state, { dev });
+  const other = safetyBannerHTML() + ballPocketBannerHTML() + offRailBannersHTML(state) + trickBannersHTML(state);
   return `<div class="title"><button type="button" class="linkish back" data-action="go" data-href="#drills">‹ Drills</button><span class="eyebrow">DRILL LIBRARY</span><h1>Drill Sets & Exams</h1></div>
-    ${examBannerHTML()}
-    ${safetyBannerHTML()}
-    ${ballPocketBannerHTML()}
-    ${offRailBannersHTML(state)}
-    ${trickBannersHTML(state)}
-    ${pkfFundBannersHTML(state, { dev: devBypass() })}
-    ${pkfShotMakingBannersHTML(state, { dev: devBypass() })}
-    ${pkfCueBallBannersHTML(state, { dev: devBypass() })}
-    ${pkfBannersHTML(state)}
-    ${pkfBankBannersHTML(state, { dev: devBypass() })}`;
+    <div class="dsGroups">
+    ${courseGroupHTML('bu', 'BU EXAMS', 'Billiard University · Dr. Dave', bu)}
+    ${courseGroupHTML('pkf', 'PKF', 'Courses in curriculum order', pkf)}
+    ${courseGroupHTML('other', 'OTHER DRILL SETS &amp; EXAMS', '', other)}
+    </div>`;
 }
 
 export function renderDrillsPage(state, filter = 'All', bpViewLevel = null) {
