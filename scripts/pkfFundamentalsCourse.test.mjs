@@ -10,7 +10,7 @@ import { PAGES, REGIONS, ASSET_MAP, assetOf, figureHTML } from '../js/content/pk
 import { defaultState } from '../js/storage.js';
 import { createPkfFundScreen } from '../js/ui/pkfFundPlay.js';
 import * as G from '../js/dev/gate.js';
-import { readSetProgress, setProgressBoxHTML, completedSetsLineHTML } from '../js/content/setProgress.js';
+import { readSetProgress, setProgressBoxHTML, pkfProgressBoxHTML, completedSetsLineHTML } from '../js/content/setProgress.js';
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 let failed = 0;
@@ -249,7 +249,7 @@ G.setDevBypass?.(() => false);
   assert(C.progressSummary(st).lessonsDone === LESSONS.length, 'Fund: skipped steps count as moving through the lesson');
   const row = readSetProgress(st).find((r) => r.id === 'pkfFund');
   assert(row && row.finished, 'Fund emblem row finished');
-  assert(setProgressBoxHTML(st).includes('data-set-emblem="pkfFund"') && completedSetsLineHTML(st).includes('data-set-emblem="pkfFund"'), 'Fund emblem shows on dashboard');
+  assert(pkfProgressBoxHTML(st).includes('data-set-emblem="pkfFund"') && !setProgressBoxHTML(st).includes('data-set="pkfFund"') && completedSetsLineHTML(st).includes('data-set-emblem="pkfFund"'), 'Fund emblem shows on dashboard');
   assert(C.examUnlocked(st), 'Fund: exam unlocks with skipped steps');
   st = C.startExam(st);
   st = run(st, (x) => C.skipTableStep(x));

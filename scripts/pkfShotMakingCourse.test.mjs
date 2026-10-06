@@ -10,7 +10,7 @@ import { PAGES, REGIONS, regionOf, captionText, mappingRow } from '../js/content
 import * as CB from '../js/content/pkfCueBallCourse.js';
 import * as FUND from '../js/content/pkfFundamentalsCourse.js';
 import { defaultState } from '../js/storage.js';
-import { readSetProgress, setProgressBoxHTML, completedSetsLineHTML } from '../js/content/setProgress.js';
+import { readSetProgress, setProgressBoxHTML, pkfProgressBoxHTML, completedSetsLineHTML } from '../js/content/setProgress.js';
 import { createPkfShotMakingScreen } from '../js/ui/pkfShotMakingPlay.js';
 import * as GATE from '../js/dev/gate.js';
 
@@ -290,7 +290,7 @@ assert(LESSONS.filter(SM.isPhysical).filter((l) => l.physical.kind === 'check').
   assert(physIds.every((id) => c.needsPractice[id]), 'SM: skipped steps go to PRACTICE MISSED SHOTS');
   const row = readSetProgress(s).find((r) => r.id === 'pkfShotMaking');
   assert(row && row.finished, 'SM emblem row finished');
-  assert(setProgressBoxHTML(s).includes('data-set-emblem="pkfShotMaking"') && completedSetsLineHTML(s).includes('data-set-emblem="pkfShotMaking"'), 'SM emblem shows on dashboard');
+  assert(pkfProgressBoxHTML(s).includes('data-set-emblem="pkfShotMaking"') && !setProgressBoxHTML(s).includes('data-set="pkfShotMaking"') && completedSetsLineHTML(s).includes('data-set-emblem="pkfShotMaking"'), 'SM emblem shows on dashboard');
   assert(SM.examUnlocked(s), 'SM: exam unlocks with skipped steps');
   s = SM.startExam(s);
   s = run(s, (x) => SM.skipTableStep(x));

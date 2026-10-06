@@ -13,7 +13,7 @@ import {
   playableSectionCount, lessonTypeCounts, assistCounts, auditCourse, pkfCueBallProgressRows, pkfCueBallBannersHTML,
   ASSET_MAP, REGIONS, assetOf, skipTableStep, skippedIds, passedSectionCount, lessonById
 } from '../js/content/pkfCueBallCourse.js';
-import { readSetProgress, setProgressBoxHTML, completedSetsLineHTML } from '../js/content/setProgress.js';
+import { readSetProgress, setProgressBoxHTML, pkfProgressBoxHTML, completedSetsLineHTML } from '../js/content/setProgress.js';
 import { PAGES, regionHTML, regionOf, citeText, figureHTML, revealFigureHTML } from '../js/content/pkfCueBallAssets.js';
 import { defaultState } from '../js/storage.js';
 
@@ -297,7 +297,7 @@ function lessonSrc(id) { return LESSONS.find((l) => l.id === id)?.src; }
   assert(skippedIds(c).length > 0, 'Cue Ball: persistent skipped list');
   const row = readSetProgress(st).find((r) => r.id === 'pkfCueBall');
   assert(row && row.finished, 'Cue Ball emblem row finished');
-  assert(setProgressBoxHTML(st).includes('data-set-emblem="pkfCueBall"') && completedSetsLineHTML(st).includes('data-set-emblem="pkfCueBall"'), 'Cue Ball emblem shows on dashboard');
+  assert(pkfProgressBoxHTML(st).includes('data-set-emblem="pkfCueBall"') && !setProgressBoxHTML(st).includes('data-set="pkfCueBall"') && completedSetsLineHTML(st).includes('data-set-emblem="pkfCueBall"'), 'Cue Ball emblem shows on dashboard');
   assert(examUnlocked(st), 'Cue Ball: exam unlocks with skipped table steps');
   st = startExam(st);
   st = runAll(st, (x) => skipTableStep(x));

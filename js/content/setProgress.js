@@ -19,14 +19,21 @@ import * as moreExams from './buMore.js';
 import { SAFETY_NAME, SAFETY_ORDER, safetyOf } from './safetyMaster.js';
 import { offRailProgress } from './kickingCourse.js';
 import { trickProgressRows } from './trickShotCourse.js';
-import { pkfProgressRows } from './pkfKickingCourse.js';
-import { pkfBankProgressRows } from './pkfBankingCourse.js';
-import { pkfCueBallProgressRows } from './pkfCueBallCourse.js';
-import { pkfFundProgressRows } from './pkfFundamentalsCourse.js';
-import { pkfShotMakingProgressRows } from './pkfShotMakingCourse.js';
-import { pkfPatternPlayProgressRows } from './pkfPatternPlayCourse.js';
-import { pkfAdvancedPlaySafetyProgressRows } from './pkfAdvancedPlaySafetyCourse.js';
 import { ballPocketCourseRow } from './ballPocket.js';
+import * as PKF_KICK from './pkfKickingCourse.js';
+import * as PKF_BANK from './pkfBankingCourse.js';
+import * as PKF_CB from './pkfCueBallCourse.js';
+import * as PKF_FUND from './pkfFundamentalsCourse.js';
+import * as PKF_SM from './pkfShotMakingCourse.js';
+import * as PKF_PP from './pkfPatternPlayCourse.js';
+import * as PKF_ADV from './pkfAdvancedPlaySafetyCourse.js';
+const { pkfProgressRows } = PKF_KICK;
+const { pkfBankProgressRows } = PKF_BANK;
+const { pkfCueBallProgressRows } = PKF_CB;
+const { pkfFundProgressRows } = PKF_FUND;
+const { pkfShotMakingProgressRows } = PKF_SM;
+const { pkfPatternPlayProgressRows } = PKF_PP;
+const { pkfAdvancedPlaySafetyProgressRows } = PKF_ADV;
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
@@ -265,19 +272,93 @@ function meterHTML(row) {
   return `<span class="setMeter"><span class="setBar" role="progressbar" aria-valuemin="0" aria-valuemax="${row.total}" aria-valuenow="${row.done}" aria-valuetext="${row.done} of ${row.total}"><span style="width:${pct}%"></span></span><small>${row.done} / ${row.total}</small></span>`;
 }
 
-/** Profile box. Always present. Rows only for sets or exams already started. */
+/** v14-114: PKF course + exam rows (they live in Learn > Fundamentals); everything else is a Drill Sets & Exams row. */
+const PKF_ROW_IDS = new Set(['pkfFund', 'pkfFundExam', 'pkfShotMaking', 'pkfShotMakingExam', 'pkfCueBall', 'pkfCueBallExam', 'pkfPatternPlay', 'pkfPatternPlayExam', 'pkfAdvanced', 'pkfAdvancedExam', 'pkfKick', 'pkfKickExam', 'pkfBank', 'pkfBankExam']);
+export const isPkfRow = (row) => PKF_ROW_IDS.has(row.id);
+/** Started BU / Other sets and exams (Drill Sets & Exams page only). */
+export function readDrillSetProgress(state) { return readSetProgress(state).filter((r) => !isPkfRow(r)); }
+/** Started PKF courses and exams (Learn > Fundamentals). */
+export function readPkfProgress(state) { return readSetProgress(state).filter(isPkfRow); }
+
+const progRowHTML = (row) => `<button type="button" class="setProgRow${row.finished ? ' is-done' : ''}" data-set="${esc(row.id)}" data-set-done="${row.finished ? 1 : 0}" data-action="go" data-href="${esc(row.href)}"><span class="setName">${esc(row.name)}</span>${row.finished ? setEmblemHTML(row) : ''}${meterHTML(row)}</button>`;
+
+/** Profile box. Always present. Rows only for BU / Other sets or exams already started (PKF is in the Learn · PKF box). */
 export function setProgressBoxHTML(state) {
-  const rows = readSetProgress(state);
-  const body = rows.length
-    ? rows.map((row) => `<button type="button" class="setProgRow${row.finished ? ' is-done' : ''}" data-set="${esc(row.id)}" data-set-done="${row.finished ? 1 : 0}" data-action="go" data-href="${esc(row.href)}"><span class="setName">${esc(row.name)}</span>${row.finished ? setEmblemHTML(row) : ''}${meterHTML(row)}</button>`).join('')
-    : '<p class="muted small setNone">No set or exam started.</p>';
+  const rows = readDrillSetProgress(state);
+  const body = rows.length ? rows.map(progRowHTML).join('') : '<p class="muted small setNone">No set or exam started.</p>';
   return `<div class="card setProgressCard" data-set-progress><h3>Drill Sets &amp; Exams</h3>${body}</div>`;
 }
 
-/** Home ranks card only. Empty string until at least one set or exam is fully finished. */
-export function completedSetsLineHTML(state) {
-  const done = readSetProgress(state).filter((row) => row.finished);
-  if (!done.length) return '';
-  return `<span class="hrSets" data-set-emblems><span class="hrSetsLabel">Drill sets and exams completed</span><span class="hrSetsMarks">${done.map((row) => setEmblemHTML(row)).join('')}</span></span>`;
+/** v14-114: Profile "Learn · PKF" box. Always present. Same rows, meters and emblems as before, for started PKF courses and exams. */
+export function pkfProgressBoxHTML(state) {
+  const rows = readPkfProgress(state);
+  const body = rows.length ? rows.map(progRowHTML).join('') : '<p class="muted small setNone">No PKF course started. Find them in Learn › Fundamentals.</p>';
+  return `<div class="card setProgressCard pkfProgressCard" data-pkf-progress><h3><span class="eyebrow">LEARN</span> PKF Courses &amp; Exams</h3>${body}</div>`;
 }
 
+/** Home ranks card only. Empty string until at least one set, exam or PKF course is fully finished. Drill sets and PKF get their own line. */
+export function completedSetsLineHTML(state) {
+  const done = readSetProgress(state).filter((row) => row.finished);
+  const sets = done.filter((r) => !isPkfRow(r)), pkf = done.filter(isPkfRow);
+  const line = (key, label, list) => (list.length ? `<span class="hrSets" data-${key}><span class="hrSetsLabel">${label}</span><span class="hrSetsMarks">${list.map((row) => setEmblemHTML(row)).join('')}</span></span>` : '');
+  return line('set-emblems', 'Drill sets and exams completed', sets) + line('pkf-emblems', 'Learn · PKF courses completed', pkf);
+}
+
+// ------------------------------------------------------------------------------ v14-114: PKF curriculum progress (Learn > Fundamentals)
+/**
+ * The 7 PKF courses in curriculum order. Reads the same saved course state and the same
+ * progress rows (and so the same finish / emblem rules) as Profile and Home. No new storage, no XP.
+ */
+const PKF_CURRICULUM = [
+  { key: 'pkffund', courseId: 'pkfFund', examId: 'pkfFundExam', mod: PKF_FUND, rows: pkfFundProgressRows, store: PKF_FUND.courseOf },
+  { key: 'pkfsmcb', courseId: 'pkfShotMaking', examId: 'pkfShotMakingExam', mod: PKF_SM, rows: pkfShotMakingProgressRows, store: PKF_SM.courseOf },
+  { key: 'pkfcb', courseId: 'pkfCueBall', examId: 'pkfCueBallExam', mod: PKF_CB, rows: pkfCueBallProgressRows, store: PKF_CB.courseOf },
+  { key: 'pkfpattern', courseId: 'pkfPatternPlay', examId: 'pkfPatternPlayExam', mod: PKF_PP, rows: pkfPatternPlayProgressRows, store: PKF_PP.courseOf },
+  { key: 'pkfadv', courseId: 'pkfAdvanced', examId: 'pkfAdvancedExam', mod: PKF_ADV, rows: pkfAdvancedPlaySafetyProgressRows, store: PKF_ADV.courseOf },
+  { key: 'pkfkick', courseId: 'pkfKick', examId: 'pkfKickExam', mod: PKF_KICK, rows: pkfProgressRows, store: PKF_KICK.pkfOf },
+  { key: 'pkfbank', courseId: 'pkfBank', examId: 'pkfBankExam', mod: PKF_BANK, rows: pkfBankProgressRows, store: PKF_BANK.bankOf }
+];
+
+/** One status object per PKF course (course + its exam), in curriculum order. */
+export function pkfCurriculumStatus(state) {
+  return PKF_CURRICULUM.map((c) => {
+    const rows = c.rows(state) || [];
+    const total = typeof c.mod.playableSectionCount === 'function' ? c.mod.playableSectionCount() : c.mod.SECTIONS.length;
+    const course = rows.find((r) => r.id === c.courseId) || { id: c.courseId, name: c.mod.COURSE_TITLE, href: `#${c.key}`, short: SHORT[c.courseId] || c.mod.COURSE_TITLE, done: 0, total, finished: false };
+    const examRow = rows.find((r) => r.id === c.examId) || null;
+    const saved = c.store(state || {});
+    const ex = saved?.exam || {};
+    return {
+      key: c.key,
+      course: { ...course, started: rows.some((r) => r.id === c.courseId) },
+      exam: {
+        id: c.examId,
+        name: c.mod.EXAM_TITLE,
+        short: examRow?.short || SHORT[c.examId] || c.mod.EXAM_TITLE,
+        unlocked: !!c.mod.examUnlocked(state || {}),
+        passed: !!ex.passed,
+        attempts: ex.attempts || 0,
+        best: ex.attempts || ex.passed ? (ex.bestOverall || 0) : null,
+        row: examRow
+      }
+    };
+  });
+}
+
+/** Progress block inside a PKF course card: where the player is, a bar + percent, and the emblem once finished. */
+export function pkfCourseProgressHTML(item) {
+  const c = item.course;
+  const pct = c.total ? Math.max(0, Math.min(100, Math.round((c.done / c.total) * 100))) : 0;
+  const where = c.finished ? `Complete · ${c.done} of ${c.total} sections` : c.done || c.started ? `In progress · ${c.done} of ${c.total} sections passed` : `Not started · ${c.total} sections`;
+  return `<span class="pkfProg${c.finished ? ' is-done' : ''}" data-pkf-prog="${esc(c.id)}" data-pkf-done="${c.done}" data-pkf-total="${c.total}"><span class="pkfProgTop"><span class="pkfProgWhere">${esc(where)}</span><b class="pkfProgPct">${pct}%</b></span>${meterHTML(c)}${c.finished ? setEmblemHTML(c) : ''}</span>`;
+}
+
+/** Status block inside a PKF exam card: locked / unlocked, passed, best score, and the exam emblem once passed. */
+export function pkfExamProgressHTML(item) {
+  const e = item.exam;
+  const best = e.best == null ? '' : ` · Best ${Math.round(e.best * 100)}%`;
+  const state = e.passed ? 'passed' : e.unlocked ? (e.attempts ? 'tried' : 'open') : 'locked';
+  const text = e.passed ? `Passed${best}` : e.unlocked ? (e.attempts ? `Not passed yet${best} · ${e.attempts} attempt${e.attempts === 1 ? '' : 's'}` : 'Unlocked · not taken yet') : `Locked · ${item.course.done} of ${item.course.total} sections passed`;
+  const emblem = e.passed ? setEmblemHTML(e.row || { id: e.id, name: e.name, short: e.short }) : '';
+  return `<span class="pkfProg pkfExamProg is-${state}" data-pkf-exam="${esc(e.id)}" data-pkf-exam-state="${state}"><span class="pkfProgTop"><span class="pkfProgWhere">${e.passed ? '✓ ' : e.unlocked ? '' : '🔒 '}${esc(text)}</span></span>${emblem}</span>`;
+}

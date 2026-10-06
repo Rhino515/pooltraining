@@ -10,7 +10,7 @@ import * as PP from '../js/content/pkfPatternPlayCourse.js';
 import { PAGES, REGIONS, FIG, INSERTS, regionOf, captionText, printedOf } from '../js/content/pkfPatternPlayAssets.js';
 import * as CB from '../js/content/pkfCueBallCourse.js';
 import { defaultState } from '../js/storage.js';
-import { readSetProgress, setProgressBoxHTML, completedSetsLineHTML } from '../js/content/setProgress.js';
+import { readSetProgress, setProgressBoxHTML, pkfProgressBoxHTML, completedSetsLineHTML } from '../js/content/setProgress.js';
 import { createPkfPatternPlayScreen } from '../js/ui/pkfPatternPlayPlay.js';
 import * as GATE from '../js/dev/gate.js';
 
@@ -280,7 +280,7 @@ st = finish(st, { fail: true });
   assert(physIds.every((id) => c.needsPractice[id] && c.skipped[id]), 'skipped steps go to the practice list');
   const row = readSetProgress(s).find((r) => r.id === 'pkfPatternPlay');
   assert(row && row.finished, 'emblem row finished with skips');
-  assert(setProgressBoxHTML(s).includes('data-set-emblem="pkfPatternPlay"') && completedSetsLineHTML(s).includes('data-set-emblem="pkfPatternPlay"'), 'emblem shows in Profile box + Home badges');
+  assert(pkfProgressBoxHTML(s).includes('data-set-emblem="pkfPatternPlay"') && !setProgressBoxHTML(s).includes('data-set="pkfPatternPlay"') && completedSetsLineHTML(s).includes('data-set-emblem="pkfPatternPlay"'), 'emblem shows in Profile box + Home badges');
   s = PP.startExam(s);
   s = finish(s, { skip: true });
   const c2 = PP.courseOf(s);

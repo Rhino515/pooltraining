@@ -2026,13 +2026,19 @@ header{
 .dsGroup:not([open]) .dsGroupChev{transform:rotate(-45deg)}
 .dsGroupBody{padding:0 0 0 2px}
 .dsGroupBody>.simPromo{margin-top:10px}
-/* v14-113: PKF curriculum list in Learn > Fundamentals (moved from Drill Sets & Exams). Same header look as a group, always open. */
+/* v14-113/114: PKF curriculum in Learn > Fundamentals. Folded group (same look as Drill Sets groups) with per-card progress. */
 .learnPkf{margin:4px 0 20px}
-.learnPkfHead{padding:12px 14px 12px 16px;border:1px solid #1f5f99;border-radius:16px;background:linear-gradient(90deg,#0b2036,#08111b 70%);box-shadow:inset 3px 0 0 var(--blue),0 0 22px #0a9dff1f}
-.learnPkfHead b{display:block;font-size:14px;font-weight:800;letter-spacing:1.8px;color:var(--cyan);text-shadow:0 0 12px #4cc9ff55}
-.learnPkfHead small{display:block;margin-top:2px;color:var(--muted);font-size:11px;letter-spacing:.2px}
-.learnPkfBody{padding:0 0 0 2px}
-.learnPkfBody>.simPromo{margin-top:10px}
+.learnPkf .dsGroupText small.learnPkfDone{margin-top:5px;color:var(--gold);font-weight:700;font-size:11.5px}
+.pkfProg{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;align-items:center;margin-top:9px}
+.pkfProgTop{grid-column:1;display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.pkfProg .setMeter{grid-column:1}
+.pkfProg .setEmblem{grid-column:2;grid-row:1 / span 2;margin:0}
+.pkfProgWhere{font-size:11.5px;font-weight:700;color:#cfe3f5;line-height:1.3}
+.pkfProgPct{font-size:12px;font-weight:800;color:var(--gold)}
+.pkfProg .setMeter{margin-top:5px}
+.pkfProg.is-done .pkfProgWhere,.pkfExamProg.is-passed .pkfProgWhere{color:var(--green)}
+.pkfExamProg.is-locked .pkfProgWhere{color:var(--muted)}
+.pkfProgressCard h3 .eyebrow{display:block;font-size:10.5px;margin-bottom:2px}
 /* PKF Pattern Play Course (#pkfpattern) */
 .pkfppPage .pkfbFigLabel{margin:10px 2px 6px;font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--gold)}
 .pkfppPage .pkfppHiddenFig{padding:12px;text-align:center}

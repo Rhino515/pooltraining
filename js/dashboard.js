@@ -23,7 +23,7 @@ import { TABLE_SIZES, CLOTH_SPEEDS, CALIBRATION_SPEEDS, speedLabel, formatSpeed,
 import { learnHTML } from './learn.js';
 import { isDrillHidden } from './drills/hidden.js';
 import { examBannerHTML, accomplishmentHTML } from './content/buExam.js';
-import { setProgressBoxHTML, completedSetsLineHTML } from './content/setProgress.js';
+import { setProgressBoxHTML, pkfProgressBoxHTML, completedSetsLineHTML, pkfCurriculumStatus, pkfCourseProgressHTML, pkfExamProgressHTML } from './content/setProgress.js';
 import { safetyBannerHTML } from './content/safetyMaster.js';
 import { offRailBannersHTML } from './content/kickingCourse.js';
 import { trickBannersHTML } from './content/trickShotCourse.js';
@@ -66,7 +66,7 @@ function homeExtrasHTML(x = {}) {
 }
 
 export function renderLearn(args = [], state = null) {
-  return learnHTML(args, { pkfHTML: state ? pkfCurriculumHTML(state) : '' });
+  return learnHTML(args, state ? { pkfHTML: pkfCurriculumHTML(state), pkfSummary: pkfCurriculumSummary(state) } : {});
 }
 
 
@@ -319,6 +319,7 @@ export function renderProfile(state) {
   return `${devSeedBannerHTML(state)}${profileHeaderHTML(state, getProfile())}
     ${careerHeaderHTML(state, { compact: true })}
     ${drillRankCardHTML(state, { compact: true })}
+    ${pkfProgressBoxHTML(state)}
     ${setProgressBoxHTML(state)}
     ${accomplishmentHTML(state)}
     <div class="card stats"><div><b>${(state.prog?.lifetimeXp ?? state.xp) || 0}</b><span>LIFETIME XP</span></div><div><b>${passedStages}</b><span>STAGES PASSED</span></div><div><b>${E.totalStars(state)}★</b><span>STARS</span></div></div>
@@ -345,13 +346,29 @@ function coursesCardHTML() {
 export function pkfCurriculumHTML(state) {
   const dev = devBypass();
   // Curriculum order: Fundamentals, Shot Making, Cue Ball Control, Pattern Play, Advanced Play & Safety, Kicking, Banking.
-  return pkfFundBannersHTML(state, { dev })
-    + pkfShotMakingBannersHTML(state, { dev })
-    + pkfCueBallBannersHTML(state, { dev })
-    + pkfPatternPlayBannersHTML(state, { dev })
-    + pkfAdvancedPlaySafetyBannersHTML(state, { dev })
-    + pkfBannersHTML(state)
-    + pkfBankBannersHTML(state, { dev });
+  const pairs = [
+    pkfFundBannersHTML(state, { dev }),
+    pkfShotMakingBannersHTML(state, { dev }),
+    pkfCueBallBannersHTML(state, { dev }),
+    pkfPatternPlayBannersHTML(state, { dev }),
+    pkfAdvancedPlaySafetyBannersHTML(state, { dev }),
+    pkfBannersHTML(state),
+    pkfBankBannersHTML(state, { dev })
+  ];
+  // v14-114: each course card gets its progress (sections, bar, emblem); each exam card its status (locked, passed, best, emblem).
+  const status = pkfCurriculumStatus(state);
+  const withProg = (card, prog) => card.replace(/<\/small><\/span>/, `</small>${prog}</span>`);
+  return pairs.map((html, i) => {
+    const cards = html.split(/(?=<(?:button|div) [^>]*class="card simPromo)/).filter(Boolean);
+    const [course, exam] = cards;
+    return withProg(course, pkfCourseProgressHTML(status[i])) + (exam ? withProg(exam, pkfExamProgressHTML(status[i])) : '');
+  }).join('');
+}
+
+/** "3 of 7 courses complete" for the folded PKF header in Learn > Fundamentals. */
+export function pkfCurriculumSummary(state) {
+  const status = pkfCurriculumStatus(state);
+  return { done: status.filter((x) => x.course.finished).length, total: status.length };
 }
 
 /**

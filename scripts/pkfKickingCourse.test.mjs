@@ -10,7 +10,7 @@ import {
   passedSectionCount, playableSectionCount, lessonTypeCounts, auditCourse,
   ASSET_MAP, skipTableStep, skippedIds, reviewSkipped, retryCurrent
 } from '../js/content/pkfKickingCourse.js';
-import { readSetProgress, setProgressBoxHTML, completedSetsLineHTML } from '../js/content/setProgress.js';
+import { readSetProgress, setProgressBoxHTML, pkfProgressBoxHTML, completedSetsLineHTML } from '../js/content/setProgress.js';
 import { SKIP_LABEL } from '../js/content/pkfTableStep.js';
 import { defaultState } from '../js/storage.js';
 
@@ -224,7 +224,7 @@ assert(SKIP_LABEL === 'SKIP TABLE STEP', 'skip label');
   assert(examUnlocked(st) === true, 'exam unlocks with skipped table steps');
   const row = readSetProgress(st).find((r) => r.id === 'pkfKick');
   assert(row && row.finished, 'Kick course emblem row finished');
-  assert(setProgressBoxHTML(st).includes('data-set-emblem="pkfKick"') && completedSetsLineHTML(st).includes('data-set-emblem="pkfKick"'), 'Kick emblem shows on dashboard progress box');
+  assert(pkfProgressBoxHTML(st).includes('data-set-emblem="pkfKick"') && !setProgressBoxHTML(st).includes('data-set="pkfKick"') && completedSetsLineHTML(st).includes('data-set-emblem="pkfKick"'), 'Kick emblem shows on dashboard progress box');
   st = startExam(st);
   st = runAll(st, (x) => skipTableStep(x));
   const pkf = pkfOf(st);

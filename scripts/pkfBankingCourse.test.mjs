@@ -12,7 +12,7 @@ import {
   playableSectionCount, lessonTypeCounts, assistCounts, auditCourse, pkfBankProgressRows, pkfBankBannersHTML,
   ASSET_MAP, REGIONS, assetOf, skipTableStep, skippedIds, reviewSkipped, passedSectionCount, lessonById
 } from '../js/content/pkfBankingCourse.js';
-import { readSetProgress, setProgressBoxHTML, completedSetsLineHTML } from '../js/content/setProgress.js';
+import { readSetProgress, setProgressBoxHTML, pkfProgressBoxHTML, completedSetsLineHTML } from '../js/content/setProgress.js';
 import { PAGES } from '../js/content/pkfBankAssets.js';
 import { defaultState } from '../js/storage.js';
 
@@ -215,7 +215,7 @@ state = finish(state, { miss: true });
   assert(examUnlocked(st), 'Bank: exam unlocks with skipped table steps');
   const row = readSetProgress(st).find((r) => r.id === 'pkfBank');
   assert(row && row.finished, 'Bank emblem row finished');
-  assert(setProgressBoxHTML(st).includes('data-set-emblem="pkfBank"') && completedSetsLineHTML(st).includes('data-set-emblem="pkfBank"'), 'Bank emblem shows on dashboard');
+  assert(pkfProgressBoxHTML(st).includes('data-set-emblem="pkfBank"') && !setProgressBoxHTML(st).includes('data-set="pkfBank"') && completedSetsLineHTML(st).includes('data-set-emblem="pkfBank"'), 'Bank emblem shows on dashboard');
   st = startExam(st);
   st = runAll(st, (x) => skipTableStep(x));
   const b2 = bankOf(st);
