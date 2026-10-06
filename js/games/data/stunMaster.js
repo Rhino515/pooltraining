@@ -20,7 +20,7 @@ export default {
       instructions: 'Half-ball cut. The cue ball peels off to the left of the shot line, exactly 90° from the 4\'s path.' },
     { id: 'st-5', name: 'Stun Right', difficulty: 4, ob: [5, 64, 22], pocket: 'TR', cut: [30, 1, 26], k: 0, travel: 20, family: 'stun', rings: [8, 5, 2.8],
       instructions: 'Mirror image of Stun Left: same cut from the other side, cue ball peels off to the right.' },
-    { id: 'st-6', name: 'Forty-Five Degrees', difficulty: 5, ob: [6, 34, 36], pocket: 'BL', cut: [45, 1, 24], k: 0, travel: 24, family: 'stun', rings: [7, 4.5, 2.5],
+    { id: 'st-6', name: 'Forty-Five Degrees', difficulty: 5, ob: [6, 34, 36], pocket: 'BL', cue: [62.5, 37.5], k: 0, travel: 24, family: 'stun', vTips: -1, rings: [7, 4.5, 2.5], pass: { stars: 5, pockets: 4 },
       instructions: 'A 45° cut into the bottom-left corner. Stun keeps the cue ball on the tangent line even at this angle.' },
     { id: 'st-7', name: 'Stun-Run-Through', difficulty: 6, ob: [7, 70, 18], pocket: 'TR', cut: [20, 1, 26], k: 0.3, travel: 20, technique: 'stun-run', vTips: 0.5, rings: [7, 4.5, 2.5],
       instructions: 'Just a trace of forward roll: the cue ball leaves near the tangent line and drifts slightly forward of it.' },
