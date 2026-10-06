@@ -324,8 +324,11 @@ const VALIDATE = {
   [KEYS.devCopy]: (v) => isObj(v) && isObj(v.items),
   [KEYS.tallyColumns]: (v) => isObj(v) && isObj(v.drills),
   [KEYS.drillHidden]: (v) => isObj(v) && Array.isArray(v.ids),
+  [KEYS.ruleSet]: isObj,
   [KEYS.shotTimer]: isObj
 };
+/** v14-105: true when a data key has its own validator (verify checks every DATA_KEYS entry has one) */
+export const hasValidator = (k) => typeof VALIDATE[k] === 'function';
 
 /**
  * Validate a backup file's text. Returns {keys (raw strings), summary, exportedAt, appVersion, schema, legacy, dropped}
@@ -352,7 +355,8 @@ export function parseBackup(text) {
   for (const [k, v0] of Object.entries(src)) {
     if (!DATA_KEYS.includes(k)) continue;
     const v = typeof v0 === 'string' ? parseJSON(v0) : v0;
-    if (VALIDATE[k](v)) keys[k] = JSON.stringify(v);
+    const ok = VALIDATE[k] || isObj; // v14-105: a key without a validator must never crash a restore
+    if (ok(v)) keys[k] = JSON.stringify(v);
     else dropped.push(k);
   }
   if (MAIN_KEYS.some((k) => dropped.includes(k))) throw new Error('The progress data in that backup is damaged.');

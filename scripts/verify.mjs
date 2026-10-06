@@ -799,7 +799,7 @@ let state = storage.defaultState();
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
   const missing = walk(path.join(root, 'js')).filter((f) => f.endsWith('.js')).map((f) => './' + path.relative(root, f)).filter((f) => !sw.includes(`'${f}'`));
-  assert(/'pool-iq-v14-104'/.test(sw), 'service worker cache is pool-iq-v14-104');
+  assert(/'pool-iq-v14-105'/.test(sw), 'service worker cache is pool-iq-v14-105');
   assertAll('service worker precaches every JS module (incl. simulator + Create Drill)', missing.map((m) => `missing ${m}`));
   const wordN = { one: 1, two: 2, three: 3, four: 4 };
   const probs = [];
@@ -2076,7 +2076,7 @@ let state = storage.defaultState();
   const dash = src('js/dashboard.js');
   const friends = src('js/ui/friends.js');
   const vendor = src('js/vendor/supabase.js');
-  assert(/'pool-iq-v14-104'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw) && !/'pool-iq-v14-5c'/.test(sw), 'v14: service worker cache is pool-iq-v14-104');
+  assert(/'pool-iq-v14-105'/.test(sw) && !/'pool-iq-v12'/.test(sw) && !/'pool-iq-v13'/.test(sw) && !/'pool-iq-v14-5c'/.test(sw), 'v14: service worker cache is pool-iq-v14-105');
   assert(sw.includes(`'./js/vendor/supabase.js'`) && sw.includes(`'./js/cloud/controller.js'`) && sw.includes(`'./js/ui/account.js'`), 'v13: sw precaches the bundled supabase-js and the cloud modules');
   assert(/supabase-js\/2\.117\.2/.test(vendor) && /createClient/.test(vendor) && !/cdn\.jsdelivr|unpkg\.com|esm\.sh/.test(idx + sw), 'v13: official supabase-js v2 UMD build is bundled locally (no CDN)');
   assert(/nqfwlpfyccbqetcyjijf/.test(cfg) && /sb_publishable_/.test(cfg) && !/sb_secret_|service_role|sbp_[0-9a-f]{10}/.test(cfg + sql + docs), 'v13: config carries the project ref + publishable key only (no secrets anywhere)');
@@ -2285,7 +2285,7 @@ let state = storage.defaultState();
   assert(!fixSrc.includes('drill_overrides') && !saveFn.includes('.delete('), 'v14-26: the editor never deletes the published row');
   assert(oeSrc.includes('publishedDoc(ch.id)') && !oeSrc.slice(oeSrc.indexOf('export function applyDrillEdit'), oeSrc.indexOf('export function editCount')).includes('getDrillEdit'), 'v14-26: the live drill is the published row, not the phone copy');
   assert(pubSrc.includes('andrewaphay') === false && pubSrc.includes('ownerAccountSignedIn'), 'v14-26: the client refuses publish unless the owner account is signed in');
-  assert(swSrc.includes('pool-iq-v14-104') && swSrc.includes('skipWaiting') && swSrc.includes('clients.claim'), 'v14-28: new cache skipWaiting and clients.claim');
+  assert(swSrc.includes('pool-iq-v14-105') && swSrc.includes('skipWaiting') && swSrc.includes('clients.claim'), 'v14-28: new cache skipWaiting and clients.claim');
   assert(fixSrc.includes('id="fixImport"') && fixSrc.includes('accept=".pooliq,.json,application/json,application/octet-stream,text/plain,*/*"') && !fixSrc.includes('text/json'), 'v14-27: IMPORT DRILL accept lets Android select .pooliq and .json');
   assert(appSrc.includes('controllerchange') && appSrc.includes('pooliq-sw-reloaded') && appSrc.includes('location.reload()'), 'v14-26: an open app reloads once when the new worker activates');
   const PUB = await import(js('drills/published.js'));
@@ -2610,7 +2610,7 @@ let state = storage.defaultState();
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const appSrc = fsMod.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
   assert(['js/content/pkfCueBallAssets.js', 'js/content/pkfCueBallCourse.js', 'js/ui/pkfCueBallPlay.js', 'images/pkf-cb/PKF_CueBall_PDF_037.jpg', 'images/pkf-cb/PKF_CueBall_PDF_150.jpg'].every((f) => swSrc.includes(`'./${f}'`)), 'v14-97: service worker precaches cue-ball course + original JPEGs');
-  assert(/const CACHE = 'pool-iq-v14-104'/.test(swSrc), 'v14-97: CACHE bumped to pool-iq-v14-104');
+  assert(/const CACHE = 'pool-iq-v14-105'/.test(swSrc), 'v14-97: CACHE bumped to pool-iq-v14-105');
   assert(appSrc.includes("name === 'pkfcb'") && appSrc.includes("pkfcb: 'drills'"), 'v14-97: #pkfcb routes under the Drills tab');
   assert(!('pkfCueBallControl' in st0), 'v14-97: state.pkfCueBallControl is not in defaultState');
   const courses = DASH.renderCoursesPage(st0);
@@ -2671,7 +2671,7 @@ let state = storage.defaultState();
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const appSrc = fsMod.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
   assert(['js/content/pkfFundAssets.js', 'js/content/pkfFundamentalsCourse.js', 'js/ui/pkfFundPlay.js', 'images/pkf-fund/PKF_Fundamentals_PDF_009.jpg', 'images/pkf-fund/PKF_Fundamentals_PDF_034.jpg'].every((f) => swSrc.includes(`'./${f}'`)), 'v14-98: service worker precaches fundamentals course + original JPEGs');
-  assert(/const CACHE = 'pool-iq-v14-104'/.test(swSrc), 'v14-98: CACHE bumped to pool-iq-v14-104');
+  assert(/const CACHE = 'pool-iq-v14-105'/.test(swSrc), 'v14-98: CACHE bumped to pool-iq-v14-105');
   assert(appSrc.includes("name === 'pkffund'") && appSrc.includes("pkffund: 'drills'"), 'v14-98: #pkffund routes under the Drills tab');
   assert(!('pkfFundamentals' in st0), 'v14-98: state.pkfFundamentals is not in defaultState');
   const courses = DASH.renderCoursesPage(st0);
@@ -2711,7 +2711,7 @@ let state = storage.defaultState();
   const CBA = await import(js('content/pkfCueBallAssets.js'));
   const CBP = await import(js('ui/pkfCueBallPlay.js'));
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-104'/.test(swSrc), 'v14-99: CACHE bumped to pool-iq-v14-104');
+  assert(/const CACHE = 'pool-iq-v14-105'/.test(swSrc), 'v14-99: CACHE bumped to pool-iq-v14-105');
   assert(CBA.PAGES[77].printed === 58 && CBA.PAGES[72].printed === 55 && CBA.PAGES[150].printed === 128 && CBA.PAGES[75].printed == null, 'v14-99: printed pages follow the JPEG "Page:" footers (inserts unnumbered)');
   const ids = [...CB.LESSONS, ...CB.EXAM_ITEMS].map((l) => l.id);
   const cites = ids.flatMap((id) => [CB.figureHTML(id), CB.revealFigureHTML(id)]).join('').match(/<p class="pkfbCite[^>]*>[^<]*<\/p>/g) || [];
@@ -2757,7 +2757,7 @@ let state = storage.defaultState();
   };
   const swSrc = fsMod.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const appSrc = fsMod.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-104'/.test(swSrc), 'v14-100: CACHE bumped to pool-iq-v14-104');
+  assert(/const CACHE = 'pool-iq-v14-105'/.test(swSrc), 'v14-100: CACHE bumped to pool-iq-v14-105');
   const imgs = Array.from({ length: 24 }, (_, i) => `images/pkf-smcb/PKF_CenterBall_PDF_${String(35 + i).padStart(3, '0')}.jpg`);
   assert(['js/content/pkfShotMakingAssets.js', 'js/content/pkfShotMakingCourse.js', 'js/ui/pkfShotMakingPlay.js', ...imgs].every((f) => swSrc.includes(`'./${f}'`) && fsMod.existsSync(path.join(root, f))), 'v14-100: service worker precaches the course + all 24 original JPEGs');
   assert(appSrc.includes("name === 'pkfsmcb'") && appSrc.includes("pkfsmcb: 'drills'") && appSrc.includes('migrateShotMakingFromCueBall(st0)'), 'v14-100: #pkfsmcb routes under Drills; boot runs the one-time migration');
@@ -2821,7 +2821,7 @@ let state = storage.defaultState();
   const DASH = await import(js('dashboard.js'));
   const CL = await import(js('cloud/client.js'));
   const swSrc = (await import('fs')).readFileSync(path.join(root, 'sw.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-104'/.test(swSrc), 'v14-101: CACHE bumped to pool-iq-v14-104');
+  assert(/const CACHE = 'pool-iq-v14-105'/.test(swSrc), 'v14-101: CACHE bumped to pool-iq-v14-105');
   CL.setCurrentUserForTests(null);
   const html = DASH.renderCoursesPage(storage.defaultState());
   const groups = ['bu', 'pkf', 'other'].map((k) => html.indexOf(`data-ds-group="${k}"`));
@@ -2851,7 +2851,7 @@ let state = storage.defaultState();
 // ---------------------------------------------------------------- v14-102: PKF SKIP TABLE STEP + Drill XP for recorded table steps
 {
   const swSrc = (await import('fs')).readFileSync(path.join(root, 'sw.js'), 'utf8');
-  assert(/const CACHE = 'pool-iq-v14-104'/.test(swSrc), 'v14-102: CACHE bumped to pool-iq-v14-104');
+  assert(/const CACHE = 'pool-iq-v14-105'/.test(swSrc), 'v14-102: CACHE bumped to pool-iq-v14-105');
   assert(swSrc.includes("'./js/content/pkfTableStep.js'"), 'v14-102: pkfTableStep.js precached');
   const TS = await import(js('content/pkfTableStep.js'));
   assert(TS.SKIP_LABEL === 'SKIP TABLE STEP' && TS.tableStepItem('k', 'C', { id: 'x' }).tier === 'intermediate', 'v14-102: skip label + table step = default (difficulty 3) drill');
@@ -2868,6 +2868,30 @@ let state = storage.defaultState();
     const M = await import(js(`content/${m}.js`));
     assert(typeof M.skipTableStep === 'function' && typeof M.skippedIds === 'function', `v14-102: ${m} has SKIP TABLE STEP`);
   }
+}
+
+// ---------------------------------------------------------------- v14-105: restore crash fix (VALIDATE had no poolIQRuleSet entry)
+{
+  const swSrc = (await import('fs')).readFileSync(path.join(root, 'sw.js'), 'utf8');
+  assert(/const CACHE = 'pool-iq-v14-105'/.test(swSrc), 'v14-105: CACHE bumped to pool-iq-v14-105');
+  const VR = await import(js('vault.js'));
+  const SY = await import(js('cloud/sync.js'));
+  assertAll('v14-105: every DATA_KEYS entry has a backup validator', VR.DATA_KEYS.filter((k) => !VR.hasValidator(k)));
+  assert(VR.hasValidator('poolIQRuleSet') && VR.hasValidator('poolIQShotTimer'), 'v14-105: poolIQRuleSet and poolIQShotTimer have validators');
+  const rules = { 8: 'wpa', 9: 'bca', 10: 'apa', open: true };
+  const bk = { format: 'pool-iq-backup', schema: 1, appVersion: '14', exportedAt: '2026-10-05T00:00:00Z', keys: { poolIQStateV4: storage.defaultState(), poolIQRuleSet: rules, poolIQShotTimer: { on: true } } };
+  let pr = null; let err = '';
+  try { pr = VR.parseBackup(JSON.stringify(bk)); } catch (e) { err = e.message; }
+  assert(pr && pr.keys.poolIQRuleSet === JSON.stringify(rules) && pr.keys.poolIQShotTimer && pr.keys.poolIQStateV4 && !pr.dropped.length, `v14-105: parseBackup accepts a backup with poolIQRuleSet (file restore) ${err}`);
+  let pr2 = null; err = '';
+  try { pr2 = VR.parseBackup(JSON.stringify({ ...bk, keys: { ...bk.keys, poolIQRuleSet: JSON.stringify(rules) } })); } catch (e) { err = e.message; }
+  assert(pr2 && pr2.keys.poolIQRuleSet === JSON.stringify(rules), `v14-105: parseBackup accepts poolIQRuleSet stored as a JSON string ${err}`);
+  let pr3 = null; err = '';
+  try { pr3 = VR.parseBackup(JSON.stringify({ ...bk, keys: { ...bk.keys, poolIQRuleSet: [1, 2] } })); } catch (e) { err = e.message; }
+  assert(pr3 && !pr3.keys.poolIQRuleSet && pr3.dropped.includes('poolIQRuleSet') && pr3.keys.poolIQStateV4, `v14-105: a damaged poolIQRuleSet is dropped, the rest restores ${err}`);
+  let cs = null; err = '';
+  try { cs = SY.parseCloudSave({ data: bk, updated_at: '2026-10-05T01:00:00Z', device_id: 'dev-x', device_label: 'iPhone', local_saved_at: 1 }); } catch (e) { err = e.message; }
+  assert(cs && cs.keys.poolIQRuleSet === JSON.stringify(rules) && cs.deviceLabel === 'iPhone', `v14-105: Restore from Cloud (parseCloudSave) accepts a cloud row with poolIQRuleSet ${err}`);
 }
 
 console.log('\n--- Summary ---');
