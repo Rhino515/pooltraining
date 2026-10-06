@@ -42,6 +42,7 @@ import { buDrills, isBuId, examInstructions, BU_CREDIT } from './content/buExam.
 import { buSkillsDrills, isSkillsId, skillsText, SKILLS_CREDIT, SKILLS_BANK_IDS } from './content/buExam2.js';
 import { buMoreDrills, isMoreId } from './content/buMore.js';
 import { safetyDrills, isSafetyId, safetyText } from './content/safetyMaster.js';
+import { book9Drills } from './content/book9.js';
 import { applyDrillEdit } from './drills/ownerEdits.js';
 import { isDrillHidden } from './drills/hidden.js';
 
@@ -60,6 +61,7 @@ export const CATEGORIES = [
   'Kicks',
   'Safeties',
   'Runouts',
+  'Rotational Drills',
   'PKF · Cue Ball Control',
   'PKF · Center Ball',
   'PKF · Sliding Cue Ball',
@@ -187,8 +189,10 @@ function collectDrills() {
   const skills = buSkillsDrills().map((d) => sealBu(applyDrillEdit(d))).filter((c) => !base.some((d) => d.id === c.id) && !pocket.some((d) => d.id === c.id) && !bu.some((d) => d.id === c.id));
   const more = buMoreDrills().map((d) => applyDrillEdit(d)).filter((c) => !base.some((d) => d.id === c.id) && !pocket.some((d) => d.id === c.id) && !bu.some((d) => d.id === c.id) && !skills.some((d) => d.id === c.id));
   const safety = safetyDrills().map((d) => sealSafety(applyDrillEdit(d))).filter((c) => !base.some((d) => d.id === c.id) && !pocket.some((d) => d.id === c.id) && !bu.some((d) => d.id === c.id) && !skills.some((d) => d.id === c.id) && !more.some((d) => d.id === c.id));
-  const custom = customDrills().filter((c) => !base.some((d) => d.id === c.id) && !pocket.some((d) => d.id === c.id) && !bu.some((d) => d.id === c.id) && !skills.some((d) => d.id === c.id) && !more.some((d) => d.id === c.id) && !safety.some((d) => d.id === c.id));
-  return [...base, ...pocket, ...bu, ...skills, ...more, ...safety, ...custom];
+  // v14-122: 9 Ball Pool – Practice made Perfect (page pictures + the book's own words and scoring). No drill-editor override: the words stay the book's.
+  const book9 = book9Drills().filter((c) => !base.some((d) => d.id === c.id) && !pocket.some((d) => d.id === c.id));
+  const custom = customDrills().filter((c) => !base.some((d) => d.id === c.id) && !pocket.some((d) => d.id === c.id) && !bu.some((d) => d.id === c.id) && !skills.some((d) => d.id === c.id) && !more.some((d) => d.id === c.id) && !safety.some((d) => d.id === c.id) && !book9.some((d) => d.id === c.id));
+  return [...base, ...pocket, ...bu, ...skills, ...more, ...safety, ...book9, ...custom];
 }
 /** Ids that exist in the library, including ones deleted for everyone. History keeps these. */
 export function knownDrillIds() {

@@ -33,6 +33,8 @@ import { renderGhostLobby, renderGhostMatch, newGhostSession, newEightSession, a
 import { createPlayScreen } from './ui/play.js';
 import { createBuPlay } from './ui/buPlay.js';
 import { createSafetyPlay } from './ui/safetyPlay.js';
+import { createBook9Play } from './ui/book9Play.js';
+import { isBook9Id } from './content/book9.js';
 import { createSimScreen } from './ui/simulator.js';
 import { createDrillBuilder } from './ui/drillBuilder.js';
 import { createDrillFix } from './ui/drillFix.js';
@@ -191,6 +193,7 @@ function renderRoute() {
     } else {
       if (gameId === 'drills' && isSafetyId(stageId)) screen = createSafetyPlay(ctx, { id: stageId, course: args[2] === 'safety' });
       else if (gameId === 'drills' && (isBuId(stageId) || isSkillsId(stageId) || isMoreId(stageId))) screen = createBuPlay(ctx, { id: stageId, exam: args[2] === 'exam' });
+      else if (gameId === 'drills' && isBook9Id(stageId)) screen = createBook9Play(ctx, { id: stageId });
       else screen = createPlayScreen(ctx, { gameId, stageId, fromSet, devPreview });
       screen.render();
       playing = true;

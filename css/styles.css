@@ -2204,3 +2204,20 @@ header{
 .soRulesCard>summary::-webkit-details-marker{display:none}
 .soFromUpl{padding:12px 14px;margin:8px 0}
 .soScreen .rb.alt,[data-table-game="custom"] .rb.alt{background:#15304c;border:1px solid #1f5f99;color:#dff6ff}
+/* v14-122: 9 Ball Pool – Practice made Perfect drills */
+.drill[data-drill^="b9-"]>p{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.b9Play .b9Diagram{margin:8px 16px 0}
+.b9Img{background:#fff;border-radius:6px}
+.b9Score{margin:10px 16px 0;padding:10px 12px}
+.b9Score .b9Status{margin:0}
+.b9Lines{margin:6px 0 0;padding-left:18px;font-size:13px;color:var(--muted)}
+.b9Tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.b9Tier{display:flex;flex-direction:column;align-items:center;padding:6px 4px;border-radius:10px;border:1px solid var(--line);background:#0b1624}
+.b9Tier b{font-size:12px;color:#cfe3ff}
+.b9Tier small{font-size:10px;color:var(--muted)}
+.b9Tier.on{border-color:#e2b657;background:#2a2410}
+.b9Tier.on b{color:var(--gold)}
+.b9Text a{color:var(--cyan);word-break:break-all}
+.b9Play .buBar .bigBtn{margin:0;width:100%}
+.b9Play .b9More{flex-direction:row}
+.b9Play .b9More .bigBtn{flex:1;min-height:44px;font-size:13px}

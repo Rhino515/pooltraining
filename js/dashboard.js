@@ -527,7 +527,7 @@ function drillCard(state, d, opts = {}) {
   const rec = state.games?.drills?.stages?.[d.id];
   const real = isDrillUnlocked(d, state) && !opts.locked;
   const open = real || devBypass(); // Dev Mode ON: locked drills open (Ball Pocketing level locks play as a DEV PREVIEW)
-  const meta = `${d.custom ? '<span class="tag mine">MY DRILL</span> ' : ''}${d.contentUid ? `<span class="tag imp" data-badge="${d.imported ? 'imported' : 'custom'}">${d.imported ? 'IMPORTED' : 'MY CONTENT'}</span> ` : ''}<span class="tag">${esc(displayDrillTitle(d.category))}</span>${d.difficulty ? ` <span class="tag">Level ${d.difficulty}</span>` : ''}`;
+  const meta = `${d.custom ? '<span class="tag mine">MY DRILL</span> ' : ''}${d.contentUid ? `<span class="tag imp" data-badge="${d.imported ? 'imported' : 'custom'}">${d.imported ? 'IMPORTED' : 'MY CONTENT'}</span> ` : ''}<span class="tag">${esc(displayDrillTitle(d.category))}</span>${d.difficulty ? ` <span class="tag">Level ${d.difficulty}</span>` : ''}${d.part ? ` <span class="tag" data-b9-part>${esc(d.part)}</span>` : ''}`;
   const ms = rec ? masteryOf(state, drillItem(d).key) : 0;
   const pb = rec ? `<small class="pbLine">${starsHTML(ms)} Best ${rec.bestScore || 0} pts${rec.bestStars ? ` · ${'★'.repeat(rec.bestStars)}` : ''} · ${rec.tries || 0} session${rec.tries === 1 ? '' : 's'}${rec.passed ? ' · passed ✓' : ''}</small>` : '';
   const del = devOn() ? `<button type="button" class="miniAct danger" data-action="drill-del" data-id="${esc(d.id)}">Delete</button>` : '';
