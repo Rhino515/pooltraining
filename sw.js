@@ -1,4 +1,4 @@
-const CACHE = 'pool-iq-v14-111';
+const CACHE = 'pool-iq-v14-112';
 const ASSETS = [
   './',
   './index.html',
@@ -343,9 +343,9 @@ const ASSETS = [
   './icons/qa-learn.png',
   './icons/tg-friends.png',
   './icons/tg-ghost.png',
-  './icons/tg-8-v2.png',
-  './icons/tg-9-v2.png',
-  './icons/tg-10-v2.png',
+  './icons/tg-8-v3.png',
+  './icons/tg-9-v3.png',
+  './icons/tg-10-v3.png',
   './icons/tg-bank.png',
   './icons/tg-upusa.png',
   './icons/tg-loop.png',
