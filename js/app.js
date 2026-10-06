@@ -352,7 +352,7 @@ function renderRoute() {
     v.innerHTML = renderDrillsPage(state, drillFilter, bpViewLevel);
   }
   else if (name === 'tgame') {
-    screen = createTableMatch(ctx, args[0]);
+    screen = createTableMatch(ctx, args[0], args.slice(1));
     screen.render();
     playing = true;
   } else if (name === 'learn') v.innerHTML = renderLearn(args, state);

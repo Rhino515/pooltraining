@@ -15,6 +15,8 @@ import { freshStraight, applyStraight, STRAIGHT_TARGETS, freshOnePocket, applyOn
 import { freshCribbage, applyCribbage, partnerOf } from './cribbageRules.js';
 import { readRulePrefs, writeRulePrefs, stepsAreOpen, toggleStepsOpen, stepToggleBtn } from './stepFold.js';
 import { HOW } from '../learn.js';
+import { readGameSettings, writeGameSettings, settingsPanelHTML, settingsAction, createClock, clockActive, clockPanelHTML, clockAction, clockReconfigure, clockNewRack, clockTick, normalizeClock } from './gameSettings.js';
+import { createGameEditor, createCustomPlay, readCustomGame } from './customGame.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const pad = (n) => String(n).padStart(2, '0');
@@ -58,16 +60,89 @@ export function uplTeamPoints(finalA, finalB) {
   return aWins ? { a: wPts, b: lPts, draw: false } : { a: lPts, b: wPts, draw: false };
 }
 
-function head(title, sub) {
+export function head(title, sub) {
   return `<div class="playHead"><button type="button" class="phBack" data-action="go" data-href="#arcade" aria-label="Back">‹</button><div class="phTitle"><small>TABLE GAMES</small><b>${esc(title)}</b></div><div class="phStatus"><span class="score">${esc(sub)}</span></div></div>`;
 }
 
-export function createTableMatch(ctx, kind) {
-  if (kind === 'loop') return createLoopMatch(ctx);
+/**
+ * v14-119: per-game SETTINGS panel + clocks. kit.s = saved settings, kit.clock = match/shot clock (not Ultimate Pool).
+ * started() locks the panel once the match is under way. fixed = a custom game's own settings (read-only here).
+ */
+export function settingsKit(ctx, id, { started = () => false, onChange = null, fixed = null, editHref = '' } = {}) {
+  const kit = { id, s: fixed || readGameSettings(id), open: false };
+  kit.clock = createClock(kit.s.clock);
+  // settings lock once the match is under way or a clock has been started
+  const k = () => kit.clock;
+  const live = () => started() || k().shotUsed || k().matchRunning || k().matchLeft < k().cfg.matchMin * 60000;
+  kit.html = (extra = '') => {
+    const edit = fixed && editHref ? `<div class="gsRow"><span class="gsLab">This is your game</span><button type="button" class="chip" data-action="go" data-href="${editHref}">EDIT GAME</button></div>` : '';
+    const panel = settingsPanelHTML(fixed ? 'custom' : id, kit.s, { locked: !!fixed || live(), open: kit.open, extra: extra + edit, fixedGame: !!fixed });
+    return panel + (id === 'upusa' ? '' : clockPanelHTML(kit.clock));
+  };
+  kit.timer = (key) => (clockActive(kit.clock) ? '' : timerHTML(key));
+  kit.bind = () => {
+    const d = ctx.root.querySelector('[data-tg-settings]');
+    d?.addEventListener('toggle', () => { kit.open = d.open; });
+  };
+  kit.save = (patch) => { if (!fixed) kit.s = writeGameSettings(id, { ...kit.s, ...patch }); };
+  kit.action = (action, el) => {
+    if (action.startsWith('gs-')) {
+      if (fixed || live()) return true;
+      const n = settingsAction(id, kit.s, action, el);
+      if (n) {
+        kit.s = n;
+        clockReconfigure(kit.clock, normalizeClock(n.clock));
+        if (onChange) onChange(n);
+      }
+      return true;
+    }
+    if (action.startsWith('mc-')) { clockAction(kit.clock, action, el); return true; }
+    return false;
+  };
+  kit.tick = (render) => { if (clockTick(kit.clock, ctx.root) === 'rerender') render(); };
+  kit.newRack = () => clockNewRack(kit.clock);
+  return kit;
+}
+
+/** Screens from other files (Loop, Kick Safe): the panel and clocks are added on top after each render. */
+function withKit(ctx, id, inner) {
+  const kit = settingsKit(ctx, id);
+  let alive = true;
+  function inject() {
+    if (!alive) return;
+    const host = ctx.root.querySelector('.playBody') || ctx.root.querySelector('.playScreen') || ctx.root;
+    if (!host || host.querySelector('[data-tg-settings]')) return;
+    host.insertAdjacentHTML('afterbegin', kit.html());
+    kit.bind();
+  }
+  const iv = setInterval(() => { if (alive) kit.tick(() => { inner.render(); inject(); }); }, 200);
+  return {
+    render() { inner.render(); inject(); },
+    onAction(action, el, e) {
+      if (kit.action(action, el)) { inner.render(); inject(); return true; }
+      const r = inner.onAction(action, el, e);
+      inject();
+      return r;
+    },
+    onTableTap: inner.onTableTap ? (...a) => inner.onTableTap(...a) : undefined,
+    destroy() { alive = false; clearInterval(iv); if (inner.destroy) inner.destroy(); }
+  };
+}
+
+export function createTableMatch(ctx, kind, rest = []) {
+  if (kind === 'create') return createGameEditor(ctx, null);
+  if (/^cg-[a-z0-9]+$/.test(String(kind || ''))) {
+    if (rest[0] === 'edit') return createGameEditor(ctx, kind);
+    const g = readCustomGame(kind);
+    // a Straight Pool preset that keeps its 15-ball rack uses the full 14.1 scorer; everything else uses the generic scorer
+    if (g && g.preset === 'straight' && g.scoring === 'points' && g.count === 15) return straightScreen(ctx, { custom: g });
+    return createCustomPlay(ctx, kind);
+  }
+  if (kind === 'loop') return withKit(ctx, 'loop', createLoopMatch(ctx));
   if (kind === 'straight') return straightScreen(ctx);
   if (kind === 'onepocket') return onePocketScreen(ctx);
   if (kind === 'cribbage') return cribbageScreen(ctx);
-  if (kind === 'kicksafe') return createKickSafe(ctx);
+  if (kind === 'kicksafe') return withKit(ctx, 'kicksafe', createKickSafe(ctx));
   const id = ['8', '9', '10', 'bank', 'upusa'].includes(kind) ? kind : '';
   if (!id) {
     return { render() { ctx.root.innerHTML = '<div class="card empty"><p>Unknown table game.</p></div>'; }, onAction() { return false; }, destroy() {} };
@@ -227,20 +302,35 @@ function rulesBlock(id, set) {
 
 function raceScreen(ctx, id) {
   const name = `${id}-Ball`;
-  const ui = { you: 0, opp: 0, race: 5, log: [], rules: readRuleSets()[id] };
+  const kit = settingsKit(ctx, id, { started: () => ui.log.length > 0, onChange: (n) => { ui.race = n.race; } });
+  const ui = { you: 0, opp: 0, race: kit.s.race, log: [], rules: readRuleSets()[id], lag: 'you' };
   let alive = true;
+  const iv = setInterval(() => { if (alive) kit.tick(render); }, 200);
   function over() { return ui.you >= ui.race || ui.opp >= ui.race; }
+  /** Who breaks this rack under the chosen break rule (null = not tracked). */
+  function breakerNow() {
+    const rule = kit.s.breakRule;
+    if (!rule || rule === 'off') return null;
+    let b = ui.lag;
+    for (const w of ui.log) b = rule === 'winner' ? w : (b === 'you' ? 'opp' : 'you');
+    return b;
+  }
   function render() {
     if (!alive) return;
     const done = over();
     const winner = ui.you === ui.opp ? '' : ui.you > ui.opp ? 'You' : 'Opponent';
+    const brk = breakerNow();
+    const ruleRow = `<div class="gsRow"><span class="gsLab">Rule set</span><span class="chips">${RULE_SETS.map((r) => `<button type="button" class="chip${r === ui.rules ? ' active' : ''}" data-action="tg-rule" data-v="${r}">${r === 'bar' ? 'BAR' : RULE_NAME[r]}</button>`).join('')}</span></div>`;
+    const races = [...new Set([...RACES, ui.race])].sort((a, b) => a - b);
     ctx.root.innerHTML = `<div class="playScreen tableMatch" data-table-game="${id}" data-timer="1">
       ${head(name, `Race to ${ui.race}`)}
       <div class="playBody">
+        ${kit.html(ruleRow)}
         ${rulesBlock(id, ui.rules)}
-        <p class="muted small ruleLine">Rack counter. The timer is optional and stays off until you turn it on.</p>
-        ${timerHTML(`tg-${id}`)}
-        <div class="racePick">${RACES.map((r) => `<button type="button" class="chip${r === ui.race ? ' active' : ''}" data-action="tg-race" data-v="${r}" ${ui.log.length ? 'disabled' : ''}>${r}</button>`).join('')}</div>
+        <p class="muted small ruleLine">${clockActive(kit.clock) ? 'Rack counter. Clocks are set in SETTINGS.' : 'Rack counter. The timer is optional and stays off until you turn it on.'}</p>
+        ${kit.timer(`tg-${id}`)}
+        <div class="racePick">${races.map((r) => `<button type="button" class="chip${r === ui.race ? ' active' : ''}" data-action="tg-race" data-v="${r}" ${ui.log.length ? 'disabled' : ''}>${r}</button>`).join('')}</div>
+        ${brk ? `${ui.log.length ? '' : `<div class="chips"><button type="button" class="chip${ui.lag === 'you' ? ' active' : ''}" data-action="tg-lag" data-v="you">LAG WINNER: YOU BREAK</button><button type="button" class="chip${ui.lag === 'opp' ? ' active' : ''}" data-action="tg-lag" data-v="opp">LAG WINNER: OPPONENT BREAKS</button></div>`}<p class="muted small" data-breaker="${brk}">${brk === 'you' ? 'You break this rack.' : 'Opponent breaks this rack.'}</p>` : ''}
         <div class="ghostScore tmScore"><div><b>${ui.you}</b><span>YOU</span></div><em>—</em><div><b>${ui.opp}</b><span>OPPONENT</span></div></div>
         ${done ? `<div class="resultPanel pass inline"><h1>${esc(winner.toUpperCase())} ${ui.you}–${ui.opp}</h1></div>` : ''}
         <div class="racklog">${ui.log.map((w, i) => `<span class="${w === 'you' ? 'win' : 'loss'}">R${i + 1} ${w === 'you' ? 'YOU' : 'OPP'}</span>`).join('')}</div>
@@ -251,9 +341,16 @@ function raceScreen(ctx, id) {
         <button type="button" class="rb undo wide" data-action="tg-undo" ${ui.log.length ? '' : 'disabled'}><b>UNDO LAST RACK</b></button>
       </div>
     </div>`;
+    kit.bind();
   }
   function onAction(action, el) {
+    if (kit.action(action, el)) { render(); return true; }
     if (!action.startsWith('tg-')) return false;
+    if (action === 'tg-lag') {
+      if (!ui.log.length) ui.lag = el.dataset.v === 'opp' ? 'opp' : 'you';
+      render();
+      return true;
+    }
     if (action === 'tg-steps') {
       toggleStepsOpen();
       render();
@@ -270,6 +367,7 @@ function raceScreen(ctx, id) {
     if (action === 'tg-race') {
       if (ui.log.length) return true;
       ui.race = Number(el.dataset.v) || 5;
+      kit.save({ race: ui.race });
       render();
       return true;
     }
@@ -277,6 +375,7 @@ function raceScreen(ctx, id) {
       const who = el.dataset.v === 'opp' ? 'opp' : 'you';
       ui[who] += 1;
       ui.log.push(who);
+      kit.newRack();
       render();
       return true;
     }
@@ -288,26 +387,31 @@ function raceScreen(ctx, id) {
     }
     return false;
   }
-  return { render, onAction, destroy() { alive = false; } };
+  return { render, onAction, destroy() { alive = false; clearInterval(iv); } };
 }
 
 function bankScreen(ctx) {
+  const kit = settingsKit(ctx, 'bank', {
+    started: () => !!(ui.racksYou || ui.racksOpp || ui.you || ui.opp || ui.log.length),
+    onChange: (n) => { ui.rack = n.rack; ui.race = n.race; ui.lagBreaks = n.lagBreaks; ui.youBreak = n.lagBreaks; ui.turn = ui.youBreak ? 'you' : 'opp'; }
+  });
   const ui = {
-    rack: 'short',
-    race: 3,
+    rack: kit.s.rack,
+    race: kit.s.race,
     you: 0,
     opp: 0,
     racksYou: 0,
     racksOpp: 0,
-    turn: 'you',
-    youBreak: true,
-    lagBreaks: true,
+    turn: kit.s.lagBreaks ? 'you' : 'opp',
+    youBreak: kit.s.lagBreaks,
+    lagBreaks: kit.s.lagBreaks,
     fouls: 0,
     owedYou: 0,
     owedOpp: 0,
     log: []
   };
   let alive = true;
+  const iv = setInterval(() => { if (alive) kit.tick(render); }, 200);
   const need = () => (ui.rack === 'full' ? 8 : 5);
   function push(kind) { ui.log.push(kind); if (ui.log.length > 12) ui.log.shift(); }
   function giveRack(to) {
@@ -317,6 +421,7 @@ function bankScreen(ctx) {
     ui.fouls = 0;
     ui.youBreak = !ui.youBreak;
     ui.turn = ui.youBreak ? 'you' : 'opp';
+    kit.newRack();
     push(to === 'you' ? 'RACK YOU' : 'RACK OPP');
   }
   function scoreBank(who) {
@@ -338,7 +443,8 @@ function bankScreen(ctx) {
     ctx.root.innerHTML = `<div class="playScreen tableMatch" data-table-game="bank" data-timer="1">
       ${head('Bank Pool', `${ui.rack === 'full' ? 'Full rack to 8' : 'Short rack to 5'} · race ${ui.race}`)}
       <div class="playBody">
-        ${timerHTML('tg-bank')}
+        ${kit.html()}
+        ${kit.timer('tg-bank')}
 ${stepsHead('How to play', 'bk-steps')}<div class="stepBody"${stepsOpenAttr()}>
         <ol class="gameSteps">
           <li>Short rack is 9 balls in a diamond, and 5 points wins the rack. Full rack is 15 balls in a triangle, and 8 points wins the rack.</li>
@@ -359,7 +465,7 @@ ${stepsHead('How to play', 'bk-steps')}<div class="stepBody"${stepsOpenAttr()}>
           <button type="button" class="chip${ui.rack === 'short' ? ' active' : ''}" data-action="bk-rack" data-v="short">SHORT · 5</button>
           <button type="button" class="chip${ui.rack === 'full' ? ' active' : ''}" data-action="bk-rack" data-v="full">FULL · 8</button>
         </div>
-        <div class="racePick">${RACES.map((r) => `<button type="button" class="chip${r === ui.race ? ' active' : ''}" data-action="bk-race" data-v="${r}">Race ${r}</button>`).join('')}</div>
+        <div class="racePick">${[...new Set([...RACES, ui.race])].sort((a, b) => a - b).map((r) => `<button type="button" class="chip${r === ui.race ? ' active' : ''}" data-action="bk-race" data-v="${r}">Race ${r}</button>`).join('')}</div>
         <div class="chips">
           <button type="button" class="chip${ui.lagBreaks ? ' active' : ''}" data-action="bk-lag" data-v="1" ${ui.racksYou + ui.racksOpp ? 'disabled' : ''}>LAG WINNER BREAKS</button>
           <button type="button" class="chip${!ui.lagBreaks ? ' active' : ''}" data-action="bk-lag" data-v="0" ${ui.racksYou + ui.racksOpp ? 'disabled' : ''}>LAG WINNER GIVES THE BREAK</button>
@@ -376,17 +482,20 @@ ${stepsHead('How to play', 'bk-steps')}<div class="stepBody"${stepsOpenAttr()}>
         <button type="button" class="rb alt" data-action="bk-foul" ${done ? 'disabled' : ''}><b>FOUL</b><small>−1 · TURN PASSES</small></button>
       </div>
     </div>`;
+    kit.bind();
   }
   function onAction(action, el) {
+    if (kit.action(action, el)) { render(); return true; }
     if (action === 'bk-steps') { toggleStepsOpen(); render(); return true; }
     if (action === 'bk-rack' && !ui.racksYou && !ui.racksOpp && ui.you === 0 && ui.opp === 0) {
       ui.rack = el.dataset.v === 'full' ? 'full' : 'short';
+      kit.save({ rack: ui.rack });
       render();
       return true;
     }
     if (action === 'bk-race' && ui.racksYou < ui.race && ui.racksOpp < ui.race) {
       const r = Number(el.dataset.v);
-      if (RACES.includes(r) && r > Math.max(ui.racksYou, ui.racksOpp)) ui.race = r;
+      if (RACES.includes(r) && r > Math.max(ui.racksYou, ui.racksOpp)) { ui.race = r; kit.save({ race: r }); }
       render();
       return true;
     }
@@ -394,6 +503,7 @@ ${stepsHead('How to play', 'bk-steps')}<div class="stepBody"${stepsOpenAttr()}>
       ui.lagBreaks = el.dataset.v !== '0';
       ui.youBreak = ui.lagBreaks;
       ui.turn = ui.youBreak ? 'you' : 'opp';
+      kit.save({ lagBreaks: ui.lagBreaks });
       render();
       return true;
     }
@@ -425,12 +535,18 @@ ${stepsHead('How to play', 'bk-steps')}<div class="stepBody"${stepsOpenAttr()}>
     }
     return false;
   }
-  return { render, onAction, destroy() { alive = false; } };
+  return { render, onAction, destroy() { alive = false; clearInterval(iv); } };
 }
 
 function upusaScreen(ctx) {
-  const MATCH = 30 * 60 * 1000;
-  const SHOT = 30 * 1000;
+  // v14-119: clock lengths and extensions come from SETTINGS (defaults: the league's 30 min, 30 sec, one 30-second extension)
+  const kit = settingsKit(ctx, 'upusa', {
+    started: () => ui.started,
+    onChange: (n) => { cfg = n.clock; ui.matchLeft = MATCH(); ui.shotLeft = SHOT(); ui.ext = { a: cfg.extN, b: cfg.extN }; }
+  });
+  let cfg = kit.s.clock;
+  const MATCH = () => cfg.matchMin * 60 * 1000;
+  const SHOT = () => cfg.shotSec * 1000;
   const ui = {
     racksA: 0,
     racksB: 0,
@@ -441,11 +557,11 @@ function upusaScreen(ctx) {
     note: '',
     breaker: 'a',
     turn: 'a',
-    ext: { a: false, b: false },
-    matchLeft: MATCH,
+    ext: { a: cfg.extN, b: cfg.extN },
+    matchLeft: MATCH(),
     matchRunning: false,
     matchEnd: 0,
-    shotLeft: SHOT,
+    shotLeft: SHOT(),
     shotRunning: false,
     shotEnd: 0,
     shotOn: false,
@@ -490,16 +606,20 @@ function upusaScreen(ctx) {
     const pts = ui.ended ? uplTeamPoints(fa, fb) : null;
     const shot = shotMs();
     const warn = ui.shotRunning && shot <= 10000 && shot > 0;
+    const canExt = !ui.ended && ui.shotRunning && shot > 0 && ui.ext[ui.turn] > 0;
+    const extTxt = cfg.extN === 1 ? `One ${cfg.extSec}-second extension per player per rack.` : cfg.extN === 0 ? 'No extensions.' : `${cfg.extN} extensions of ${cfg.extSec} seconds per player per rack.`;
+    const isDefault = cfg.matchMin === 30 && cfg.shotSec === 30 && cfg.extN === 1 && cfg.extSec === 30;
     ctx.root.innerHTML = `<div class="playScreen tableMatch" data-table-game="upusa" data-upl="1">
-      ${head('Ultimate Pool USA', '30:00 match · 0:30 shot')}
+      ${head('Ultimate Pool USA', `${clockText(MATCH())} match · ${clockText(SHOT()).replace(/^0/, '')} shot`)}
       <div class="playBody">
+        ${kit.html()}
         <p class="ruleLine">${esc(ui.msg)}</p>
         <div class="tmClocks">
           <div><small>MATCH</small><b data-upl-match>${clockText(matchMs())}</b></div>
-          <div class="${warn ? 'warn' : ''}"><small>SHOT${ui.ext[ui.turn] ? ' · EXT USED' : ''}</small><b data-upl-shot>${ui.shotOn ? clockText(shot) : '—'}</b></div>
+          <div class="${warn ? 'warn' : ''}"><small>SHOT</small><b data-upl-shot>${ui.shotOn ? clockText(shot) : '—'}</b></div>
         </div>
         <div class="ghostScore tmScore"><div><b data-upl-a>${fa}</b><span>YOU · ${ui.racksA} RACKS${ui.startA ? ` · start ${ui.startA}` : ''}</span></div><em>—</em><div><b data-upl-b>${fb}</b><span>OPP · ${ui.racksB} RACKS${ui.startB ? ` · start ${ui.startB}` : ''}</span></div></div>
-        <p class="muted small">${ui.turn === 'a' ? 'Your shot.' : 'Opponent’s shot.'} ${ui.breaker === 'a' ? 'You break this rack.' : 'Opponent breaks this rack.'} One 30-second extension per player per rack.</p>
+        <p class="muted small">${ui.turn === 'a' ? 'Your shot.' : 'Opponent’s shot.'} ${ui.breaker === 'a' ? 'You break this rack.' : 'Opponent breaks this rack.'} ${extTxt} Request it before the shot clock expires.</p>
         ${!ui.started ? `<div class="fldRow"><label class="fld">Your UPScore<input id="upA" inputmode="numeric" value="${esc(ui.upA)}"></label><label class="fld">Opponent UPScore<input id="upB" inputmode="numeric" value="${esc(ui.upB)}"></label></div>
           <button type="button" class="bigBtn alt" data-action="up-hand">APPLY HANDICAP CHART</button>
           <p class="muted small">${esc(ui.note || 'Leave blank to start 0–0. The chart is manual §5.4.')}</p>
@@ -508,11 +628,11 @@ function upusaScreen(ctx) {
             <button type="button" class="chip${ui.breaker === 'b' ? ' active' : ''}" data-action="up-break" data-v="b">LAG WINNER: OPPONENT BREAKS</button>
           </div>` : ''}
         ${pts ? `<div class="resultPanel ${pts.draw ? '' : 'pass'} inline"><h1>${pts.draw ? 'DRAW' : fa > fb ? 'YOU WIN THE MATCH' : 'OPPONENT WINS THE MATCH'}</h1><p>Team points from §5.6: you ${pts.a}, opponent ${pts.b}. ${pts.draw ? 'A draw gives each team that player’s final score.' : 'Winner gets 5 plus the final score, unless that score is 0. Loser gets the final score. Cap 20.'}</p></div>` : ''}
-        <p class="muted small">Included: lag choice, alternate breaks, rack score, 30-minute match clock, 30-second shot clock, one extension per rack, handicap chart, team points for this one match. Left out: a five-match team night, coin-toss lineups, roster limits, coaching, and the object-ball rules. Source: UPL League Manual v5.0, league.ultimatepoolusa.com/docs/uplmanual.pdf.</p>
+        <p class="muted small">Included: lag choice, alternate breaks, rack score, match clock and shot clock (league defaults 30 minutes and 30 seconds${isDefault ? '' : `; this match ${cfg.matchMin} minutes and ${cfg.shotSec} seconds`}), extensions (league default one 30-second extension per player per rack${isDefault ? '' : `; this match ${cfg.extN} × ${cfg.extSec} seconds`}), handicap chart, team points for this one match. Left out: a five-match team night, coin-toss lineups, roster limits, coaching, and the object-ball rules. Source: UPL League Manual v5.0, league.ultimatepoolusa.com/docs/uplmanual.pdf.</p>
       </div>
       <div class="resultBar n2">
         <button type="button" class="rb s3" data-action="up-balls" ${ui.ended ? 'disabled' : ''}><b>BALLS STOPPED</b><small>START SHOT CLOCK</small></button>
-        <button type="button" class="rb alt" data-action="up-ext" ${ui.ended ? 'disabled' : ''}><b>EXTENSION</b><small>+30 ONCE THIS RACK</small></button>
+        <button type="button" class="rb alt upExt${canExt ? '' : ' is-used'}" data-action="up-ext" ${canExt ? '' : 'disabled'}><b>EXTENSION +${cfg.extSec}s</b><small data-upl-extleft>YOU ${ui.ext.a} LEFT · OPP ${ui.ext.b} LEFT</small></button>
         <button type="button" class="rb s3" data-action="up-rack" data-v="a" ${ui.ended ? 'disabled' : ''}><b>YOU WIN RACK</b></button>
         <button type="button" class="rb miss" data-action="up-rack" data-v="b" ${ui.ended ? 'disabled' : ''}><b>OPP WINS RACK</b></button>
         <button type="button" class="rb alt wide" data-action="up-stop" ${ui.ended ? 'disabled' : ''}><b>ALL STOP</b></button>
@@ -523,6 +643,7 @@ function upusaScreen(ctx) {
     const ib = ctx.root.querySelector('#upB');
     ia?.addEventListener('input', () => { ui.upA = ia.value; });
     ib?.addEventListener('input', () => { ui.upB = ib.value; });
+    kit.bind();
   }
   function paintClocks() {
     const m = ctx.root.querySelector('[data-upl-match]');
@@ -532,7 +653,7 @@ function upusaScreen(ctx) {
     if (ui.shotRunning && shotMs() <= 0) {
       stopShot();
       ui.shotOn = false;
-      ui.shotLeft = SHOT;
+      ui.shotLeft = SHOT();
       ui.turn = ui.turn === 'a' ? 'b' : 'a';
       ui.msg = 'Shot clock expired. Standard foul (8-ball §18). Incoming player has cue ball in hand anywhere (§11).';
       render();
@@ -540,6 +661,7 @@ function upusaScreen(ctx) {
     if (ui.matchRunning && matchMs() <= 0) render();
   }
   function onAction(action, el) {
+    if (kit.action(action, el)) { render(); return true; }
     if (!action.startsWith('up-')) return false;
     if (action === 'up-hand' && !ui.started) {
       const h = uplHandicap(ui.upA, ui.upB);
@@ -559,7 +681,7 @@ function upusaScreen(ctx) {
     if (action === 'up-break-go') {
       if (!ui.started) {
         ui.started = true;
-        ui.matchLeft = MATCH;
+        ui.matchLeft = MATCH();
         ui.matchEnd = Date.now() + ui.matchLeft;
         ui.matchRunning = true;
         ui.turn = ui.breaker;
@@ -573,8 +695,8 @@ function upusaScreen(ctx) {
       return true;
     }
     if (action === 'up-balls') {
-      ui.shotLeft = SHOT;
-      ui.shotEnd = Date.now() + SHOT;
+      ui.shotLeft = SHOT();
+      ui.shotEnd = Date.now() + SHOT();
       ui.shotRunning = true;
       ui.shotOn = true;
       ui.msg = 'Shot clock started. It resets when the balls stop.';
@@ -583,18 +705,21 @@ function upusaScreen(ctx) {
     }
     if (action === 'up-ext') {
       const who = ui.turn;
-      if (ui.ext[who]) {
-        ui.msg = 'That player already used the extension this rack.';
+      if (!(ui.ext[who] > 0)) {
+        ui.msg = 'That player has no extensions left this rack.';
         render();
         return true;
       }
-      ui.ext[who] = true;
-      const left = ui.shotOn ? shotMs() : 0;
-      ui.shotLeft = left + 30000;
+      // the extension is called before time runs out: only while the shot clock is running
+      if (!ui.shotRunning || shotMs() <= 0) {
+        ui.msg = 'Call the extension while the shot clock is running.';
+        render();
+        return true;
+      }
+      ui.ext[who] -= 1;
+      ui.shotLeft = shotMs() + cfg.extSec * 1000;
       ui.shotEnd = Date.now() + ui.shotLeft;
-      ui.shotRunning = true;
-      ui.shotOn = true;
-      ui.msg = 'Extension added 30 seconds to the time left. One per player per rack.';
+      ui.msg = `Extension added ${cfg.extSec} seconds to the time left. ${ui.ext[who]} left for that player this rack.`;
       render();
       return true;
     }
@@ -611,8 +736,8 @@ function upusaScreen(ctx) {
       stopMatch();
       stopShot();
       ui.shotOn = false;
-      ui.shotLeft = SHOT;
-      ui.ext = { a: false, b: false };
+      ui.shotLeft = SHOT();
+      ui.ext = { a: cfg.extN, b: cfg.extN };
       ui.breaker = ui.breaker === 'a' ? 'b' : 'a';
       ui.turn = ui.breaker;
       ui.msg = 'Rack over. Match clock stopped until the next break. Breaks alternate.';
@@ -626,11 +751,22 @@ function upusaScreen(ctx) {
   return { render, onAction, destroy() { alive = false; clearInterval(tick); } };
 }
 
-function straightScreen(ctx) {
+function straightScreen(ctx, { custom = null } = {}) {
+  const kit = settingsKit(ctx, 'straight', {
+    started: () => !!(ui.scored || ui.you || ui.opp),
+    onChange: (n) => { if (!ui.scored) ui = { ...ui, target: n.target }; },
+    fixed: custom ? { target: custom.target, clock: custom.clock } : null,
+    editHref: custom ? `#tgame/${custom.id}/edit` : ''
+  });
   let ui = freshStraight();
+  ui = { ...ui, target: kit.s.target };
   let alive = true;
+  const iv = setInterval(() => { if (alive) kit.tick(render); }, 200);
   function go(action, arg) {
+    const before = ui.rackNote;
     ui = applyStraight(ui, action, arg);
+    if (ui.rackNote && ui.rackNote !== before) kit.newRack();
+    if (action === 'target' && !custom) kit.save({ target: ui.target });
     render();
   }
   function render() {
@@ -641,9 +777,11 @@ function straightScreen(ctx) {
     const extraDis = locked || !ui.canExtra ? 'disabled' : '';
     const breakDis = locked || !ui.opening ? 'disabled' : '';
     const who = ui.turn === 'you' ? 'Your shot.' : 'Opponent’s shot.';
-    ctx.root.innerHTML = `<div class="playScreen tableMatch" data-table-game="straight">
-      ${head('Straight Pool', `to ${ui.target}`)}
+    const targets = [...new Set([...STRAIGHT_TARGETS, ui.target])].sort((a, b) => a - b);
+    ctx.root.innerHTML = `<div class="playScreen tableMatch" data-table-game="${custom ? 'custom' : 'straight'}"${custom ? ` data-custom-game="${esc(custom.id)}"` : ''}>
+      ${head(custom ? custom.name : 'Straight Pool', `to ${ui.target}`)}
       <div class="playBody">
+        ${kit.html()}
 ${stepsHead('How to play', 'st-steps')}<div class="stepBody"${stepsOpenAttr()}>
         <ol class="gameSteps">
           <li>Rack all 15 numbered balls. The apex goes on the foot spot.</li>
@@ -662,7 +800,7 @@ ${stepsHead('How to play', 'st-steps')}<div class="stepBody"${stepsOpenAttr()}>
                 <p class="ruleLine"><b>WPA 14.1 Continuous</b> (Rules of Play §7, effective 2025-09-15). Not a full referee. Fifteen numbered balls plus the cue ball. A called ball is 1 point, and each other ball pocketed on that same legal shot is 1. First to the chosen score wins. Scores may go negative. The shooter stays until a miss, safety, or foul. Opening break: cue ball in hand above the head string. If no called ball is pocketed, the cue ball and two object balls must each reach a rail, or it is a breaking foul (−2). A breaking foul does not count toward three fouls. If both happen on one shot, it is only the breaking foul. Three standard fouls: −1 for the third, then −15 more, re-rack all 15, and that player shoots an opening break (§7.11). Left out of the buttons: calling the ball, spotting balls, a cue ball or 15th that sits in the rack (§7.8b–d), a stalemate re-lag, and unsportsmanlike conduct. Those stay with the players. Source: WPA Rules of Play, wpapool.com, file 2026.01.02.</p>
         </details>
         </div>
-        <div class="chips">${STRAIGHT_TARGETS.map((n) => `<button type="button" class="chip${n === ui.target ? ' active' : ''}" data-action="st-target" data-v="${n}" ${ui.scored ? 'disabled' : ''}>${n}</button>`).join('')}</div>
+        ${custom ? '' : `<div class="chips">${targets.map((n) => `<button type="button" class="chip${n === ui.target ? ' active' : ''}" data-action="st-target" data-v="${n}" ${ui.scored ? 'disabled' : ''}>${n}</button>`).join('')}</div>`}
         <div class="chips">
           <button type="button" class="chip${ui.breaker === 'you' ? ' active' : ''}" data-action="st-break" data-v="you" ${ui.scored || ui.you || ui.opp || ui.needBreakChoice ? 'disabled' : ''}>YOU BREAK</button>
           <button type="button" class="chip${ui.breaker === 'opp' ? ' active' : ''}" data-action="st-break" data-v="opp" ${ui.scored || ui.you || ui.opp || ui.needBreakChoice ? 'disabled' : ''}>OPPONENT BREAKS</button>
@@ -685,8 +823,10 @@ ${stepsHead('How to play', 'st-steps')}<div class="stepBody"${stepsOpenAttr()}>
         <button type="button" class="rb wide" data-action="st-bfoul" ${breakDis}><b>BREAK FOUL</b><small>−2 · NOT A THIRD FOUL</small></button>
       </div>
     </div>`;
+    kit.bind();
   }
   function onAction(action, el) {
+    if (kit.action(action, el)) { render(); return true; }
     if (!action.startsWith('st-')) return false;
     if (action === 'st-steps') { toggleStepsOpen(); render(); return true; }
     if (action === 'st-target') { go('target', el.dataset.v); return true; }
@@ -702,14 +842,24 @@ ${stepsHead('How to play', 'st-steps')}<div class="stepBody"${stepsOpenAttr()}>
     if (action === 'st-bfoul') { go('break-foul'); return true; }
     return true;
   }
-  return { render, onAction, destroy() { alive = false; } };
+  return { render, onAction, destroy() { alive = false; clearInterval(iv); } };
 }
 
 function onePocketScreen(ctx) {
+  const kit = settingsKit(ctx, 'onepocket', {
+    started: () => !!(ui.racksYou || ui.racksOpp || ui.rackLive || ui.you || ui.opp),
+    onChange: (n) => { ui = { ...ui, race: n.race, youBreak: n.lagBreaks, turn: n.lagBreaks ? 'you' : 'opp' }; }
+  });
   let ui = freshOnePocket();
+  ui = { ...ui, race: kit.s.race, youBreak: kit.s.lagBreaks, turn: kit.s.lagBreaks ? 'you' : 'opp' };
   let alive = true;
+  const iv = setInterval(() => { if (alive) kit.tick(render); }, 200);
   function go(action, arg) {
+    const racks = ui.racksYou + ui.racksOpp;
     ui = applyOnePocket(ui, action, arg);
+    if (ui.racksYou + ui.racksOpp !== racks) kit.newRack();
+    if (action === 'race') kit.save({ race: ui.race });
+    if (action === 'lag') kit.save({ lagBreaks: ui.youBreak });
     render();
   }
   function render() {
@@ -722,6 +872,7 @@ function onePocketScreen(ctx) {
     ctx.root.innerHTML = `<div class="playScreen tableMatch" data-table-game="onepocket">
       ${head('One Pocket', `race ${ui.race}`)}
       <div class="playBody">
+        ${kit.html()}
 ${stepsHead('How to play', 'op-steps')}<div class="stepBody"${stepsOpenAttr()}>
         <ol class="gameSteps">
           <li>Rack all 15 balls with no pattern. The apex goes on the foot spot.</li>
@@ -740,7 +891,7 @@ ${stepsHead('How to play', 'op-steps')}<div class="stepBody"${stepsOpenAttr()}>
                 <p class="ruleLine"><b>WPA One-Pocket</b> (Rules of Play §12, effective 2025-09-15). Not a full referee. Fifteen object balls, random triangle, apex on the foot spot. Each player has one foot pocket. First to 8 there wins the rack. Lag winner chooses who breaks the first rack. Later breaks alternate. The breaker chooses a foot pocket. Cue ball in hand above the head string. No special break requirement. The turn continues only after a ball in the shooter’s own pocket. A ball in the opponent’s pocket on a foul counts for them and is not spotted, unless the only foul is a cue-ball scratch (§12.5). Side and head pockets are spotted and score nothing. Three standard fouls in a row loses the rack (§12.9). If both would reach 8 on the same shot, the shooter wins (§12.11). Left out of the buttons: spotting balls on the table, a stalemate re-rack, forgetting to spot, and unsportsmanlike conduct. Those stay with the players. Source: WPA Rules of Play, wpapool.com, file 2026.01.02.</p>
         </details>
         </div>
-        <div class="racePick">${RACES.map((r) => `<button type="button" class="chip${r === ui.race ? ' active' : ''}" data-action="op-race" data-v="${r}" ${done ? 'disabled' : ''}>Race ${r}</button>`).join('')}</div>
+        <div class="racePick">${[...new Set([...RACES, ui.race])].sort((a, b) => a - b).map((r) => `<button type="button" class="chip${r === ui.race ? ' active' : ''}" data-action="op-race" data-v="${r}" ${done ? 'disabled' : ''}>Race ${r}</button>`).join('')}</div>
         <div class="chips">
           <button type="button" class="chip${ui.youBreak ? ' active' : ''}" data-action="op-lag" data-v="you" ${ui.racksYou + ui.racksOpp || ui.rackLive ? 'disabled' : ''}>LAG WINNER BREAKS</button>
           <button type="button" class="chip${!ui.youBreak ? ' active' : ''}" data-action="op-lag" data-v="opp" ${ui.racksYou + ui.racksOpp || ui.rackLive ? 'disabled' : ''}>LAG WINNER GIVES THE BREAK</button>
@@ -764,8 +915,10 @@ ${stepsHead('How to play', 'op-steps')}<div class="stepBody"${stepsOpenAttr()}>
         <button type="button" class="rb wide" data-action="op-foul-theirs" ${dis}><b>FOUL + THEIR POCKET</b><small>THEM +1 · YOU −1</small></button>
       </div>
     </div>`;
+    kit.bind();
   }
   function onAction(action, el) {
+    if (kit.action(action, el)) { render(); return true; }
     if (!action.startsWith('op-')) return false;
     if (action === 'op-steps') { toggleStepsOpen(); render(); return true; }
     if (action === 'op-race') { go('race', el.dataset.v); return true; }
@@ -780,12 +933,14 @@ ${stepsHead('How to play', 'op-steps')}<div class="stepBody"${stepsOpenAttr()}>
     if (action === 'op-foul-theirs') { go('foul-theirs'); return true; }
     return true;
   }
-  return { render, onAction, destroy() { alive = false; } };
+  return { render, onAction, destroy() { alive = false; clearInterval(iv); } };
 }
 
 function cribbageScreen(ctx) {
+  const kit = settingsKit(ctx, 'cribbage', { started: () => !!(ui.you || ui.opp || ui.out.length < 15) });
   let ui = freshCribbage();
   let alive = true;
+  const iv = setInterval(() => { if (alive) kit.tick(render); }, 200);
   let group = false;
   let queue = [];
   function go(action, arg) {
@@ -805,6 +960,7 @@ function cribbageScreen(ctx) {
     ctx.root.innerHTML = `<div class="playScreen tableMatch" data-table-game="cribbage">
       ${head('Cribbage', 'first to 5')}
       <div class="playBody">
+        ${kit.html()}
 ${stepsHead('How to play', 'cr-steps')}<div class="stepBody"${stepsOpenAttr()}>
         <ol class="gameSteps">
           <li>Rack all 15. Put the 15-ball in the center and the apex on the foot spot. No two corner balls may add to 15.</li>
@@ -844,12 +1000,15 @@ ${stepsHead('How to play', 'cr-steps')}<div class="stepBody"${stepsOpenAttr()}>
         <button type="button" class="rb miss" data-action="cr-scratch" ${dis}><b>SCRATCH</b><small>IN HAND · NOT OPTIONAL</small></button>
       </div>
     </div>`;
+    kit.bind();
   }
   function onAction(action, el) {
+    if (kit.action(action, el)) { render(); return true; }
     if (!action.startsWith('cr-')) return false;
     if (action === 'cr-steps') { toggleStepsOpen(); render(); return true; }
     if (action === 'cr-new') {
       ui = freshCribbage();
+      kit.newRack();
       queue = [];
       group = false;
       render();
@@ -878,5 +1037,5 @@ ${stepsHead('How to play', 'cr-steps')}<div class="stepBody"${stepsOpenAttr()}>
     if (action === 'cr-scratch') { go('scratch'); return true; }
     return true;
   }
-  return { render, onAction, destroy() { alive = false; } };
+  return { render, onAction, destroy() { alive = false; clearInterval(iv); } };
 }

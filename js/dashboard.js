@@ -21,6 +21,7 @@ import { loadFriends, activePlayers } from './friends/model.js';
 import { COACH_LEVELS, COACH_LABEL, coachingLevel } from './games/coaching.js';
 import { TABLE_SIZES, CLOTH_SPEEDS, CALIBRATION_SPEEDS, speedLabel, formatSpeed, personalFactor, clothNote, calLookup } from './games/speed.js';
 import { learnHTML } from './learn.js';
+import { readCustomGames, customTileHTML } from './ui/customGame.js';
 import { isDrillHidden } from './drills/hidden.js';
 import { examBannerHTML, accomplishmentHTML } from './content/buExam.js';
 import { setProgressBoxHTML, pkfProgressBoxHTML, completedSetsLineHTML, pkfCurriculumStatus, pkfCourseProgressHTML, pkfExamProgressHTML, readDrillSetProgress, courseBonusNoteHTML } from './content/setProgress.js';
@@ -207,7 +208,8 @@ const TG_SRC = {
   straight: './icons/tg-straight.png',
   onepocket: './icons/tg-onepocket.png',
   cribbage: './icons/tg-cribbage.png',
-  kicksafe: './icons/tg-kicksafe.png'
+  kicksafe: './icons/tg-kicksafe.png',
+  create: './icons/tg-create.png'
 };
 const tgTile = (id, href, name) => `<button type="button" class="tgTile" data-action="go" data-href="${href}" data-game="${esc(id)}"><img src="${TG_SRC[id]}" alt="${esc(name)}"/></button>`;
 export function renderArcade(state) {
@@ -218,7 +220,7 @@ export function renderArcade(state) {
     ...TABLE_MATCHES.map(([id, name]) => [id, `#tgame/${id}`, name])
   ];
   return `<div class="title"><span class="eyebrow">TABLE GAMES</span><h1>At the table</h1><p>Rack counters for real games. Training modes are in Drills, under Career Drills.</p></div>
-    <div class="tgGrid" data-table-matches>${tiles.map(([id, href, name]) => tgTile(id, href, name)).join('')}</div>`;
+    <div class="tgGrid" data-table-matches>${tiles.map(([id, href, name]) => tgTile(id, href, name)).join('')}${readCustomGames().map(customTileHTML).join('')}${tgTile('create', '#tgame/create', 'Create your own game')}</div>`;
 }
 
 export function renderGameLobby(state, gameId) {

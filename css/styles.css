@@ -2119,3 +2119,54 @@ header{
 .bpBar i{background:linear-gradient(90deg,#c9922a,var(--gold))}
 .phRank.bp{border-color:#5a4a1e;padding-left:8px}
 .phCue{width:15px;height:28px;object-fit:contain;display:block}
+/* v14-119 Table Games SETTINGS, clocks with extensions, Create Your Own Game */
+.tgSettings{padding:12px 14px;margin:0 0 10px}
+.tgSettings>summary{list-style:none;cursor:pointer;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.tgSettings>summary::-webkit-details-marker{display:none}
+.tgSettings>summary b{font-size:13px;color:var(--text)}
+.tgSettings>summary::after{content:'▾';margin-left:auto;color:var(--muted)}
+.tgSettings[open]>summary::after{content:'▴'}
+.tgSettings>summary small{flex-basis:100%}
+.gsBody{margin-top:8px}
+.gsRow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 0;border-top:1px solid #142233}
+.gsLab{flex:1 1 140px;font-size:13px;color:#cdd7e6}
+.gsRow .chips{flex:1 1 100%}
+.gsStep{display:inline-flex;align-items:center;gap:8px}
+.gsStep .tmStep{min-height:40px;width:44px;font-size:22px;padding:0}
+.gsStep b{min-width:64px;text-align:center;font-size:16px;font-variant-numeric:tabular-nums}
+.gsRow.is-off .gsStep b,.gsGroup.is-off .gsStep b{color:#56657a}
+.gsTog{min-width:54px;font-weight:800}
+.gsRow button:disabled{opacity:.45}
+.mClock{margin:0 0 10px}
+.mcBtns{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.tmClocks .done b{color:#ff7387}
+.mcExt,.upExt{display:block;width:100%;margin:6px 0;border:0;border-radius:14px;background:linear-gradient(90deg,#b07a0a,#f6c453);color:#1a1204;font-weight:900;padding:10px;min-height:56px;cursor:pointer}
+.mcExt b,.upExt b{display:block;font-size:16px;letter-spacing:.5px}
+.mcExt small,.upExt small{display:block;font-size:11px;font-weight:800;opacity:.85}
+.mcExt.is-used,.upExt.is-used,.mcExt:disabled{background:#1a2333;color:#6b778a}
+.resultBar .upExt{margin:0;min-height:0}
+.tgCustom{position:relative;line-height:1.1;aspect-ratio:338/323;background:radial-gradient(circle at 50% 30%,#0e3a5c,#06101c 75%);border:2px solid #2a8cff;box-shadow:0 0 16px #0a9dff55,inset 0 0 18px #0a9dff22;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:8px 8px 12px;overflow:hidden;text-align:center}
+.tgcArt{position:absolute;left:10px;right:10px;top:10px;bottom:62px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:12px}
+.tgcArt svg{width:100%;height:100%;overflow:hidden;border-radius:12px}
+.tgcName{color:#fff;font-weight:900;font-size:16px;letter-spacing:.5px;text-shadow:0 2px 4px #000c;word-break:break-word}
+.tgcSub{color:var(--cyan);font-size:11px;font-weight:800;margin-top:3px;letter-spacing:1px}
+.cgName,.cgRack,.cgRules,.cgPreview,.cgPlayRack{padding:14px;margin:0 0 10px}
+.cgNameInput{width:100%;margin:6px 0 12px;padding:12px;border-radius:12px;border:1px solid #1f5f99;background:#06101b;color:var(--text);font-size:16px;font-weight:800}
+.cgRackArt{margin:8px 0;border-radius:14px;overflow:hidden;background:#06101b}
+.cgRackArt svg{display:block;width:100%;height:auto;overflow:hidden;touch-action:none}
+.cgRackSvg [data-n]{cursor:pointer}
+.cgModes .chip{font-weight:800}
+.cgRules .eyebrow{display:block;margin-top:12px}
+.cgRuleList{margin:6px 0 0;padding-left:18px;color:#cdd7e6;font-size:13px;line-height:1.5}
+.cgDelete.is-ask{background:#7d2636}
+.cgMsg{color:var(--gold)}
+.cgPlayRack>summary{list-style:none;cursor:pointer;display:flex;gap:10px;align-items:baseline}
+.cgPlayRack>summary::-webkit-details-marker{display:none}
+.cgBalls{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:8px 0}
+.cgBall{width:44px;height:44px;border-radius:50%;border:2px solid #fff3;display:grid;place-items:center;font-weight:900;cursor:pointer;color:#111;background:var(--bc,#ccc)}
+.cgBall span{background:#fff;border-radius:50%;width:24px;height:24px;display:grid;place-items:center;font-size:12px}
+.cgBall.stripe{background:linear-gradient(#f2eee4 0 22%,var(--bc) 22% 78%,#f2eee4 78%)}
+.cgBall.b1{--bc:#ffc40a}.cgBall.b2{--bc:#124ede}.cgBall.b3{--bc:#eb2416}.cgBall.b4{--bc:#6822b2}.cgBall.b5{--bc:#ff760a}.cgBall.b6{--bc:#089140}.cgBall.b7{--bc:#961a18}.cgBall.b8{--bc:#111}
+.cgBall.is-low{box-shadow:0 0 0 3px var(--cyan),0 0 14px var(--cyan)}
+.cgBall.is-game{border-color:var(--gold)}
+.cgBall.is-down{opacity:.22}

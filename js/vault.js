@@ -30,6 +30,8 @@ export const KEYS = {
   tallyColumns: 'poolIQTallyColumnsV1', // v14-13 extra drill tally columns, this phone only (drills/tallyColumns.js)
   drillHidden: 'poolIQDrillHiddenV1', // v14-34 ids deleted for everyone; kept when the list cannot be read (drills/hidden.js)
   ruleSet: 'poolIQRuleSet', // v14-59 last rules pick on 8, 9, and 10-ball (ui/tableMatch.js). v14-62 also stores open for the numbered steps. Not career, XP, or games.
+  gameSettings: 'poolIQGameSettingsV1', // v14-119 Table Games SETTINGS per game (race, breaks, rack, clocks, extensions). Not career or XP.
+  customGames: 'poolIQCustomGamesV1', // v14-119 Create Your Own Game: saved games (name, rack, house rules, clocks). Not career or XP.
   shotTimer: 'poolIQShotTimer' // v14-63 timer on, friend's turn, and mute (ui/shotTimer.js). Not career, XP, or rack scores.
 };
 export const DATA_KEYS = Object.values(KEYS);
@@ -325,6 +327,8 @@ const VALIDATE = {
   [KEYS.tallyColumns]: (v) => isObj(v) && isObj(v.drills),
   [KEYS.drillHidden]: (v) => isObj(v) && Array.isArray(v.ids),
   [KEYS.ruleSet]: isObj,
+  [KEYS.gameSettings]: isObj,
+  [KEYS.customGames]: (v) => isObj(v) && Array.isArray(v.games),
   [KEYS.shotTimer]: isObj
 };
 /** v14-105: true when a data key has its own validator (verify checks every DATA_KEYS entry has one) */
