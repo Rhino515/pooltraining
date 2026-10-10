@@ -7,7 +7,7 @@ export default {
   primarySkill: 'Shot Making',
   kind: 'pot',
   skillEffects: { 'Shot Making': 1 },
-  scoring: { mode: 'sniper', lives: 3, attempts: 10, pass: { made: 7 } },
+  scoring: { mode: 'sniper', lives: 3, attempts: 10, pass: { made: 6 } },
   unlock: null,
   stages: [
     { id: 'ps-1', name: 'Dead Straight', difficulty: 1, ob: [1, 70, 30], pocket: 'BR', cut: [0, 1, 26], pass: { made: 6 },

@@ -7,10 +7,10 @@ export default {
   primarySkill: 'Cue-Ball Control',
   kind: 'position',
   skillEffects: { 'Cue-Ball Control': 1, 'Speed Control': 0.5, 'Position Play': 0.3 },
-  scoring: { mode: 'zone', attempts: 5, pass: { stars: 7, pockets: 4 } },
+  scoring: { mode: 'zone', attempts: 5, pass: { stars: 0, pockets: 3 } },
   unlock: null,
   stages: [
-    { id: 'fo-1', name: 'Short Follow', difficulty: 1, ob: [1, 70, 30], pocket: 'BR', cut: [3, 1, 20], k: 0.8, travel: 11, rings: [6, 4, 2.4], pass: { stars: 6, pockets: 4 },
+    { id: 'fo-1', name: 'Short Follow', difficulty: 1, ob: [1, 70, 30], pocket: 'BR', cut: [3, 1, 20], k: 0.8, travel: 11, rings: [6, 4, 2.4],
       instructions: 'Almost straight at the bottom-right corner. Follow the cue ball just past the spot the 1 left — about 6 inches beyond it.' },
     { id: 'fo-2', name: 'One-Diamond Follow', difficulty: 2, ob: [2, 58, 34], pocket: 'BR', cut: [4, -1, 24], k: 1, travel: 12.5,
       instructions: 'Follow forward exactly one diamond. The pocket is far enough away that a smooth roll is safe.' },

@@ -7,10 +7,10 @@ export default {
   primarySkill: 'Position Play',
   kind: 'position',
   skillEffects: { 'Position Play': 1, 'Cue-Ball Control': 0.6, 'Speed Control': 0.4 },
-  scoring: { mode: 'zone', attempts: 5, pass: { stars: 7, pockets: 4 } },
+  scoring: { mode: 'zone', attempts: 5, pass: { stars: 0, pockets: 3 } },
   unlock: null,
   stages: [
-    { id: 'lz-1', name: 'Natural Roll', difficulty: 1, ob: [1, 60, 22], pocket: 'TR', cut: [30, 1, 30], k: 1, travel: 30, rings: [10, 6.5, 3.5], pass: { stars: 6, pockets: 4 },
+    { id: 'lz-1', name: 'Natural Roll', difficulty: 1, ob: [1, 60, 22], pocket: 'TR', cut: [30, 1, 30], k: 1, travel: 30, rings: [10, 6.5, 3.5],
       instructions: 'Roll the 1 into the top-right corner with a natural rolling hit and let the cue ball drift into the rings.',
       note: { route: 'This is the path the cue ball wants to take anyway — learn to trust it before you fight it.' } },
     { id: 'lz-2', name: 'Follow Through', difficulty: 2, ob: [2, 66, 18], pocket: 'TR', cut: [10, 1, 26], k: 1, travel: 19, rings: [10, 6.5, 3.5],
@@ -34,7 +34,7 @@ export default {
       note: { speed: 'Three-rail routes forgive small direction errors but punish pace errors — commit to the number.' } },
     { id: 'lz-9', name: 'Traffic Jam', difficulty: 7, ob: [9, 70, 34], pocket: 'BR', cut: [25, 1, 28], k: -1, travel: 20, blockers: [[3, 52, 30], [6, 34, 36]],
       instructions: 'Pocket the 9 in the bottom-right corner and draw between the traffic into the zone. Touching a blocker scores 0 stars.' },
-    { id: 'lz-10', name: 'Needle Through', difficulty: 9, ob: [1, 52, 38], pocket: 'BM', cut: [15, -1, 26], k: 0.9, travel: 26, rings: [7, 4.5, 2.5], blockers: [[2, 68, 33], [5, 57.5, 43]], pass: { stars: 8, pockets: 4 },
+    { id: 'lz-10', name: 'Needle Through', difficulty: 9, ob: [1, 52, 38], pocket: 'BM', cut: [15, -1, 26], k: 0.9, travel: 26, rings: [7, 4.5, 2.5], blockers: [[2, 68, 33], [5, 57.5, 43]],
       instructions: 'Pocket the 1 in the bottom side and thread the cue ball between the 2 and the 5, off the bottom rail and into the small rings.' }
   ]
 };

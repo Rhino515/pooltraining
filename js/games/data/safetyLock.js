@@ -7,7 +7,7 @@ export default {
   primarySkill: 'Safeties',
   kind: 'safety',
   skillEffects: { Safeties: 1, 'Speed Control': 0.5, 'Cue-Ball Control': 0.3 },
-  scoring: { mode: 'stars', attempts: 5, pass: { stars: 8 } },
+  scoring: { mode: 'stars', attempts: 5, pass: { stars: 3 } },
   unlock: { game: 'kick', level: 1, label: 'Kick Escape Level 1' },
   stages: [
     { id: 'sl-1', name: 'Hide Behind the 5', difficulty: 3, objective: 'hide', cue: [30, 24], ob: [1, 46, 26], obZone: [84, 34], cueZone: [42, 17], k: 0, travel: 8, autoBlock: [[5, 0.18]],

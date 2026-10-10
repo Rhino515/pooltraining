@@ -7,7 +7,7 @@ export default {
   primarySkill: 'Cue-Ball Control',
   kind: 'position',
   skillEffects: { 'Cue-Ball Control': 1, 'Position Play': 0.6, 'Speed Control': 0.6 },
-  scoring: { mode: 'zone', attempts: 5, pass: { stars: 7, pockets: 4 } },
+  scoring: { mode: 'zone', attempts: 5, pass: { stars: 0, pockets: 3 } },
   unlock: { game: 'landing', level: 4, label: 'Landing Zone Level 4' },
   stages: [
     { id: 'rr-1', name: 'One-Rail Crossing', difficulty: 3, ob: [1, 30, 12], pocket: 'TL', cut: [50, -1, 12], k: 0, travel: 44,
@@ -22,7 +22,7 @@ export default {
       note: { route: 'Around-the-table routes are wide targets for direction but narrow for pace — watch where the cue ball dies, not where it goes.' } },
     { id: 'rr-5', name: 'Running English Swing', difficulty: 6, ob: [5, 68, 40], pocket: 'BM', cut: [45, 1, 24], k: 1, travel: 92, english: { tips: 1, type: 'running' },
       instructions: 'Pocket the 5 in the bottom side with follow and running english so the cue ball swings off two rails to the head end.' },
-    { id: 'rr-6', name: 'Reverse Hold-Up', difficulty: 7, ob: [6, 40, 10], pocket: 'TM', cut: [45, -1, 24], k: 1, travel: 68, english: { tips: 1, type: 'reverse' }, pass: { stars: 8, pockets: 4 },
+    { id: 'rr-6', name: 'Reverse Hold-Up', difficulty: 7, ob: [6, 40, 10], pocket: 'TM', cut: [45, -1, 24], k: 1, travel: 68, english: { tips: 1, type: 'reverse' },
       instructions: 'Reverse english shortens the rebound: pocket the 6 in the top side and hold the cue ball up off two rails in the bottom-left zone.',
       note: { spin: 'Reverse english is the “brake” for rail routes — it keeps the cue ball from running long into the corner.' } }
   ]

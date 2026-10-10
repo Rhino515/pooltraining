@@ -194,7 +194,7 @@ export function evaluateSession(session, stage = stageFor(session)) {
     r.maxScore = N * (requirePocket ? 250 : 200);
     r.over = A.length >= N;
     r.passed = r.over && stars >= (pass.stars || 0) && (!requirePocket || pockets >= (pass.pockets || 0));
-    r.needText = `${pass.stars || 0}★${requirePocket && pass.pockets ? ` & ${pass.pockets} pots` : ''}`;
+    r.needText = [pass.stars ? `${pass.stars}★` : '', requirePocket && pass.pockets ? `${pass.pockets} pots` : ''].filter(Boolean).join(' & ') || '0★';
     r.progressText = `${stars}★${requirePocket ? ` · ${pockets} pots` : ''}`;
     // v11.1 multi-lane zone drills (Three-Lane Speed Exercise): perLane attempts in each lane, in order
     if (rules.lanes && rules.perLane) {

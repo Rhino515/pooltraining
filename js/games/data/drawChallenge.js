@@ -7,10 +7,10 @@ export default {
   primarySkill: 'Cue-Ball Control',
   kind: 'position',
   skillEffects: { 'Cue-Ball Control': 1, 'Speed Control': 0.4, 'Position Play': 0.3 },
-  scoring: { mode: 'zone', attempts: 5, pass: { stars: 7, pockets: 4 } },
+  scoring: { mode: 'zone', attempts: 5, pass: { stars: 0, pockets: 3 } },
   unlock: null,
   stages: [
-    { id: 'dr-1', name: 'Short Draw', difficulty: 1, ob: [1, 72, 16], pocket: 'TR', cut: [0, 1, 18], k: -0.5, travel: 4, rings: [6, 4, 2.4], pass: { stars: 6, pockets: 4 },
+    { id: 'dr-1', name: 'Short Draw', difficulty: 1, ob: [1, 72, 16], pocket: 'TR', cut: [0, 1, 18], k: -0.5, travel: 4, rings: [6, 4, 2.4],
       instructions: 'Dead straight into the top-right corner from close range. Draw the cue ball back about 4 inches — barely a ball-width past its contact spot.',
       note: { contact: 'Short draw is about a clean, level stroke, not about power.' } },
     { id: 'dr-2', name: 'Draw 6 Inches', difficulty: 2, ob: [2, 68, 34], pocket: 'BR', cut: [0, 1, 24], k: -0.8, travel: 6, rings: [6, 4, 2.4],
